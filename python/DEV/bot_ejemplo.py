@@ -1,11 +1,10 @@
 import sys
 import os
+from Core.Entities.Elementos.Bot import AdnFile
+from Core.Entities.Elementos.Bot.Funciones import Formater, GuiaParser
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import Funcionalidades.Bots.Formater as Formater
-import Funcionalidades.Bots.GuiaParser as GuiaParser
-import Elementos.Bot.AdnFile as AdnFile
 
 tokens = GuiaParser.guia
 tokensArray = GuiaParser.guiaArray

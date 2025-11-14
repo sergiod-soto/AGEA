@@ -1,6 +1,4 @@
-from elemento import Elemento
-
-# el agua
+from Core.Entities.Elemento import Elemento
 
 
 class Agua(Elemento):

@@ -1,8 +1,10 @@
-from elemento import Elemento
+from Core.Entities.Elemento import Elemento
 
 
 # la comida otorga energia. decae a lo largo del tiempo, otorgando cada
 # vez menos energia. mas alla del minimo, reduce salud actual
+
+
 
 
 class Comida(Elemento):

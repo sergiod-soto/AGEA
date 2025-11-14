@@ -4,16 +4,16 @@ import time
 import csv
 import csv
 import time
-import Conexion.Conexion as conexion
-import Mundo.Datos as Datos
+import Conexion.Conexion as Conexion
+import Core.Mundo.Datos as Datos
 import time
 import multiprocessing
-import Funcionalidades.Sistema.Funciones_CSV as Funciones_CSV
+import Utils.Sistema.Funciones_CSV as Funciones_CSV
 from colorama import Fore, Style, init
-from DEV.Funcionalidades import Cronometro
+from Utils.Medicion.Cronometro import Cronometro
 from DEV.Serie_Estados import Serie_Estados
-from Mundo.Generacion.Generacion import Generacion
-from Mundo.Generacion.Noise import Noise
+from Core.Mundo.Generacion.Generacion import Generacion
+from Core.Mundo.Generacion.Noise import Noise
 import time
 import os
 import signal
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     shared_data["other"]["paused"] = False  # esta en pausa
 
     # Arranca la conexion en un proceso aparte
-    p = multiprocessing.Process(target=conexion.run_exporter, args=(shared_data,))
+    p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
     p.start()
 
     print("creando mapa:")

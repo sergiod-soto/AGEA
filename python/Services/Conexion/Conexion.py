@@ -5,6 +5,7 @@
 import socket
 import time
 from colorama import Fore, Style, init
+
 from Conexion.Exporter import send
 from Conexion.Importer import receive_data
 
@@ -19,7 +20,6 @@ PORT = 12345
 #
 #
 #
-
 
 
 def run_exporter(shared_data):
@@ -43,20 +43,24 @@ def run_exporter(shared_data):
                         send(shared_data, conn)
 
                         # --- RECEPCIÓN ---
-                        try:                            
+                        try:
                             receive_data(conn, shared_data)
                         except socket.timeout:
                             pass  # no llegó nada, seguimos
 
                         time.sleep(0.2)  # evitar usar 100% CPU
 
-                    except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
-                        print("[CONEXION] Cliente desconectado. Esperando nueva conexión...")
+                    except (
+                        BrokenPipeError,
+                        ConnectionResetError,
+                        ConnectionAbortedError,
+                    ):
+                        print(
+                            "[CONEXION] Cliente desconectado. Esperando nueva conexión..."
+                        )
                         break
 
                     except Exception as e:
                         print(f"[CONEXION] Error inesperado: {e}")
                         time.sleep(1)
                         break
-
-                

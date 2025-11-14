@@ -1,7 +1,8 @@
-from Mundo import Datos
-from Elementos.Bot.Bot import Bot
-from Elementos.Elemento import Elemento
 from functools import partial
+
+from Core.Entities.Elemento import Elemento
+from Core.Entities.Elementos.Simples.Bot.Bot import Bot
+from Core.Mundo import Datos
 
 
 class Serie_Estados:
@@ -59,10 +60,10 @@ class Serie_Estados:
                 self.finalizado = True
             return
 
-    #
-    #   GENERAL
-    #
-    # region
+    # #####################################################################
+    # Instrucciones para la maquina de estados:
+
+    # region GENERAL
     def Mover_Elemento(self, elemento: Elemento, casilla: tuple[int, int]):
 
         print(
@@ -75,15 +76,10 @@ class Serie_Estados:
         elemento.casilla = casilla
         return elemento
 
-    #
-    #   /GENERAL
     # endregion
     #####################################################################
 
-    #
-    #   BOT
-    #
-    # region
+    # region   BOT
     def Crear_Bot(self, id_bot, adn, stats, padres, casilla):
 
         print("\t⚪ Serie_Estados.Crear_Bot")
@@ -139,8 +135,6 @@ class Serie_Estados:
         print("\t⚪ Serie_Estados.Set_Padres_Bot")
         bot.padres = (padre, madre)
         return bot
-    
-    #
-    #   /BOT
+
     # endregion
     #####################################################################
