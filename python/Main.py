@@ -14,6 +14,9 @@ from DEV.Funcionalidades import Cronometro
 from DEV.Serie_Estados import Serie_Estados
 from Mundo.Generacion.Generacion import Generacion
 from Mundo.Generacion.Noise import Noise
+import time
+import os
+import signal
 
 
 init()  # inicializa colorama (necesario en Windows)
@@ -172,6 +175,15 @@ def server_tic(shared_data):
 #
 #
 #
+
+running = True
+
+
+def handler(signum, frame):
+    global running
+    running = False
+
+
 if __name__ == "__main__":
 
     # inicializamos y seteamos la serie de estados:
@@ -189,8 +201,8 @@ if __name__ == "__main__":
     shared_data["other"]["paused"] = False  # esta en pausa
 
     # Arranca la conexion en un proceso aparte
-    # p = multiprocessing.Process(target=conexion.run_exporter, args=(shared_data,))
-    # p.start()
+    p = multiprocessing.Process(target=conexion.run_exporter, args=(shared_data,))
+    p.start()
 
     print("creando mapa:")
     crono = Cronometro()
@@ -202,5 +214,11 @@ if __name__ == "__main__":
 
     print("ha tardado en generarse el ruido: " + str(crono.stop_cronometro()) + "s")
 
-    # Bucle principal
-    # main_loop(shared_data)
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+
+    while running:
+        # Bucle principal
+        main_loop(shared_data)
+
+    print("Python finalizado limpiamente")
