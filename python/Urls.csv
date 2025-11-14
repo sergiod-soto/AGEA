@@ -1,0 +1,8 @@
+ALIAS,DIRECCION
+mapa_mundo,Mundo/mapa.csv
+icono_agua,Multimedia/Iconos/agua.png
+icono_arbol_fruta,Multimedia/Iconos/arbol_fruta.png
+icono_arbol_vacio,Multimedia/Iconos/arbol_fruta_vacio.png
+icono_bot,Multimedia/Iconos/bot.png
+icono_comida,Multimedia/Iconos/comida.png
+icono_piedra,Multimedia/Iconos/piedra.png
