@@ -4,7 +4,7 @@
 
 import socket
 import time
-from colorama import Fore, Style, init
+#from colorama import Fore, Style, init
 
 from Conexion.Exporter import send
 from Conexion.Importer import receive_data
