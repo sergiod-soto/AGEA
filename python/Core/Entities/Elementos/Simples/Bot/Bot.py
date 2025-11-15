@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 from Core.Entities.Elemento import Elemento
-import Elementos.Bot.Controlador as Controlador
+from Core.Entities.Elementos.Simples.Bot import Controlador
 from Exceptions import *
 
 

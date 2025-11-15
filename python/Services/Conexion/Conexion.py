@@ -6,8 +6,8 @@ import socket
 import time
 #from colorama import Fore, Style, init
 
-from Conexion.Exporter import send
-from Conexion.Importer import receive_data
+from Services.Conexion.Exporter import send
+from Services.Conexion.Importer import receive_data
 
 
 print("entrada en conexion satisfactoria")

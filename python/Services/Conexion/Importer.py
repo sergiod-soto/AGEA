@@ -1,6 +1,5 @@
 import json
-from Funcionalidades.Sistema import *
-from Funcionalidades.Sistema.Pause import pause
+from Utils.Sistema.Pause import pause
 
 
 def receive_data(conn, shared_data):

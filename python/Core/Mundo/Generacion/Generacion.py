@@ -1,7 +1,4 @@
-import Mundo.Datos as Datos
-from Mundo.Generacion.Noise import Noise
-import numpy as np
-import matplotlib.pyplot as plt
+from Core.Mundo.Generacion.Noise import Noise
 import Exceptions
 from pathlib import Path
 

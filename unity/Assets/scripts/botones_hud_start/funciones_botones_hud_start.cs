@@ -25,7 +25,7 @@ public class funciones_botones_hud_start : MonoBehaviour
         pythonProcess.ErrorDataReceived += (sender, args) =>
         {
             if (!string.IsNullOrEmpty(args.Data))
-                UnityEngine.Debug.LogError("[PYTHON ERROR] " + args.Data);
+                UnityEngine.Debug.LogError("[PYTHON ERROR] " + args.Data.ToString());
         };
 
         pythonProcess.Start();
