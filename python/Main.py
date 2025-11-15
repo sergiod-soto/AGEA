@@ -1,23 +1,24 @@
 import multiprocessing
 import os
 import time
-import csv
-import time
-import Services.Conexion.Conexion as Conexion
-import Core.Mundo.Datos as Datos
-import time
 import multiprocessing
-from Dev.Serie_Estados import Serie_Estados
-import Utils.Sistema.Funciones_CSV as Funciones_CSV
-from Utils.Medicion.Cronometro import Cronometro
-from Core.Mundo.Generacion.Generacion import Generacion
-from Core.Mundo.Generacion.Noise import Noise
-import time
 import os
 import signal
 
+import Utils.Sistema.Funciones_CSV as Funciones_CSV
+import Core.Mundo.Datos as Datos
+import Services.Conexion.Conexion as Conexion
 
-# init()  # inicializa colorama (necesario en Windows)
+from Dev.Serie_Estados import Serie_Estados
+from Utils.Medicion.Cronometro import Cronometro
+from Core.Mundo.Generacion.Generacion import Generacion
+
+
+##################################################################
+##################################################################
+
+#__debug__ = True
+
 
 ##################################################################
 ##################################################################

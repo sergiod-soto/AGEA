@@ -4,19 +4,17 @@
 
 import socket
 import time
-#from colorama import Fore, Style, init
-
 from Services.Conexion.Exporter import send
 from Services.Conexion.Importer import receive_data
 
 
-print("entrada en conexion satisfactoria")
 
 #
 #
 #
 HOST = "localhost"
-PORT = 12345
+PORT = 5001 if __debug__ else 12345
+
 #
 #
 #
