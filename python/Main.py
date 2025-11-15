@@ -4,14 +4,14 @@ import time
 import csv
 import csv
 import time
-import Conexion.Conexion as Conexion
+import Services.Conexion.Conexion as Conexion
 import Core.Mundo.Datos as Datos
 import time
 import multiprocessing
+from Dev.Serie_Estados import Serie_Estados
 import Utils.Sistema.Funciones_CSV as Funciones_CSV
 from colorama import Fore, Style, init
 from Utils.Medicion.Cronometro import Cronometro
-from DEV.Serie_Estados import Serie_Estados
 from Core.Mundo.Generacion.Generacion import Generacion
 from Core.Mundo.Generacion.Noise import Noise
 import time

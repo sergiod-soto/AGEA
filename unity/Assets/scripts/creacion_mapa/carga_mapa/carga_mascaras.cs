@@ -6,7 +6,7 @@ public class Carga_mascaras : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        string rutaRelativa = Path.Combine(Application.dataPath, "../../python/Mundo/Mascaras");
+        string rutaRelativa = Path.Combine(Application.dataPath, "../../python/Core/Mundo/Mascaras");
         string rutaBase = Path.GetFullPath(rutaRelativa);
 
 

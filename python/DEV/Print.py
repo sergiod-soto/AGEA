@@ -1,4 +1,4 @@
-def print(str, color="default"):
+def print_color(str, color="default"):
     """Imprime un texto en consola con el color especificado.
 
     Args:
