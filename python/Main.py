@@ -13,11 +13,15 @@ from Dev.Serie_Estados import Serie_Estados
 from Utils.Medicion.Cronometro import Cronometro
 from Core.Mundo.Generacion.Generacion import Generacion
 
+import sys
+
+print("ENTORNO: " + sys.executable)
+
 
 ##################################################################
 ##################################################################
 
-#__debug__ = True
+# __debug__ = True
 
 
 ##################################################################
@@ -156,8 +160,11 @@ def server_tic(shared_data):
     cronometro = Cronometro()
     cronometro.start_cronometro()
 
+    # actualizo datos compartidos
     actualizar_shared_data(shared_data)
-    SE.do()
+
+    # siguiente estado
+    # SE.do()
 
     tiempo = cronometro.stop_cronometro()
     # print("\n\nEste tic del server ha tardado: " + str(tiempo) + "s\n\n")
@@ -186,7 +193,7 @@ def handler(signum, frame):
 if __name__ == "__main__":
 
     # inicializamos y seteamos la serie de estados:
-    SE = set_estados()
+    # SE = set_estados()
 
     # creamos el manager para tener una variable
     # compartida entre procesos
