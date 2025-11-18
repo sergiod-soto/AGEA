@@ -27,9 +27,6 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     public ConcurrentQueue<JObject> accionesPendientes = new();
     public ConcurrentQueue<string> mensajesPendientes = new();
 
-
-    public MonoBehaviour Datos;
-
     public string address;
     public int PORT;
 
@@ -141,6 +138,8 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                 // limpiar el buffer parcial
                 sb.Clear();
                 sb.Append(data);
+
+                Debug.Log("mensaje de ConexionMundo: " + data);
 
                 // limpiar basura o saltos de línea
                 return json.Trim();

@@ -1,23 +1,56 @@
 using UnityEngine;
 using System.Diagnostics;
 using UnityEditor;
+using System.Collections;
+
 
 public class BotonesMenuPrincipal : MonoBehaviour
 {
     IDEVManager DEVManager;
+    IConexionMundo conexionMundo;
 
 
     private Process pythonProcess;
+    private Coroutine envioCoroutine;
+
 
     private void Start()
     {
         DEVManager = ServiceLocator.Instance.Get<IDEVManager>();
+        conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void Boton_Start()
     {
         DEVManager.StartFakeServer();
+        conexionMundo.Arrancar();
+
+        // Inicia la coroutine que envía mensajes periódicos sin bloquear Unity
+        StopEnviarMensajes(); // evita múltiples coroutines si se pulsa varias veces
+        envioCoroutine = StartCoroutine(EnviarMensajesPeriodicos(0.5f));
+    }
+
+    private IEnumerator EnviarMensajesPeriodicos(float intervaloSegundos)
+    {
+        int i = 0;
+        var wait = new WaitForSeconds(intervaloSegundos);
+
+        while (true)
+        {
+            // Envía el mensaje y espera sin bloquear el hilo principal
+            conexionMundo.EnviarMensaje("i: " + i);
+            i++;
+            yield return wait;
+        }
+    }
+    private void StopEnviarMensajes()
+    {
+        if (envioCoroutine != null)
+        {
+            StopCoroutine(envioCoroutine);
+            envioCoroutine = null;
+        }
     }
 
     public void Boton_Preferences()
