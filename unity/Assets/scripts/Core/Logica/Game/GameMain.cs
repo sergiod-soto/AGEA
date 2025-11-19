@@ -41,7 +41,7 @@ public class GameMain : MonoBehaviour
         Dictionary<string, GameObject> botsDict = botsGameobjectData.Bots_GameObjects; // dict de bots 
         Dictionary<string, GameObject> botsDictCopia = new(botsDict); // copia para detectar bots eliminados
 
-
+        bots_data ??= new JArray();
         // hay que quitar las acciones sobre bots vivos
         //HashSet<string> bots_vivos_set = new();
         //for (int i = 0; i < bots_vivos.Count; i++)

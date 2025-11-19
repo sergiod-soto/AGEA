@@ -6,7 +6,7 @@ using UnityEngine;
 
 public interface IService { }
 
-public interface IConexionMundo: IService
+public interface IConexionMundo : IService
 {
     ConcurrentQueue<JObject> AccionesPendientes { get; }
     ConcurrentQueue<string> MensajesPendientes { get; }
@@ -41,6 +41,12 @@ public interface IDatosMundo : IService
 public interface IDEVManager : IService
 {
     void StartFakeServer();
+    void Test();
+}
+
+public interface IProcesamientoEntradaConexion : IService
+{
+    void DigerirEntrada(string entrada);
 }
 
 

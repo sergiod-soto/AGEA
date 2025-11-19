@@ -13,6 +13,8 @@ using System.Collections.Concurrent;
 
 public class ConexionMundo : MonoBehaviour, IConexionMundo
 {
+    IProcesamientoEntradaConexion procesamientoEntrada;
+
     // Implementación explícita de la propiedad requerida por la interfaz
     ConcurrentQueue<JObject> IConexionMundo.AccionesPendientes => accionesPendientes;
     ConcurrentQueue<string> IConexionMundo.MensajesPendientes => mensajesPendientes;
@@ -30,6 +32,10 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     public string address;
     public int PORT;
 
+    void Start()
+    {
+        procesamientoEntrada = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();
+    }
 
 
     public void Arrancar()
@@ -58,26 +64,11 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         byte[] buffer = new byte[8388608];
         StringBuilder sb = new();
 
-
         while (true)
         {
-            string json = RetrieveJSON(stream, buffer, sb);
-            Debug.Log("JSON recibido de python: " + json);
-            try
-            {
-                JObject data = JObject.Parse(json);
-                accionesPendientes.Enqueue(data);
-            }
-            catch (JsonReaderException e)
-            {
-                Debug.Log("Error al parsear JSON: " + json);
-                Debug.Log("Error: " + e);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-
+            string entrada = RetrieveJSON(stream, buffer, sb);
+           
+            procesamientoEntrada.DigerirEntrada(entrada);
         }
     }
 
@@ -139,8 +130,6 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                 sb.Clear();
                 sb.Append(data);
 
-                Debug.Log("mensaje de ConexionMundo: " + data);
-
                 // limpiar basura o saltos de línea
                 return json.Trim();
 
@@ -148,6 +137,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         }
         catch (Exception e)
         {
+            Debug.Log("Error al recibir JSON:");
             Debug.LogException(e);
             return null;
         }

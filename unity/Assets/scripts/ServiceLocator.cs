@@ -21,11 +21,11 @@ public class ServiceLocator : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject); // opcional según tu caso
+        DontDestroyOnLoad(gameObject); 
 
         RegisterAllServicesInScene();
 
-        // Registrar servicios también cuando cambias de escena
+        // Registrar servicios también cuando cambio de escena
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 

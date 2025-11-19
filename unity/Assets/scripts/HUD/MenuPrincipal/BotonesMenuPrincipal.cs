@@ -27,8 +27,8 @@ public class BotonesMenuPrincipal : MonoBehaviour
         conexionMundo.Arrancar();
 
         // Inicia la coroutine que envía mensajes periódicos sin bloquear Unity
-        StopEnviarMensajes(); // evita múltiples coroutines si se pulsa varias veces
-        envioCoroutine = StartCoroutine(EnviarMensajesPeriodicos(0.5f));
+        //topEnviarMensajes(); // evita múltiples coroutines si se pulsa varias veces
+        //envioCoroutine = StartCoroutine(EnviarMensajesPeriodicos(1.0f));
     }
 
     private IEnumerator EnviarMensajesPeriodicos(float intervaloSegundos)

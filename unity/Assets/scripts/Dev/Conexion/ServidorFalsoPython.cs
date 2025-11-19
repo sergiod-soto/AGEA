@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-public class ServidorFalso : MonoBehaviour
+public class ServidorFalsoPython : MonoBehaviour
 {
     private Thread serverThread;
     private TcpListener listener;
@@ -15,9 +15,51 @@ public class ServidorFalso : MonoBehaviour
     public String direccionIP;
     public int puerto;
 
+    readonly string mensajePeriodico1 = @"
+        {
+          ""tipo"": ""actualizacion"",
+          ""bots"": [
+            {
+              ""id"": 0,
+              ""x"": 0,
+              ""y"": 0,
+              ""rotacion"": 0
+            },
+            {
+              ""id"": 1,
+              ""x"": 10,
+              ""y"": 15,
+              ""rotacion"": 0
+            }
+          ]
+        }<END>";
+
+    readonly string mensajePeriodico2 = @"
+        {
+          ""tipo"": ""actualizacion"",
+          ""bots"": [
+            {
+              ""id"": 0,
+              ""x"": 20,
+              ""y"": 0,
+              ""rotacion"": 0
+            },
+            {
+              ""id"": 1,
+              ""x"": 10,
+              ""y"": 15,
+              ""rotacion"": 0
+            }
+          ]
+        }<END>";
+
+    string mensajePeriodico;
+
     // Lanza el servidor en un hilo aparte. Seguro para llamar desde el hilo principal.
     public void Arrancar_Servidor_Falso()
     {
+        mensajePeriodico = mensajePeriodico1;
+
         if (serverThread != null && serverThread.IsAlive)
         {
             Debug.Log("ServidorFalso: el servidor ya está en ejecución.");
@@ -44,6 +86,9 @@ public class ServidorFalso : MonoBehaviour
 
             while (serverRunning)
             {
+
+
+
                 TcpClient client = null;
                 try
                 {
@@ -51,6 +96,7 @@ public class ServidorFalso : MonoBehaviour
                     // lanzará SocketException y romperá el bucle.
                     client = listener.AcceptTcpClient();
                 }
+                #region
                 catch (SocketException se)
                 {
                     if (!serverRunning)
@@ -65,6 +111,7 @@ public class ServidorFalso : MonoBehaviour
                     Debug.LogError("ServidorFalso: listener disposed inesperadamente");
                     break;
                 }
+                #endregion
 
                 if (client == null) continue;
 
@@ -80,28 +127,34 @@ public class ServidorFalso : MonoBehaviour
                     using (var senderCts = new CancellationTokenSource())
                     {
                         var token = senderCts.Token;
-                        Thread senderThread = new Thread(() =>
+                        Thread senderThread = new(() =>
                         {
-                            int sendIndex = 0;
                             try
                             {
                                 while (serverRunning && !token.IsCancellationRequested)
                                 {
-                                    string periodic = "MSG_PERIODICO desde servidor falso [" + sendIndex++ + "]";
+                                    if (mensajePeriodico.Equals(mensajePeriodico1))
+                                    {
+                                        mensajePeriodico = mensajePeriodico2;
+                                    }
+                                    else
+                                    {
+                                        mensajePeriodico = mensajePeriodico1;
+                                    }
+                                    string periodic = mensajePeriodico;
                                     byte[] outB = Encoding.UTF8.GetBytes(periodic + "\n");
 
                                     try
                                     {
-                                        // Es seguro hacer Write concurrente con Read en NetworkStream
                                         stream.Write(outB, 0, outB.Length);
                                     }
                                     catch (Exception)
                                     {
-                                        // Si falla la escritura, salimos y permitimos que la lectura detecte cierre
+                                        // Si falla la escritura, salgo y permito que la lectura detecte cierre
                                         break;
                                     }
 
-                                    // Intervalo entre envíos (ajusta según necesidad)
+                                    // Intervalo entre envíos
                                     Thread.Sleep(1000);
                                 }
                             }
@@ -134,20 +187,20 @@ public class ServidorFalso : MonoBehaviour
                                 break;
 
                             string msg = Encoding.UTF8.GetString(buffer, 0, bytes);
-                            Debug.Log("Recibido: " + msg);
+                            Debug.Log("Recibido en python: " + msg);
 
                             // Respuesta puntual a lo que llegue por el cliente (opcional)
-                            string respuesta = "OK desde el servidor falso (eco)";
-                            byte[] outBytes = Encoding.UTF8.GetBytes(respuesta + "\n");
-                            try
-                            {
-                                stream.Write(outBytes, 0, outBytes.Length);
-                            }
-                            catch (Exception)
-                            {
-                                Debug.Log("Error al escribir la respuesta.");
-                                break;
-                            }
+                            //string respuesta = "OK desde el servidor falso (eco)";
+                            //byte[] outBytes = Encoding.UTF8.GetBytes(respuesta + "\n");
+                            //try
+                            //{
+                            //    stream.Write(outBytes, 0, outBytes.Length);
+                            //}
+                            //catch (Exception)
+                            //{
+                            //    Debug.Log("Error al escribir la respuesta.");
+                            //    break;
+                            //}
                         }
 
                         // Parar y esperar al sender
