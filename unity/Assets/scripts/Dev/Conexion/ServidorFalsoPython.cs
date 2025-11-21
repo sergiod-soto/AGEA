@@ -17,40 +17,50 @@ public class ServidorFalsoPython : MonoBehaviour
 
     readonly string mensajePeriodico1 = @"
         {
-          ""tipo"": ""actualizacion"",
-          ""bots"": [
-            {
-              ""id"": 0,
-              ""x"": 0,
-              ""y"": 0,
-              ""rotacion"": 0
-            },
-            {
-              ""id"": 1,
-              ""x"": 10,
-              ""y"": 15,
-              ""rotacion"": 0
-            }
-          ]
+                ""tipo"": ""actualizacion"",
+                ""bots"": [
+                {
+                    ""id"": 0,
+                    ""casilla"": {
+                        ""x"": 0,
+                        ""y"": 0
+                    },
+                    ""rotacion"": 0
+                },
+                {
+                    ""id"": 1,
+                    ""casilla"": {
+                        ""x"": 10,
+                        ""y"": 20
+                    },
+                    ""rotacion"": 0
+                }
+                ],
+                ""mundo"": {}
         }<END>";
 
     readonly string mensajePeriodico2 = @"
         {
-          ""tipo"": ""actualizacion"",
-          ""bots"": [
+            ""tipo"": ""actualizacion"",
+            ""bots"": [
             {
-              ""id"": 0,
-              ""x"": 20,
-              ""y"": 0,
-              ""rotacion"": 0
+                ""id"": 0,
+                ""casilla"": {
+                    ""x"": 10,
+                    ""y"": 0
+                },
+                ""rotacion"": 0
             },
             {
-              ""id"": 1,
-              ""x"": 10,
-              ""y"": 15,
-              ""rotacion"": 0
+                ""id"": 1,
+                ""casilla"": {
+                    ""x"": 10,
+                    ""y"": 20
+                },
+                ""rotacion"": 90
             }
-          ]
+            ],
+            ""mundo"": {}
         }<END>";
 
     string mensajePeriodico;

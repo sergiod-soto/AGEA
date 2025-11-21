@@ -1,15 +1,15 @@
 using System.Diagnostics;
 using UnityEngine;
 
-public class arrancar_python : MonoBehaviour
+public class ArrancarPythonClass : MonoBehaviour, IArrancarPythonService
 {
-    public Process Arrancar_python()
+    public Process ArrancarPython()
     {
-        Process pythonProcess = new Process();
-        pythonProcess.StartInfo.FileName = "../python/venv/Scripts/python.exe"; // o ruta absoluta
+        Process pythonProcess = new();
+        pythonProcess.StartInfo.FileName = "../python/venv/Scripts/python.exe";
         pythonProcess.StartInfo.Arguments = "../python/Main.py";
 
-        // Opcional pero MUY recomendable
+        // Opcional
         pythonProcess.StartInfo.UseShellExecute = false;
         pythonProcess.StartInfo.RedirectStandardOutput = true;
         pythonProcess.StartInfo.RedirectStandardError = true;

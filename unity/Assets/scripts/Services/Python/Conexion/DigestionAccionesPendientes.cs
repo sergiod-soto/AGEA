@@ -23,14 +23,26 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 
     }
 
-    public void DigerirEntrada(string entrada)
+    public void DigerirEntrada(JObject json)
     {
-        JObject json = Parsear(entrada);
-
         if (json == null)
         {
             return;
         }
+
+        // Tras parsear, digerir segun tipo de mensaje
+        switch (json["tipo"].ToString())
+        {
+            case "actualizacion":
+                logicaBots.ActualizarBots((JArray)json["bots"]);
+                break;
+            case "":
+
+                break;
+        }
+
+
+
     }
 
     JObject Parsear(string entrada)

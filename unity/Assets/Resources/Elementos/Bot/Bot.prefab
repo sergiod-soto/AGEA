@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6787869708184515461}
   - component: {fileID: 8977041711070217425}
   - component: {fileID: -1083393387304121238}
+  - component: {fileID: 7829378581498013067}
   m_Layer: 0
   m_Name: Bot
   m_TagString: Untagged
@@ -53,6 +54,8 @@ SpriteRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -74,6 +77,7 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -134,3 +138,17 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 4.34, y: 5.86}
   m_EdgeRadius: 0
+--- !u!114 &7829378581498013067
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8256855989151442394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1126cf28f0e8a9c4f967ab384864e336, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BotInfo
+  id: 
+  rotacion: 0

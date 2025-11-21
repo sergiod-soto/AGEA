@@ -14,20 +14,20 @@ public class BotClicked : MonoBehaviour
 
     public void OnClick()
     {
-        Debug.Log($"Clic en: {gameObject.name}");
+        //Debug.Log($"Clic en: {gameObject.name}");
 
-        Dictionary<string, int> stats = GetComponent<bot_info>().stats;
-        if (stats == null)
-        {
-            Debug.Log("stats == null");
-        }
-        else
-        {
-            Debug.Log("Nº llaves: " + stats.Keys.Count);
-            foreach (string clave in stats.Keys)
-            {
-                Debug.Log("Clave: " + clave + ", valor: " + stats[clave]);
-            }
-        }
+        //Dictionary<string, int> stats = GetComponent<BotInfo>().stats;
+        //if (stats == null)
+        //{
+        //    Debug.Log("stats == null");
+        //}
+        //else
+        //{
+        //    Debug.Log("Nº llaves: " + stats.Keys.Count);
+        //    foreach (string clave in stats.Keys)
+        //    {
+        //        Debug.Log("Clave: " + clave + ", valor: " + stats[clave]);
+        //    }
+        //}
     }
 }

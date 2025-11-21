@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 public interface IService { }
@@ -12,7 +13,6 @@ public interface IConexionMundo : IService
     ConcurrentQueue<string> MensajesPendientes { get; }
     void Arrancar();
     void EnviarMensaje(string data);
-
 }
 
 public interface IBotsGameobjectData : IService
@@ -24,8 +24,11 @@ public interface IBotsLogica : IService
 {
     public void OnClic();
     public GameObject CreateBot(JObject datos);
-    public void ClicEnBot(bot_info bot_inf);
+    public void ClicEnBot(BotInfo bot_inf);
     public void RenderizarBots(Dictionary<string, GameObject> bots_gameObject);
+    public void ActualizarBots(JArray bots);
+
+    public void EliminarBot(Dictionary<string, GameObject> diccionarioBots, string idBot);
 }
 
 public interface IMundo : IService
@@ -46,7 +49,10 @@ public interface IDEVManager : IService
 
 public interface IProcesamientoEntradaConexion : IService
 {
-    void DigerirEntrada(string entrada);
+    void DigerirEntrada(JObject data);
 }
 
-
+public interface IArrancarPythonService : IService
+{
+    Process ArrancarPython();
+}

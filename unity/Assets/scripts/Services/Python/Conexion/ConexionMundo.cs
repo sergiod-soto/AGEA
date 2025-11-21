@@ -2,13 +2,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Sirenix.Serialization;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using System.Collections.Concurrent;
 
 public class ConexionMundo : MonoBehaviour, IConexionMundo
@@ -24,7 +22,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     StreamWriter writer;
     Thread receiveThread;
     Thread sendThread;
-    volatile bool running = true;
+    private volatile bool running = true;
 
     public ConcurrentQueue<JObject> accionesPendientes = new();
     public ConcurrentQueue<string> mensajesPendientes = new();
@@ -58,6 +56,8 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         }
     }
 
+    // --- HILO DE RECEPCIÓN ---
+    //  pongo el mensaje recibido en la cola de acciones pendientes
     void ConectarConPython()
     {
         var stream = client.GetStream();
@@ -67,8 +67,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         while (true)
         {
             string entrada = RetrieveJSON(stream, buffer, sb);
-           
-            procesamientoEntrada.DigerirEntrada(entrada);
+            accionesPendientes.Enqueue(JObject.Parse(entrada));
         }
     }
 
@@ -104,6 +103,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     }
 
     // --- MÉTODO SEGURO PARA ENVIAR DESDE UNITY ---
+    // pongo el string en la cola de mensajes pendientes
     public void EnviarMensaje(string data)
     {
         mensajesPendientes.Enqueue(data);
@@ -123,8 +123,8 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
             int endIndex;
             while ((endIndex = data.IndexOf("<END>")) != -1)
             {
-                json = data.Substring(0, endIndex);
-                data = data.Substring(endIndex + 5); // quitar "<END>"
+                json = data[..endIndex];
+                data = data[(endIndex + 5)..]; // quitar "<END>"
 
                 // limpiar el buffer parcial
                 sb.Clear();

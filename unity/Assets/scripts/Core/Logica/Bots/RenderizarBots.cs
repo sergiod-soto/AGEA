@@ -10,13 +10,17 @@ public class RenderizarBots : MonoBehaviour
         botsGameobjectData = ServiceLocator.Instance.Get<IBotsGameobjectData>();
     }
 
-    public void Renderizar(Dictionary<string, GameObject> bots_gameObject)
+    public void Renderizar()
     {
-        IEnumerator<string> k = botsGameobjectData.Bots_GameObjects.Keys.GetEnumerator();
-        while (k.MoveNext())
+        Dictionary<string, GameObject> bots_gameObject = botsGameobjectData.Bots_GameObjects;
+        IEnumerator<string> keyEnumerator = botsGameobjectData.Bots_GameObjects.Keys.GetEnumerator();
+        while (keyEnumerator.MoveNext())
         {
-            bot_info info = bots_gameObject[k.Current].GetComponent<bot_info>();
-            bots_gameObject[k.Current].transform.position = new Vector3(info.casilla.x, info.casilla.y, 0f);
+            BotInfo info = bots_gameObject[keyEnumerator.Current].GetComponent<BotInfo>();
+
+            bots_gameObject[keyEnumerator.Current].transform.SetPositionAndRotation(
+                new Vector3(info.casilla.x, info.casilla.y, 0f),    // Posicion
+                Quaternion.Euler(0f, 0f, info.rotacion));           // Rotacion
         }
     }
 }
