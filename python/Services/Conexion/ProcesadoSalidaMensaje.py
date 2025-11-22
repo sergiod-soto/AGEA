@@ -1,7 +1,7 @@
 import socket
 import json
+from Conexion.SalidaActualizacion import salida_actualizacion
 from Conexion.SalidasDatos.SalidaDato import salida_dato
-from Serializaciones.Actualizacion import serializacion_actualizacion
 
 
 def formatear(texto: str) -> str:
@@ -29,8 +29,9 @@ def procesar_mensaje_salida(mensaje, shared_data, conn: socket):
         return
 
     if mensaje["tipo"] == "actualizacion":
-        conn.sendall(serializacion_actualizacion(shared_data).encode())
+        salida_actualizacion(shared_data, conn)
         return
 
     if mensaje["tipo"] == "dato":
         salida_dato(shared_data, entrada, conn)
+        return
