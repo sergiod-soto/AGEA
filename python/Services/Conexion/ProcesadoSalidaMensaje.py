@@ -29,9 +29,9 @@ def procesar_mensaje_salida(mensaje, shared_data, conn: socket):
         return
 
     if mensaje["tipo"] == "actualizacion":
-        salida_actualizacion(shared_data, conn)
+        conn.sendall(salida_actualizacion(shared_data).encode())
         return
 
     if mensaje["tipo"] == "dato":
-        salida_dato(shared_data, entrada, conn)
+        conn.sendall(salida_dato(shared_data, entrada).encode())
         return
