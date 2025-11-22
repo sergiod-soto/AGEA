@@ -1,3 +1,9 @@
+from socket import socket
+from Serializaciones.Bots import serializar_bots, serializacion_completa_bot
+from Serializaciones.Mundo import serializar_mundo
+from Services.Conexion.ProcesadoSalidaMensaje import procesar_mensaje_salida
+
+
 def estimate_tcpip_bits(
     payload_bytes: int, mtu=1500, ip_header=20, tcp_header=20, include_ethernet=False
 ):
@@ -35,53 +41,14 @@ def estimate_tcpip_bits(
     }
 
 
-def serializar(shared_data):
+def serializacion_basica(shared_data):
 
-    #   bots data
+    #   Bots casilla + rotacion
     #
     def serializar_bots_data(bots_data):
-        # print(Fore.RED + "type(bots_data):\n" + str(type(bots_data)) + Style.RESET_ALL)
-        bots_data_copy = list(bots_data)
+        return serializar_bots(bots_data)
 
-        if len(bots_data_copy) == 0:
-            return "[]"
-
-        json = ""
-        partes = []
-        partes.append("[")
-        for i in range(len(bots_data_copy)):
-            bot = bots_data_copy[i]
-            es_ultimo = i == len(bots_data_copy) - 1
-            partes.append(f"{str(bot)}")
-            if not es_ultimo:
-                partes.append(",")
-        partes.append("]")
-        json = json.join(partes)
-        return json
-
-    #   new bots
-    #
-    def serializar_bots_vivos(bots_vivos):
-
-        bots_vivos_copy = list(bots_vivos)
-        if len(bots_vivos_copy) == 0:
-            return "[]"
-
-        json = ""
-        partes = []
-        partes.append("[")
-        for i in range(len(bots_vivos_copy)):
-            bot = bots_vivos_copy[i]
-            es_ultimo = i == len(bots_vivos_copy) - 1
-            partes.append(f"\"{str(bot['id'])}\"")
-            if not es_ultimo:
-                partes.append(",")
-        partes.append("]")
-        json = json.join(partes)
-
-        return json
-
-    #   other
+    #   Other
     #
     def serializar_other(other):
         # print(Fore.RED + "type(other.items()):\n" + str(type(other.items())) + Style.RESET_ALL)
@@ -112,14 +79,25 @@ def serializar(shared_data):
         k: dict(v) if isinstance(v, dict) else list(v) if isinstance(v, list) else v
         for k, v in shared_data.items()
     }
-    # print("\n\n\nAAAAA\n\n\n")
+
     return f"""
     {{
-    "bots_data": {serializar_bots_data(shared_data_copy["bots_data"])},
-    "other": {serializar_other(shared_data_copy["other"])},
-    "dev": {serializar_dev(shared_data_copy["dev"])}
+        "tipo": "actualizacion",
+        "bots": {serializar_bots_data(shared_data_copy["bots_data"])},
+        "mundo": {serializar_mundo(None)}
     }}
     """
+
+
+#   Bots completa
+#
+def serializar_bot_completo(bot):
+    return f"""
+        {{
+            "tipo": "dato",
+            "bot": {serializacion_completa_bot(bot)},
+        }}
+        """
 
 
 def formatear(texto: str) -> str:
@@ -134,12 +112,5 @@ def formatear(texto: str) -> str:
     )
 
 
-def send(shared_data, conn):
-    data = formatear(serializar(shared_data)).encode() + b"\n<END>\n"
-    payload_bytes = len(data)
-    payload_bits = payload_bytes * 8
-
-    print("[EXPORTER] DATA A ENVIAR (bytes):", payload_bytes)
-    print("[EXPORTER] DATA A ENVIAR (bits):", payload_bits)
-    print("[EXPORTER] DATA A ENVIAR:\n" + str(data))
-    conn.sendall(data)
+def send(shared_data, entrada, conn: socket):
+    procesar_mensaje_salida(entrada, shared_data, conn)

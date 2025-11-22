@@ -1,36 +1,14 @@
-import json
-from Utils.Sistema.Pause import pause
+from socket import socket
+from Conexion.ProcesadoSalidaMensaje import procesar_mensaje_salida
 
 
-def receive_data(conn, shared_data):
+
+def receive_data(conn: socket, shared_data):
     recibido = conn.recv(4096)
     if recibido:
         mensaje = recibido.decode(errors="ignore").strip()
-        return procesar_mensaje(mensaje, shared_data)
+        return procesar_mensaje_salida(mensaje, shared_data, conn)
 
 
-def procesar_mensaje(mensaje, shared_data):
-
-    msg = formatear(mensaje)
-    print("[IMPORTER] Mensaje recibido:\n" + msg)
-    try:
-        msg = json.loads(msg) 
-    except:
-        print("[IMPORTER] Error al decodificar el mensaje JSON.")
-        return
-    if msg["tipo"] == "pause":
-        pause(shared_data)
 
 
-def formatear(texto: str) -> str:
-    return (
-        texto.replace("\\n", "")
-        .replace("\\r", "")
-        .replace("'", '"')
-        .replace('"{', "{")
-        .replace('}"', "}")
-        .replace('"[', "[")
-        .replace(']"', "]")
-        .replace("\\", "")
-        .replace("<END>", "")
-    )

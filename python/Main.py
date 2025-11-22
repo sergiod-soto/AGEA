@@ -137,8 +137,8 @@ def set_estados():
 def actualizar_shared_data(shared_data):
     """actualizo la variable compartida "shared_data" """
 
-    shared_data["bots_data"] = manager.list(Datos.serializar_bots())
-    shared_data["dev"] = manager.dict()
+    shared_data["bots"] = manager.list(Datos.serializar_bots())
+    #shared_data["dev"] = manager.dict()
 
 
 def main_loop(shared_data):
@@ -155,19 +155,17 @@ def main_loop(shared_data):
 
 
 def server_tic(shared_data):
-    """ejecuta un tic del servidor"""
-
-    cronometro = Cronometro()
-    cronometro.start_cronometro()
+    """Ejecuta un tic del servidor"""
 
     # actualizo datos compartidos
     actualizar_shared_data(shared_data)
+    
+    """Mando los datos al cliente"""
+    Conexion.send(shared_data, "actualizacion", None, None)
 
     # siguiente estado
     # SE.do()
 
-    tiempo = cronometro.stop_cronometro()
-    # print("\n\nEste tic del server ha tardado: " + str(tiempo) + "s\n\n")
 
     time.sleep(shared_data["other"]["1/fps/1000"] / 1000)
 
@@ -200,25 +198,22 @@ if __name__ == "__main__":
     manager = multiprocessing.Manager()
     shared_data = manager.dict()
 
-    shared_data["bots_data"] = manager.list()  # datos de los bots
-    shared_data["other"] = manager.dict()  # otras cosas
-    shared_data["dev"] = manager.dict()  # reservado para testeo
-    shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
+    shared_data["bots"] = manager.list()  # datos de los bots
+    #shared_data["other"] = manager.dict()  # otras cosas
+    #shared_data["dev"] = manager.dict()  # reservado para testeo
+    #shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
     shared_data["other"]["paused"] = False  # esta en pausa
 
     # Arranca la conexion en un proceso aparte
     p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
     p.start()
 
-    print("creando mapa:")
-    crono = Cronometro()
-    crono.start_cronometro()
+
 
     generator = Generacion(
         x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
     )
 
-    print("ha tardado en generarse el ruido: " + str(crono.stop_cronometro()) + "s")
 
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)

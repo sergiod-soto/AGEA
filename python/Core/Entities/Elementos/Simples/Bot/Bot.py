@@ -290,12 +290,20 @@ class Bot(Elemento):
             "madre": self.padres["madre"] if self.padres else None,
         }
 
-    def serialize(self):
+    def serialize_all(self):
         return {
             "id": self.id,
-            "adn": self.adn,
-            "apellidos": self.serializar_apellidos(),
             "casilla": self.serialize_casilla(),
+            "rotacion": self.serialize_rotacion(),
+            "apellidos": self.serializar_apellidos(),
+            "adn": self.adn,
             "stats": self.stats.serialize(),
             "padres": self.serializar_padres(),
+        }
+
+    def serialize_position(self):
+        return {
+            "id": self.id,
+            "casilla": self.serialize_casilla(),
+            "rotacion": self.serialize_rotacion(),
         }
