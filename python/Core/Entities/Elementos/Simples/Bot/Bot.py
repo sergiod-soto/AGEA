@@ -302,8 +302,10 @@ class Bot(Elemento):
         }
 
     def serialize_position(self):
-        return {
-            "id": self.id,
-            "casilla": self.serialize_casilla(),
-            "rotacion": self.serialize_rotacion(),
-        }
+        return str(
+            {
+                "id": self.id,
+                "casilla": self.serialize_casilla(),
+                "rotacion": self.serialize_rotacion(),
+            }
+        )

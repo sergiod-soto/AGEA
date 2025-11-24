@@ -1,4 +1,4 @@
-from Utils.Sistema.Funciones_CSV import leer_csv
+from Utils.Sistema.FuncionesCSV import leer_csv
 
 # nombre del fichero que contiene la lista de apellidos
 nombre_fichero_apellidos = "Mundo/Apellidos.csv"

@@ -1004,7 +1004,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b070a6e63d06254f8bc537302d6867a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  address: 127.0.0.2
+  address: 127.0.0.1
   PORT: 5001
 --- !u!114 &184694347
 MonoBehaviour:
@@ -1164,7 +1164,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 281615459}
-  - component: {fileID: 281615460}
   m_Layer: 0
   m_Name: Logica
   m_TagString: Untagged
@@ -1189,18 +1188,6 @@ Transform:
   - {fileID: 34192657}
   m_Father: {fileID: 886604658}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &281615460
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 281615458}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9577a25e5c254fd4c9fef606225badc0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::arrancar_python
 --- !u!1 &282063933
 GameObject:
   m_ObjectHideFlags: 0
@@ -2144,39 +2131,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
-    - {fileID: 2881110925341089598, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8256855989151442394, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 441912414}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
 --- !u!4 &441912412 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6787869708184515461, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
   m_PrefabInstance: {fileID: 441912411}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &441912413 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8256855989151442394, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
-  m_PrefabInstance: {fileID: 441912411}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &441912414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 441912413}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1126cf28f0e8a9c4f967ab384864e336, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  id: 
-  adn: 
-  apellidos: []
 --- !u!1 &495079714
 GameObject:
   m_ObjectHideFlags: 0
@@ -4178,6 +4142,8 @@ GameObject:
   - component: {fileID: 904748764}
   - component: {fileID: 904748763}
   - component: {fileID: 904748762}
+  - component: {fileID: 904748769}
+  - component: {fileID: 904748768}
   m_Layer: 0
   m_Name: Bots
   m_TagString: Untagged
@@ -4291,6 +4257,30 @@ MonoBehaviour:
   propiedades_avanzadas_value: {fileID: 0}
   propiedades_avanzadas_unidades: {fileID: 0}
   apellidos_value: {fileID: 0}
+--- !u!114 &904748768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 904748760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8367bef610a89184db85090b12620f03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EliminarBot
+--- !u!114 &904748769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 904748760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d22405fb9126e84f8b5e3466db39df6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActualizarBots
 --- !u!1 &914353642
 GameObject:
   m_ObjectHideFlags: 0

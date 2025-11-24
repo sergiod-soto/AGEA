@@ -1,31 +1,30 @@
-# mundo "fisico", tiene su conexion para que otro programa pueda leer la informacion
-# en el puerto y representarla visualmente.
-
-
+# ...existing code...
+import select
 import socket
 import time
-from Services.Conexion.Exporter import send
+import traceback
 from Services.Conexion.Importer import receive_data
-
-
-
-#
-#
-#
-HOST = "localhost"
-PORT = 5001 if __debug__ else 12345
+import Main
 
 #
 #
 #
+HOST = "127.0.0.1"
+PORT = 5069 if Main.debug else 5001
 
 
 def run_exporter(shared_data):
-    """Envía y recibe datos por socket TCP"""
+    """
+    Envía y recibe datos por socket TCP.
+
+    Parámetros:
+    - shared_data: manager.dict() con el estado compartido
+    """
+
     while True:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(("localhost", PORT))
+            s.bind((HOST, PORT))
             s.listen(1)
 
             print(f"[CONEXION] Esperando cliente en puerto {PORT}...")
@@ -33,32 +32,46 @@ def run_exporter(shared_data):
 
             with conn:
                 print(f"[CONEXION] Cliente conectado en: {addr}")
-                conn.settimeout(0.05)  # pequeña espera, no bloqueante
+                conn.settimeout(None)  # usar select para esperar, no timeouts cortos
 
                 while True:
+                    # esperar hasta 1s a que haya datos para leer
+                    ready, _, _ = select.select([conn], [], [], 1.0)
+                    if not ready:
+                        # no hay datos en este ciclo (equivalente a timeout)
+                        # puedes quitar el print o mantener para depuración
+                        # print("no data ready (select timeout)")
+                        continue
+
                     try:
-                        # --- ENVÍO ---
-                        send(shared_data, conn)
-
-                        # --- RECEPCIÓN ---
-                        try:
-                            receive_data(conn, shared_data)
-                        except socket.timeout:
-                            pass  # no llegó nada, seguimos
-
-                        time.sleep(0.2)  # evitar usar 100% CPU
-
+                        recibido = conn.recv(4096)
+                        # si recv devuelve b'' -> cliente cerró la conexión
+                        if not recibido:
+                            print(
+                                "[CONEXION] recv returned b'' -> cliente cerró la conexión"
+                            )
+                            break
+                        # responde a la peticion
+                        conn.sendall(receive_data(recibido, shared_data))
                     except (
                         BrokenPipeError,
                         ConnectionResetError,
                         ConnectionAbortedError,
                     ):
                         print(
-                            "[CONEXION] Cliente desconectado. Esperando nueva conexión..."
+                            "[CONEXION] Cliente desconectado durante recepción. Rompiendo."
                         )
                         break
-
                     except Exception as e:
-                        print(f"[CONEXION] Error inesperado: {e}")
+                        print(
+                            f"[CONEXION] Error inesperado en recepción: {e}\n"
+                            + traceback.print_exc()
+                        )
                         time.sleep(1)
                         break
+
+                    # pequeño sleep para evitar bucle ocupado (opcional)
+                    time.sleep(0.01)
+
+            # aquí se cierra la conexión aceptada y volvemos a esperar otra
+            print("[CONEXION] Cliente desconectado. Esperando nueva conexión...")

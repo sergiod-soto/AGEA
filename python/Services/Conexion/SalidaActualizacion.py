@@ -1,5 +1,4 @@
-from socket import socket
-from Serializaciones.Actualizacion import serializacion_actualizacion
+from Services.Serializaciones.Actualizacion import serializacion_actualizacion
 
 
 def salida_actualizacion(shared_data):

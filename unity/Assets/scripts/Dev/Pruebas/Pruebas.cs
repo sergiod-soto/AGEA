@@ -12,6 +12,6 @@ public class Pruebas : MonoBehaviour
 
     public void Test()
     {
-        conexionMundo.EnviarMensaje("mensaje mandado desde unity");
+        conexionMundo.EnviarMensaje("{\"tipo\":\"actualizacion\"}");
     }
 }

@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Diagnostics;
-using UnityEditor;
 using System.Collections;
 
 
@@ -23,7 +22,7 @@ public class BotonesMenuPrincipal : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void Boton_Start()
     {
-        DEVManager.StartFakeServer();
+        //DEVManager.StartFakeServer();
         conexionMundo.Arrancar();
 
         // Inicia la coroutine que envía mensajes periódicos sin bloquear Unity

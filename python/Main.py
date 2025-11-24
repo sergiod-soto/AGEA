@@ -5,28 +5,20 @@ import multiprocessing
 import os
 import signal
 
-import Utils.Sistema.Funciones_CSV as Funciones_CSV
+from Dev.Testing import FakeClient
+import Utils.Sistema.FuncionesCSV as FuncionesCSV
 import Core.Mundo.Datos as Datos
 import Services.Conexion.Conexion as Conexion
 
 from Dev.Serie_Estados import Serie_Estados
-from Utils.Medicion.Cronometro import Cronometro
-from Core.Mundo.Generacion.Generacion import Generacion
-
-import sys
-
-print("ENTORNO: " + sys.executable)
-
 
 ##################################################################
 ##################################################################
 
-# __debug__ = True
-
 
 ##################################################################
 ##################################################################
-
+debug = False
 
 ancho, alto = 100, 100
 
@@ -65,7 +57,7 @@ alto = alto
 
 ruta_script = os.path.dirname(os.path.abspath(__file__))
 ruta_archivo = os.path.join(ruta_script, nombre_fichero_urls)
-rutas_ficheros = Funciones_CSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
+rutas_ficheros = FuncionesCSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
 
 
 #
@@ -138,7 +130,7 @@ def actualizar_shared_data(shared_data):
     """actualizo la variable compartida "shared_data" """
 
     shared_data["bots"] = manager.list(Datos.serializar_bots())
-    #shared_data["dev"] = manager.dict()
+    # shared_data["dev"] = manager.dict()
 
 
 def main_loop(shared_data):
@@ -159,13 +151,11 @@ def server_tic(shared_data):
 
     # actualizo datos compartidos
     actualizar_shared_data(shared_data)
-    
+
     """Mando los datos al cliente"""
-    Conexion.send(shared_data, "actualizacion", None, None)
 
     # siguiente estado
-    # SE.do()
-
+    SE.do()
 
     time.sleep(shared_data["other"]["1/fps/1000"] / 1000)
 
@@ -191,7 +181,7 @@ def handler(signum, frame):
 if __name__ == "__main__":
 
     # inicializamos y seteamos la serie de estados:
-    # SE = set_estados()
+    SE = set_estados()
 
     # creamos el manager para tener una variable
     # compartida entre procesos
@@ -199,21 +189,28 @@ if __name__ == "__main__":
     shared_data = manager.dict()
 
     shared_data["bots"] = manager.list()  # datos de los bots
-    #shared_data["other"] = manager.dict()  # otras cosas
-    #shared_data["dev"] = manager.dict()  # reservado para testeo
-    #shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
+    shared_data["mundo"] = manager.list()  # datos del mundo
+    shared_data["other"] = manager.dict()  # otras cosas
+    shared_data["dev"] = manager.dict()  # reservado para testeo
+    shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
     shared_data["other"]["paused"] = False  # esta en pausa
+    shared_data["other"]["conn_ready"] = False
+
+    # cola para comunicación de mensajes hacia el exportador
 
     # Arranca la conexion en un proceso aparte
     p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
     p.start()
 
+    time.sleep(1)
 
+    if debug:
+        FakeClient.start_fake_client()
+        FakeClient.run_demo()
 
-    generator = Generacion(
-        x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
-    )
-
+    # generator = Generacion(
+    #     x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
+    # )
 
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)

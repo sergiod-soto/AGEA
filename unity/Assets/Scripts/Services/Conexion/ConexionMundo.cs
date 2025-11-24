@@ -66,8 +66,8 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
 
         while (true)
         {
-            string entrada = RetrieveJSON(stream, buffer, sb);
-            accionesPendientes.Enqueue(JObject.Parse(entrada));
+            string jsonEntrada = RetrieveJSON(stream, buffer, sb);
+            accionesPendientes.Enqueue(jsonEntrada);
         }
     }
 
@@ -82,7 +82,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                     string json = JsonConvert.SerializeObject(mensaje);
                     writer.WriteLine(json + "\n<END>\n");
                     writer.Flush();
-                    Debug.Log("[CLIENTE] Enviado a Python: " + json);
+                    //Debug.Log("[CLIENTE] Enviado a Python: " + json);
                 }
                 else
                 {
@@ -109,9 +109,8 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         mensajesPendientes.Enqueue(data);
     }
 
-    string RetrieveJSON(NetworkStream stream, byte[] buffer, StringBuilder sb)
+    JObject RetrieveJSON(NetworkStream stream, byte[] buffer, StringBuilder sb)
     {
-        string json = "";
         try
         {
             int bytesRead = stream.Read(buffer, 0, buffer.Length);
@@ -120,10 +119,11 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
             sb.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
             string data = sb.ToString();
 
+
             int endIndex;
             while ((endIndex = data.IndexOf("<END>")) != -1)
             {
-                json = data[..endIndex];
+                string json = data[..endIndex];
                 data = data[(endIndex + 5)..]; // quitar "<END>"
 
                 // limpiar el buffer parcial
@@ -131,7 +131,10 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                 sb.Append(data);
 
                 // limpiar basura o saltos de línea
-                return json.Trim();
+                json = json.Trim();
+
+                // lo pasamos a json
+                return JObject.Parse(json);
 
             }
         }

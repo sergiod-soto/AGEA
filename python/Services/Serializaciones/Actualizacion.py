@@ -6,11 +6,9 @@ def serializacion_actualizacion(shared_data):
     serializacion = ""
     partes = []
     partes.append("{\n")
-
-    partes.append(serializar_bots(shared_data["bots"]))
+    partes.append('"bots":' + serializar_bots(shared_data["bots"]))
     partes.append(",\n")
-    partes.append(serializar_mundo(shared_data["mundo"]))
-
+    partes.append('"mundo":' + serializar_mundo(shared_data["mundo"]))
     partes.append("\n}")
     serializacion = serializacion.join(partes)
 

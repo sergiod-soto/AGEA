@@ -3,6 +3,11 @@ using Newtonsoft.Json.Linq;
 using System;
 using UnityEngine;
 
+/*
+ * 
+ * clase encargada de procesar los mensajes entrantes del servidor python
+ * 
+ */
 public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaConexion
 {
     IConexionMundo conexionMundo;
