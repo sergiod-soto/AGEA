@@ -13,14 +13,13 @@ def formatear(texto: str) -> str:
         .replace('"[', "[")
         .replace(']"', "]")
         .replace("\\", "")
-        .replace("<END>", "")
     )
 
 
 def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "actualizacion":
-        return salida_actualizacion(shared_data).encode()
+        return formatear(salida_actualizacion(shared_data)).encode()
 
     if mensaje["tipo"] == "dato":
-        return salida_dato(shared_data, mensaje).encode()
+        return formatear(salida_dato(shared_data, mensaje)).encode()

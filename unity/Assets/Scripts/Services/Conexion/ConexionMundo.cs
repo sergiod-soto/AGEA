@@ -13,19 +13,14 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
 {
     IProcesamientoEntradaConexion procesamientoEntrada;
 
-    // Implementación explícita de la propiedad requerida por la interfaz
-    ConcurrentQueue<JObject> IConexionMundo.AccionesPendientes => accionesPendientes;
-    ConcurrentQueue<string> IConexionMundo.MensajesPendientes => mensajesPendientes;
-
     TcpClient client;
     StreamReader reader;
     StreamWriter writer;
     Thread receiveThread;
     Thread sendThread;
-    private volatile bool running = true;
 
-    public ConcurrentQueue<JObject> accionesPendientes = new();
-    public ConcurrentQueue<string> mensajesPendientes = new();
+    ConcurrentQueue<JObject> accionesPendientes;
+    ConcurrentQueue<string> mensajesPendientes;
 
     public string address;
     public int PORT;
@@ -33,6 +28,9 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     void Start()
     {
         procesamientoEntrada = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();
+
+        accionesPendientes = new();
+        mensajesPendientes = new();
     }
 
 
@@ -61,19 +59,18 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     void ConectarConPython()
     {
         var stream = client.GetStream();
-        byte[] buffer = new byte[8388608];
+        byte[] buffer = new byte[18608];
         StringBuilder sb = new();
 
         while (true)
         {
-            string jsonEntrada = RetrieveJSON(stream, buffer, sb);
-            accionesPendientes.Enqueue(jsonEntrada);
+            accionesPendientes.Enqueue(RetrieveJSON(stream, buffer, sb));
         }
     }
 
     void HiloEnvio()
     {
-        while (running)
+        while (true)
         {
             try
             {
@@ -102,7 +99,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         }
     }
 
-    // --- MÉTODO SEGURO PARA ENVIAR DESDE UNITY ---
+    // --- METODO SEGURO PARA ENVIAR DESDE UNITY ---
     // pongo el string en la cola de mensajes pendientes
     public void EnviarMensaje(string data)
     {
@@ -118,24 +115,26 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
 
             sb.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
             string data = sb.ToString();
-
-
             int endIndex;
             while ((endIndex = data.IndexOf("<END>")) != -1)
             {
-                string json = data[..endIndex];
-                data = data[(endIndex + 5)..]; // quitar "<END>"
+                data = data[..endIndex];
 
                 // limpiar el buffer parcial
                 sb.Clear();
                 sb.Append(data);
 
-                // limpiar basura o saltos de línea
-                json = json.Trim();
-
-                // lo pasamos a json
-                return JObject.Parse(json);
-
+                // lo convierto a jobject
+                try
+                {
+                    JObject objectJson = JObject.Parse(data);
+                    return objectJson;
+                }
+                catch
+                {
+                    Debug.Log("Error pasando data a json");
+                    return null;
+                }
             }
         }
         catch (Exception e)
@@ -147,8 +146,15 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         return null;
     }
 
+    public ConcurrentQueue<JObject> GetAccionesPendientes()
+    {
+        return accionesPendientes;
+    }
 
-
+    public ConcurrentQueue<string> GetMensajesPendientes()
+    {
+        throw new NotImplementedException();
+    }
     void OnApplicationQuit()
     {
         writer?.Close();

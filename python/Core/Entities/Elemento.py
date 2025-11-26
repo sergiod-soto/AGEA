@@ -18,7 +18,7 @@ class Elemento:
         self.rotacion = rotacion
 
     def serialize_casilla(self):
-        return str({"x": {self.casilla[0]}, "y": {self.casilla[1]}})
+        return str({"x": self.casilla[0], "y": self.casilla[1]})
 
     def serialize_rotacion(self):
-        return str({self.rotacion})
+        return str(self.rotacion)

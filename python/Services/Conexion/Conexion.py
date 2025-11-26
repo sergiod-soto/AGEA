@@ -48,7 +48,7 @@ def run_exporter(shared_data):
                         # si recv devuelve b'' -> cliente cerró la conexión
                         if not recibido:
                             print(
-                                "[CONEXION] recv returned b'' -> cliente cerró la conexión"
+                                "[CONEXION] cliente cerró la conexión"
                             )
                             break
                         # responde a la peticion

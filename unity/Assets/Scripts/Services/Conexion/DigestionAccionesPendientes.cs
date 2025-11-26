@@ -1,30 +1,24 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using UnityEngine;
 
 /*
- * 
- * clase encargada de procesar los mensajes entrantes del servidor python
- * 
+ *      Clase encargada de procesar los mensajes entrantes del servidor python
  */
+
 public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaConexion
 {
     IConexionMundo conexionMundo;
     IBotsLogica logicaBots;
 
-    public string entrada;
 
-
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();
-
-
-
 
     }
 
@@ -36,9 +30,12 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
         }
 
         // Tras parsear, digerir segun tipo de mensaje
+        Debug.Log("json: " + json.ToString());
         switch (json["tipo"].ToString())
         {
             case "actualizacion":
+                Debug.Log("Entra en actualizar por haberselo pedido a python");
+                Debug.Log("Informacion:\n" + json.ToString());
                 logicaBots.ActualizarBots((JArray)json["bots"]);
                 break;
             case "":
@@ -50,31 +47,25 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 
     }
 
-    JObject Parsear(string entrada)
+    void Update()
     {
-        this.entrada = entrada;
-
-        if (string.IsNullOrWhiteSpace(entrada))
-        {
-            this.entrada = "[entrada vacia]";
-            return null;
-        }
+        if (conexionMundo.GetAccionesPendientes().Count > 0) Debug.Log("count de acciones pendientes: " + conexionMundo.GetAccionesPendientes().Count);
         try
         {
-            // Parsear string a JObject (Newtonsoft.Json)
-            return JObject.Parse(entrada);
-        }
-        catch (JsonReaderException jex)
-        {
-            Debug.LogError($"JSON inválido: {jex.Message} — entrada: {entrada}");
-            // Si prefieres, encolar el texto crudo en MensajesPendientes para revisión
-            conexionMundo?.MensajesPendientes?.Enqueue(entrada);
+            if (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))
+            {
+                Debug.Log("entra a dequeue AccionesPendientes");
+                DigerirEntrada(json);
+            }
+            else
+            {
+                Thread.Sleep(5); // evitar consumo de CPU
+            }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Error procesando entrada JSON: {ex}");
+            Debug.Log("Error en el dequeue de DigestionAccionesPendientes:\n" + ex.Message);
         }
-        return null;
     }
 
 }

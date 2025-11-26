@@ -9,10 +9,10 @@ public interface IService { }
 
 public interface IConexionMundo : IService
 {
-    ConcurrentQueue<JObject> AccionesPendientes { get; }
-    ConcurrentQueue<string> MensajesPendientes { get; }
     void Arrancar();
     void EnviarMensaje(string data);
+    ConcurrentQueue<JObject> GetAccionesPendientes();
+    ConcurrentQueue<string> GetMensajesPendientes();
 }
 
 public interface IBotsGameobjectData : IService

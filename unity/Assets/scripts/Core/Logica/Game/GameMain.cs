@@ -25,7 +25,7 @@ public class GameMain : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ConcurrentQueue<JObject> accionesPendientesPython = conexion.AccionesPendientes;
+        ConcurrentQueue<JObject> accionesPendientesPython = conexion.GetAccionesPendientes();
 
         while (accionesPendientesPython.TryDequeue(out JObject dataFromPython))
         {
