@@ -59,7 +59,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     void ConectarConPython()
     {
         var stream = client.GetStream();
-        byte[] buffer = new byte[18608];
+        byte[] buffer = new byte[4096];
         StringBuilder sb = new();
 
         while (true)
@@ -122,7 +122,6 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
 
                 // limpiar el buffer parcial
                 sb.Clear();
-                sb.Append(data);
 
                 // lo convierto a jobject
                 try
@@ -132,7 +131,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                 }
                 catch
                 {
-                    Debug.Log("Error pasando data a json");
+                    Debug.Log("Error pasando data a json.\nData: " + data + "\n\n");
                     return null;
                 }
             }
@@ -153,7 +152,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
 
     public ConcurrentQueue<string> GetMensajesPendientes()
     {
-        throw new NotImplementedException();
+        return mensajesPendientes;
     }
     void OnApplicationQuit()
     {

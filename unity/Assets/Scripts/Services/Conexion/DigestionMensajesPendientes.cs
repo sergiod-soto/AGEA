@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 public class DigestionMensajesPendientes : MonoBehaviour
@@ -16,6 +17,9 @@ public class DigestionMensajesPendientes : MonoBehaviour
 
     private void Update()
     {
-        conexionMundo.MensajesPendientes.TryDequeue;
+        if (conexionMundo.GetMensajesPendientes().TryDequeue(out string mensaje))
+        {
+            Debug.Log("mensaje" + mensaje);
+        }
     }
 }

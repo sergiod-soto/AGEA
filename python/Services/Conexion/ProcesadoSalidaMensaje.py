@@ -19,7 +19,9 @@ def formatear(texto: str) -> str:
 def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "actualizacion":
-        return formatear(salida_actualizacion(shared_data)).encode()
+        a = formatear(salida_actualizacion(shared_data))
+        print("a:\n" + a)
+        return a.encode()
 
     if mensaje["tipo"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()

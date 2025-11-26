@@ -30,15 +30,12 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
         }
 
         // Tras parsear, digerir segun tipo de mensaje
-        Debug.Log("json: " + json.ToString());
         switch (json["tipo"].ToString())
         {
             case "actualizacion":
-                Debug.Log("Entra en actualizar por haberselo pedido a python");
-                Debug.Log("Informacion:\n" + json.ToString());
                 logicaBots.ActualizarBots((JArray)json["bots"]);
                 break;
-            case "":
+            case "dato":
 
                 break;
         }
@@ -49,7 +46,7 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 
     void Update()
     {
-        if (conexionMundo.GetAccionesPendientes().Count > 0) Debug.Log("count de acciones pendientes: " + conexionMundo.GetAccionesPendientes().Count);
+        //Debug.Log("count de acciones pendientes: " + conexionMundo.GetAccionesPendientes().Count);
         try
         {
             if (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))

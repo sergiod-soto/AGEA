@@ -399,7 +399,6 @@ GameObject:
   - component: {fileID: 34192657}
   - component: {fileID: 34192660}
   - component: {fileID: 34192658}
-  - component: {fileID: 34192659}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -434,18 +433,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5495b72c0aad4ae49a0bca6e03c9b666, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &34192659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 34192656}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9577a25e5c254fd4c9fef606225badc0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::arrancar_python
 --- !u!114 &34192660
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -487,6 +474,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 184694345}
   - {fileID: 1609228478}
   m_Father: {fileID: 1415771270}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -970,6 +958,7 @@ GameObject:
   - component: {fileID: 184694345}
   - component: {fileID: 184694346}
   - component: {fileID: 184694347}
+  - component: {fileID: 184694348}
   m_Layer: 0
   m_Name: Conexion
   m_TagString: Untagged
@@ -990,7 +979,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1609228478}
+  m_Father: {fileID: 61089329}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &184694346
 MonoBehaviour:
@@ -1018,7 +1007,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57d77fe1b96330d4abb6fa90b36145ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DigestionAccionesPendientes
-  entrada: 
+--- !u!114 &184694348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 184694344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09f9d196543a71c4e9c01da775a759d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DigestionMensajesPendientes
 --- !u!1 &210058649
 GameObject:
   m_ObjectHideFlags: 0
@@ -6069,7 +6069,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1176392600}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1605322198}
+        m_TargetAssemblyTypeName: Pruebas, Assembly-CSharp
+        m_MethodName: Test
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1176392600
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7202,6 +7214,7 @@ GameObject:
   - component: {fileID: 1605322195}
   - component: {fileID: 1605322196}
   - component: {fileID: 1605322197}
+  - component: {fileID: 1605322198}
   m_Layer: 0
   m_Name: Dev
   m_TagString: Untagged
@@ -7250,6 +7263,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ServidorFalso
   direccionIP: 127.0.0.2
   puerto: 5001
+--- !u!114 &1605322198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1605322194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d7793cf95f8e4745b972bd1ae48267d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pruebas
 --- !u!1 &1606711393
 GameObject:
   m_ObjectHideFlags: 0
@@ -7395,6 +7420,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1609228478}
+  - component: {fileID: 1609228479}
   m_Layer: 0
   m_Name: Python
   m_TagString: Untagged
@@ -7414,10 +7440,21 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 184694345}
+  m_Children: []
   m_Father: {fileID: 61089329}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1609228479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1609228477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9577a25e5c254fd4c9fef606225badc0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArrancarPythonClass
 --- !u!1 &1737462630
 GameObject:
   m_ObjectHideFlags: 0
@@ -8550,7 +8587,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1905294157
 RectTransform:
   m_ObjectHideFlags: 0
