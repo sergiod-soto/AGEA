@@ -20,7 +20,7 @@ def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "actualizacion":
         a = formatear(salida_actualizacion(shared_data))
-        print("a:\n" + a)
+        #print("a:\n" + a)
         return a.encode()
 
     if mensaje["tipo"] == "dato":

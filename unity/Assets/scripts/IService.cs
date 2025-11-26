@@ -31,6 +31,12 @@ public interface IBotsLogica : IService
     public void EliminarBot(Dictionary<string, GameObject> diccionarioBots, string idBot);
 }
 
+public interface IGameLogica : IService
+{
+    public void ActivarActualizacionDatos();
+    public void DesactivarActualizacionDatos();
+}
+
 public interface IMundo : IService
 {
     void RenderizarBots(Dictionary<string, GameObject> bots_gameObject);
