@@ -119,7 +119,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
             while ((endIndex = data.IndexOf("<END>")) != -1)
             {
                 data = data[..endIndex];
-
+                Debug.Log("Data:\n" + data);
                 // limpiar el buffer parcial
                 sb.Clear();
 

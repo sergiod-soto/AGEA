@@ -63,6 +63,7 @@ class Bot(Elemento):
             #   ----------------------------------------------------------------------------
             #
             #
+            #
             #   ---- STATS BASE (INICIALIZACION) ------------------------------------------------------------
             self.stats["vida"] = -1
             self.stats["energia"] = -1
@@ -213,13 +214,15 @@ class Bot(Elemento):
             json += "}"
             return json
 
-            # datos = []
-
-            # for stat in stats_bots:
-            #     datos.append(self.stats[stat])
-
     def __init__(
-        self, id: str, adn, stats: Stats, padres: Optional[Tuple[str, str]], casilla
+        self,
+        id: str,
+        adn,
+        stats: Stats,
+        padres: Optional[Tuple[str, str]],
+        tamanho: int,
+        casilla,
+        rotacion: float,
     ):
         if (padres is not None) and (len(padres) != 2):
             raise ValueError("padres debe ser una tupla con exactamente 2 Bots o None")
@@ -228,7 +231,7 @@ class Bot(Elemento):
         #
         #
         visibilidad = 1
-        super().__init__("bot", visibilidad, casilla)
+        super().__init__("bot", tamanho, visibilidad, casilla, rotacion)
         #
         #
 
@@ -276,7 +279,10 @@ class Bot(Elemento):
         return Controlador.obtener_siguiente_apellido()
 
     def set_casilla(self, new_casilla: Tuple[int, int]):
-        self.casilla = new_casilla
+        self.stats = new_casilla
+
+    def set_rotacion(self, rotacion):
+        self.rotacion = rotacion
 
     def serializar_apellidos(self):
         apellidos = []
@@ -293,6 +299,8 @@ class Bot(Elemento):
     def serialize_all(self):
         return {
             "id": self.id,
+            "tamanho": self.serialize_tamanho(),
+            "distancia_visible": self.serialize_distancia_visible(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),
             "apellidos": self.serializar_apellidos(),
@@ -305,6 +313,8 @@ class Bot(Elemento):
         return str(
             {
                 "id": self.id,
+                "tamanho": self.serialize_tamanho(),
+                "distancia_visible": self.serialize_distancia_visible(),
                 "casilla": self.serialize_casilla(),
                 "rotacion": self.serialize_rotacion(),
             }

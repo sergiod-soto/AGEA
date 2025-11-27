@@ -6,6 +6,7 @@ import os
 import signal
 
 from Dev.Testing import FakeClient
+from Dev.Testing.Estados import set_estados
 import Utils.Sistema.FuncionesCSV as FuncionesCSV
 import Core.Mundo.Datos as Datos
 import Services.Conexion.Conexion as Conexion
@@ -88,42 +89,7 @@ rutas_ficheros = FuncionesCSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
 #
 
 
-def set_estados():
-    """creo la maquina de estados, los estados y seteo cada uno"""
 
-    SE = Serie_Estados()
-
-    contador = 0
-    acciones = []
-
-    # crear X bots basicos y ponerlos en cuadrado
-    # region
-    if True:
-        for i in range(2):
-            for j in range(2):
-                bot_id = "b" + str(contador) + ".test"
-                adn = [0]
-                x = 15 * i
-                y = 15 * j
-
-                # congelamos bot_id y adn en el lambda mediante parámetros por defecto
-                acciones.append(
-                    lambda bot_id=bot_id, adn=adn: SE.Crear_Bot_Basico(bot_id, adn)
-                )
-
-                # movemos consultando Mundo.bots en el momento de ejecución; congelamos bot_id, x, y
-                acciones.append(
-                    lambda bot_id=bot_id, x=x, y=y: SE.Mover_Elemento(
-                        Datos.bots[bot_id], (x, y)
-                    )
-                )
-
-                contador += 1
-
-        SE.add(acciones)
-    # endregion
-
-    return SE
 
 
 def actualizar_shared_data(shared_data):

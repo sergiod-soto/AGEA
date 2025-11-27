@@ -40,7 +40,7 @@ class Serie_Estados:
     def add(self, funciones):
         """Añade un nuevo estado (lista de funciones o tuplas)"""
         print("➕ Añadiendo estado")
-        
+
         estado = self.Estado(funciones)
         self.estados.append(estado)
         self.finalizado = False
@@ -121,7 +121,7 @@ class Serie_Estados:
         padres = {"padre": None, "madre": None}
         casilla = (0, 0)
 
-        bot = Bot(id_bot, adn, stats, padres, casilla)
+        bot = Bot(id_bot, adn, stats, padres, 1, casilla, 0)
         Datos.bots[id_bot] = bot
         return bot
 
@@ -138,4 +138,24 @@ class Serie_Estados:
         return bot
 
     # endregion
+
+    def test(self):
+
+        def test2():
+            Datos.bots["b0.test"].rotacion = 90
+
+            acciones = []
+            acciones.append(lambda: test3())
+            self.add(acciones)
+
+        def test3():
+            Datos.bots["b0.test"].rotacion = 0
+
+            acciones = []
+            acciones.append(lambda: test2())
+            self.add(acciones)
+            
+        test2()
+
+
     #####################################################################

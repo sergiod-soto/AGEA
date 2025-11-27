@@ -4,13 +4,15 @@ using UnityEngine;
 public class BotInfo : MonoBehaviour
 {
     public string id;
+    int tamanho;
     public (int x, int y) casilla;
     public float rotacion;
 
 
-    public void SetStats(string id, (int x, int y) casilla, float rotacion)
+    public void SetStats(string id, int tamanho, (int x, int y) casilla, float rotacion)
     {
         this.id = id;
+        this.tamanho = tamanho;
         this.casilla = casilla;
         this.rotacion = rotacion;
     }

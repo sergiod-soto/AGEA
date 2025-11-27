@@ -21,12 +21,13 @@ public class GeneradorBot : MonoBehaviour
     {
         if (datos == null) return null;
 
+        int tamanho = (int)datos["tamanho"];
         int x = (int)datos["casilla"]["x"];
         int y = (int)datos["casilla"]["y"];
         float rotacion = (float)datos["rotacion"];
 
         GameObject bot = Instantiate(bot_preinstanciado, new Vector3(x, y, 0), Quaternion.Euler(0, 0, rotacion), carpeta_instancias.transform);
-        bot.GetComponent<BotInfo>().SetStats(datos["id"].ToString(), (x, y), rotacion);
+        bot.GetComponent<BotInfo>().SetStats(datos["id"].ToString(), tamanho, (x, y), rotacion);
         datosMundo.DatosBots.Bots_GameObjects.Add(datos["id"].ToString(), bot);
 
         return bot;
