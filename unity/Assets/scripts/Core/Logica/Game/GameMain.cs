@@ -7,7 +7,6 @@ public class GameMain : MonoBehaviour
 {
     IConexionMundo conexion;
     IBotsLogica botsLogica;
-    IDatosMundo datosMundo;
     IProcesamientoEntradaConexion procesamientoEntradaConexion;
     IBotsGameobjectData botsGameobjectData;
 
@@ -15,7 +14,6 @@ public class GameMain : MonoBehaviour
 
     private void Start()
     {
-        datosMundo = ServiceLocator.Instance.Get<IDatosMundo>();
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
         botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
         procesamientoEntradaConexion = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();

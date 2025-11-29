@@ -34,11 +34,7 @@ def set_estados():
 
     SE.add(acciones)
 
-    # test a ver si puedo añadir estados recursivamente
-    acciones = []
-    acciones.append(lambda : SE.test())
-    
-    SE.add(acciones)
-
+    # recursivamente rota un bot
+    SE.add([lambda: SE.test()])
 
     return SE

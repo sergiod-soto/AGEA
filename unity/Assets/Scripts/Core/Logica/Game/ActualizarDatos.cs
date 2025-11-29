@@ -2,13 +2,13 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class ActualizarDatos : MonoBehaviour, IGameLogica
+public class ActualizarDatos : MonoBehaviour
 {
     IConexionMundo conexionMundo;
 
     public int intervaloMs;
 
-    Coroutine rutina;
+    float acumulador = 0f;
     bool activado;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -24,7 +24,6 @@ public class ActualizarDatos : MonoBehaviour, IGameLogica
         if (activado) return;
 
         activado = true;
-        rutina = StartCoroutine(EjecutarCadaXms());
     }
 
     public void DesactivarActualizacionDatos()
@@ -32,22 +31,19 @@ public class ActualizarDatos : MonoBehaviour, IGameLogica
         if (!activado) return;
 
         activado = false;
-
-        if (rutina != null)
-            StopCoroutine(rutina);
     }
 
-    private IEnumerator EjecutarCadaXms()
-    {
-        float intervaloSeg = intervaloMs / 1000f;
 
-        while (activado)
+    void Update()
+    {
+        acumulador += Time.deltaTime * 1000f; // lo pasamos a milisegundos
+
+        if (acumulador >= intervaloMs && activado)
         {
+            acumulador = 0f;
+
             // mandamos peticion de actualizacion de datos
             conexionMundo.EnviarMensaje("{\"tipo\":\"actualizacion\"}");
-
-            yield return new WaitForSeconds(intervaloSeg);
         }
     }
-
 }

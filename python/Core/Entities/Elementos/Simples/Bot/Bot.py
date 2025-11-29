@@ -284,6 +284,9 @@ class Bot(Elemento):
     def set_rotacion(self, rotacion):
         self.rotacion = rotacion
 
+    def serializar_adn(self):
+        return self.adn
+
     def serializar_apellidos(self):
         apellidos = []
         for apellido in self.apellidos:
@@ -297,17 +300,17 @@ class Bot(Elemento):
         }
 
     def serialize_all(self):
-        return {
+        return str({
             "id": self.id,
             "tamanho": self.serialize_tamanho(),
             "distancia_visible": self.serialize_distancia_visible(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),
             "apellidos": self.serializar_apellidos(),
-            "adn": self.adn,
+            "adn": self.serializar_adn(),
             "stats": self.stats.serialize(),
             "padres": self.serializar_padres(),
-        }
+        })
 
     def serialize_position(self):
         return str(

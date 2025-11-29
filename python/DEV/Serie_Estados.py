@@ -142,10 +142,10 @@ class Serie_Estados:
     def test(self):
 
         def test2():
-            Datos.bots["b0.test"].rotacion = 90
+            Datos.bots["b0.test"].rotacion += 5
 
             acciones = []
-            acciones.append(lambda: test3())
+            acciones.append(lambda: test2())
             self.add(acciones)
 
         def test3():

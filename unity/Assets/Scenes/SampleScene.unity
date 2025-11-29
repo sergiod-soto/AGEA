@@ -2146,6 +2146,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
+    - {fileID: 0}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -4150,7 +4151,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 904748761}
-  - component: {fileID: 904748767}
   - component: {fileID: 904748766}
   - component: {fileID: 904748765}
   - component: {fileID: 904748764}
@@ -4158,6 +4158,8 @@ GameObject:
   - component: {fileID: 904748762}
   - component: {fileID: 904748769}
   - component: {fileID: 904748768}
+  - component: {fileID: 904748770}
+  - component: {fileID: 904748771}
   m_Layer: 0
   m_Name: Bots
   m_TagString: Untagged
@@ -4253,24 +4255,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63f8fc575e1e3aa4ca77bd3c4df69261, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotClicManager
---- !u!114 &904748767
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 904748760}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 023ab698b1094874585d57875218447d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BotClicked
-  id_value: {fileID: 0}
-  propiedades_value: {fileID: 0}
-  propiedades_unidades: {fileID: 0}
-  propiedades_avanzadas_value: {fileID: 0}
-  propiedades_avanzadas_unidades: {fileID: 0}
-  apellidos_value: {fileID: 0}
 --- !u!114 &904748768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4295,6 +4279,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d22405fb9126e84f8b5e3466db39df6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ActualizarBots
+--- !u!114 &904748770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 904748760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1126cf28f0e8a9c4f967ab384864e336, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BotInfo
+  id: 
+  rotacion: 0
+--- !u!114 &904748771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 904748760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 023ab698b1094874585d57875218447d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BotClicked
+  id_value: {fileID: 1493597284}
+  propiedades_value: {fileID: 210058651}
+  propiedades_unidades: {fileID: 595564775}
+  propiedades_avanzadas_value: {fileID: 1037326215}
+  propiedades_avanzadas_unidades: {fileID: 99726838}
+  apellidos_value: {fileID: 1744536492}
 --- !u!1 &914353642
 GameObject:
   m_ObjectHideFlags: 0
@@ -5487,7 +5503,7 @@ GameObject:
   - component: {fileID: 1126668382}
   - component: {fileID: 1126668381}
   m_Layer: 5
-  m_Name: HUD
+  m_Name: HUD Info Bot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6791,7 +6807,7 @@ GameObject:
   - component: {fileID: 1493597285}
   - component: {fileID: 1493597284}
   m_Layer: 5
-  m_Name: id_number
+  m_Name: id_value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

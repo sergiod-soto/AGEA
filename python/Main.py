@@ -95,7 +95,8 @@ rutas_ficheros = FuncionesCSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
 def actualizar_shared_data(shared_data):
     """actualizo la variable compartida "shared_data" """
 
-    shared_data["bots"] = manager.list(Datos.serializar_bots())
+    shared_data["bots"].update(Datos.serializar_bots())
+    
     # shared_data["dev"] = manager.dict()
 
 
@@ -154,7 +155,7 @@ if __name__ == "__main__":
     manager = multiprocessing.Manager()
     shared_data = manager.dict()
 
-    shared_data["bots"] = manager.list()  # datos de los bots
+    shared_data["bots"] = manager.dict()  # datos de los bots
     shared_data["mundo"] = manager.list()  # datos del mundo
     shared_data["other"] = manager.dict()  # otras cosas
     shared_data["dev"] = manager.dict()  # reservado para testeo

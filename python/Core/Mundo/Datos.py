@@ -10,7 +10,7 @@ bots = {}  # K: id, V: bot
 
 
 def serializar_bots():
-    return [b.serialize() if hasattr(b, "serialize") else b for b in bots.values()]
+    return bots
 
 
 # endregion

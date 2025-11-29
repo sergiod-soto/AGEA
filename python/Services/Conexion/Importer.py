@@ -17,7 +17,7 @@ def formatear(texto: str) -> str:
 
 
 def receive_data(recibido, shared_data):
-    
+
     if recibido:
         mensaje = recibido.decode(errors="ignore").strip()
         formateado = formatear(mensaje)

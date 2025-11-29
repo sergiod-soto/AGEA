@@ -1,14 +1,15 @@
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 
 
-def serializar_bots(bots: list[Bot]):
+def serializar_bots(bots: dict[Bot]):
 
     serializacion = ""
     partes = []
     partes.append("[")
-    for i, bot in enumerate(bots):
+
+    for i, (id, bot) in enumerate(bots.items()):
         partes.append(bot.serialize_position())
-        if i != len(bots) - 1:  # última iteración
+        if i != len(bots) - 1:
             partes.append(",")
     partes.append("]")
     serializacion = serializacion.join(partes)

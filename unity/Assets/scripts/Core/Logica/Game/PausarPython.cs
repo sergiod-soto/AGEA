@@ -10,13 +10,8 @@ public class Pausar : MonoBehaviour
     }
 
 
-    public void Pause()
+    public void PausePython()
     {
-        Debug.Log("Enviando pausa al mundo Python");
-        var msg = new JObject { 
-            ["tipo"] = "pause"
-        };
-
-        conexion.EnviarMensaje(msg.ToString(Newtonsoft.Json.Formatting.None));
+        conexion.EnviarMensaje("{\"tipo\":\"pause\"}");
     }
 }

@@ -3,17 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(GeneradorBot))]
-[RequireComponent(typeof(ObtenerDatos))]
+[RequireComponent(typeof(SolicitarDatos))]
 [RequireComponent(typeof(RenderizarBots))]
-[RequireComponent(typeof(BotClicked))]
 [RequireComponent(typeof(ActualizarBots))]
 [RequireComponent(typeof(EliminarBot))]
 public class BotsLogica : MonoBehaviour, IBotsLogica
 {
-    public void OnClic()
-    {
-        GetComponent<BotClicked>().OnClick();
-    }
+
 
     public GameObject CreateBot(JObject datos)
     {
@@ -22,7 +18,7 @@ public class BotsLogica : MonoBehaviour, IBotsLogica
 
     public void ClicEnBot(BotInfo bot_inf)
     {
-        GetComponent<ObtenerDatos>().ClicEnBot(bot_inf);
+        GetComponent<SolicitarDatos>().ClicEnBot(bot_inf);
     }
 
     public void RenderizarBots(Dictionary<string, GameObject> bots_gameObject)
