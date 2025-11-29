@@ -143,19 +143,24 @@ class Serie_Estados:
 
         def test2():
             Datos.bots["b0.test"].rotacion += 5
+            
+            casilla = Datos.bots["b3.test"].casilla
+            Datos.bots["b3.test"].casilla = (casilla[0] + 15, casilla[1])
 
             acciones = []
-            acciones.append(lambda: test2())
+            acciones.append(lambda: test3())
             self.add(acciones)
 
         def test3():
-            Datos.bots["b0.test"].rotacion = 0
+            Datos.bots["b0.test"].rotacion += 5
+            casilla = Datos.bots["b3.test"].casilla
+
+            Datos.bots["b3.test"].casilla = (casilla[0] - 15, casilla[1])
 
             acciones = []
             acciones.append(lambda: test2())
             self.add(acciones)
-            
-        test2()
 
+        test2()
 
     #####################################################################

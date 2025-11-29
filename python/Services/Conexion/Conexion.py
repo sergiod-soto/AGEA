@@ -47,12 +47,13 @@ def run_exporter(shared_data):
                         recibido = conn.recv(4096)
                         # si recv devuelve b'' -> cliente cerró la conexión
                         if not recibido:
-                            print(
-                                "[CONEXION] cliente cerró la conexión"
-                            )
+                            print("[CONEXION] cliente cerró la conexión")
                             break
                         # responde a la peticion
-                        conn.sendall(receive_data(recibido, shared_data))
+                        respuesta = receive_data(recibido, shared_data)
+                        if respuesta == "None":
+                            continue
+                        conn.sendall(respuesta)
                     except (
                         BrokenPipeError,
                         ConnectionResetError,

@@ -1,6 +1,7 @@
 import json
 from Services.Conexion.SalidaActualizacion import salida_actualizacion
 from Services.Conexion.SalidasDatos.SalidaDato import salida_dato
+from Utils.Sistema.Pause import pause
 
 
 def formatear(texto: str) -> str:
@@ -24,3 +25,7 @@ def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()
+
+    if mensaje["tipo"] == "pausa":
+        pause(shared_data)
+        return "None"

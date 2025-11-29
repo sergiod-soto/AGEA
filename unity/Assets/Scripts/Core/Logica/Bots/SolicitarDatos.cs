@@ -13,6 +13,8 @@ public class SolicitarDatos : MonoBehaviour
     public TextMeshProUGUI propiedades_value;
     public TextMeshProUGUI propiedades_avanzadas_value;
     public TextMeshProUGUI apellidos_value;
+    public TextMeshProUGUI modificadores_value;
+
 
 
     void Start()
@@ -38,6 +40,7 @@ public class SolicitarDatos : MonoBehaviour
         propiedades_value.text = SerializarPropiedadesValue(bot);
         propiedades_avanzadas_value.text = SerializarPropiedadesAvanzadasValue(bot);
         apellidos_value.text = SerializarApellidosValue(bot);
+        modificadores_value.text = SerializarModificadoresValue(bot);
     }
 
     string SerializarId(JObject bot)
@@ -117,5 +120,39 @@ public class SolicitarDatos : MonoBehaviour
             bot["apellidos"][1] + ", " +
             bot["apellidos"][2] + ", " +
             bot["apellidos"][3];
+    }
+    string SerializarModificadoresValue(JObject bot)
+    {
+
+        string[] unidades = new string[]{
+            //      modificador temporal                   
+            bot["stats"]["heridas"].ToString(),
+            bot["stats"]["focus"].ToString(),
+            bot["stats"]["hambre"].ToString()
+        };
+
+        bool noHayModificadores = false;
+        for (int i = 0; i < unidades.Length; i++)
+        {
+            if (unidades[i].Equals("-1"))
+            {
+                unidades[i] = "";
+            }
+            else
+            {
+                noHayModificadores = true;
+            }
+        }
+
+        string texto = unidades[0] +
+                   "\r\n" + unidades[1] +
+                   "\r\n" + unidades[2];
+
+        if (noHayModificadores)
+        {
+            return "Sin modificadores";
+        }
+
+        return texto;
     }
 }

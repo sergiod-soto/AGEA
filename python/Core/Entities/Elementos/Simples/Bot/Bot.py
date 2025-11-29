@@ -7,6 +7,8 @@ from Exceptions import *
 stats_bots = [
     "id",
     "adn",
+    "padre",
+    "madre",
     "apellido0",
     "apellido1",
     "apellido2",
@@ -38,8 +40,6 @@ stats_bots = [
     "heridas",
     "focus",
     "hambre",
-    "padre",
-    "madre",
 ]
 
 
@@ -300,17 +300,19 @@ class Bot(Elemento):
         }
 
     def serialize_all(self):
-        return str({
-            "id": self.id,
-            "tamanho": self.serialize_tamanho(),
-            "distancia_visible": self.serialize_distancia_visible(),
-            "casilla": self.serialize_casilla(),
-            "rotacion": self.serialize_rotacion(),
-            "apellidos": self.serializar_apellidos(),
-            "adn": self.serializar_adn(),
-            "stats": self.stats.serialize(),
-            "padres": self.serializar_padres(),
-        })
+        return str(
+            {
+                "id": self.id,
+                "tamanho": self.serialize_tamanho(),
+                "distancia_visible": self.serialize_distancia_visible(),
+                "casilla": self.serialize_casilla(),
+                "rotacion": self.serialize_rotacion(),
+                "apellidos": self.serializar_apellidos(),
+                "adn": self.serializar_adn(),
+                "stats": self.stats.serialize(),
+                "padres": self.serializar_padres(),
+            }
+        )
 
     def serialize_position(self):
         return str(
