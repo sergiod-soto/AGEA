@@ -28,7 +28,6 @@ public class BotClicManager : MonoBehaviour
                 // si se hace clic en un bot
                 if (hit.collider.TryGetComponent<BotInfo>(out var bot_inf))
                 {
-                    Debug.Log("Clic en bot");
                     botsLogica.ClicEnBot(bot_inf);
                 }
             }

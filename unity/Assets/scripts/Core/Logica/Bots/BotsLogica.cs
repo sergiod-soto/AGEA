@@ -21,6 +21,11 @@ public class BotsLogica : MonoBehaviour, IBotsLogica
         GetComponent<SolicitarDatos>().ClicEnBot(bot_inf);
     }
 
+    public void ActualizarHUDDatosBots(JObject bot)
+    {
+        GetComponent<SolicitarDatos>().ActualizarHUD(bot);
+    }
+
     public void RenderizarBots(Dictionary<string, GameObject> bots_gameObject)
     {
         GetComponent<RenderizarBots>().Renderizar();

@@ -36,7 +36,7 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
                 logicaBots.ActualizarBots((JArray)json["bots"]);
                 break;
             case "dato":
-
+                logicaBots.ActualizarHUDDatosBots((JObject)json["bot"]);
                 break;
         }
 
@@ -46,7 +46,6 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 
     void Update()
     {
-        //Debug.Log("count de acciones pendientes: " + conexionMundo.GetAccionesPendientes().Count);
         try
         {
             if (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))

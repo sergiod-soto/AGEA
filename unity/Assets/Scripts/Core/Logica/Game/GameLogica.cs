@@ -5,9 +5,6 @@ using UnityEngine;
 public class GameLogica : MonoBehaviour, IGameLogica
 {
 
-
-
-
     public void ActivarActualizacionDatos()
     {
         GetComponent<ActualizarDatos>().ActivarActualizacionDatos();

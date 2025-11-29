@@ -19,7 +19,7 @@ public class DigestionMensajesPendientes : MonoBehaviour
     {
         if (conexionMundo.GetMensajesPendientes().TryDequeue(out string mensaje))
         {
-            Debug.Log("mensaje" + mensaje);
+            //Debug.Log("Mensaje Unity -> Python:\n" + mensaje);
         }
     }
 }

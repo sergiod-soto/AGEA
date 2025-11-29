@@ -43,8 +43,9 @@ public interface IBotsLogica : IService
     public void ClicEnBot(BotInfo bot_inf);
     public void RenderizarBots(Dictionary<string, GameObject> bots_gameObject);
     public void ActualizarBots(JArray bots);
-
+    public void ActualizarHUDDatosBots(JObject bot);
     public void EliminarBot(Dictionary<string, GameObject> diccionarioBots, string idBot);
+
 }
 
 /*
@@ -97,4 +98,13 @@ public interface IProcesamientoEntradaConexion : IService
 public interface IArrancarPythonService : IService
 {
     Process ArrancarPython();
+}
+
+/*
+ * 
+ */
+public interface IHUDRunningControl : IService
+{
+    public void Show_HUD();
+    public void Hide_HUD();
 }

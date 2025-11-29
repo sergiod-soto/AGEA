@@ -26,4 +26,4 @@ class Elemento:
         return str({"x": self.casilla[0], "y": self.casilla[1]})
 
     def serialize_rotacion(self):
-        return self.rotacion
+        return self.rotacion % 360
