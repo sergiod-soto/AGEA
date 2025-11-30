@@ -1,8 +1,5 @@
-using System;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections.Generic;
 
 
 
@@ -11,7 +8,7 @@ public class BotClicManager : MonoBehaviour
 
     IBotsLogica botsLogica;
 
-    private void Start()
+    private void Awake()
     {
         botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
     }

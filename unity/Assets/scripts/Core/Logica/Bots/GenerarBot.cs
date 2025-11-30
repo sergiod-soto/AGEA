@@ -11,7 +11,7 @@ public class GeneradorBot : MonoBehaviour
     public GameObject bot_preinstanciado;
     public GameObject carpeta_instancias;
 
-    private void Start()
+    private void Awake()
     {
         datosMundo = ServiceLocator.Instance.Get<IDatosMundo>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();

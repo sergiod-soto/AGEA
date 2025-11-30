@@ -5,7 +5,7 @@ public class RenderizarBots : MonoBehaviour
 {
     IBotsGameobjectData botsGameobjectData;
 
-    private void Start()
+    void Awake()
     {
         botsGameobjectData = ServiceLocator.Instance.Get<IBotsGameobjectData>();
     }

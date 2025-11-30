@@ -93,18 +93,19 @@ public interface IProcesamientoEntradaConexion : IService
 }
 
 /*
- *      Se encarga de arrancar el script Python
- */
-public interface IArrancarPythonService : IService
-{
-    Process ArrancarPython();
-}
-
-/*
- * 
+ *  Control del HUD del juego tras "Start"
  */
 public interface IHUDRunningControl : IService
 {
     public void Show_HUD();
     public void Hide_HUD();
+}
+
+/*
+ *  Gestion del control de la camara 
+ */
+public interface IControlCamara : IService
+{
+    public void SeguirConCamara(GameObject newTarget);
+    public void DejarDeSeguirConCamara();
 }

@@ -25,10 +25,12 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     public string address;
     public int PORT;
 
-    void Start()
+    void Awake()
     {
         procesamientoEntrada = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();
-
+    }
+    void Start()
+    {
         accionesPendientes = new();
         mensajesPendientes = new();
     }

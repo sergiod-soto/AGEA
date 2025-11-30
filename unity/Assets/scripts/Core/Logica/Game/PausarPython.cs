@@ -4,7 +4,7 @@ using UnityEngine;
 public class Pausar : MonoBehaviour
 {
     IConexionMundo conexion;
-    private void Start()
+    void Awake()
     {
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
     }

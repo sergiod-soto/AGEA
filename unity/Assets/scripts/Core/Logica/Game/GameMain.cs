@@ -12,7 +12,7 @@ public class GameMain : MonoBehaviour
 
 
 
-    private void Start()
+    void Awake()
     {
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
         botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();

@@ -5,7 +5,7 @@ public class Pruebas : MonoBehaviour
 
     IConexionMundo conexionMundo;
 
-    void Start()
+    void Awake()
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
     }

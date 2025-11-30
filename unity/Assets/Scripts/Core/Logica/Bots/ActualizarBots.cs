@@ -7,7 +7,7 @@ public class ActualizarBots : MonoBehaviour
 {
     IBotsGameobjectData datosBots;
     IBotsLogica logicaBots;
-    void Start()
+    void Awake()
     {
         datosBots = ServiceLocator.Instance.Get<IBotsGameobjectData>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();
@@ -18,7 +18,7 @@ public class ActualizarBots : MonoBehaviour
     {
         Dictionary<string, GameObject> diccionarioBots = datosBots.Bots_GameObjects;
         Dictionary<string, GameObject> botsAux = new(diccionarioBots); // copia para detectar bots eliminados
-        foreach (JObject bot in bots)
+        foreach (JObject bot in bots.Cast<JObject>())
         {
             if (!diccionarioBots.ContainsKey(bot["id"].ToString()))
             {

@@ -12,7 +12,7 @@ public class ServiceLocator : MonoBehaviour
     // Diccionario: interfaz -> instancia
     private readonly Dictionary<Type, object> services = new();
 
-    private void Awake()
+    void Awake()
     {
         if (Instance != null && Instance != this)
         {
@@ -21,7 +21,7 @@ public class ServiceLocator : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject); 
+        DontDestroyOnLoad(gameObject);
 
         RegisterAllServicesInScene();
 

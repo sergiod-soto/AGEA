@@ -1,10 +1,17 @@
 using System.Diagnostics;
 using UnityEngine;
 
-public class ArrancarPythonClass : MonoBehaviour, IArrancarPythonService
+public class ArrancarPythonClass : MonoBehaviour
 {
+
+    void Awake()
+    {
+        //ArrancarPython();
+    }
+
     public Process ArrancarPython()
     {
+        UnityEngine.Debug.Log("entra a arrancar python");
         Process pythonProcess = new();
         pythonProcess.StartInfo.FileName = "../python/venv/Scripts/python.exe";
         pythonProcess.StartInfo.Arguments = "../python/Main.py";

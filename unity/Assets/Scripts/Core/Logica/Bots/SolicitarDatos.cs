@@ -7,6 +7,8 @@ public class SolicitarDatos : MonoBehaviour
 {
     IConexionMundo conexion;
     IHUDRunningControl HUD_Running;
+    IControlCamara camara;
+    IBotsGameobjectData bots;
 
     public TextMeshProUGUI posicion_value;
     public TextMeshProUGUI id_value;
@@ -17,16 +19,22 @@ public class SolicitarDatos : MonoBehaviour
 
 
 
-    void Start()
+    void Awake()
     {
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
         HUD_Running = ServiceLocator.Instance.Get<IHUDRunningControl>();
+        camara = ServiceLocator.Instance.Get<IControlCamara>();
+        bots = ServiceLocator.Instance.Get<IBotsGameobjectData>();
     }
 
 
 
     public void ClicEnBot(BotInfo bot_inf)
     {
+        // obtengo el gameobject dle bot clickado
+        bots.Bots_GameObjects.TryGetValue(bot_inf.id, out GameObject bot);
+        camara.SeguirConCamara(bot);
+
         // toca pedir resto de datos a python    
         conexion.EnviarMensaje("{\"tipo\":\"dato\",\"entity\":\"bot\",\"id\":\"" + bot_inf.id + "\"}");
     }

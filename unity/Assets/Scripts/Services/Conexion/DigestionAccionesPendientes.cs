@@ -15,11 +15,10 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
     IBotsLogica logicaBots;
 
 
-    void Start()
+    void Awake()
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();
-
     }
 
     public void DigerirEntrada(JObject json)
@@ -39,9 +38,6 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
                 logicaBots.ActualizarHUDDatosBots((JObject)json["bot"]);
                 break;
         }
-
-
-
     }
 
     void Update()
@@ -63,5 +59,4 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
             Debug.Log("Error en el dequeue de DigestionAccionesPendientes:\n" + ex.Message);
         }
     }
-
 }

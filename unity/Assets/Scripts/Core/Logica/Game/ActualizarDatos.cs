@@ -11,13 +11,15 @@ public class ActualizarDatos : MonoBehaviour
     float acumulador = 0f;
     bool activado;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    void Awake()
+    {
+        conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
+    }
     void Start()
     {
         activado = false;
-        conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
     }
-
 
     public void ActivarActualizacionDatos()
     {

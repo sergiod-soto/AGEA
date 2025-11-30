@@ -14,7 +14,7 @@ public class BotonesMenuPrincipal : MonoBehaviour
     private Coroutine envioCoroutine;
 
 
-    private void Start()
+    void Awake()
     {
         DEVManager = ServiceLocator.Instance.Get<IDEVManager>();
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
