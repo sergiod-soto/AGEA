@@ -37,13 +37,18 @@ public class MoverCamaraWASD : MonoBehaviour
         if (teclado.aKey.isPressed) dir += Vector3.left;
         if (teclado.dKey.isPressed) dir += Vector3.right;
 
+        if (dir.x != 0 ||
+            dir.y != 0 ||
+            dir.z != 0)
+        {
+            controlCamara.DejarDeSeguirConCamara();
+        }
         transform.position += Time.deltaTime * velocidad * dir;
 
         float scroll = Mouse.current.scroll.ReadValue().y;
 
         if (scroll != 0)
         {
-            controlCamara.DejarDeSeguirConCamara();
             cam.orthographicSize -= scroll * zoomSpeed * Time.deltaTime;
             cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, zoomMin, zoomMax);
         }

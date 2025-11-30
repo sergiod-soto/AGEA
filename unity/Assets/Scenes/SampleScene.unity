@@ -2451,6 +2451,8 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   - component: {fileID: 519420030}
+  - component: {fileID: 519420033}
+  - component: {fileID: 519420035}
   - component: {fileID: 519420034}
   m_Layer: 0
   m_Name: Main Camera
@@ -2577,7 +2579,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &519420034
+--- !u!114 &519420033
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2588,9 +2590,39 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09bf61353f92ad74f8d6cba7a4df282e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  zoomMin: 98.6
-  zoomMax: 244.4
+  m_EditorClassIdentifier: Assembly-CSharp::MoverCamara
+  cam: {fileID: 519420031}
+  zoomMin: 50
+  zoomMax: 300
+  factorVelocidad: 40
+  factorZoom: 500
+--- !u!114 &519420034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44c62355aec50bd4d9fa788943580c13, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CamaraLogica
+--- !u!114 &519420035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb1a81b89d008494ca92fbd2823db847, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MoverSeguimiento
+  deadZoneRadius: 75
+  smoothTime: 1
+  offset: {x: 0, y: 0, z: -10}
 --- !u!1 &550741514
 GameObject:
   m_ObjectHideFlags: 0
