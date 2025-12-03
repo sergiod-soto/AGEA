@@ -141,11 +141,11 @@ class Serie_Estados:
 
     def test(self):
 
+        #####################################################
         def test2():
             Datos.bots["b0.test"].rotacion += 5
             
-            casilla = Datos.bots["b3.test"].casilla
-            Datos.bots["b3.test"].casilla = (casilla[0] + 15, casilla[1])
+            
 
             acciones = []
             acciones.append(lambda: test3())
@@ -153,14 +153,44 @@ class Serie_Estados:
 
         def test3():
             Datos.bots["b0.test"].rotacion += 5
-            casilla = Datos.bots["b3.test"].casilla
-
-            Datos.bots["b3.test"].casilla = (casilla[0] - 15, casilla[1])
-
+          
             acciones = []
             acciones.append(lambda: test2())
             self.add(acciones)
+            
+        #####################################################
+        def test4():
+          
+            casilla = Datos.bots["b3.test"].casilla
+
+            acciones = []
+            if  Datos.bots["b3.test"].casilla[0] >= 50:
+                acciones.append(lambda: test5())
+            else:
+                Datos.bots["b3.test"].casilla = (casilla[0] + 10, casilla[1])
+                acciones.append(lambda: test4())
+            self.add(acciones)
+            
+        def test5():
+            casilla = Datos.bots["b3.test"].casilla
+
+            acciones = []
+            if  Datos.bots["b3.test"].casilla[1] >= 50:
+                acciones.append(lambda: test6())
+            else:
+                Datos.bots["b3.test"].casilla = (casilla[0], casilla[1] + 10)
+                acciones.append(lambda: test5())
+            self.add(acciones)
+            
+            
+        def test6():
+            Datos.bots["b3.test"].casilla = (15, 15)
+
+            acciones = []
+            acciones.append(lambda: test4())
+            self.add(acciones)
 
         test2()
+        test4()
 
     #####################################################################

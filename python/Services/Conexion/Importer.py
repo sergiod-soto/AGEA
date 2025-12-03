@@ -12,7 +12,7 @@ def formatear(texto: str) -> str:
         .replace('"[', "[")
         .replace(']"', "]")
         .replace("\\", "")
-        .replace("<END>", "")
+        .replace("<END>\"", "")
     )
 
 

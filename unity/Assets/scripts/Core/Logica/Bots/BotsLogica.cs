@@ -16,12 +16,12 @@ public class BotsLogica : MonoBehaviour, IBotsLogica
         return GetComponent<GeneradorBot>().CreateBot(datos);
     }
 
-    public void ClicEnBot(BotInfo bot_inf)
+    public void ClicEnBot(GameObject bot)
     {
-        GetComponent<SolicitarDatos>().ClicEnBot(bot_inf);
+        GetComponent<SolicitarDatos>().ClicEnBot(bot);
     }
 
-    public void ActualizarHUDDatosBots(JObject bot)
+    public void ActualizarHUDDatosBot(JObject bot)
     {
         GetComponent<SolicitarDatos>().ActualizarHUD(bot);
     }

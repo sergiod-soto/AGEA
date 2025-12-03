@@ -79,7 +79,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
                 if (mensajesPendientes.TryDequeue(out string mensaje))
                 {
                     string json = JsonConvert.SerializeObject(mensaje);
-                    writer.WriteLine(json + "\n<END>\n");
+                    writer.WriteLine(json);
                     writer.Flush();
                     //Debug.Log("[CLIENTE] Enviado a Python: " + json);
                 }
@@ -105,7 +105,7 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     // pongo el string en la cola de mensajes pendientes
     public void EnviarMensaje(string data)
     {
-        mensajesPendientes.Enqueue(data);
+        mensajesPendientes.Enqueue(data + "<END>");
     }
 
     JObject RetrieveJSON(NetworkStream stream, byte[] buffer, StringBuilder sb)

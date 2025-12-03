@@ -1,14 +1,12 @@
 using Newtonsoft.Json.Linq;
-using NUnit.Framework;
 using TMPro;
 using UnityEngine;
 
 public class SolicitarDatos : MonoBehaviour
 {
-    IConexionMundo conexion;
     IHUDRunningControl HUD_Running;
     IControlCamara camara;
-    IBotsGameobjectData bots;
+    ISolicitudDatos solicitarDatos;
 
     public TextMeshProUGUI posicion_value;
     public TextMeshProUGUI id_value;
@@ -17,28 +15,21 @@ public class SolicitarDatos : MonoBehaviour
     public TextMeshProUGUI apellidos_value;
     public TextMeshProUGUI modificadores_value;
 
-
-
     void Awake()
     {
-        conexion = ServiceLocator.Instance.Get<IConexionMundo>();
         HUD_Running = ServiceLocator.Instance.Get<IHUDRunningControl>();
         camara = ServiceLocator.Instance.Get<IControlCamara>();
-        bots = ServiceLocator.Instance.Get<IBotsGameobjectData>();
+        solicitarDatos = ServiceLocator.Instance.Get<ISolicitudDatos>();
     }
 
-
-
-    public void ClicEnBot(BotInfo bot_inf)
+    public void ClicEnBot(GameObject bot)
     {
         // obtengo el gameobject dle bot clickado
-        bots.Bots_GameObjects.TryGetValue(bot_inf.id, out GameObject bot);
         camara.SeguirConCamara(bot);
 
         // toca pedir resto de datos a python    
-        conexion.EnviarMensaje("{\"tipo\":\"dato\",\"entity\":\"bot\",\"id\":\"" + bot_inf.id + "\"}");
+        //solicitarDatos.SolicitarDatos(bot);
     }
-
 
     public void ActualizarHUD(JObject bot)
     {
@@ -131,7 +122,6 @@ public class SolicitarDatos : MonoBehaviour
     }
     string SerializarModificadoresValue(JObject bot)
     {
-
         string[] unidades = new string[]{
             //      modificador temporal                   
             bot["stats"]["heridas"].ToString(),

@@ -1,10 +1,16 @@
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
 public class SeguirMovimientoGameObject : MonoBehaviour
 {
-    private Camera cam;
-    private Transform target;
+    IBotsLogica botsLogica;
+    IConexionMundo conexion;
+    ISolicitudDatos solicitarDatos;
+
+    Camera cam;
+    Transform target;
+    GameObject bot;
 
     [Header("Dead Zone")]
     public float deadZoneRadius = 100f; // Radio en píxeles del círculo central
@@ -15,14 +21,30 @@ public class SeguirMovimientoGameObject : MonoBehaviour
 
     public Vector3 offset = new(0, 0, -10);
 
+    float timer = 0f;
+
+    int i = 0;
+
     void Awake()
     {
+        botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
+        conexion = ServiceLocator.Instance.Get<IConexionMundo>();
+        solicitarDatos = ServiceLocator.Instance.Get<ISolicitudDatos>();
+    }
+
+    void Start()
+    {
         cam = GetComponent<Camera>();
+        bot = null;
     }
 
     void LateUpdate()
     {
         if (target == null) return;
+
+        timer += Time.deltaTime;
+
+
 
         // Convertimos la posición del target a pantalla
         Vector3 targetScreenPos = cam.WorldToScreenPoint(target.position);
@@ -45,14 +67,28 @@ public class SeguirMovimientoGameObject : MonoBehaviour
             ref velocity,
             smoothTime
         );
-    }    
+
+        if (timer < 0.1f) return;
+        timer = 0f;
+
+        if (bot != null)
+        {
+            solicitarDatos.SolicitarDatos(bot);
+        }
+
+    }
 
     public void SeguirConCamara(GameObject newTarget)
     {
         if (newTarget == null)
         {
             target = null;
+            bot = null;
             return;
+        }
+        if (bot == null)
+        {
+            SetBot_A_Actualizar(newTarget);
         }
         target = newTarget.transform;
     }
@@ -60,5 +96,16 @@ public class SeguirMovimientoGameObject : MonoBehaviour
     public void DejarDeSeguirConCamara()
     {
         SeguirConCamara(null);
+    }
+
+    /* 
+     *  Me aseguro que el lo que se pasa sea un bot
+     */
+    public void SetBot_A_Actualizar(GameObject objeto)
+    {
+        if (objeto.TryGetComponent<BotInfo>(out _))
+        {
+            bot = objeto;
+        }
     }
 }

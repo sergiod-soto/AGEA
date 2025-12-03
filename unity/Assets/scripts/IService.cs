@@ -40,10 +40,10 @@ public interface IBotsGameobjectData : IService
 public interface IBotsLogica : IService
 {
     public GameObject CreateBot(JObject datos);
-    public void ClicEnBot(BotInfo bot_inf);
+    public void ClicEnBot(GameObject bot);
     public void RenderizarBots(Dictionary<string, GameObject> bots_gameObject);
     public void ActualizarBots(JArray bots);
-    public void ActualizarHUDDatosBots(JObject bot);
+    public void ActualizarHUDDatosBot(JObject bot);
     public void EliminarBot(Dictionary<string, GameObject> diccionarioBots, string idBot);
 
 }
@@ -93,7 +93,7 @@ public interface IProcesamientoEntradaConexion : IService
 }
 
 /*
- *  Control del HUD del juego tras "Start"
+ *      Control del HUD del juego tras "Start"
  */
 public interface IHUDRunningControl : IService
 {
@@ -102,10 +102,18 @@ public interface IHUDRunningControl : IService
 }
 
 /*
- *  Gestion del control de la camara 
+ *      Gestion del control de la camara 
  */
 public interface IControlCamara : IService
 {
     public void SeguirConCamara(GameObject newTarget);
     public void DejarDeSeguirConCamara();
+}
+
+/*
+ *      Solicita los datos a Python
+ */
+public interface ISolicitudDatos : IService
+{
+    public void SolicitarDatos(GameObject objeto);
 }

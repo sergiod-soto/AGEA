@@ -7,7 +7,6 @@ public class CamaraLogica : MonoBehaviour, IControlCamara
     {
         GetComponent<SeguirMovimientoGameObject>().SeguirConCamara(newTarget);
     }
-
     public void DejarDeSeguirConCamara()
     {
         GetComponent<SeguirMovimientoGameObject>().DejarDeSeguirConCamara();

@@ -1,7 +1,5 @@
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using UnityEngine;
 
@@ -13,7 +11,6 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 {
     IConexionMundo conexionMundo;
     IBotsLogica logicaBots;
-
 
     void Awake()
     {
@@ -35,7 +32,7 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
                 logicaBots.ActualizarBots((JArray)json["bots"]);
                 break;
             case "dato":
-                logicaBots.ActualizarHUDDatosBots((JObject)json["bot"]);
+                logicaBots.ActualizarHUDDatosBot((JObject)json["bot"]);
                 break;
         }
     }
@@ -46,7 +43,6 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
         {
             if (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))
             {
-                Debug.Log("entra a dequeue AccionesPendientes");
                 DigerirEntrada(json);
             }
             else

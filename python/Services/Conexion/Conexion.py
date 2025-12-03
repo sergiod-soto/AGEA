@@ -64,10 +64,7 @@ def run_exporter(shared_data):
                         )
                         break
                     except Exception as e:
-                        print(
-                            f"[CONEXION] Error inesperado en recepción: {e}\n"
-                            + traceback.print_exc()
-                        )
+                        print(f"[CONEXION] Error inesperado en recepción: {e}")
                         time.sleep(1)
                         break
 

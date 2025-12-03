@@ -4,9 +4,11 @@ using UnityEngine;
 public class BotInfo : MonoBehaviour
 {
     public string id;
-    int tamanho;
+    public int tamanho;
     public (int x, int y) casilla;
     public float rotacion;
+
+    JObject json = null;
 
 
     public void SetStats(string id, int tamanho, (int x, int y) casilla, float rotacion)
@@ -27,13 +29,12 @@ public class BotInfo : MonoBehaviour
         // Actualizar las propiedades del bot con los nuevos datos
         this.casilla = ((int)new_bot["casilla"]["x"], (int)new_bot["casilla"]["y"]);
         this.rotacion = (float)new_bot["rotacion"];
+        json = new_bot;
     }
 
-
-
-    public string To_string()
+    public JObject ToJObject()
     {
-        return "ID: " + id + ",\nCasilla: (" + casilla.x + ", " + casilla.y + "),\nRotacion: " + rotacion + "º";
+        return json;
     }
 }
 
