@@ -25,6 +25,9 @@ def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()
+    
+    if mensaje["tipo"] == "mapa":
+        pass
 
     if mensaje["tipo"] == "pausa":
         pause(shared_data)

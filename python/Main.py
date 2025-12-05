@@ -103,14 +103,17 @@ def actualizar_shared_data(shared_data):
 def main_loop(shared_data):
     """loop principal"""
 
-    while True:
-        # leer el estado de pausa desde el diccionario compartido
-        if shared_data["other"]["paused"] == False:
-            server_tic(shared_data)
-        else:
-            # evitar usar 100% CPU cuando está en pausa
-            print("EN PAUSA...")
-            time.sleep(0.1)
+    try:
+        while True:
+            # leer el estado de pausa desde el diccionario compartido
+            if shared_data["other"]["paused"] == False:
+                server_tic(shared_data)
+            else:
+                # evitar usar 100% CPU cuando está en pausa
+                print("EN PAUSA...")
+                time.sleep(0.1)
+    except:
+        print("error en main loop")
 
 
 def server_tic(shared_data):

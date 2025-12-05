@@ -4,18 +4,13 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class SeguirMovimientoGameObject : MonoBehaviour
 {
-    IBotsLogica botsLogica;
-    IConexionMundo conexion;
     ISolicitudDatos solicitarDatos;
 
     Camera cam;
     Transform target;
     GameObject bot;
 
-    [Header("Dead Zone")]
     public float deadZoneRadius = 100f; // Radio en píxeles del círculo central
-
-    [Header("Smooth Follow")]
     public float smoothTime = 0.25f;
     private Vector3 velocity = Vector3.zero;
 
@@ -23,12 +18,8 @@ public class SeguirMovimientoGameObject : MonoBehaviour
 
     float timer = 0f;
 
-    int i = 0;
-
     void Awake()
     {
-        botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
-        conexion = ServiceLocator.Instance.Get<IConexionMundo>();
         solicitarDatos = ServiceLocator.Instance.Get<ISolicitudDatos>();
     }
 

@@ -117,3 +117,13 @@ public interface ISolicitudDatos : IService
 {
     public void SolicitarDatos(GameObject objeto);
 }
+
+/*
+ * 
+ */
+public interface IMapaLogica : IService
+{
+    public bool ComprobarMapas();
+    public void SolicitarMapas();
+    public void CargarMapas(Dictionary<string, int[,]> mapas);
+}
