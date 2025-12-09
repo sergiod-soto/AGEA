@@ -5,8 +5,7 @@ from pathlib import Path
 
 """ 
 
-script para la generacion aleatoria del mundo
-
+script para la generacion aleatoria del mundo.
 incluye cosas como las masas de agua, las montañas, rocas, biomas, etc, pero no loos bots
 
 """
@@ -61,15 +60,16 @@ class Generacion:
                 todas_mascaras_cargadas = False
 
         if todas_mascaras_cargadas == False:
-            self.generar_biomas()
+            self.generar_mascaras()
 
 
-    def generar_biomas(self):
-        # region ------------- CAPAS BIOMA -------------
-
-        #       region DESIERTOS Y TUNDRAS  ------------
+    def generar_mascaras(self):
+        
+        #  ------------- CAPAS BIOMA -------------
+        
+        #        DESIERTOS Y TUNDRAS  ------------
         #
-        # region creacion de la mascara BASE de desiertos y tundras
+        #  creacion de la mascara BASE de desiertos y tundras
         self.desiertos_y_tundras = self.noise_base.Forma.manchas_irregulares(
             seed=self.seeds["desiertos_y_tundras"],
             num_manchas=5,
@@ -77,89 +77,73 @@ class Generacion:
             radio_medio=0.1,
             variacion_radio=0.2,
         )
-        # endregion
 
-        # region creacion de la mascara de desiertos
+        #  creacion de la mascara de desiertos
         self.desiertos = self.desiertos_y_tundras.Funcion.manchas_blancas_a_blancas(
             self.desiertos_y_tundras
         )
-        # endregion
 
-        # region creacion de la mascara de tundras
+        #  creacion de la mascara de tundras
         self.tundras = self.desiertos_y_tundras.Funcion.manchas_negras_a_blancas(
             self.desiertos_y_tundras
         )
-        # endregion
         #
-        # endregion
 
-        #       region SABANAS Y TAIGAS     ------------
-        # region creacion de la mascara de sabana
+        #        SABANAS Y TAIGAS     ------------
+        #  creacion de la mascara de sabana
         self.sabanas = self.desiertos_y_tundras.Forma.halo_alrededor(
             self.desiertos_y_tundras, target_color=1.0
         )
         self.sabanas = self.desiertos_y_tundras.Forma.recortar_halo(
             self.desiertos_y_tundras, self.sabanas
         )
-        # endregion
 
-        # region creacion de la mascara de taiga
+        #  creacion de la mascara de taiga
         self.taiga = self.desiertos_y_tundras.Forma.halo_alrededor(
             self.desiertos_y_tundras, target_color=0.0
         )
         self.taiga = self.desiertos_y_tundras.Forma.recortar_halo(
             self.desiertos_y_tundras, self.taiga
         )
-        # endregion
         #
-        # endregion
 
-        #       region SELVAS Y MARES       ------------
-        # region creacion de la mascara BASE de selvas y mares
+        #        SELVAS Y MARES       ------------
+        #  creacion de la mascara BASE de selvas y mares
         self.mar_y_selvas = self.noise_base.Forma.manchas_blancas_y_negras(
             num_manchas=5, variacion_borde=0.4, seed=self.seeds["mar_y_selvas"]
         )
-        # endregion
 
-        # region creacion de la mascara de selva
+        #  creacion de la mascara de selva
         self.selva = self.mar_y_selvas.Funcion.manchas_negras_a_blancas(
             self.mar_y_selvas
         )
-        # endregion
 
-        # region creacion de la mascara de mar
+        #  creacion de la mascara de mar
         self.mar = self.mar_y_selvas.Funcion.manchas_blancas_a_blancas(
             self.mar_y_selvas
         )
-        # endregion
         #
-        # endregion
 
-        #       region BOSQUES Y COSTAS     ------------
-        # region creacion de la mascara de bosque
+        #        BOSQUES Y COSTAS     ------------
+        #  creacion de la mascara de bosque
         self.bosque = self.selva.Forma.halo_alrededor(self.selva, target_color=1.0)
         self.bosque = self.bosque.Forma.recortar_halo(self.mar_y_selvas, self.bosque)
-        # endregion
 
-        # region creacion de la mascara de costa
+        #  creacion de la mascara de costa
         self.costa = self.mar.Forma.halo_alrededor(self.mar, target_color=1.0)
         self.costa = self.costa.Forma.recortar_halo(self.mar_y_selvas, self.costa)
-        # endregion
         #
-        # endregion
         #
-        # endregion
 
-    # region ------------- CAPAS CLIMA -------------
+    #  ------------- CAPAS CLIMA -------------
 
-    # region HUMEDAD
+    #  HUMEDAD
     # TODO
     def generar_humedad(self):
         raise NotImplementedError("No implementado")
 
-    # endregion
 
-    # region TEMPERATURA
+    #  TEMPERATURA
     def generar_temperatura(self):
         base = Noise(seed=2562)
 
@@ -177,13 +161,10 @@ class Generacion:
 
         return noise
 
-    # endregion
 
-    # endregion
 
-    # endregion
 
-    # region ------------- CAPAS BIOMA -------------
+    #  ------------- CAPAS BIOMA -------------
     def get_mascara_praderas(self):
         raise NotImplementedError("No implementado")
 

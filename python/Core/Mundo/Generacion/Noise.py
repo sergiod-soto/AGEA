@@ -6,6 +6,7 @@ from opensimplex import OpenSimplex
 import math
 import random
 import Exceptions
+import hashlib
 
 
 class Noise:
@@ -30,6 +31,12 @@ class Noise:
         # Instancias auxiliares
         self.Forma = self._Forma(self)
         self.Funcion = self._Funcion(self)
+
+    # def _serializar(self):
+    #     serializado = str(self.seed) + ", " + str(self.func.__qualname__)
+    #     return serializado
+    
+
 
     def __call__(
         self, x, y, scale=None, octaves=None, persistence=None, lacunarity=None
@@ -78,7 +85,7 @@ class Noise:
             img = Image.open(path).convert("L")  # Escala de grises
         except Exception as e:
             raise Exceptions.NoMaskFound(e)
-        
+
         ancho, alto = img.size
         pix = np.array(img, dtype=np.float32) / 255.0
 

@@ -1,6 +1,7 @@
 import json
 from Services.Conexion.SalidaActualizacion import salida_actualizacion
 from Services.Conexion.SalidasDatos.SalidaDato import salida_dato
+from Services.Conexion.SalidasDatos.SalidaMapa import salida_mapa
 from Utils.Sistema.Pause import pause
 
 
@@ -27,7 +28,7 @@ def procesar_mensaje_salida(mensaje, shared_data):
         return formatear(salida_dato(shared_data, mensaje)).encode()
     
     if mensaje["tipo"] == "mapa":
-        pass
+        return formatear(salida_mapa(shared_data, mensaje)).encode()
 
     if mensaje["tipo"] == "pausa":
         pause(shared_data)

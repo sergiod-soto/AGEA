@@ -4,13 +4,13 @@ import socket
 import time
 import traceback
 from Services.Conexion.Importer import receive_data
-import Main
+import main
 
 #
 #
 #
 HOST = "127.0.0.1"
-PORT = 5069 if Main.debug else 5001
+PORT = 5069 if main.debug else 5001
 
 
 def run_exporter(shared_data):

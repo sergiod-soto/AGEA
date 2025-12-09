@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import signal
 
+from Core.Mundo.Generacion.Generacion import Generacion
 from Dev.Testing import FakeClient
 from Dev.Testing.Estados import set_estados
 import Utils.Sistema.FuncionesCSV as FuncionesCSV
@@ -89,14 +90,11 @@ rutas_ficheros = FuncionesCSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
 #
 
 
-
-
-
 def actualizar_shared_data(shared_data):
     """actualizo la variable compartida "shared_data" """
 
     shared_data["bots"].update(Datos.serializar_bots())
-    
+
     # shared_data["dev"] = manager.dict()
 
 
@@ -178,9 +176,14 @@ if __name__ == "__main__":
         FakeClient.start_fake_client()
         FakeClient.run_demo()
 
-    # generator = Generacion(
-    #     x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
-    # )
+    generador = Generacion(
+        x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
+    )
+
+
+
+
+    
 
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
