@@ -3,19 +3,21 @@ using UnityEngine;
 public class HUDControl : MonoBehaviour, IHUDRunningControl
 {
 
-    public GameObject HUDRunning;
-    public GameObject hideHUDBoton;
+    IControlHUDLogica controlHUD;
+    void Awake()
+    {
+        controlHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
+    }
 
     public void Show_HUD()
     {
-        HUDRunning.SetActive(true);
-        hideHUDBoton.SetActive(true);
+        Debug.Log("asdasd");
+        controlHUD.OpenBotHUD();
     }
 
     public void Hide_HUD()
     {
-        HUDRunning.SetActive(false);
-        hideHUDBoton.SetActive(false);
+       controlHUD.CloseBotHUD();
     }
    
 }

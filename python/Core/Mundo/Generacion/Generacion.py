@@ -26,6 +26,7 @@ class Generacion:
         )
         # cargar mascaras
         self.cargar_mascaras(
+            "",
             [
                 "desiertos.png",
                 "bosques.png",
@@ -36,18 +37,16 @@ class Generacion:
                 "oasis.png",
                 "bosques.png",
                 "mares.png",
-            ]
+            ],
         )
 
-    def cargar_mascaras(self, mascaras):
-        
+    def cargar_mascaras(self, direccion, mascaras):
+
         def _load(self, ruta):
             try:
-                return self.noise_base.load(self.direccion_base + ruta)
+                return self.noise_base.load(direccion + ruta)
             except Exceptions.NoMaskFound as e:
-                print(
-                    f"\033[31m\tNo encontrada mascara: [{self.direccion_base + ruta}]\033[0m"
-                )
+                print(f"\033[31m\tNo encontrada mascara: [{direccion} {ruta}]\033[0m")
                 raise e
 
         todas_mascaras_cargadas = True
@@ -62,11 +61,10 @@ class Generacion:
         if todas_mascaras_cargadas == False:
             self.generar_mascaras()
 
-
     def generar_mascaras(self):
-        
+
         #  ------------- CAPAS BIOMA -------------
-        
+
         #        DESIERTOS Y TUNDRAS  ------------
         #
         #  creacion de la mascara BASE de desiertos y tundras
@@ -142,7 +140,6 @@ class Generacion:
     def generar_humedad(self):
         raise NotImplementedError("No implementado")
 
-
     #  TEMPERATURA
     def generar_temperatura(self):
         base = Noise(seed=2562)
@@ -160,9 +157,6 @@ class Generacion:
         noise.show(100, 100)
 
         return noise
-
-
-
 
     #  ------------- CAPAS BIOMA -------------
     def get_mascara_praderas(self):

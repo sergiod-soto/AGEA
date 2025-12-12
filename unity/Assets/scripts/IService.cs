@@ -127,3 +127,20 @@ public interface IMapaLogica : IService
     public void SolicitarMapas();
     public void CargarMapas(Dictionary<string, int[,]> mapas);
 }
+
+/*
+ * 
+ */
+public interface IControlHUDLogica : IService
+{
+    public void SetBaseState();
+    public void EnterOptions();
+    public void ExitOptions();
+    public void StartGame();
+    public void LeaveGame();
+    public void OpenBotHUD();
+    public void ExitBotHUD();
+    public void CloseBotHUD();
+
+
+}

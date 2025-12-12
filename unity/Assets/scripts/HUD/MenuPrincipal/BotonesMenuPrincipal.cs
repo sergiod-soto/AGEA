@@ -5,21 +5,19 @@ using System.Collections;
 
 public class BotonesMenuPrincipal : MonoBehaviour
 {
-    IDEVManager DEVManager;
     IConexionMundo conexionMundo;
     IGameLogica logicaJuego;
+    IControlHUDLogica logicaHUD;
 
 
-    private Process pythonProcess;
-    private Coroutine envioCoroutine;
+    private readonly Process pythonProcess;
 
 
     void Awake()
     {
-        DEVManager = ServiceLocator.Instance.Get<IDEVManager>();
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaJuego = ServiceLocator.Instance.Get<IGameLogica>();
-
+        logicaHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -28,12 +26,13 @@ public class BotonesMenuPrincipal : MonoBehaviour
         //DEVManager.StartFakeServer();
         conexionMundo.Arrancar();
         logicaJuego.ActivarActualizacionDatos();
+        logicaHUD.StartGame();
     }
 
 
     public void Boton_Preferences()
     {
-        print("Boton_Preferences");
+        logicaHUD.EnterOptions();
     }
 
     public void Boton_Exit()

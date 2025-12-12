@@ -1047,7 +1047,7 @@ GameObject:
   - component: {fileID: 210058652}
   - component: {fileID: 210058651}
   m_Layer: 5
-  m_Name: propiedades_value
+  m_Name: Propiedades Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1701,7 +1701,7 @@ GameObject:
   - component: {fileID: 397105247}
   - component: {fileID: 397105246}
   m_Layer: 5
-  m_Name: modificadores_value
+  m_Name: Modificadores Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2156,6 +2156,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8977041711070217425, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 0}
     - {fileID: 0}
@@ -2168,6 +2172,51 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6787869708184515461, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
   m_PrefabInstance: {fileID: 441912411}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &466010230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 466010231}
+  - component: {fileID: 466010232}
+  m_Layer: 0
+  m_Name: Control
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &466010231
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 466010230}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1100511888}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &466010232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 466010230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc96f8ac42c57aa4b9b51a8e2465fcfb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ControlHUD
+  HUDBase: {fileID: 495079714}
 --- !u!1 &495079714
 GameObject:
   m_ObjectHideFlags: 0
@@ -2303,7 +2352,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 899191466}
-  m_Father: {fileID: 1905294157}
+  m_Father: {fileID: 1748735036}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -2777,7 +2826,7 @@ GameObject:
   - component: {fileID: 581301064}
   - component: {fileID: 581301063}
   m_Layer: 5
-  m_Name: show_HUD_true
+  m_Name: Show HUD True
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3062,7 +3111,7 @@ GameObject:
   - component: {fileID: 669153236}
   - component: {fileID: 669153235}
   m_Layer: 5
-  m_Name: Fondo_opciones
+  m_Name: Fondo Opciones
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3220,7 +3269,7 @@ GameObject:
   - component: {fileID: 677766814}
   - component: {fileID: 677766813}
   m_Layer: 5
-  m_Name: propiedades_text
+  m_Name: Propiedades Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3389,8 +3438,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d24cf5c93fd7e4347bfd5ecd28253340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUDControl
-  HUDRunning: {fileID: 1126668379}
-  hideHUDBoton: {fileID: 1509884045}
 --- !u!1 &748531828
 GameObject:
   m_ObjectHideFlags: 0
@@ -3403,7 +3450,7 @@ GameObject:
   - component: {fileID: 748531831}
   - component: {fileID: 748531830}
   m_Layer: 5
-  m_Name: posicion_value
+  m_Name: Posicion Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3742,7 +3789,7 @@ GameObject:
   - component: {fileID: 870461522}
   - component: {fileID: 870461521}
   m_Layer: 5
-  m_Name: id_text
+  m_Name: ID Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4520,7 +4567,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 931921480}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.34}
+  m_LocalPosition: {x: 0, y: 0, z: 0.33999997}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4528,7 +4575,7 @@ RectTransform:
   - {fileID: 1900183769}
   - {fileID: 89176101}
   - {fileID: 1314985224}
-  m_Father: {fileID: 1905294157}
+  m_Father: {fileID: 1748735036}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
@@ -4738,7 +4785,7 @@ GameObject:
   - component: {fileID: 984187866}
   - component: {fileID: 984187865}
   m_Layer: 5
-  m_Name: apellidos_text
+  m_Name: Apellidos Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5138,7 +5185,7 @@ GameObject:
   - component: {fileID: 1037326216}
   - component: {fileID: 1037326215}
   m_Layer: 5
-  m_Name: propiedades_value
+  m_Name: Propiedades Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5413,7 +5460,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1072446974}
-  - component: {fileID: 1072446975}
   m_Layer: 0
   m_Name: CargaMapa
   m_TagString: Untagged
@@ -5436,18 +5482,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 624138257}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1072446975
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1072446973}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 94ef4ea50f395f2489b337877aba604a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CargaMascaras
 --- !u!1 &1100511887
 GameObject:
   m_ObjectHideFlags: 0
@@ -5479,6 +5513,7 @@ Transform:
   m_Children:
   - {fileID: 282063934}
   - {fileID: 721391463}
+  - {fileID: 466010231}
   m_Father: {fileID: 1415771270}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1126604742
@@ -5631,7 +5666,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1126668380
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6151,7 +6186,7 @@ GameObject:
   - component: {fileID: 1176392600}
   - component: {fileID: 1176392599}
   m_Layer: 5
-  m_Name: opciones
+  m_Name: Opciones
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6318,7 +6353,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1259965743}
   m_Layer: 5
-  m_Name: HUD_pantalla_inicio
+  m_Name: HUD Pantalla Inicio
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6357,7 +6392,7 @@ GameObject:
   - component: {fileID: 1265228661}
   - component: {fileID: 1265228660}
   m_Layer: 5
-  m_Name: posicion_text
+  m_Name: Posicion Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6936,7 +6971,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1415285827}
-  - component: {fileID: 1415285828}
   m_Layer: 0
   m_Name: Mundo
   m_TagString: Untagged
@@ -6961,18 +6995,6 @@ Transform:
   - {fileID: 842989540}
   m_Father: {fileID: 886604658}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1415285828
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1415285826}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 94ef4ea50f395f2489b337877aba604a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Carga_mascaras
 --- !u!1 &1415771268
 GameObject:
   m_ObjectHideFlags: 0
@@ -7071,7 +7093,7 @@ GameObject:
   - component: {fileID: 1493597285}
   - component: {fileID: 1493597284}
   m_Layer: 5
-  m_Name: id_value
+  m_Name: ID Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7208,7 +7230,7 @@ GameObject:
   - component: {fileID: 1509884048}
   - component: {fileID: 1509884047}
   m_Layer: 5
-  m_Name: show_HUD_false
+  m_Name: Show HUD False
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7377,7 +7399,7 @@ GameObject:
   - component: {fileID: 1520301937}
   - component: {fileID: 1520301936}
   m_Layer: 5
-  m_Name: boton_atras
+  m_Name: Boton Atras
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7919,7 +7941,7 @@ GameObject:
   - component: {fileID: 1737462633}
   - component: {fileID: 1737462632}
   m_Layer: 5
-  m_Name: boton_atras_modificadores
+  m_Name: Boton Atras Modificadores
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8075,7 +8097,7 @@ GameObject:
   - component: {fileID: 1744536493}
   - component: {fileID: 1744536492}
   m_Layer: 5
-  m_Name: apellidos_value
+  m_Name: Apellidos Value
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8199,6 +8221,44 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1744536490}
   m_CullTransparentMesh: 1
+--- !u!1 &1748735035
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1748735036}
+  m_Layer: 5
+  m_Name: DEV panel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1748735036
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1748735035}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1862620868}
+  - {fileID: 500272485}
+  - {fileID: 931921481}
+  m_Father: {fileID: 1905294157}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1757064227
 GameObject:
   m_ObjectHideFlags: 0
@@ -8211,7 +8271,7 @@ GameObject:
   - component: {fileID: 1757064230}
   - component: {fileID: 1757064229}
   m_Layer: 5
-  m_Name: propiedades_text
+  m_Name: Propiedades Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8697,7 +8757,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1069973330}
-  m_Father: {fileID: 1905294157}
+  m_Father: {fileID: 1748735036}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -9022,12 +9082,12 @@ GameObject:
   m_Component:
   - component: {fileID: 1905294157}
   m_Layer: 5
-  m_Name: HUD_running
+  m_Name: HUD Running
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1905294157
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9040,14 +9100,12 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1862620868}
-  - {fileID: 500272485}
-  - {fileID: 931921481}
   - {fileID: 6867745}
   - {fileID: 1126668380}
   - {fileID: 581301062}
   - {fileID: 1509884046}
   - {fileID: 669153234}
+  - {fileID: 1748735036}
   m_Father: {fileID: 495079718}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -9661,7 +9719,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2141769048}
   m_Layer: 5
-  m_Name: panel base
+  m_Name: Panel Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

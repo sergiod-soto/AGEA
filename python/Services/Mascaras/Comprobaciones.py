@@ -9,7 +9,7 @@ def _comprobar_mascara(direccion):
     return False
 
 
-def comprobar_mascaras(perfil="perfil1"):
+def comprobar_mascaras(perfil):
 
     ##############################################################
     dir_base_mascaras = os.getcwd() + "/perfiles/" + perfil + "/mascaras/imagenes"

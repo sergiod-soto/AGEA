@@ -29,6 +29,10 @@ def procesar_mensaje_salida(mensaje, shared_data):
     
     if mensaje["tipo"] == "mapa":
         return formatear(salida_mapa(shared_data, mensaje)).encode()
+    
+    if mensaje["tipo"] == "perfil":
+        
+        return "None"
 
     if mensaje["tipo"] == "pausa":
         pause(shared_data)
