@@ -13,5 +13,5 @@ def salida_dato(shared_data, entrada):
 
     partes.append("\n}<END>")
     serializacion = serializacion.join(partes)
-    print("mensaje para unity:\n" + serializacion)
+    #print("mensaje para unity:\n" + serializacion)
     return serializacion

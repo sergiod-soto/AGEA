@@ -6,6 +6,7 @@ public class SolicitarDatos : MonoBehaviour
 {
     IHUDRunningControl HUD_Running;
     IControlCamara camara;
+    ISolicitudDatos solicitarDatos;
 
     public TextMeshProUGUI posicion_value;
     public TextMeshProUGUI id_value;
@@ -18,6 +19,7 @@ public class SolicitarDatos : MonoBehaviour
     {
         HUD_Running = ServiceLocator.Instance.Get<IHUDRunningControl>();
         camara = ServiceLocator.Instance.Get<IControlCamara>();
+        solicitarDatos = ServiceLocator.Instance.Get<ISolicitudDatos>();
     }
 
     public void ClicEnBot(GameObject bot)
@@ -26,13 +28,13 @@ public class SolicitarDatos : MonoBehaviour
         camara.SeguirConCamara(bot);
 
         // toca pedir resto de datos a python    
-        //solicitarDatos.SolicitarDatos(bot);
+        solicitarDatos.SolicitarDatos(bot);
     }
 
     public void ActualizarHUD(JObject bot)
     {
-        Debug.Log("Actualizando HUD datos bot");
         HUD_Running.Show_HUD();
+
         posicion_value.text = SerializarPosicionValue(bot);
         id_value.text = SerializarId(bot);
         propiedades_value.text = SerializarPropiedadesValue(bot);

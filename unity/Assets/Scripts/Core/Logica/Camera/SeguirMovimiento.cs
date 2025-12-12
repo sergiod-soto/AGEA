@@ -71,16 +71,14 @@ public class SeguirMovimientoGameObject : MonoBehaviour
 
     public void SeguirConCamara(GameObject newTarget)
     {
+        bot = null;
         if (newTarget == null)
         {
             target = null;
             bot = null;
             return;
         }
-        if (bot == null)
-        {
-            SetBot_A_Actualizar(newTarget);
-        }
+        SetBot_A_Actualizar(newTarget);
         target = newTarget.transform;
     }
 
