@@ -43,6 +43,7 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         GameObject PanelBase = HUDInfoBot.transform.Find("Panel Base").gameObject;
         PanelBase.SetActive(true);
 
+        // base
         PanelBase.transform.Find("Posicion Text").gameObject.SetActive(true);
         PanelBase.transform.Find("Posicion Value").gameObject.SetActive(true);
         PanelBase.transform.Find("Panel").gameObject.SetActive(true);
@@ -63,27 +64,16 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         BasePropAvanzadas.SetActive(false);
 
         PanelBase.transform.Find("Boton Familia").gameObject.SetActive(true);
-
-
-
-
-        GameObject BaseFamilia = PanelBase.transform.Find("Base Familia").gameObject;
-        BaseFamilia.SetActive(true);
-
-        BaseFamilia.transform.Find("Apellidos Text").gameObject.SetActive(true);
-        BaseFamilia.transform.Find("Apellidos Value").gameObject.SetActive(true);
-        BaseFamilia.transform.Find("Boton Atras").gameObject.SetActive(true);
-
+        PanelBase.transform.Find("Base Familia").gameObject.SetActive(false);
         PanelBase.transform.Find("Boton Modificadores").gameObject.SetActive(true);
+        PanelBase.transform.Find("Base Modificadores").gameObject.SetActive(false);
 
-        GameObject BaseModificadores = PanelBase.transform.Find("Base Modificadores").gameObject;
-        BaseFamilia.SetActive(true);
 
-        BaseModificadores.transform.Find("Modificadores Value").gameObject.SetActive(true);
-        BaseModificadores.transform.Find("Boton Atras Modificadores").gameObject.SetActive(true);
 
-        HUDRunning.transform.Find("Show HUD True").gameObject.SetActive(true);
-        HUDRunning.transform.Find("Show HUD False").gameObject.SetActive(false);
+
+
+        HUDRunning.transform.Find("Show HUD True").gameObject.SetActive(false);
+        HUDRunning.transform.Find("Show HUD False").gameObject.SetActive(true);
     }
 
     public void SetBaseState()

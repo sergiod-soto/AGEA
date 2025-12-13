@@ -11,7 +11,6 @@ public class HUDControl : MonoBehaviour, IHUDRunningControl
 
     public void Show_HUD()
     {
-        Debug.Log("asdasd");
         controlHUD.OpenBotHUD();
     }
 
