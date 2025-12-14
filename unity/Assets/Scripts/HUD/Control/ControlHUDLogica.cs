@@ -9,31 +9,52 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         SetBaseState();
     }
 
+    /*
+     * se hace clic en cerrar HUD (en el boton). 
+     */
     public void CloseBotHUD()
     {
         throw new System.NotImplementedException();
+
     }
 
+    /*
+     * entramos en preferences
+     */
     public void EnterOptions()
     {
         throw new System.NotImplementedException();
     }
 
+    /*
+     * se hace clic en "suelo"
+     */
     public void ExitBotHUD()
     {
-        throw new System.NotImplementedException();
+        HUDBase.transform.Find("HUD Running").Find("HUD Info Bot").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Running").Find("Show HUD False").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Running").Find("Show HUD True").gameObject.SetActive(false);
     }
 
+    /*
+     * al cerrar las opciones
+     */
     public void ExitOptions()
     {
         throw new System.NotImplementedException();
     }
 
+    /*
+     * se sale al menu principal
+     */
     public void LeaveGame()
     {
-        throw new System.NotImplementedException();
+        SetBaseState();
     }
 
+    /*
+     * al hacer clic en un bot
+     */
     public void OpenBotHUD()
     {
         GameObject HUDRunning = HUDBase.transform.Find("HUD Running").gameObject;
@@ -68,14 +89,13 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         PanelBase.transform.Find("Boton Modificadores").gameObject.SetActive(true);
         PanelBase.transform.Find("Base Modificadores").gameObject.SetActive(false);
 
-
-
-
-
         HUDRunning.transform.Find("Show HUD True").gameObject.SetActive(false);
         HUDRunning.transform.Find("Show HUD False").gameObject.SetActive(true);
     }
 
+    /*
+     *  justo tras hacer clic en Start
+     */
     public void SetBaseState()
     {
         // BASE HUD  //////////////////////////////////////////////////////////////////////////////////
@@ -99,6 +119,9 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         Botones.transform.Find("Exit").gameObject.SetActive(true);
     }
 
+    /*
+     *  justo tras arrancar el programa
+     */
     public void StartGame()
     {
         // HUD Pantalla Inicio  ///////////////////////////////////////////////////////////////////////////////
