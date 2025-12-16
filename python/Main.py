@@ -14,6 +14,8 @@ import Services.Conexion.Conexion as Conexion
 
 from Dev.Serie_Estados import Serie_Estados
 
+from Core.Perfiles.Logica import obtener_perfiles
+
 ##################################################################
 ##################################################################
 
@@ -179,11 +181,6 @@ if __name__ == "__main__":
     generador = Generacion(
         x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
     )
-
-
-
-
-    
 
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)

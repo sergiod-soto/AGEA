@@ -3,6 +3,7 @@ from Services.Conexion.SalidaActualizacion import salida_actualizacion
 from Services.Conexion.SalidasDatos.SalidaDato import salida_dato
 from Services.Conexion.SalidasDatos.SalidaMapa import salida_mapa
 from Utils.Sistema.Pause import pause
+from Core.Perfiles.Logica import cambiar_perfil
 
 
 def formatear(texto: str) -> str:
@@ -21,17 +22,16 @@ def formatear(texto: str) -> str:
 def procesar_mensaje_salida(mensaje, shared_data):
 
     if mensaje["tipo"] == "actualizacion":
-        a = formatear(salida_actualizacion(shared_data))
-        return a.encode()
+        return formatear(salida_actualizacion(shared_data)).encode()
 
     if mensaje["tipo"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()
-    
+
     if mensaje["tipo"] == "mapa":
         return formatear(salida_mapa(shared_data, mensaje)).encode()
-    
+
     if mensaje["tipo"] == "perfil":
-        
+        cambiar_perfil(mensaje["id"])
         return "None"
 
     if mensaje["tipo"] == "pausa":
