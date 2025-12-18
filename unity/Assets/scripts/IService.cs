@@ -133,14 +133,13 @@ public interface IMapaLogica : IService
  */
 public interface IControlHUDLogica : IService
 {
-    public void SetBaseState();
+    public void ShowBotHUDFalse();
+    public void ShowBotHUDTrue();
     public void EnterOptions();
+    public void CloseBotHUD();
     public void ExitOptions();
-    public void StartGame();
     public void LeaveGame();
     public void OpenBotHUD();
-    public void ExitBotHUD();
-    public void CloseBotHUD();
-
-
+    public void SetBaseState();
+    public void StartGame();
 }

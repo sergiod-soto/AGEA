@@ -10,12 +10,21 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
     }
 
     /*
-     * se hace clic en cerrar HUD (en el boton). 
+     * se oculta el HUD (por el boton). 
      */
-    public void CloseBotHUD()
+    public void ShowBotHUDFalse()
     {
-        throw new System.NotImplementedException();
+        HUDBase.transform.Find("HUD Running")
+            .transform.Find("HUD Info Bot").gameObject.SetActive(false);
+    }
 
+    /*
+     * se muestra el HUD (por el boton). 
+     */
+    public void ShowBotHUDTrue()
+    {
+        HUDBase.transform.Find("HUD Running")
+            .transform.Find("HUD Info Bot").gameObject.SetActive(true);
     }
 
     /*
@@ -29,11 +38,10 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
     /*
      * se hace clic en "suelo"
      */
-    public void ExitBotHUD()
+    public void CloseBotHUD()
     {
         HUDBase.transform.Find("HUD Running").Find("HUD Info Bot").gameObject.SetActive(false);
-        HUDBase.transform.Find("HUD Running").Find("Show HUD False").gameObject.SetActive(false);
-        HUDBase.transform.Find("HUD Running").Find("Show HUD True").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Running").Find("Show HUD").gameObject.SetActive(false);
     }
 
     /*
@@ -89,8 +97,7 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         PanelBase.transform.Find("Boton Modificadores").gameObject.SetActive(true);
         PanelBase.transform.Find("Base Modificadores").gameObject.SetActive(false);
 
-        HUDRunning.transform.Find("Show HUD True").gameObject.SetActive(false);
-        HUDRunning.transform.Find("Show HUD False").gameObject.SetActive(true);
+        HUDRunning.transform.Find("Show HUD").gameObject.SetActive(true);
     }
 
     /*
