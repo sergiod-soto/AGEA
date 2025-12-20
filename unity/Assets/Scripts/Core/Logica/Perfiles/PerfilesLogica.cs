@@ -7,6 +7,11 @@ using UnityEngine;
 [RequireComponent(typeof(ObtenerInfoPerfilActivo))]
 public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
 {
+    void Start()
+    {
+        GetPerfiles();
+    }
+
     public void GetPerfiles()
     {
         GetComponent<ObtenerPerfiles>().ObtenerListaPerfiles();
