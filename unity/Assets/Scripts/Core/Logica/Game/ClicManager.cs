@@ -40,7 +40,7 @@ public class ClicManager : MonoBehaviour
             }
             else
             {
-                controlHUDLogica.ExitBotHUD();
+                controlHUDLogica.CloseBotHUD();
             }
         }
     }

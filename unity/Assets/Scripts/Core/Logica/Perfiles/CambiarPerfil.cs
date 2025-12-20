@@ -2,15 +2,13 @@ using UnityEngine;
 
 public class CambiarPerfil : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    IConexionMundo conexion;
+    private void Awake()
     {
-        
+        conexion = ServiceLocator.Instance.Get<IConexionMundo>();
     }
-
-    // Update is called once per frame
-    void Update()
+    public void ChangeActiveProfile(string profileName)
     {
-        
+        conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"cambiar_perfil\",\"nombre\":\"" + profileName + "\"}");
     }
 }

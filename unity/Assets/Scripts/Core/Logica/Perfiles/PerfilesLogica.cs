@@ -1,16 +1,26 @@
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-public class PerfilesLogica : MonoBehaviour
+[RequireComponent(typeof(ObtenerPerfiles))]
+[RequireComponent(typeof(CambiarPerfil))]
+[RequireComponent(typeof(CambiarNombre))]
+[RequireComponent(typeof(ObtenerInfoPerfilActivo))]
+public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void GetPerfiles()
     {
-        
+        GetComponent<ObtenerPerfiles>().ObtenerListaPerfiles();
     }
-
-    // Update is called once per frame
-    void Update()
+    public void SetPerfilActivo(string perfil)
     {
-        
+        GetComponent<CambiarPerfil>().ChangeActiveProfile(perfil);
+    }
+    public void GetInfoPerfilActivo()
+    {
+        GetComponent<ObtenerInfoPerfilActivo>().ObtenerInfo();
+    }
+    public void CambiarNombrePerfilActivo(string nuevoNombre)
+    {
+        GetComponent<CambiarNombre>().ChangeName(nuevoNombre);
     }
 }

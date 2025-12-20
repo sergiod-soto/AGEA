@@ -143,3 +143,21 @@ public interface IControlHUDLogica : IService
     public void SetBaseState();
     public void StartGame();
 }
+
+public interface IPerfilesLogica : IService
+{
+    public void GetPerfiles();
+    public void SetPerfilActivo(string perfil);
+    public void GetInfoPerfilActivo();
+    public void CambiarNombrePerfilActivo(string nuevoNombre);
+}
+
+
+
+
+
+
+
+
+
+
