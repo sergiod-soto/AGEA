@@ -18,19 +18,4 @@ public class MapaLogica : MonoBehaviour, IMapaLogica
     {
         throw new System.NotImplementedException();
     }
-
-
-    void Start()
-    {
-        if (ComprobarMapas())
-        {
-            Debug.Log("Comprobacion exitosa");
-
-        }
-        else
-        {
-            Debug.Log("Comprobacion fallida");
-
-        }
-    }
 }

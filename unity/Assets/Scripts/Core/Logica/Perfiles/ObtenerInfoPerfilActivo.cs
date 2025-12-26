@@ -1,14 +1,13 @@
-using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-public class ObtenerInfoPerfilActivo : MonoBehaviour
+public class SolicitarInfoPerfilActivo : MonoBehaviour
 {
     IConexionMundo conexion;
     private void Awake()
     {
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
     }
-    public void ObtenerInfo()
+    public void SolicitarInfo()
     {
         conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"info_perfil_activo\"}");
     }

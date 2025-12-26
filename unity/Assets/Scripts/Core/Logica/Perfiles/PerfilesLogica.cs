@@ -1,28 +1,28 @@
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-[RequireComponent(typeof(ObtenerPerfiles))]
+[RequireComponent(typeof(SolicitarPerfiles))]
 [RequireComponent(typeof(CambiarPerfil))]
 [RequireComponent(typeof(CambiarNombre))]
-[RequireComponent(typeof(ObtenerInfoPerfilActivo))]
+[RequireComponent(typeof(SolicitarInfoPerfilActivo))]
 public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
 {
     void Start()
     {
-        GetPerfiles();
+        SolicitarPerfiles();
     }
 
-    public void GetPerfiles()
+    public void SolicitarPerfiles()
     {
-        GetComponent<ObtenerPerfiles>().ObtenerListaPerfiles();
+        GetComponent<SolicitarPerfiles>().SolicitarListaPerfiles();
     }
     public void SetPerfilActivo(string perfil)
     {
         GetComponent<CambiarPerfil>().ChangeActiveProfile(perfil);
     }
-    public void GetInfoPerfilActivo()
+    public void SolicitarInfoPerfilActivo()
     {
-        GetComponent<ObtenerInfoPerfilActivo>().ObtenerInfo();
+        GetComponent<SolicitarInfoPerfilActivo>().SolicitarInfo();
     }
     public void CambiarNombrePerfilActivo(string nuevoNombre)
     {

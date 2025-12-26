@@ -8,6 +8,7 @@ public class BotonesMenuPrincipal : MonoBehaviour
     IConexionMundo conexionMundo;
     IGameLogica logicaJuego;
     IControlHUDLogica logicaHUD;
+    IPerfilesLogica logicaPerfiles;
 
 
     private readonly Process pythonProcess;
@@ -18,15 +19,22 @@ public class BotonesMenuPrincipal : MonoBehaviour
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaJuego = ServiceLocator.Instance.Get<IGameLogica>();
         logicaHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
+        logicaPerfiles = ServiceLocator.Instance.Get<IPerfilesLogica>();
+    }
+
+    void Start()
+    {
+        logicaHUD.SetBaseState();
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void Boton_Start()
     {
-        //DEVManager.StartFakeServer();
         conexionMundo.Arrancar();
-        logicaJuego.ActivarActualizacionDatos();
-        logicaHUD.StartGame();
+        // logicaJuego.ActivarActualizacionDatos();
+        logicaHUD.AbrirPerfiles();
+        logicaPerfiles.SolicitarPerfiles();
+
     }
 
 

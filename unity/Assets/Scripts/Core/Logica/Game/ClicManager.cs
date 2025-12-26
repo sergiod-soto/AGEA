@@ -21,15 +21,16 @@ public class ClicManager : MonoBehaviour
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (EventSystem.current.IsPointerOverGameObject())
+            {
                 // se ha hecho clic en UI
                 return;
+            }
 
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
             RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
             if (hit.collider != null)
-            {
-                // se ha hecho clic en algo con hitbox
+            { // se ha hecho clic en algo con hitbox
 
                 // si se hace clic en un bot
                 if (hit.collider.TryGetComponent<BotInfo>(out var bot_inf))

@@ -142,13 +142,16 @@ public interface IControlHUDLogica : IService
     public void OpenBotHUD();
     public void SetBaseState();
     public void StartGame();
+    public void AbrirPerfiles();
+    public void CerrarPerfiles();
+
 }
 
 public interface IPerfilesLogica : IService
 {
-    public void GetPerfiles();
+    public void SolicitarPerfiles();
     public void SetPerfilActivo(string perfil);
-    public void GetInfoPerfilActivo();
+    public void SolicitarInfoPerfilActivo();
     public void CambiarNombrePerfilActivo(string nuevoNombre);
 }
 

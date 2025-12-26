@@ -3,6 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(GameControl))]
 [RequireComponent(typeof(Bot))]
 [RequireComponent(typeof(Options))]
+[RequireComponent(typeof(Perfil))]
 public class ControlHUD : MonoBehaviour, IControlHUDLogica
 {
     public GameObject HUDBase;
@@ -82,5 +83,16 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
     public void StartGame()
     {
         GetComponent<GameControl>().StartGame();
+    }
+
+
+    public void AbrirPerfiles()
+    {
+        GetComponent<Perfil>().AbrirPerfiles();
+    }
+
+    public void CerrarPerfiles()
+    {
+        GetComponent<Perfil>().CerrarPerfiles();
     }
 }
