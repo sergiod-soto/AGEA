@@ -5,7 +5,7 @@ public class GameControl : MonoBehaviour
 {
     GameObject HUDBase;
 
-    void Start()
+    void Awake()
     {
         HUDBase = GetComponent<ControlHUD>().HUDBase;
     }
@@ -31,7 +31,7 @@ public class GameControl : MonoBehaviour
     }
 
     public void SetBaseState()
-    {
+    {    
         // BASE HUD  //////////////////////////////////////////////////////////////////////////////////
         HUDBase.SetActive(true);
 
