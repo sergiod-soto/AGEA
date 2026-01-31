@@ -21,6 +21,6 @@ public class SolicitudDatos : MonoBehaviour, ISolicitudDatos
 
     void SolicitarDatosBot(GameObject bot)
     {
-        conexion.EnviarMensaje("{\"tipo\":\"dato\",\"entity\":\"bot\",\"id\":\"" + bot.GetComponent<BotInfo>().id + "\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"dato\",\"entity\":\"bot\",\"id\":\"" + bot.GetComponent<BotInfo>().id + "\"}");
     }
 }

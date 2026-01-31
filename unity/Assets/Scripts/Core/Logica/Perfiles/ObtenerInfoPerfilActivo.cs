@@ -9,6 +9,6 @@ public class SolicitarInfoPerfilActivo : MonoBehaviour
     }
     public void SolicitarInfo()
     {
-        conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"info_perfil_activo\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"perfil\",\"tipo\":\"info_perfil_activo\"}");
     }
 }

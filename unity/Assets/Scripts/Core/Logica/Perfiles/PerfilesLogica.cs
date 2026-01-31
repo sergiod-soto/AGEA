@@ -28,4 +28,8 @@ public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
     {
         GetComponent<CambiarNombre>().ChangeName(nuevoNombre);
     }
+    public void SetPerfilesPantallaSeleccionPerfil(JArray perfiles)
+    {
+        GetComponent<SolicitarPerfiles>().SetPerfilesPantallaSeleccionPerfil(perfiles);
+    }
 }

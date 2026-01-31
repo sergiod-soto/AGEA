@@ -2,8 +2,8 @@ import json
 from Services.Conexion.SalidaActualizacion import salida_actualizacion
 from Services.Conexion.SalidasDatos.SalidaDato import salida_dato
 from Services.Conexion.SalidasDatos.SalidaMapa import salida_mapa
+from Services.Conexion.SalidasDatos.SalidaPerfil import salida_perfil
 from Utils.Sistema.Pause import pause
-from Core.Perfiles.Logica import cambiar_perfil_activo
 
 
 def formatear(texto: str) -> str:
@@ -21,19 +21,18 @@ def formatear(texto: str) -> str:
 
 def procesar_mensaje_salida(mensaje, shared_data):
 
-    if mensaje["tipo"] == "actualizacion":
+    if mensaje["peticion"] == "actualizacion":
         return formatear(salida_actualizacion(shared_data)).encode()
 
-    if mensaje["tipo"] == "dato":
+    if mensaje["peticion"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()
 
-    if mensaje["tipo"] == "mapa":
+    if mensaje["peticion"] == "mapa":
         return formatear(salida_mapa(shared_data, mensaje)).encode()
 
-    if mensaje["tipo"] == "perfil":
-        cambiar_perfil_activo(mensaje["id"])
-        return "None"
+    if mensaje["peticion"] == "perfil":
+        return formatear(salida_perfil(shared_data, mensaje)).encode()
 
-    if mensaje["tipo"] == "pausa":
+    if mensaje["peticion"] == "pausa":
         pause(shared_data)
         return "None"

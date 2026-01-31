@@ -11,6 +11,7 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
 {
     IConexionMundo conexionMundo;
     IBotsLogica logicaBots;
+    IPerfilesLogica logicaPerfiles;
 
     void Awake()
     {
@@ -26,13 +27,16 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
         }
 
         // Tras parsear, digerir segun tipo de mensaje
-        switch (json["tipo"].ToString())
+        switch (json["peticion"].ToString())
         {
             case "actualizacion":
                 logicaBots.ActualizarBots((JArray)json["bots"]);
                 break;
             case "dato":
                 logicaBots.ActualizarHUDDatosBot((JObject)json["bot"]);
+                break;
+            case "perfil":
+                logicaPerfiles.SetPerfilesPantallaSeleccionPerfil((JArray)json["perfiles"]);
                 break;
         }
     }

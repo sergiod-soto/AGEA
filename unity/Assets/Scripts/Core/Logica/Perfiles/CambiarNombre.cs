@@ -10,6 +10,6 @@ public class CambiarNombre : MonoBehaviour
     }
     public void ChangeName(string nuevoNombre)
     {
-        conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"cambio_nombre\",\"nombre\":\"" + nuevoNombre + "\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"perfil\",\"tipo\":\"cambio_nombre\",\"nombre\":\"" + nuevoNombre + "\"}");
     }
 }

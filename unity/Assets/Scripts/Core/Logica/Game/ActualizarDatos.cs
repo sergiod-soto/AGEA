@@ -45,7 +45,7 @@ public class ActualizarDatos : MonoBehaviour
             acumulador = 0f;
 
             // mandamos peticion de actualizacion de datos
-            conexionMundo.EnviarMensaje("{\"tipo\":\"actualizacion\"}");
+            conexionMundo.EnviarMensaje("{\"peticion\":\"actualizacion\"}");
         }
     }
 }

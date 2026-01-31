@@ -153,6 +153,7 @@ public interface IPerfilesLogica : IService
     public void SetPerfilActivo(string perfil);
     public void SolicitarInfoPerfilActivo();
     public void CambiarNombrePerfilActivo(string nuevoNombre);
+    public void SetPerfilesPantallaSeleccionPerfil(JArray perfiles);
 }
 
 

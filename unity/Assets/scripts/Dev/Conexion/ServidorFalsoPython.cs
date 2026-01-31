@@ -17,7 +17,7 @@ public class ServidorFalsoPython : MonoBehaviour
 
     readonly string mensajePeriodico1 = @"
         {
-                ""tipo"": ""actualizacion"",
+                ""peticion"": ""actualizacion"",
                 ""bots"": [
                 {
                     ""id"": 0,
@@ -41,7 +41,7 @@ public class ServidorFalsoPython : MonoBehaviour
 
     readonly string mensajePeriodico2 = @"
         {
-            ""tipo"": ""actualizacion"",
+            ""peticion"": ""actualizacion"",
             ""bots"": [
             {
                 ""id"": 0,

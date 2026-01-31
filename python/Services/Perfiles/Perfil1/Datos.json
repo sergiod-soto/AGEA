@@ -1,5 +1,6 @@
 {
     "id": "perfil1",
     "nombre":"Nuevo Perfil",
-    "fecha": ""
+    "fecha": "",
+    "tiempo_entrenamiento": 0
 }

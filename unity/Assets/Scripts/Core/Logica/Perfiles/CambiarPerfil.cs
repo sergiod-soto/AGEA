@@ -9,6 +9,6 @@ public class CambiarPerfil : MonoBehaviour
     }
     public void ChangeActiveProfile(string profileName)
     {
-        conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"cambiar_perfil\",\"nombre\":\"" + profileName + "\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"perfil\",\"tipo\":\"cambiar_perfil\",\"nombre\":\"" + profileName + "\"}");
     }
 }

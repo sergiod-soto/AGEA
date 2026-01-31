@@ -10,6 +10,7 @@ public class SolicitarPerfiles : MonoBehaviour
     }
     public void SolicitarListaPerfiles()
     {
-        conexion.EnviarMensaje("{\"tipo\":\"perfil\",\"peticion\":\"obtener_perfiles\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"perfil\",\"tipo\":\"obtener_perfiles\"}");
     }
+     
 }
