@@ -12,6 +12,6 @@ public class Pruebas : MonoBehaviour
 
     public void Test()
     {
-        conexionMundo.EnviarMensaje("{\"tipo\":\"dato\",\"id\":\"" + 1 + "\"}");
+        conexionMundo.EnviarMensaje("{\"peticion\":\"dato\",\"id\":\"" + 1 + "\"}");
     }
 }

@@ -13,6 +13,6 @@ public class Pausar : MonoBehaviour
     public void PausePython()
     {
         Debug.Log("mandando pausa");
-        conexion.EnviarMensaje("{\"tipo\":\"pausa\"}");
+        conexion.EnviarMensaje("{\"peticion\":\"pausa\"}");
     }
 }
