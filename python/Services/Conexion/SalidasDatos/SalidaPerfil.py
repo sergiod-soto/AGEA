@@ -11,7 +11,7 @@ def salida_perfil(shared_data, mensaje):
         partes.append("{\n")
         partes.append('"peticion": "perfil"')
         partes.append(",\n")
-        partes.append('"tipo": "obtener_perfiles,\n"')
+        partes.append('"tipo": "obtener_perfiles",\n')
         partes.append('"perfiles": [\n')
         partes.append(_obtener_perfiles())
         partes.append("\n]\n}")

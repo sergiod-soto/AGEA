@@ -17,6 +17,7 @@ public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaC
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();
+        logicaPerfiles = ServiceLocator.Instance.Get<IPerfilesLogica>();
     }
 
     public void DigerirEntrada(JObject json)
