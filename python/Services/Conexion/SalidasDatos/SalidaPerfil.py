@@ -8,17 +8,14 @@ def salida_perfil(shared_data, mensaje):
     if mensaje["peticion"] != "perfil":
         return
     if mensaje["tipo"] == "obtener_perfiles":
-        partes.append("{")
-        partes.append("\n")
+        partes.append("{\n")
         partes.append('"peticion": "perfil"')
         partes.append(",\n")
-        partes.append('"tipo": "obtener_perfiles"')
-        partes.append(",\n")
-        partes.append('"perfiles": [')
-        partes.append("\n")
+        partes.append('"tipo": "obtener_perfiles,\n"')
+        partes.append('"perfiles": [\n')
         partes.append(_obtener_perfiles())
-        partes.append("\n]")
-        partes.append("\n}<END>")
+        partes.append("\n]\n}")
+        partes.append("<END>")
 
     serializacion = serializacion.join(partes)
 
@@ -43,7 +40,6 @@ def _obtener_perfiles():
     partes.append(_obtener_perfil(6))
 
     serializacion = serializacion.join(partes)
-    
 
     return serializacion
 
