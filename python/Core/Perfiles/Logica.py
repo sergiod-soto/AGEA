@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 
@@ -37,13 +38,21 @@ def cambiar_perfil_activo(perfil):
 def obtener_datos_perfiles():
     perfiles = []
     for i in range(1, 6):
-        with open(
-            ruta_base + "/Services/Perfiles/Perfil" + str(i) + "/Datos.json",
-            "r",
-            encoding="utf-8",
-        ) as f:
-            data = json.load(f)
-            perfiles.append(_extraer_datos_perfil_desde_json(data))
+        try:
+            with open(
+                ruta_base + "/Services/Perfiles/Perfil" + str(i) + "/Datos.json",
+                "r",
+                encoding="utf-8",
+            ) as f:
+                data = json.load(f)
+                perfiles.append(_extraer_datos_perfil_desde_json(data))
+        except FileNotFoundError:
+            perfiles.append(
+                {
+                    "nombre": f"Perfil placeholder {i}",
+                    "fecha": f"{datetime.datetime.now().isoformat()}",
+                }
+            )
     return perfiles
 
 
@@ -59,7 +68,9 @@ def cambiar_nombre_perfil(perfil, nuevo_nombre):
         raise ValueError("No existe perfil con el nombre de " + perfil)
 
     datos = None
-    with open(ruta_base + directorio_perfiles + perfil + "/Datos.json", "r", encoding="utf-8") as f:
+    with open(
+        ruta_base + directorio_perfiles + perfil + "/Datos.json", "r", encoding="utf-8"
+    ) as f:
         datos = json.load(f)
 
     if datos == None:
@@ -67,5 +78,7 @@ def cambiar_nombre_perfil(perfil, nuevo_nombre):
 
     datos["nombre"] = nuevo_nombre
 
-    with open(ruta_base + directorio_perfiles + perfil + "/Datos.json", "w", encoding="utf-8") as f:
+    with open(
+        ruta_base + directorio_perfiles + perfil + "/Datos.json", "w", encoding="utf-8"
+    ) as f:
         json.dump(datos, f, ensure_ascii=False, indent=4)

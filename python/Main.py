@@ -125,7 +125,7 @@ def server_tic(shared_data):
     """Mando los datos al cliente"""
 
     # siguiente estado
-    SE.do()
+    # SE.do()
 
     time.sleep(shared_data["other"]["1/fps/1000"] / 1000)
 
@@ -151,7 +151,7 @@ def handler(signum, frame):
 if __name__ == "__main__":
 
     # inicializamos y seteamos la serie de estados:
-    SE = set_estados()
+    # SE = set_estados()
 
     # creamos el manager para tener una variable
     # compartida entre procesos

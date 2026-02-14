@@ -34,7 +34,11 @@ public class GameMain : MonoBehaviour
 
     void EjecutarServerTicBots(JObject data)
     {
+        Debug.Log("PRE DigerirEntrada");
+        Debug.Log("data:\n" + data);
+
         procesamientoEntradaConexion.DigerirEntrada(data);
+        Debug.Log("POST DigerirEntrada");
         botsLogica.RenderizarBots(botsGameobjectData.Bots_GameObjects);
     }
 }
