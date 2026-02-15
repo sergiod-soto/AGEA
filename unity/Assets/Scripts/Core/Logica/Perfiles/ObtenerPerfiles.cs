@@ -1,4 +1,6 @@
 using Newtonsoft.Json.Linq;
+using TMPro;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,6 +30,7 @@ public class SolicitarPerfiles : MonoBehaviour
 
         for (int i = 0; i < perfiles.Count; i++)
         {
+            Debug.Log("Perfil " + (i + 1) + ":\n" + perfiles[i].ToString());
             SetPerfil(perfilesGameObject[i], (JObject)perfiles[i]);
         }
     }
@@ -37,21 +40,35 @@ public class SolicitarPerfiles : MonoBehaviour
         if (perfil["fecha"].Equals(""))
         {
             // perfil NO creado
-            perfilGameObject.transform.Find("Nombre").GetComponent<Text>().text = perfil["id"].ToString();
+            perfilGameObject.transform.Find("Nombre").GetComponent<TextMeshProUGUI>().text = perfil["id"].ToString();
             perfilGameObject.transform.Find("Nuevo").gameObject.SetActive(true);
             perfilGameObject.transform.Find("Cargar").gameObject.SetActive(false);
         }
         else
         {
             // perfil que ya existe
-            perfilGameObject.transform.Find("Nombre").GetComponent<Text>().text = perfil["nombre"].ToString();
+            perfilGameObject.transform.Find("Nombre").GetComponent<TextMeshProUGUI>().text = perfil["nombre"].ToString();
             perfilGameObject.transform.Find("Nuevo").gameObject.SetActive(false);
-            perfilGameObject.transform.Find("Cargar").gameObject.SetActive(true);
-            perfilGameObject.transform.Find("Cargar")
-                .Find("Fecha Texto").GetComponent<Text>().text = perfil["fecha"].ToString();
-            perfilGameObject.transform.Find("Cargar")
-                .Find("Tiempo Entrenamiento").GetComponent<Text>().text = perfil["tiempo"].ToString();
+
+            Transform cargar = perfilGameObject.transform.Find("Cargar");
+            cargar.gameObject.SetActive(true);
+            cargar.Find("Fecha Valor").GetComponent<TextMeshProUGUI>()
+                .text = ParsearFecha(perfil["fecha"]);
+            cargar.Find("Tiempo Entrenamiento Valor").GetComponent<TextMeshProUGUI>()
+                .text = ParsearTiempo(perfil["tiempo"]);
         }
+    }
+
+    string ParsearFecha(JToken fecha)
+    {
+        return "2023-06-30";
+        //return fecha.ToString();
+    }
+
+    string ParsearTiempo(JToken tiempo)
+    {
+        return "00:00:00";
+        //return tiempo.ToString();
     }
 
 }
