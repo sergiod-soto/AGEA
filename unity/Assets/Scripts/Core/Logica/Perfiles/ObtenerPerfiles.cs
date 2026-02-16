@@ -1,4 +1,6 @@
 using Newtonsoft.Json.Linq;
+using System;
+using System.Text;
 using TMPro;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -30,14 +32,13 @@ public class SolicitarPerfiles : MonoBehaviour
 
         for (int i = 0; i < perfiles.Count; i++)
         {
-            Debug.Log("Perfil " + (i + 1) + ":\n" + perfiles[i].ToString());
             SetPerfil(perfilesGameObject[i], (JObject)perfiles[i]);
         }
     }
 
     void SetPerfil(GameObject perfilGameObject, JObject perfil)
     {
-        if (perfil["fecha"].Equals(""))
+        if (perfil["nombre"].ToString().Equals(""))
         {
             // perfil NO creado
             perfilGameObject.transform.Find("Nombre").GetComponent<TextMeshProUGUI>().text = perfil["id"].ToString();

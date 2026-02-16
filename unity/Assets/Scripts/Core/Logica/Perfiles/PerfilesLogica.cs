@@ -32,4 +32,9 @@ public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
     {
         GetComponent<SolicitarPerfiles>().SetPerfilesPantallaSeleccionPerfil(perfiles);
     }
+
+    public void CrearPerfil(string id, string nombre)
+    {
+        GetComponent<CrearPerfil>().CrearNuevoPerfil(id, nombre);
+    }
 }
