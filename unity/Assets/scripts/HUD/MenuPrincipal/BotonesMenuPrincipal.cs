@@ -1,12 +1,10 @@
 using UnityEngine;
 using System.Diagnostics;
-using System.Collections;
 
 
 public class BotonesMenuPrincipal : MonoBehaviour
 {
     IConexionMundo conexionMundo;
-    IGameLogica logicaJuego;
     IControlHUDLogica logicaHUD;
     IPerfilesLogica logicaPerfiles;
 
@@ -17,21 +15,14 @@ public class BotonesMenuPrincipal : MonoBehaviour
     void Awake()
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
-        logicaJuego = ServiceLocator.Instance.Get<IGameLogica>();
         logicaHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
         logicaPerfiles = ServiceLocator.Instance.Get<IPerfilesLogica>();
-    }
-
-    void Start()
-    {        
-
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void Boton_Start()
     {
         conexionMundo.Arrancar();
-        // logicaJuego.ActivarActualizacionDatos();
         logicaHUD.AbrirPerfiles();
         logicaPerfiles.SolicitarPerfiles();
 

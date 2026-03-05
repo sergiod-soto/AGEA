@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor
 from opensimplex import OpenSimplex
 import numpy as np
 from PIL import Image
-from opensimplex import OpenSimplex
 import math
 import random
 import Exceptions
