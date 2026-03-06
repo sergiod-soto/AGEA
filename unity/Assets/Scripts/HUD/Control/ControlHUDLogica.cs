@@ -4,6 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(Bot))]
 [RequireComponent(typeof(Options))]
 [RequireComponent(typeof(Perfil))]
+[RequireComponent(typeof(NuevoPerfil))]
+
 public class ControlHUD : MonoBehaviour, IControlHUDLogica
 {
     public GameObject HUDBase;
@@ -94,5 +96,10 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
     public void CerrarPerfiles()
     {
         GetComponent<Perfil>().CerrarPerfiles();
+    }
+
+    public void AbrirNuevoPerfil(int id)
+    {
+        GetComponent<NuevoPerfil>().AbrirNuevoPerfil(id);
     }
 }

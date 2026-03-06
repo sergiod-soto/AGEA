@@ -28,10 +28,13 @@ public class GameControl : MonoBehaviour
         FondoOpciones.SetActive(true);
 
         FondoOpciones.transform.Find("Opciones").gameObject.SetActive(true);
+
+        HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Nuevo Perfil").gameObject.SetActive(false);
     }
 
     public void SetBaseState()
-    {    
+    {
         // BASE HUD  //////////////////////////////////////////////////////////////////////////////////
         HUDBase.SetActive(true);
 
@@ -39,10 +42,10 @@ public class GameControl : MonoBehaviour
         GameObject HUDRunning = HUDBase.transform.Find("HUD Running").gameObject;
         HUDRunning.SetActive(false);
 
-        // HUD Perfiles  ///////////////////////////////////////////////////////////////////////////////
+        // HUD Perfiles  /////////////////////////////////////////////////////////////////////////////
         HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
 
-        // HUD Pantalla Inicio  ///////////////////////////////////////////////////////////////////////////////
+        // HUD Pantalla Inicio  //////////////////////////////////////////////////////////////////////
         GameObject HUDPantallaInicio = HUDBase.transform.Find("HUD Pantalla Inicio").gameObject;
         HUDPantallaInicio.SetActive(true);
 
@@ -54,5 +57,13 @@ public class GameControl : MonoBehaviour
         Botones.transform.Find("Start").gameObject.SetActive(true);
         Botones.transform.Find("Preferences").gameObject.SetActive(true);
         Botones.transform.Find("Exit").gameObject.SetActive(true);
+
+        // HUD Pantalla Perfiles  ////////////////////////////////////////////////////////////////////
+        HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Nuevo Perfil").gameObject.SetActive(false);
     }
+
+   
+
+   
 }

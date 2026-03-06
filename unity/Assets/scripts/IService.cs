@@ -144,7 +144,7 @@ public interface IControlHUDLogica : IService
     public void StartGame();
     public void AbrirPerfiles();
     public void CerrarPerfiles();
-
+    public void AbrirNuevoPerfil(int id);
 }
 
 public interface IPerfilesLogica : IService
