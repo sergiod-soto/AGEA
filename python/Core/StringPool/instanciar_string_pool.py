@@ -1,19 +1,22 @@
-# generar_pool.py
 import spacy
-nlp = spacy.load("es_core_news_sm")
-
-# Lista de palabras base — puedes usar aspell o cualquier fuente
 from spellchecker import SpellChecker
+import os
+
+# Ruta absoluta al lado del propio script
+directorio = os.path.dirname(os.path.abspath(__file__))
+ruta = os.path.join(directorio, "string_pool.py")
+
+nlp = spacy.load("es_core_news_sm")
 spell = SpellChecker(language='es')
 palabras = list(spell.word_frequency.keys())
 
-# Categorizar
 pool = {
     "sustantivos": [],
     "verbos": [],
     "adjetivos": [],
     "adverbios": [],
-    "preposiciones": []
+    "preposiciones": [],
+    "auxiliares": []
 }
 
 mapping = {
@@ -21,7 +24,8 @@ mapping = {
     "VERB": "verbos",
     "ADJ": "adjetivos",
     "ADV": "adverbios",
-    "ADP": "preposiciones"
+    "ADP": "preposiciones",
+    "AUX": "auxiliares"
 }
 
 for palabra in palabras:
@@ -30,7 +34,10 @@ for palabra in palabras:
     if pos in mapping:
         pool[mapping[pos]].append(palabra)
 
-# Generar string_pool.py
-with open("string_pool.py", "w", encoding="utf-8") as f:
-    for categoria, palabras in pool.items():
-        f.write(f"{categoria} = {palabras}\n")
+with open(ruta, "w", encoding="utf-8") as f:
+    for categoria, lista in pool.items():
+        f.write(f"{categoria} = {lista}\n")
+
+print("Generado string_pool.py")
+for categoria, lista in pool.items():
+    print(f"{categoria}: {len(lista)} palabras")
