@@ -144,7 +144,7 @@ public interface IControlHUDLogica : IService
     public void StartGame();
     public void AbrirPerfiles();
     public void CerrarPerfiles();
-    public void AbrirNuevoPerfil(int id);
+    public void AbrirNuevoPerfil();
 }
 
 public interface IPerfilesLogica : IService
@@ -155,6 +155,8 @@ public interface IPerfilesLogica : IService
     public void CambiarNombrePerfilActivo(string nuevoNombre);
     public void SetPerfilesPantallaSeleccionPerfil(JArray perfiles);
     public void CrearPerfil(string id, string nombre);
+    public void CargarPerfil(int id);
+
 }
 
 

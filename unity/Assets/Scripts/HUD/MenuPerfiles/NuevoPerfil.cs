@@ -14,7 +14,7 @@ public class NuevoPerfil : MonoBehaviour
     /*
      * Se abre el menu de crear nuevo perfil
      */
-    public void AbrirNuevoPerfil(int id)
+    public void AbrirNuevoPerfil()
     {
         HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
         HUDBase.transform.Find("HUD Nuevo Perfil").gameObject.SetActive(true);
@@ -24,13 +24,5 @@ public class NuevoPerfil : MonoBehaviour
     {
         HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(true);
         HUDBase.transform.Find("HUD Nuevo Perfil").gameObject.SetActive(false);
-    }
-
-    /*
-     * se manda solicitud a python para crear nuevo perfil
-     */
-    public void CrearPerfil(int id)
-    {
-
     }
 }

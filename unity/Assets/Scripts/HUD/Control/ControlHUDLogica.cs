@@ -98,8 +98,8 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
         GetComponent<Perfil>().CerrarPerfiles();
     }
 
-    public void AbrirNuevoPerfil(int id)
+    public void AbrirNuevoPerfil()
     {
-        GetComponent<NuevoPerfil>().AbrirNuevoPerfil(id);
+        GetComponent<NuevoPerfil>().AbrirNuevoPerfil();
     }
 }

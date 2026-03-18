@@ -4,7 +4,7 @@ public class CrearPerfil : MonoBehaviour
 {
     IConexionMundo conexion;
 
-    private void Awake()
+    void Awake()
     {
         conexion = ServiceLocator.Instance.Get<IConexionMundo>();
     }

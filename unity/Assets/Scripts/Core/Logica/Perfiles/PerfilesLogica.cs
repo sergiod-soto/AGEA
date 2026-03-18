@@ -5,6 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(CambiarPerfil))]
 [RequireComponent(typeof(CambiarNombre))]
 [RequireComponent(typeof(SolicitarInfoPerfilActivo))]
+[RequireComponent(typeof(CrearPerfil))]
+[RequireComponent(typeof(CargarPerfil))]
 public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
 {
     void Start()
@@ -32,9 +34,12 @@ public class PerfilesLogica : MonoBehaviour, IPerfilesLogica
     {
         GetComponent<SolicitarPerfiles>().SetPerfilesPantallaSeleccionPerfil(perfiles);
     }
-
     public void CrearPerfil(string id, string nombre)
     {
         GetComponent<CrearPerfil>().CrearNuevoPerfil(id, nombre);
+    }
+    public void CargarPerfil(int id)
+    {
+        GetComponent<CargarPerfil>().Cargar(id);
     }
 }
