@@ -5,6 +5,12 @@ import multiprocessing
 import os
 import signal
 
+from Core.Entities.Elementos.Simples.Bot.ADN.ADN import Genoma, Gen
+import Core.Entities.Elementos.Simples.Bot.ADN.GuiaNodos as Guia
+import Core.Entities.Elementos.Simples.Bot.ADN.Compiler as Compiler
+
+
+
 from Core.Mundo.Generacion.Generacion import Generacion
 from Dev.Testing import FakeClient
 from Dev.Testing.Estados import set_estados
@@ -150,43 +156,46 @@ def handler(signum, frame):
 
 if __name__ == "__main__":
 
-    # inicializamos y seteamos la serie de estados:
-    # SE = set_estados()
+    # # inicializamos y seteamos la serie de estados:
+    # # SE = set_estados()
 
-    # creamos el manager para tener una variable
-    # compartida entre procesos
-    manager = multiprocessing.Manager()
-    shared_data = manager.dict()
+    # # creamos el manager para tener una variable
+    # # compartida entre procesos
+    # manager = multiprocessing.Manager()
+    # shared_data = manager.dict()
 
-    shared_data["bots"] = manager.dict()  # datos de los bots
-    shared_data["mundo"] = manager.list()  # datos del mundo
-    shared_data["other"] = manager.dict()  # otras cosas
-    shared_data["dev"] = manager.dict()  # reservado para testeo
-    shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
-    shared_data["other"]["paused"] = False  # esta en pausa
-    shared_data["other"]["conn_ready"] = False
+    # shared_data["bots"] = manager.dict()  # datos de los bots
+    # shared_data["mundo"] = manager.list()  # datos del mundo
+    # shared_data["other"] = manager.dict()  # otras cosas
+    # shared_data["dev"] = manager.dict()  # reservado para testeo
+    # shared_data["other"]["1/fps/1000"] = 500  # ms por fotograma
+    # shared_data["other"]["paused"] = False  # esta en pausa
+    # shared_data["other"]["conn_ready"] = False
 
-    # cola para comunicación de mensajes hacia el exportador
+    # # cola para comunicación de mensajes hacia el exportador
 
-    # Arranca la conexion en un proceso aparte
-    p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
-    p.start()
+    # # Arranca la conexion en un proceso aparte
+    # p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
+    # p.start()
 
-    time.sleep(1)
+    # time.sleep(1)
 
-    if debug:
-        FakeClient.start_fake_client()
-        FakeClient.run_demo()
+    # if debug:
+    #     FakeClient.start_fake_client()
+    #     FakeClient.run_demo()
 
-    generador = Generacion(
-        x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
-    )
+    # generador = Generacion(
+    #     x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
+    # )
 
-    signal.signal(signal.SIGTERM, handler)
-    signal.signal(signal.SIGINT, handler)
+    # signal.signal(signal.SIGTERM, handler)
+    # signal.signal(signal.SIGINT, handler)
 
-    while running:
-        # Bucle principal
-        main_loop(shared_data)
+    # while running:
+    #     # Bucle principal
+    #     main_loop(shared_data)
 
-    print("Python finalizado limpiamente")
+    # print("Python finalizado limpiamente")
+    
+    
+    Compiler.compiler_test()
