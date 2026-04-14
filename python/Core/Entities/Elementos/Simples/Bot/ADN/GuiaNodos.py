@@ -2078,8 +2078,16 @@ def _stop():
     return Nodo("_stop", [""])
 
 
-###
-# TODO _poolStrings
+###############################################################################
+###############################################################################
+#
+#   /////////   Pool de Strings de conceptos    /////////
+#
+###############################################################################
+###############################################################################
+#
+
+#region
 def _poolStrings():
     """
     pool de strings, para ahorrar adn
@@ -4780,724 +4788,5080 @@ def _baja():
 
 
 def _sociales():
-    return Nodo("_sociales", [Nodo.Eleccion([
-        _empatia(),
-        _rechazo()
-    ])])
-    
+    return Nodo("_sociales", [Nodo.Eleccion([_empatia(), _rechazo()])])
+
+
 def _empatia():
-    return Nodo("_empatia", [Nodo.Eleccion([
-                "comprension",
-        "conexion",
-        "resonancia",
-        "compasion",
-        "altruismo",
-        "cooperacion",
-        "confianza",
-        "lealtad",
-        "solidaridad",
-        "apoyo",
-        "cuidado",
-        "respeto",
-        "reconocimiento",
-        "validacion",
-        "aceptacion"
-    ])])
+    return Nodo(
+        "_empatia",
+        [
+            Nodo.Eleccion(
+                [
+                    "comprension",
+                    "conexion",
+                    "resonancia",
+                    "compasion",
+                    "altruismo",
+                    "cooperacion",
+                    "confianza",
+                    "lealtad",
+                    "solidaridad",
+                    "apoyo",
+                    "cuidado",
+                    "respeto",
+                    "reconocimiento",
+                    "validacion",
+                    "aceptacion",
+                ]
+            )
+        ],
+    )
+
 
 def _rechazo():
-    return Nodo("_rechazo", [Nodo.Eleccion([
-                "exclusion",
-        "desconfianza",
-        "hostilidad",
-        "competencia",
-        "rivalidad",
-        "envidia",
-        "celos",
-        "traicion",
-        "abandono",
-        "aislamiento",
-        "marginacion",
-        "discriminacion",
-        "conflicto",
-        "agresion",
-        "dominacion"
-    ])])
+    return Nodo(
+        "_rechazo",
+        [
+            Nodo.Eleccion(
+                [
+                    "exclusion",
+                    "desconfianza",
+                    "hostilidad",
+                    "competencia",
+                    "rivalidad",
+                    "envidia",
+                    "celos",
+                    "traicion",
+                    "abandono",
+                    "aislamiento",
+                    "marginacion",
+                    "discriminacion",
+                    "conflicto",
+                    "agresion",
+                    "dominacion",
+                ]
+            )
+        ],
+    )
 
 
 def _motivacion():
-    return Nodo("_motivacion", [Nodo.Eleccion([
-        _atraccion(),
-        _aversion()
-    ])])
-    
+    return Nodo("_motivacion", [Nodo.Eleccion([_atraccion(), _aversion()])])
+
+
 def _atraccion():
-    return Nodo("_atraccion", [Nodo.Eleccion([
-             "deseo",
-        "objetivo",
-        "recompensa",
-        "incentivo",
-        "interes",
-        "curiosidad",
-        "necesidad",
-        "hambre",
-        "sed",
-        "atraccion",
-        "impulso",
-        "tendencia",
-        "preferencia",
-        "valor",
-        "utilidad"
-    ])])
-    
+    return Nodo(
+        "_atraccion",
+        [
+            Nodo.Eleccion(
+                [
+                    "deseo",
+                    "objetivo",
+                    "recompensa",
+                    "incentivo",
+                    "interes",
+                    "curiosidad",
+                    "necesidad",
+                    "hambre",
+                    "sed",
+                    "atraccion",
+                    "impulso",
+                    "tendencia",
+                    "preferencia",
+                    "valor",
+                    "utilidad",
+                ]
+            )
+        ],
+    )
+
+
 def _aversion():
-    return Nodo("_aversion", [Nodo.Eleccion([
-                "miedo",
-        "evitacion",
-        "rechazo",
-        "repulsion",
-        "amenaza",
-        "peligro",
-        "dolor",
-        "castigo",
-        "coste",
-        "riesgo",
-        "perdida",
-        "daño",
-        "deterioro",
-        "disminucion",
-        "fracaso"
-    ])])
+    return Nodo(
+        "_aversion",
+        [
+            Nodo.Eleccion(
+                [
+                    "miedo",
+                    "evitacion",
+                    "rechazo",
+                    "repulsion",
+                    "amenaza",
+                    "peligro",
+                    "dolor",
+                    "castigo",
+                    "coste",
+                    "riesgo",
+                    "perdida",
+                    "daño",
+                    "deterioro",
+                    "disminucion",
+                    "fracaso",
+                ]
+            )
+        ],
+    )
 
 
 def _comportamiento():
-    return Nodo("_comportamiento", [Nodo.Eleccion([
-        _movimiento(),
-        _interaccion(),
-        _estrategia(),
-        _adaptacion_comportamiento()
-    ])])
+    return Nodo(
+        "_comportamiento",
+        [
+            Nodo.Eleccion(
+                [
+                    _movimiento(),
+                    _interaccion(),
+                    _estrategia(),
+                    _adaptacion_comportamiento(),
+                ]
+            )
+        ],
+    )
+
 
 def _movimiento():
-    return Nodo("_movimiento", [Nodo.Eleccion([
-        _aproximacion(),
-        _evitacion()
-    ])])
-    
+    return Nodo("_movimiento", [Nodo.Eleccion([_aproximacion(), _evitacion()])])
+
+
 def _aproximacion():
-    return Nodo("_aproximacion", [Nodo.Eleccion([
-         "avance",
-        "acercamiento",
-        "seguimiento",
-        "persecucion",
-        "busqueda",
-        "atraccion",
-        "convergencia",
-        "orientacion",
-        "navegacion",
-        "trayectoria",
-        "ruta",
-        "camino",
-        "direccion",
-        "destino",
-        "objetivo"
-    ])])
-    
+    return Nodo(
+        "_aproximacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "avance",
+                    "acercamiento",
+                    "seguimiento",
+                    "persecucion",
+                    "busqueda",
+                    "atraccion",
+                    "convergencia",
+                    "orientacion",
+                    "navegacion",
+                    "trayectoria",
+                    "ruta",
+                    "camino",
+                    "direccion",
+                    "destino",
+                    "objetivo",
+                ]
+            )
+        ],
+    )
+
+
 def _evitacion():
-    return Nodo("_evitacion", [Nodo.Eleccion([
-         "huida",
-        "alejamiento",
-        "evasion",
-        "desvio",
-        "rodeo",
-        "esquive",
-        "retirada",
-        "defensa",
-        "proteccion",
-        "barrera",
-        "obstáculo",
-        "repulsion",
-        "divergencia",
-        "escape",
-        "refugio"
-    ])])
+    return Nodo(
+        "_evitacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "huida",
+                    "alejamiento",
+                    "evasion",
+                    "desvio",
+                    "rodeo",
+                    "esquive",
+                    "retirada",
+                    "defensa",
+                    "proteccion",
+                    "barrera",
+                    "obstáculo",
+                    "repulsion",
+                    "divergencia",
+                    "escape",
+                    "refugio",
+                ]
+            )
+        ],
+    )
+
 
 def _interaccion():
-    return Nodo("_interaccion", [Nodo.Eleccion([
-        _cooperacion(),
-        _competicion()
-    ])])
-    
+    return Nodo("_interaccion", [Nodo.Eleccion([_cooperacion(), _competicion()])])
+
+
 def _cooperacion():
-    return Nodo("_cooperacion", [Nodo.Eleccion([
-            "colaboracion",
-        "ayuda",
-        "compartir",
-        "coordinacion",
-        "sincronizacion",
-        "alianza",
-        "equipo",
-        "red",
-        "sinergia",
-        "mutualismo",
-        "intercambio",
-        "comunicacion",
-        "acuerdo",
-        "contrato",
-        "protocolo"
-    ])])
+    return Nodo(
+        "_cooperacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "colaboracion",
+                    "ayuda",
+                    "compartir",
+                    "coordinacion",
+                    "sincronizacion",
+                    "alianza",
+                    "equipo",
+                    "red",
+                    "sinergia",
+                    "mutualismo",
+                    "intercambio",
+                    "comunicacion",
+                    "acuerdo",
+                    "contrato",
+                    "protocolo",
+                ]
+            )
+        ],
+    )
+
 
 def _competicion():
-    return Nodo("_competicion", [Nodo.Eleccion([
-            "rivalidad",
-        "disputa",
-        "conflicto",
-        "lucha",
-        "competencia",
-        "dominacion",
-        "subordinacion",
-        "jerarquia",
-        "territorio",
-        "recurso",
-        "acceso",
-        "prioridad",
-        "ventaja",
-        "desventaja",
-        "equilibrio"
-    ])])
+    return Nodo(
+        "_competicion",
+        [
+            Nodo.Eleccion(
+                [
+                    "rivalidad",
+                    "disputa",
+                    "conflicto",
+                    "lucha",
+                    "competencia",
+                    "dominacion",
+                    "subordinacion",
+                    "jerarquia",
+                    "territorio",
+                    "recurso",
+                    "acceso",
+                    "prioridad",
+                    "ventaja",
+                    "desventaja",
+                    "equilibrio",
+                ]
+            )
+        ],
+    )
+
 
 def _estrategia():
-    return Nodo("_estrategia", [Nodo.Eleccion([
-        _ofensiva(),
-        _defensiva()
-    ])])
-    
+    return Nodo("_estrategia", [Nodo.Eleccion([_ofensiva(), _defensiva()])])
+
+
 def _ofensiva():
-    return Nodo("_ofensiva", [Nodo.Eleccion([
-             "ataque",
-        "expansion",
-        "invasion",
-        "conquista",
-        "dominacion",
-        "explotacion",
-        "acumulacion",
-        "monopolio",
-        "ventaja",
-        "adelanto",
-        "superioridad",
-        "iniciativa",
-        "agresion",
-        "presion",
-        "avance"
-    ])])
-    
+    return Nodo(
+        "_ofensiva",
+        [
+            Nodo.Eleccion(
+                [
+                    "ataque",
+                    "expansion",
+                    "invasion",
+                    "conquista",
+                    "dominacion",
+                    "explotacion",
+                    "acumulacion",
+                    "monopolio",
+                    "ventaja",
+                    "adelanto",
+                    "superioridad",
+                    "iniciativa",
+                    "agresion",
+                    "presion",
+                    "avance",
+                ]
+            )
+        ],
+    )
+
+
 def _defensiva():
-    return Nodo("_defensiva", [Nodo.Eleccion([
-           "defensa",
-        "proteccion",
-        "conservacion",
-        "resistencia",
-        "resiliencia",
-        "adaptacion",
-        "camuflaje",
-        "ocultacion",
-        "retirada",
-        "consolidacion",
-        "fortaleza",
-        "barrera",
-        "escudo",
-        "refugio",
-        "reserva"
-    ])])
+    return Nodo(
+        "_defensiva",
+        [
+            Nodo.Eleccion(
+                [
+                    "defensa",
+                    "proteccion",
+                    "conservacion",
+                    "resistencia",
+                    "resiliencia",
+                    "adaptacion",
+                    "camuflaje",
+                    "ocultacion",
+                    "retirada",
+                    "consolidacion",
+                    "fortaleza",
+                    "barrera",
+                    "escudo",
+                    "refugio",
+                    "reserva",
+                ]
+            )
+        ],
+    )
+
 
 def _adaptacion_comportamiento():
-    return Nodo("_adaptacion_comportamiento", [Nodo.Eleccion([
-        _exploracion(),
-        _explotacion()
-    ])])
-    
+    return Nodo(
+        "_adaptacion_comportamiento", [Nodo.Eleccion([_exploracion(), _explotacion()])]
+    )
+
+
 def _exploracion():
-    return Nodo("_exploracion", [Nodo.Eleccion([
-                "busqueda",
-        "descubrimiento",
-        "novedad",
-        "curiosidad",
-        "experimentacion",
-        "prueba",
-        "ensayo",
-        "error",
-        "aprendizaje",
-        "diversificacion",
-        "variacion",
-        "mutacion",
-        "innovacion",
-        "riesgo",
-        "incertidumbre"
-    ])])
+    return Nodo(
+        "_exploracion",
+        [
+            Nodo.Eleccion(
+                [
+                    "busqueda",
+                    "descubrimiento",
+                    "novedad",
+                    "curiosidad",
+                    "experimentacion",
+                    "prueba",
+                    "ensayo",
+                    "error",
+                    "aprendizaje",
+                    "diversificacion",
+                    "variacion",
+                    "mutacion",
+                    "innovacion",
+                    "riesgo",
+                    "incertidumbre",
+                ]
+            )
+        ],
+    )
+
 
 def _explotacion():
-    return Nodo("_explotacion", [Nodo.Eleccion([
-              "uso",
-        "aprovechamiento",
-        "optimizacion",
-        "eficiencia",
-        "repeticion",
-        "rutina",
-        "habito",
-        "especializacion",
-        "perfeccionamiento",
-        "refinamiento",
-        "consolidacion",
-        "estabilizacion",
-        "convergencia",
-        "certeza",
-        "confianza"
-    ])])
+    return Nodo(
+        "_explotacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "uso",
+                    "aprovechamiento",
+                    "optimizacion",
+                    "eficiencia",
+                    "repeticion",
+                    "rutina",
+                    "habito",
+                    "especializacion",
+                    "perfeccionamiento",
+                    "refinamiento",
+                    "consolidacion",
+                    "estabilizacion",
+                    "convergencia",
+                    "certeza",
+                    "confianza",
+                ]
+            )
+        ],
+    )
 
 
 def _mundo():
-    return Nodo("_mundo", [Nodo.Eleccion([
-        _entorno(),
-        _recursos_mundo(),
-        _fenomenos(),
-        _escala_mundo()
-    ])])
-    
+    return Nodo(
+        "_mundo",
+        [Nodo.Eleccion([_entorno(), _recursos_mundo(), _fenomenos(), _escala_mundo()])],
+    )
+
+
 def _entorno():
-    return Nodo("_entorno", [Nodo.Eleccion([
-        _terreno(),
-        _clima()
-    ])])
-    
+    return Nodo("_entorno", [Nodo.Eleccion([_terreno(), _clima()])])
+
+
 def _terreno():
-    return Nodo("_terreno", [Nodo.Eleccion([
-                "liso",
-        "rugoso",
-        "plano",
-        "elevado",
-        "deprimido",
-        "solido",
-        "liquido",
-        "gaseoso",
-        "denso",
-        "disperso",
-        "continuo",
-        "discontinuo",
-        "homogeneo",
-        "heterogeneo",
-        "complejo"
-    ])])
-    
+    return Nodo(
+        "_terreno",
+        [
+            Nodo.Eleccion(
+                [
+                    "liso",
+                    "rugoso",
+                    "plano",
+                    "elevado",
+                    "deprimido",
+                    "solido",
+                    "liquido",
+                    "gaseoso",
+                    "denso",
+                    "disperso",
+                    "continuo",
+                    "discontinuo",
+                    "homogeneo",
+                    "heterogeneo",
+                    "complejo",
+                ]
+            )
+        ],
+    )
+
+
 def _clima():
-    return Nodo("_clima", [Nodo.Eleccion([
-                "calido",
-        "frio",
-        "templado",
-        "humedo",
-        "seco",
-        "variable",
-        "estable",
-        "extremo",
-        "ciclico",
-        "estacional",
-        "impredecible",
-        "predecible",
-        "gradual",
-        "abrupto",
-        "oscilante"
-    ])])
-    
+    return Nodo(
+        "_clima",
+        [
+            Nodo.Eleccion(
+                [
+                    "calido",
+                    "frio",
+                    "templado",
+                    "humedo",
+                    "seco",
+                    "variable",
+                    "estable",
+                    "extremo",
+                    "ciclico",
+                    "estacional",
+                    "impredecible",
+                    "predecible",
+                    "gradual",
+                    "abrupto",
+                    "oscilante",
+                ]
+            )
+        ],
+    )
+
+
 def _recursos_mundo():
-    return Nodo("_recursos_mundo", [Nodo.Eleccion([
-        _naturales(),
-        _artificiales()
-    ])])
-    
+    return Nodo("_recursos_mundo", [Nodo.Eleccion([_naturales(), _artificiales()])])
+
+
 def _naturales():
-    return Nodo("_naturales", [Nodo.Eleccion([
-             "energia",
-        "agua",
-        "alimento",
-        "material",
-        "espacio",
-        "tiempo",
-        "luz",
-        "calor",
-        "mineral",
-        "organico",
-        "inorganico",
-        "renovable",
-        "agotable",
-        "abundante",
-        "escaso",
-        "piedra",
-        "rio",
-        "mar",
-        "comida",
-        "fuego",
-        
-    ])])
-    
+    return Nodo(
+        "_naturales",
+        [
+            Nodo.Eleccion(
+                [
+                    "energia",
+                    "agua",
+                    "alimento",
+                    "material",
+                    "espacio",
+                    "tiempo",
+                    "luz",
+                    "calor",
+                    "mineral",
+                    "organico",
+                    "inorganico",
+                    "renovable",
+                    "agotable",
+                    "abundante",
+                    "escaso",
+                    "piedra",
+                    "rio",
+                    "mar",
+                    "comida",
+                    "fuego",
+                ]
+            )
+        ],
+    )
+
+
 def _artificiales():
-    return Nodo("_artificiales", [Nodo.Eleccion([
-             "herramienta",
-        "estructura",
-        "red",
-        "sistema",
-        "informacion",
-        "conocimiento",
-        "tecnologia",
-        "infraestructura",
-        "servicio",
-        "producto",
-        "proceso",
-        "algoritmo",
-        "dato",
-        "modelo",
-        "programa"
-    ])])
-    
+    return Nodo(
+        "_artificiales",
+        [
+            Nodo.Eleccion(
+                [
+                    "herramienta",
+                    "estructura",
+                    "red",
+                    "sistema",
+                    "informacion",
+                    "conocimiento",
+                    "tecnologia",
+                    "infraestructura",
+                    "servicio",
+                    "producto",
+                    "proceso",
+                    "algoritmo",
+                    "dato",
+                    "modelo",
+                    "programa",
+                ]
+            )
+        ],
+    )
+
+
 def _fenomenos():
-    return Nodo("_fenomenos", [Nodo.Eleccion([
-        _fisicos(),
-        _quimicos()
-    ])])
-    
+    return Nodo("_fenomenos", [Nodo.Eleccion([_fisicos(), _quimicos()])])
+
+
 def _fisicos():
-    return Nodo("_fisicos", [Nodo.Eleccion([
-                "colision",
-        "friccion",
-        "gravedad",
-        "presion",
-        "temperatura",
-        "radiacion",
-        "campo",
-        "onda",
-        "resonancia",
-        "caos",
-        "orden",
-        "equilibrio",
-        "fluctuacion",
-        "transicion",
-        "emergencia"
-    ])])
+    return Nodo(
+        "_fisicos",
+        [
+            Nodo.Eleccion(
+                [
+                    "colision",
+                    "friccion",
+                    "gravedad",
+                    "presion",
+                    "temperatura",
+                    "radiacion",
+                    "campo",
+                    "onda",
+                    "resonancia",
+                    "caos",
+                    "orden",
+                    "equilibrio",
+                    "fluctuacion",
+                    "transicion",
+                    "emergencia",
+                ]
+            )
+        ],
+    )
+
 
 def _quimicos():
-    return Nodo("_quimicos", [Nodo.Eleccion([
-             "reaccion",
-        "catalisis",
-        "oxidacion",
-        "reduccion",
-        "sintesis",
-        "descomposicion",
-        "enlace",
-        "ruptura",
-        "disolucion",
-        "precipitacion",
-        "difusion",
-        "osmosis",
-        "equilibrio",
-        "ph",
-        "concentracion"
-    ])])
-    
+    return Nodo(
+        "_quimicos",
+        [
+            Nodo.Eleccion(
+                [
+                    "reaccion",
+                    "catalisis",
+                    "oxidacion",
+                    "reduccion",
+                    "sintesis",
+                    "descomposicion",
+                    "enlace",
+                    "ruptura",
+                    "disolucion",
+                    "precipitacion",
+                    "difusion",
+                    "osmosis",
+                    "equilibrio",
+                    "ph",
+                    "concentracion",
+                ]
+            )
+        ],
+    )
+
+
 def _escala_mundo():
-    return Nodo("_escala_mundo", [Nodo.Eleccion([
-        _micro(),
-        _macro()
-    ])])
-    
+    return Nodo("_escala_mundo", [Nodo.Eleccion([_micro(), _macro()])])
+
+
 def _micro():
-    return Nodo("_micro", [Nodo.Eleccion([
-                "particula",
-        "celula",
-        "molecula",
-        "átomo",
-        "quantum",
-        "nano",
-        "micro",
-        "local",
-        "individual",
-        "puntual",
-        "instantaneo",
-        "elemental",
-        "basico",
-        "primitivo",
-        "fundamental"
-    ])])
+    return Nodo(
+        "_micro",
+        [
+            Nodo.Eleccion(
+                [
+                    "particula",
+                    "celula",
+                    "molecula",
+                    "átomo",
+                    "quantum",
+                    "nano",
+                    "micro",
+                    "local",
+                    "individual",
+                    "puntual",
+                    "instantaneo",
+                    "elemental",
+                    "basico",
+                    "primitivo",
+                    "fundamental",
+                ]
+            )
+        ],
+    )
+
 
 def _macro():
-    return Nodo("_macro", [Nodo.Eleccion([
-              "sistema",
-        "ecosistema",
-        "poblacion",
-        "red",
-        "mundo",
-        "global",
-        "distribuido",
-        "colectivo",
-        "emergente",
-        "complejo",
-        "evolutivo",
-        "historico",
-        "estadistico",
-        "agregado",
-        "macroscopico"
-    ])])
+    return Nodo(
+        "_macro",
+        [
+            Nodo.Eleccion(
+                [
+                    "sistema",
+                    "ecosistema",
+                    "poblacion",
+                    "red",
+                    "mundo",
+                    "global",
+                    "distribuido",
+                    "colectivo",
+                    "emergente",
+                    "complejo",
+                    "evolutivo",
+                    "historico",
+                    "estadistico",
+                    "agregado",
+                    "macroscopico",
+                ]
+            )
+        ],
+    )
 
 
 def _biologia():
-    return Nodo("_biologia", [Nodo.Eleccion([
-        _organismos(),
-        _procesos_biologia(),
-        _ecosistema(),
-        _evolucion()
-    ])])
-    
+    return Nodo(
+        "_biologia",
+        [
+            Nodo.Eleccion(
+                [_organismos(), _procesos_biologia(), _ecosistema(), _evolucion()]
+            )
+        ],
+    )
+
+
 def _organismos():
-    return Nodo("_organismos", [Nodo.Eleccion([
-        _partes(),
-        _funciones_organismos()
-    ])])
-    
+    return Nodo("_organismos", [Nodo.Eleccion([_partes(), _funciones_organismos()])])
+
+
 def _partes():
-    return Nodo("_partes", [Nodo.Eleccion([
-            "celula",
-        "tejido",
-        "organo",
-        "sistema",
-        "membrana",
-        "nucleo",
-        "receptor",
-        "efector",
-        "sensor",
-        "motor",
-        "red",
-        "canal",
-        "puerta",
-        "bomba",
-        "enzima"
-    ])])
-    
+    return Nodo(
+        "_partes",
+        [
+            Nodo.Eleccion(
+                [
+                    "celula",
+                    "tejido",
+                    "organo",
+                    "sistema",
+                    "membrana",
+                    "nucleo",
+                    "receptor",
+                    "efector",
+                    "sensor",
+                    "motor",
+                    "red",
+                    "canal",
+                    "puerta",
+                    "bomba",
+                    "enzima",
+                ]
+            )
+        ],
+    )
+
+
 def _funciones_organismos():
-    return Nodo("_funciones_organismos", [Nodo.Eleccion([
-           "metabolismo",
-        "homeostasis",
-        "reproduccion",
-        "crecimiento",
-        "diferenciacion",
-        "apoptosis",
-        "comunicacion",
-        "movimiento",
-        "percepcion",
-        "respuesta",
-        "regulacion",
-        "reparacion",
-        "defensa",
-        "almacenamiento",
-        "transporte"
-    ])])
-    
+    return Nodo(
+        "_funciones_organismos",
+        [
+            Nodo.Eleccion(
+                [
+                    "metabolismo",
+                    "homeostasis",
+                    "reproduccion",
+                    "crecimiento",
+                    "diferenciacion",
+                    "apoptosis",
+                    "comunicacion",
+                    "movimiento",
+                    "percepcion",
+                    "respuesta",
+                    "regulacion",
+                    "reparacion",
+                    "defensa",
+                    "almacenamiento",
+                    "transporte",
+                ]
+            )
+        ],
+    )
+
+
 def _procesos_biologia():
-    return Nodo("_procesos_biologia", [Nodo.Eleccion([
-        _metabolismo(),
-        _reproduccion()
-    ])])
-    
+    return Nodo(
+        "_procesos_biologia", [Nodo.Eleccion([_metabolismo(), _reproduccion()])]
+    )
+
+
 def _metabolismo():
-    return Nodo("_metabolismo", [Nodo.Eleccion([
-            "anabolismo",
-        "catabolismo",
-        "sintesis",
-        "degradacion",
-        "oxidacion",
-        "reduccion",
-        "fosforilacion",
-        "glucolisis",
-        "respiracion",
-        "fermentacion",
-        "fotosintesis",
-        "ciclo",
-        "cadena",
-        "gradiente",
-        "atp"
-    ])])
-    
+    return Nodo(
+        "_metabolismo",
+        [
+            Nodo.Eleccion(
+                [
+                    "anabolismo",
+                    "catabolismo",
+                    "sintesis",
+                    "degradacion",
+                    "oxidacion",
+                    "reduccion",
+                    "fosforilacion",
+                    "glucolisis",
+                    "respiracion",
+                    "fermentacion",
+                    "fotosintesis",
+                    "ciclo",
+                    "cadena",
+                    "gradiente",
+                    "atp",
+                ]
+            )
+        ],
+    )
+
+
 def _reproduccion():
-    return Nodo("_reproduccion", [Nodo.Eleccion([
-             "division",
-        "mitosis",
-        "meiosis",
-        "fecundacion",
-        "diferenciacion",
-        "desarrollo",
-        "crecimiento",
-        "maduracion",
-        "senescencia",
-        "muerte",
-        "regeneracion",
-        "clonacion",
-        "mutacion",
-        "recombinacion",
-        "seleccion"
-    ])])
-    
+    return Nodo(
+        "_reproduccion",
+        [
+            Nodo.Eleccion(
+                [
+                    "division",
+                    "mitosis",
+                    "meiosis",
+                    "fecundacion",
+                    "diferenciacion",
+                    "desarrollo",
+                    "crecimiento",
+                    "maduracion",
+                    "senescencia",
+                    "muerte",
+                    "regeneracion",
+                    "clonacion",
+                    "mutacion",
+                    "recombinacion",
+                    "seleccion",
+                ]
+            )
+        ],
+    )
+
+
 def _ecosistema():
-    return Nodo("_ecosistema", [Nodo.Eleccion([
-        _relaciones_ecosistema(),
-        _equilibrio()
-    ])])
-    
+    return Nodo(
+        "_ecosistema", [Nodo.Eleccion([_relaciones_ecosistema(), _equilibrio()])]
+    )
+
+
 def _relaciones_ecosistema():
-    return Nodo("_relaciones_ecosistema", [Nodo.Eleccion([
-                "depredacion",
-        "parasitismo",
-        "mutualismo",
-        "comensalismo",
-        "competencia",
-        "simbiosis",
-        "cooperacion",
-        "facilitacion",
-        "inhibicion",
-        "cascada",
-        "red",
-        "flujo",
-        "ciclo",
-        "equilibrio",
-        "perturbacion"
-    ])])
-    
+    return Nodo(
+        "_relaciones_ecosistema",
+        [
+            Nodo.Eleccion(
+                [
+                    "depredacion",
+                    "parasitismo",
+                    "mutualismo",
+                    "comensalismo",
+                    "competencia",
+                    "simbiosis",
+                    "cooperacion",
+                    "facilitacion",
+                    "inhibicion",
+                    "cascada",
+                    "red",
+                    "flujo",
+                    "ciclo",
+                    "equilibrio",
+                    "perturbacion",
+                ]
+            )
+        ],
+    )
+
+
 def _equilibrio():
-    return Nodo("_equilibrio", [Nodo.Eleccion([
-                "estabilidad",
-        "resiliencia",
-        "resistencia",
-        "recuperacion",
-        "sucesion",
-        "climax",
-        "perturbacion",
-        "fluctuacion",
-        "oscilacion",
-        "regulacion",
-        "control",
-        "retroalimentacion",
-        "homeostasis",
-        "adaptacion",
-        "evolucion"
-    ])])
-    
+    return Nodo(
+        "_equilibrio",
+        [
+            Nodo.Eleccion(
+                [
+                    "estabilidad",
+                    "resiliencia",
+                    "resistencia",
+                    "recuperacion",
+                    "sucesion",
+                    "climax",
+                    "perturbacion",
+                    "fluctuacion",
+                    "oscilacion",
+                    "regulacion",
+                    "control",
+                    "retroalimentacion",
+                    "homeostasis",
+                    "adaptacion",
+                    "evolucion",
+                ]
+            )
+        ],
+    )
+
+
 def _evolucion():
-    return Nodo("_evolucion", [Nodo.Eleccion([
-        _seleccion(),
-        _mutacion()
-    ])])
-    
+    return Nodo("_evolucion", [Nodo.Eleccion([_seleccion(), _mutacion()])])
+
+
 def _seleccion():
-    return Nodo("_seleccion", [Nodo.Eleccion([
-                "natural",
-        "sexual",
-        "artificial",
-        "directa",
-        "estabilizadora",
-        "disruptiva",
-        "presion",
-        "fitness",
-        "adaptacion",
-        "ventaja",
-        "desventaja",
-        "ambiente",
-        "nicho",
-        "competencia",
-        "deriva"
-    ])])
-    
+    return Nodo(
+        "_seleccion",
+        [
+            Nodo.Eleccion(
+                [
+                    "natural",
+                    "sexual",
+                    "artificial",
+                    "directa",
+                    "estabilizadora",
+                    "disruptiva",
+                    "presion",
+                    "fitness",
+                    "adaptacion",
+                    "ventaja",
+                    "desventaja",
+                    "ambiente",
+                    "nicho",
+                    "competencia",
+                    "deriva",
+                ]
+            )
+        ],
+    )
+
+
 def _mutacion():
-    return Nodo("_mutacion", [Nodo.Eleccion([
-             "puntual",
-        "insercion",
-        "delecion",
-        "inversion",
-        "transposicion",
-        "duplicacion",
-        "recombinacion",
-        "tasa",
-        "neutra",
-        "beneficiosa",
-        "perjudicial",
-        "letal",
-        "silenciosa",
-        "frameshift",
-        "nonsense"
-    ])])
+    return Nodo(
+        "_mutacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "puntual",
+                    "insercion",
+                    "delecion",
+                    "inversion",
+                    "transposicion",
+                    "duplicacion",
+                    "recombinacion",
+                    "tasa",
+                    "neutra",
+                    "beneficiosa",
+                    "perjudicial",
+                    "letal",
+                    "silenciosa",
+                    "frameshift",
+                    "nonsense",
+                ]
+            )
+        ],
+    )
 
 
 def _fisica():
-    return Nodo("_fisica", [Nodo.Eleccion([
-        
-    ])])
+    return Nodo(
+        "_fisica",
+        [
+            Nodo.Eleccion(
+                [_materia(), _energia_fisica(), _fuerzas(), _movimiento_fisica()]
+            )
+        ],
+    )
+
+
+def _materia():
+    return Nodo("_materia", [Nodo.Eleccion([_estados_materia(), _propiedades()])])
+
+
+def _estados_materia():
+    return Nodo(
+        "_estados_materia",
+        [
+            Nodo.Eleccion(
+                [
+                    "solido",
+                    "liquido",
+                    "gaseoso",
+                    "plasma",
+                    "condensado",
+                    "cristalino",
+                    "amorfo",
+                    "fluido",
+                    "rigido",
+                    "elastico",
+                    "plastico",
+                    "viscoso",
+                    "compresible",
+                    "incompresible",
+                    "isotropo",
+                ]
+            )
+        ],
+    )
+
+
+def _propiedades():
+    return Nodo(
+        "_propiedades",
+        [
+            Nodo.Eleccion(
+                [
+                    "masa",
+                    "densidad",
+                    "volumen",
+                    "temperatura",
+                    "presion",
+                    "conductividad",
+                    "resistencia",
+                    "capacidad",
+                    "permeabilidad",
+                    "viscosidad",
+                    "elasticidad",
+                    "dureza",
+                    "fragilidad",
+                    "ductilidad",
+                    "magnetismo",
+                ]
+            )
+        ],
+    )
+
+
+def _energia_fisica():
+    return Nodo(
+        "_energia_fisica", [Nodo.Eleccion([_tipos_energia_fisica(), _transferencia()])]
+    )
+
+
+def _tipos_energia_fisica():
+    return Nodo(
+        "_tipos_energia_fisica",
+        [
+            Nodo.Eleccion(
+                [
+                    "cinetica",
+                    "potencial",
+                    "termica",
+                    "electrica",
+                    "magnetica",
+                    "quimica",
+                    "nuclear",
+                    "radiante",
+                    "mecanica",
+                    "acustica",
+                    "gravitacional",
+                    "elastica",
+                    "interna",
+                    "libre",
+                    "total",
+                ]
+            )
+        ],
+    )
+
+
+def _transferencia():
+    return Nodo(
+        "_transferencia",
+        [
+            Nodo.Eleccion(
+                [
+                    "conduccion",
+                    "conveccion",
+                    "radiacion",
+                    "trabajo",
+                    "calor",
+                    "ondas",
+                    "particulas",
+                    "campos",
+                    "corriente",
+                    "flujo",
+                    "difusion",
+                    "conveccion",
+                    "irradiacion",
+                    "absorcion",
+                    "emision",
+                ]
+            )
+        ],
+    )
+
+
+def _fuerzas():
+    return Nodo("_fuerzas", [Nodo.Eleccion([_atraccion_fuerzas(), _repulsion()])])
+
+
+def _atraccion_fuerzas():
+    return Nodo(
+        "_atraccion_fuerzas",
+        [
+            Nodo.Eleccion(
+                [
+                    "gravedad",
+                    "electromagnetismo",
+                    "cohesion",
+                    "adhesion",
+                    "tension",
+                    "presion",
+                    "friccion_estatica",
+                    "enlace",
+                    "campo",
+                    "potencial",
+                    "nuclear_fuerte",
+                    "van_der_waals",
+                    "magnetismo",
+                    "electrostatica",
+                    "capilaridad",
+                ]
+            )
+        ],
+    )
+
+
+def _repulsion():
+    return Nodo(
+        "_repulsion",
+        [
+            Nodo.Eleccion(
+                [
+                    "presion",
+                    "friccion",
+                    "tension",
+                    "barrera",
+                    "campo",
+                    "potencial",
+                    "nuclear_debil",
+                    "electrostatica",
+                    "magnetismo",
+                    "exclusion",
+                    "rigidez",
+                    "resistencia",
+                    "impedancia",
+                    "reactancia",
+                    "inductancia",
+                ]
+            )
+        ],
+    )
+
+
+def _movimiento_fisica():
+    return Nodo(
+        "_movimiento_fisica",
+        [Nodo.Eleccion([_velocidad_movimiento_fisica(), _aceleracion])],
+    )
+
+
+def _velocidad_movimiento_fisica():
+    return Nodo(
+        "_velocidad_movimiento_fisica",
+        [
+            Nodo.Eleccion(
+                [
+                    "reposo",
+                    "lento",
+                    "rapido",
+                    "constante",
+                    "variable",
+                    "acelerado",
+                    "desacelerado",
+                    "uniforme",
+                    "relativo",
+                    "absoluto",
+                    "instantaneo",
+                    "promedio",
+                    "terminal",
+                    "critico",
+                    "supersonico",
+                ]
+            )
+        ],
+    )
+
+
+def _aceleracion():
+    return Nodo(
+        "_aceleracion",
+        [
+            Nodo.Eleccion(
+                [
+                    "positiva",
+                    "negativa",
+                    "nula",
+                    "constante",
+                    "variable",
+                    "centripeta",
+                    "centrifuga",
+                    "tangencial",
+                    "normal",
+                    "angular",
+                    "lineal",
+                    "gravitacional",
+                    "impulsiva",
+                    "continua",
+                    "oscilatoria",
+                ]
+            )
+        ],
+    )
 
 
 def _matematicas():
-    return Nodo("_matematicas", [Nodo.Eleccion([])])
+    return Nodo(
+        "_matematicas",
+        [
+            Nodo.Eleccion(
+                [_algebra(), _geometria(), _probabilidad(), _optimizacion_matematicas()]
+            )
+        ],
+    )
+
+
+def _algebra():
+    return Nodo(
+        "_algebra", [Nodo.Eleccion([_operaciones_algebra(), _estructuras_algebra()])]
+    )
+
+
+def _operaciones_algebra():
+    return Nodo(
+        "_operaciones_algebra",
+        [
+            Nodo.Eleccion(
+                [
+                    "suma",
+                    "resta",
+                    "multiplicacion",
+                    "division",
+                    "potencia",
+                    "raiz",
+                    "logaritmo",
+                    "modulo",
+                    "factorial",
+                    "combinacion",
+                    "permutacion",
+                    "composicion",
+                    "inversa",
+                    "transpuesta",
+                    "determinante",
+                ]
+            )
+        ],
+    )
+
+
+def _estructuras_algebra():
+    return Nodo(
+        "_estructuras_algebra",
+        [
+            Nodo.Eleccion(
+                [
+                    "grupo",
+                    "anillo",
+                    "campo",
+                    "espacio",
+                    "algebra",
+                    "modulo",
+                    "ideal",
+                    "homomorfismo",
+                    "isomorfismo",
+                    "endomorfismo",
+                    "automorfismo",
+                    "subgrupo",
+                    "cociente",
+                    "producto",
+                    "suma_directa",
+                ]
+            )
+        ],
+    )
+
+
+def _geometria():
+    return Nodo("_geometria", [Nodo.Eleccion([_formas(), _transformaciones()])])
+
+
+def _formas():
+    return Nodo(
+        "_formas",
+        [
+            Nodo.Eleccion(
+                [
+                    "punto",
+                    "linea",
+                    "plano",
+                    "circulo",
+                    "triangulo",
+                    "cuadrado",
+                    "poligono",
+                    "esfera",
+                    "cubo",
+                    "cilindro",
+                    "cono",
+                    "elipse",
+                    "hiperboloide",
+                    "paraboloide",
+                    "toroide",
+                ]
+            )
+        ],
+    )
+
+
+def _transformaciones():
+    return Nodo(
+        "_transformaciones",
+        [
+            Nodo.Eleccion(
+                [
+                    "traslacion",
+                    "rotacion",
+                    "reflexion",
+                    "escala",
+                    "cizalladura",
+                    "proyeccion",
+                    "inversion",
+                    "homografia",
+                    "isometria",
+                    "similitud",
+                    "afinidad",
+                    "topologia",
+                    "homeomorfismo",
+                    "diffeomorfismo",
+                    "embedding",
+                ]
+            )
+        ],
+    )
+
+
+def _probabilidad():
+    return Nodo(
+        "_probabilidad", [Nodo.Eleccion([_eventos_probabilidad(), _distribuciones()])]
+    )
+
+
+def _eventos_probabilidad():
+    return Nodo(
+        "_eventos_probabilidad",
+        [
+            Nodo.Eleccion(
+                [
+                    "independiente",
+                    "dependiente",
+                    "mutuamente_exclusivo",
+                    "complementario",
+                    "exhaustivo",
+                    "elemental",
+                    "compuesto",
+                    "condicionado",
+                    "conjunto",
+                    "union",
+                    "interseccion",
+                    "diferencia",
+                    "simetrico",
+                    "probable",
+                    "improbable",
+                ]
+            )
+        ],
+    )
+
+
+def _distribuciones():
+    return Nodo(
+        "_distribuciones",
+        [
+            Nodo.Eleccion(
+                [
+                    "uniforme",
+                    "normal",
+                    "binomial",
+                    "poisson",
+                    "exponencial",
+                    "gamma",
+                    "beta",
+                    "chi_cuadrado",
+                    "t_student",
+                    "cauchy",
+                    "laplace",
+                    "geometric",
+                    "hipergeometrica",
+                    "multinomial",
+                    "dirichlet",
+                ]
+            )
+        ],
+    )
+
+
+def _optimizacion_matematicas():
+    return Nodo("_optimizacion_matematicas", [Nodo.Eleccion([_maximos(), _minimos()])])
+
+
+def _maximos():
+    return Nodo(
+        "_maximos",
+        [
+            Nodo.Eleccion(
+                [
+                    "global",
+                    "local",
+                    "absoluto",
+                    "relativo",
+                    "restringido",
+                    "libre",
+                    "convexo",
+                    "no_convexo",
+                    "suave",
+                    "discontinuo",
+                    "aproximado",
+                    "exacto",
+                    "numerico",
+                    "analitico",
+                    "heuristico",
+                ]
+            )
+        ],
+    )
+
+
+def _minimos():
+    return Nodo(
+        "_minimos",
+        [
+            Nodo.Eleccion(
+                [
+                    "global",
+                    "local",
+                    "absoluto",
+                    "relativo",
+                    "restringido",
+                    "libre",
+                    "convexo",
+                    "no_convexo",
+                    "suave",
+                    "discontinuo",
+                    "aproximado",
+                    "exacto",
+                    "numerico",
+                    "analitico",
+                    "heuristico",
+                ]
+            )
+        ],
+    )
 
 
 def _sociedad():
-    return Nodo("_sociedad", [Nodo.Eleccion([])])
+    return Nodo(
+        "_sociedad",
+        [
+            Nodo.Eleccion(
+                [
+                    _estructura_sociedad(),
+                    _interaccion_sociedad(),
+                    _recursos_sociedad(),
+                    _normas(),
+                ]
+            )
+        ],
+    )
+
+
+def _estructura_sociedad():
+    return Nodo(
+        "_estructura_sociedad",
+        [
+            Nodo.Eleccion(
+                [_jerarquia_estructura_sociedad(), _roles_estructura_sociedad()]
+            )
+        ],
+    )
+
+
+def _jerarquia_estructura_sociedad():
+    return Nodo(
+        "_jerarquia_estructura_sociedad",
+        [
+            Nodo.Eleccion(
+                [
+                    "lider",
+                    "subordinado",
+                    "igual",
+                    "superior",
+                    "inferior",
+                    "rango",
+                    "nivel",
+                    "estrato",
+                    "clase",
+                    "casta",
+                    "elite",
+                    "base",
+                    "nucleo",
+                    "periferia",
+                    "frontera",
+                ]
+            )
+        ],
+    )
+
+
+def _roles_estructura_sociedad():
+    return Nodo(
+        "_roles_estructura_sociedad",
+        [
+            Nodo.Eleccion(
+                [
+                    "productor",
+                    "consumidor",
+                    "distribuidor",
+                    "regulador",
+                    "coordinador",
+                    "mediador",
+                    "guardián",
+                    "innovador",
+                    "seguidor",
+                    "disidente",
+                    "especialista",
+                    "generalista",
+                    "experto",
+                    "novato",
+                    "observador",
+                ]
+            )
+        ],
+    )
+
+
+def _interaccion_sociedad():
+    return Nodo(
+        "_interaccion_sociedad",
+        [Nodo.Eleccion([_cooperacion_interaccion_sociedad(), _conflicto()])],
+    )
+
+
+def _cooperacion_interaccion_sociedad():
+    return Nodo(
+        "_cooperacion_interaccion_sociedad",
+        [
+            Nodo.Eleccion(
+                [
+                    "alianza",
+                    "coalicion",
+                    "equipo",
+                    "red",
+                    "comunidad",
+                    "gremio",
+                    "colectivo",
+                    "asociacion",
+                    "colaboracion",
+                    "sinergia",
+                    "intercambio",
+                    "mutualismo",
+                    "solidaridad",
+                    "ayuda",
+                    "apoyo",
+                ]
+            )
+        ],
+    )
+
+
+def _conflicto():
+    return Nodo(
+        "_conflicto",
+        [
+            Nodo.Eleccion(
+                [
+                    "competencia",
+                    "rivalidad",
+                    "disputa",
+                    "guerra",
+                    "negociacion",
+                    "mediacion",
+                    "arbitraje",
+                    "compromiso",
+                    "victoria",
+                    "derrota",
+                    "empate",
+                    "rendicion",
+                    "resistencia",
+                    "sabotaje",
+                    "traicion",
+                ]
+            )
+        ],
+    )
+
+
+def _recursos_sociedad():
+    return Nodo(
+        "_recursos_sociedad", [Nodo.Eleccion([_distribucion(), _competencia()])]
+    )
+
+
+def _distribucion():
+    return Nodo(
+        "_distribucion",
+        [
+            Nodo.Eleccion(
+                [
+                    "equitativa",
+                    "desigual",
+                    "centralizada",
+                    "descentralizada",
+                    "eficiente",
+                    "ineficiente",
+                    "justa",
+                    "injusta",
+                    "optima",
+                    "suboptima",
+                    "escasa",
+                    "abundante",
+                    "controlada",
+                    "libre",
+                    "regulada",
+                ]
+            )
+        ],
+    )
+
+
+def _competencia():
+    return Nodo(
+        "_competencia",
+        [
+            Nodo.Eleccion(
+                [
+                    "monopolio",
+                    "oligopolio",
+                    "competencia",
+                    "libre-mercado",
+                    "regulacion",
+                    "proteccion",
+                    "subsidio",
+                    "impuesto",
+                    "barrera",
+                    "acceso",
+                    "exclusion",
+                    "inclusion",
+                    "prioridad",
+                    "asignacion",
+                    "racionamiento",
+                ]
+            )
+        ],
+    )
+
+
+def _normas():
+    return Nodo("_normas", [Nodo.Eleccion([_reglas(), _sanciones()])])
+
+
+def _reglas():
+    return Nodo(
+        "_reglas",
+        [
+            Nodo.Eleccion(
+                [
+                    "ley",
+                    "norma",
+                    "codigo",
+                    "protocolo",
+                    "convencion",
+                    "estandar",
+                    "politica",
+                    "procedimiento",
+                    "restriccion",
+                    "permiso",
+                    "prohibicion",
+                    "obligacion",
+                    "recomendacion",
+                    "guia",
+                    "principio",
+                ]
+            )
+        ],
+    )
+
+
+def _sanciones():
+    return Nodo(
+        "_sanciones",
+        [
+            Nodo.Eleccion(
+                [
+                    "recompensa",
+                    "castigo",
+                    "incentivo",
+                    "desincentivo",
+                    "penalizacion",
+                    "bonificacion",
+                    "reconocimiento",
+                    "exclusion",
+                    "inclusion",
+                    "acceso",
+                    "restriccion",
+                    "refuerzo",
+                    "extincion",
+                    "habituacion",
+                    "sensibilizacion",
+                ]
+            )
+        ],
+    )
 
 
 def _personas():
-    return Nodo("_personas", [Nodo.Eleccion([])])
+    return Nodo(
+        "_personas",
+        [
+            Nodo.Eleccion(
+                [
+                    _identidad(),
+                    _capacidades(),
+                    _relaciones_personas(),
+                    _estados_personas(),
+                ]
+            )
+        ],
+    )
+
+
+def _identidad():
+    return Nodo("_identidad", [Nodo.Eleccion([_nombre(), _rol()])])
+
+
+def _nombre():
+    return Nodo(
+        "_nombre",
+        [
+            Nodo.Eleccion(
+                [
+                    "identificador",
+                    "alias",
+                    "etiqueta",
+                    "tag",
+                    "id",
+                    "clave",
+                    "referencia",
+                    "simbolo",
+                    "signo",
+                    "marca",
+                    "firma",
+                    "huella",
+                    "token",
+                    "codigo",
+                    "hash",
+                ]
+            )
+        ],
+    )
+
+
+def _rol():
+    return Nodo(
+        "_rol",
+        [
+            Nodo.Eleccion(
+                [
+                    "agente",
+                    "actor",
+                    "participante",
+                    "observador",
+                    "operador",
+                    "usuario",
+                    "administrador",
+                    "creador",
+                    "destructor",
+                    "mantenedor",
+                    "evaluador",
+                    "coordinador",
+                    "mediador",
+                    "guardian",
+                    "explorador",
+                ]
+            )
+        ],
+    )
+
+
+def _capacidades():
+    return Nodo("_capacidades", [Nodo.Eleccion([_fisicas(), _mentales()])])
+
+
+def _fisicas():
+    return Nodo(
+        "_fisicas",
+        [
+            Nodo.Eleccion(
+                [
+                    "velocidad",
+                    "fuerza",
+                    "resistencia",
+                    "agilidad",
+                    "precision",
+                    "alcance",
+                    "sensibilidad",
+                    "percepcion",
+                    "reaccion",
+                    "coordinacion",
+                    "equilibrio",
+                    "orientacion",
+                    "navegacion",
+                    "manipulacion",
+                    "construccion",
+                ]
+            )
+        ],
+    )
+
+
+def _mentales():
+    return Nodo(
+        "_mentales",
+        [
+            Nodo.Eleccion(
+                [
+                    "memoria",
+                    "atencion",
+                    "razonamiento",
+                    "creatividad",
+                    "aprendizaje",
+                    "planificacion",
+                    "decision",
+                    "comunicacion",
+                    "metacognicion",
+                    "abstraccion",
+                    "analogia",
+                    "inferencia",
+                    "prediccion",
+                    "evaluacion",
+                    "regulacion",
+                ]
+            )
+        ],
+    )
+
+
+def _relaciones_personas():
+    return Nodo("_relaciones_personas", [Nodo.Eleccion([_cercanas(), _lejanas()])])
+
+
+def _cercanas():
+    return Nodo(
+        "_cercanas",
+        [
+            Nodo.Eleccion(
+                [
+                    "aliado",
+                    "colaborador",
+                    "competidor",
+                    "neutral",
+                    "conocido",
+                    "confiado",
+                    "desconfiado",
+                    "dependiente",
+                    "independiente",
+                    "simbiotico",
+                    "parasito",
+                    "huesped",
+                    "vecino",
+                    "par",
+                    "igual",
+                ]
+            )
+        ],
+    )
+
+
+def _lejanas():
+    return Nodo(
+        "_lejanas",
+        [
+            Nodo.Eleccion(
+                [
+                    "desconocido",
+                    "extraño",
+                    "enemigo",
+                    "indiferente",
+                    "potencial",
+                    "futuro",
+                    "pasado",
+                    "historico",
+                    "legendario",
+                    "mitico",
+                    "abstracto",
+                    "colectivo",
+                    "anonimo",
+                    "masivo",
+                    "global",
+                ]
+            )
+        ],
+    )
+
+
+def _estados_personas():
+    return Nodo(
+        "_estados_personas",
+        [Nodo.Eleccion([_fisicos_estados_personas(), _mentales_estados_personas()])],
+    )
+
+
+def _fisicos_estados_personas():
+    return Nodo(
+        "_fisicos_estados_personas",
+        [
+            Nodo.Eleccion(
+                [
+                    "activo",
+                    "inactivo",
+                    "descansando",
+                    "moviendo",
+                    "comiendo",
+                    "durmiendo",
+                    "creciendo",
+                    "envejeciendo",
+                    "sanando",
+                    "enfermando",
+                    "muriendo",
+                    "naciendo",
+                    "madurando",
+                    "reproduciendose",
+                    "evolucionando",
+                ]
+            )
+        ],
+    )
+
+
+def _mentales_estados_personas():
+    return Nodo(
+        "_mentales_estados_personas",
+        [
+            Nodo.Eleccion(
+                [
+                    "alerta",
+                    "concentrado",
+                    "distraido",
+                    "confuso",
+                    "claro",
+                    "motivado",
+                    "desmotivado",
+                    "ansioso",
+                    "tranquilo",
+                    "curioso",
+                    "aburrido",
+                    "satisfecho",
+                    "frustrado",
+                    "esperanzado",
+                    "desesperado",
+                ]
+            )
+        ],
+    )
 
 
 def _objetos():
-    return Nodo("_objetos", [Nodo.Eleccion([])])
+    return Nodo(
+        "_objetos",
+        [
+            Nodo.Eleccion(
+                [
+                    _propiedades_objetos(),
+                    _estados_objetos(),
+                    _relaciones_objetos(),
+                    _usos(),
+                ]
+            )
+        ],
+    )
+
+
+def _propiedades_objetos():
+    return Nodo(
+        "_propiedades_objetos",
+        [Nodo.Eleccion([_fisicas_propiedades_objetos(), _funcionales()])],
+    )
+
+
+def _fisicas_propiedades_objetos():
+    return Nodo(
+        "_fisicas_propiedades_objetos",
+        [
+            Nodo.Eleccion(
+                [
+                    "tamaño",
+                    "forma",
+                    "peso",
+                    "color",
+                    "textura",
+                    "temperatura",
+                    "dureza",
+                    "fragilidad",
+                    "conductividad",
+                    "transparencia",
+                    "opacidad",
+                    "magnetismo",
+                    "elasticidad",
+                    "densidad",
+                    "viscosidad",
+                ]
+            )
+        ],
+    )
+
+
+def _funcionales():
+    return Nodo(
+        "_funcionales",
+        [
+            Nodo.Eleccion(
+                [
+                    "utilidad",
+                    "eficiencia",
+                    "durabilidad",
+                    "compatibilidad",
+                    "modularidad",
+                    "escalabilidad",
+                    "mantenibilidad",
+                    "reparabilidad",
+                    "reutilizabilidad",
+                    "versatilidad",
+                    "especializacion",
+                    "precision",
+                    "velocidad",
+                    "capacidad",
+                    "alcance",
+                ]
+            )
+        ],
+    )
+
+
+def _estados_objetos():
+    return Nodo("_estados_objetos", [Nodo.Eleccion([_intacto(), _deteriorado()])])
+
+
+def _intacto():
+    return Nodo(
+        "_intacto",
+        [
+            Nodo.Eleccion(
+                [
+                    "nuevo",
+                    "optimo",
+                    "funcional",
+                    "completo",
+                    "limpio",
+                    "calibrado",
+                    "actualizado",
+                    "sincronizado",
+                    "disponible",
+                    "accesible",
+                    "activo",
+                    "cargado",
+                    "listo",
+                    "preparado",
+                    "operativo",
+                ]
+            )
+        ],
+    )
+
+
+def _deteriorado():
+    return Nodo(
+        "_deteriorado",
+        [
+            Nodo.Eleccion(
+                [
+                    "roto",
+                    "dañado",
+                    "desgastado",
+                    "obsoleto",
+                    "corrupto",
+                    "fragmentado",
+                    "incompleto",
+                    "sucio",
+                    "descalibrado",
+                    "desactualizado",
+                    "inaccesible",
+                    "inactivo",
+                    "descargado",
+                    "bloqueado",
+                    "inoperativo",
+                ]
+            )
+        ],
+    )
+
+
+def _relaciones_objetos():
+    return Nodo("_relaciones_objetos", [Nodo.Eleccion([_contenedor(), _contenido()])])
+
+
+def _contenedor():
+    return Nodo(
+        "_contenedor",
+        [
+            Nodo.Eleccion(
+                [
+                    "padre",
+                    "entorno",
+                    "contexto",
+                    "espacio",
+                    "contenedor",
+                    "sistema",
+                    "red",
+                    "coleccion",
+                    "grupo",
+                    "conjunto",
+                    "clase",
+                    "tipo",
+                    "categoria",
+                    "dominio",
+                    "universo",
+                ]
+            )
+        ],
+    )
+
+
+def _contenido():
+    return Nodo(
+        "_contenido",
+        [
+            Nodo.Eleccion(
+                [
+                    "hijo",
+                    "elemento",
+                    "componente",
+                    "parte",
+                    "fragmento",
+                    "instancia",
+                    "miembro",
+                    "item",
+                    "entrada",
+                    "registro",
+                    "nodo",
+                    "hoja",
+                    "dato",
+                    "valor",
+                    "referencia",
+                ]
+            )
+        ],
+    )
+
+
+def _usos():
+    return Nodo("_usos", [Nodo.Eleccion([_herramienta(), _obstaculo()])])
+
+
+def _herramienta():
+    return Nodo(
+        "_herramienta",
+        [
+            Nodo.Eleccion(
+                [
+                    "sensor",
+                    "actuador",
+                    "procesador",
+                    "almacen",
+                    "transmisor",
+                    "receptor",
+                    "convertidor",
+                    "amplificador",
+                    "filtro",
+                    "transformador",
+                    "generador",
+                    "consumidor",
+                    "regulador",
+                    "controlador",
+                    "interfaz",
+                ]
+            )
+        ],
+    )
+
+
+def _obstaculo():
+    return Nodo(
+        "_obstaculo",
+        [
+            Nodo.Eleccion(
+                [
+                    "barrera",
+                    "bloqueo",
+                    "restriccion",
+                    "limite",
+                    "frontera",
+                    "resistencia",
+                    "impedancia",
+                    "friccion",
+                    "ruido",
+                    "interferencia",
+                    "perturbacion",
+                    "error",
+                    "fallo",
+                    "anomalia",
+                    "excepcion",
+                ]
+            )
+        ],
+    )
 
 
 def _informacion():
-    return Nodo("_informacion", [Nodo.Eleccion([])])
+    return Nodo(
+        "_informacion",
+        [
+            Nodo.Eleccion(
+                [_representacion(), _organizacion(), _flujo_informacion(), _calidad()]
+            )
+        ],
+    )
+
+
+def _representacion():
+    return Nodo("_representacion", [Nodo.Eleccion([_simbolos(), _señales()])])
+
+
+def _simbolos():
+    return Nodo(
+        "_simbolos",
+        [
+            Nodo.Eleccion(
+                [
+                    "bit",
+                    "byte",
+                    "caracter",
+                    "palabra",
+                    "token",
+                    "codigo",
+                    "signo",
+                    "señal",
+                    "patron",
+                    "estructura",
+                    "formato",
+                    "esquema",
+                    "plantilla",
+                    "modelo",
+                    "abstraccion",
+                ]
+            )
+        ],
+    )
+
+
+def _señales():
+    return Nodo(
+        "_señales",
+        [
+            Nodo.Eleccion(
+                [
+                    "analogica",
+                    "digital",
+                    "continua",
+                    "discreta",
+                    "modulada",
+                    "codificada",
+                    "comprimida",
+                    "cifrada",
+                    "firmada",
+                    "autenticada",
+                    "verificada",
+                    "validada",
+                    "redundante",
+                    "corregida",
+                    "integridad",
+                ]
+            )
+        ],
+    )
+
+
+def _organizacion():
+    return Nodo(
+        "_organizacion",
+        [Nodo.Eleccion([_jerarquia_organizacion(), _red_organizacion()])],
+    )
+
+
+def _jerarquia_organizacion():
+    return Nodo(
+        "_jerarquia_organizacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "raiz",
+                    "nivel",
+                    "profundidad",
+                    "rama",
+                    "hoja",
+                    "nodo",
+                    "padre",
+                    "hijo",
+                    "ancestro",
+                    "descendiente",
+                    "subárbol",
+                    "camino",
+                    "frontera",
+                    "altura",
+                    "anchura",
+                ]
+            )
+        ],
+    )
+
+
+def _red_organizacion():
+    return Nodo(
+        "_red_organizacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "nodo",
+                    "enlace",
+                    "camino",
+                    "ciclo",
+                    "componente",
+                    "cluster",
+                    "hub",
+                    "puente",
+                    "corte",
+                    "flujo",
+                    "capacidad",
+                    "latencia",
+                    "ancho",
+                    "distancia",
+                    "centralidad",
+                ]
+            )
+        ],
+    )
+
+
+def _flujo_informacion():
+    return Nodo("_flujo_informacion", [Nodo.Eleccion([_fuente(), _destino()])])
+
+
+def _fuente():
+    return Nodo(
+        "_fuente",
+        [
+            Nodo.Eleccion(
+                [
+                    "origen",
+                    "emisor",
+                    "productor",
+                    "generador",
+                    "creador",
+                    "publicador",
+                    "escritor",
+                    "proveedor",
+                    "servidor",
+                    "maestro",
+                    "primario",
+                    "activo",
+                    "push",
+                    "iniciador",
+                    "trigger",
+                ]
+            )
+        ],
+    )
+
+
+def _destino():
+    return Nodo(
+        "_destino",
+        [
+            Nodo.Eleccion(
+                [
+                    "receptor",
+                    "consumidor",
+                    "suscriptor",
+                    "lector",
+                    "cliente",
+                    "esclavo",
+                    "secundario",
+                    "pasivo",
+                    "pull",
+                    "buffer",
+                    "cola",
+                    "almacen",
+                    "archivo",
+                    "log",
+                    "registro",
+                ]
+            )
+        ],
+    )
+
+
+def _calidad():
+    return Nodo("_calidad", [Nodo.Eleccion([_precision_calidad(), _completitud()])])
+
+
+def _precision_calidad():
+    return Nodo(
+        "_precision_calidad",
+        [
+            Nodo.Eleccion(
+                [
+                    "exacto",
+                    "aproximado",
+                    "correcto",
+                    "incorrecto",
+                    "valido",
+                    "invalido",
+                    "verificado",
+                    "sin_verificar",
+                    "confiable",
+                    "no_confiable",
+                    "completo",
+                    "incompleto",
+                    "consistente",
+                    "inconsistente",
+                    "actualizado",
+                ]
+            )
+        ],
+    )
+
+
+def _completitud():
+    return Nodo(
+        "_completitud",
+        [
+            Nodo.Eleccion(
+                [
+                    "completo",
+                    "parcial",
+                    "total",
+                    "fragmentado",
+                    "resumido",
+                    "detallado",
+                    "minimo",
+                    "maximo",
+                    "suficiente",
+                    "insuficiente",
+                    "redundante",
+                    "escaso",
+                    "denso",
+                    "disperso",
+                    "representativo",
+                ]
+            )
+        ],
+    )
 
 
 def _economia():
-    return Nodo("_economia", [Nodo.Eleccion([])])
+    return Nodo(
+        "_economia",
+        [
+            Nodo.Eleccion(
+                [
+                    _recursos_economia(),
+                    _intercambio(),
+                    _estrategia_economia(),
+                    _equilibrio_economia(),
+                ]
+            )
+        ],
+    )
+
+
+def _recursos_economia():
+    return Nodo("_recursos_economia", [Nodo.Eleccion([_escasez(), _abundancia()])])
+
+
+def _escasez():
+    return Nodo(
+        "_escasez",
+        [
+            Nodo.Eleccion(
+                [
+                    "limitado",
+                    "agotable",
+                    "finito",
+                    "renovable",
+                    "no_renovable",
+                    "critico",
+                    "esencial",
+                    "prescindible",
+                    "sustituible",
+                    "insustituible",
+                    "escaso",
+                    "raro",
+                    "comun",
+                    "abundante",
+                    "inagotable",
+                ]
+            )
+        ],
+    )
+
+
+def _abundancia():
+    return Nodo(
+        "_abundancia",
+        [
+            Nodo.Eleccion(
+                [
+                    "ilimitado",
+                    "inagotable",
+                    "excedente",
+                    "surplus",
+                    "reserva",
+                    "acumulado",
+                    "almacenado",
+                    "disponible",
+                    "accesible",
+                    "libre",
+                    "gratuito",
+                    "comun",
+                    "publico",
+                    "compartido",
+                    "abierto",
+                ]
+            )
+        ],
+    )
+
+
+def _intercambio():
+    return Nodo("_intercambio", [Nodo.Eleccion([_coste(), _beneficio()])])
+
+
+def _coste():
+    return Nodo(
+        "_coste",
+        [
+            Nodo.Eleccion(
+                [
+                    "precio",
+                    "valor",
+                    "coste",
+                    "gasto",
+                    "inversion",
+                    "penalizacion",
+                    "tributo",
+                    "impuesto",
+                    "tarifa",
+                    "tasa",
+                    "cuota",
+                    "deuda",
+                    "credito",
+                    "interes",
+                    "descuento",
+                ]
+            )
+        ],
+    )
+
+
+def _beneficio():
+    return Nodo(
+        "_beneficio",
+        [
+            Nodo.Eleccion(
+                [
+                    "ganancia",
+                    "retorno",
+                    "utilidad",
+                    "valor",
+                    "recompensa",
+                    "incentivo",
+                    "bonus",
+                    "dividendo",
+                    "interes",
+                    "apreciacion",
+                    "rendimiento",
+                    "eficiencia",
+                    "ahorro",
+                    "ventaja",
+                    "oportunidad",
+                ]
+            )
+        ],
+    )
+
+
+def _estrategia_economia():
+    return Nodo("_estrategia_economia", [Nodo.Eleccion([_inversion(), _ahorro()])])
+
+
+def _inversion():
+    return Nodo(
+        "_inversion",
+        [
+            Nodo.Eleccion(
+                [
+                    "acumulacion",
+                    "almacenamiento",
+                    "reserva",
+                    "diversificacion",
+                    "especializacion",
+                    "expansion",
+                    "crecimiento",
+                    "desarrollo",
+                    "innovacion",
+                    "exploracion",
+                    "riesgo",
+                    "apuesta",
+                    "especulacion",
+                    "planificacion",
+                    "proyeccion",
+                ]
+            )
+        ],
+    )
+
+
+def _ahorro():
+    return Nodo(
+        "_ahorro",
+        [
+            Nodo.Eleccion(
+                [
+                    "conservacion",
+                    "eficiencia",
+                    "reduccion",
+                    "optimizacion",
+                    "reutilizacion",
+                    "reciclaje",
+                    "minimizacion",
+                    "frugalidad",
+                    "prudencia",
+                    "reserva",
+                    "buffer",
+                    "margen",
+                    "seguridad",
+                    "contingencia",
+                    "prevision",
+                ]
+            )
+        ],
+    )
+
+
+def _equilibrio_economia():
+    return Nodo("_equilibrio_economia", [Nodo.Eleccion([_oferta(), _demanda()])])
+
+
+def _oferta():
+    return Nodo(
+        "_oferta",
+        [
+            Nodo.Eleccion(
+                [
+                    "produccion",
+                    "generacion",
+                    "provision",
+                    "suministro",
+                    "disponibilidad",
+                    "capacidad",
+                    "inventario",
+                    "stock",
+                    "reserva",
+                    "excedente",
+                    "deficit",
+                    "escasez",
+                    "abundancia",
+                    "flujo",
+                    "tasa",
+                ]
+            )
+        ],
+    )
+
+
+def _demanda():
+    return Nodo(
+        "_demanda",
+        [
+            Nodo.Eleccion(
+                [
+                    "consumo",
+                    "uso",
+                    "necesidad",
+                    "deseo",
+                    "solicitud",
+                    "peticion",
+                    "requerimiento",
+                    "preferencia",
+                    "prioridad",
+                    "urgencia",
+                    "dependencia",
+                    "addiction",
+                    "habito",
+                    "patron",
+                    "tendencia",
+                ]
+            )
+        ],
+    )
 
 
 def _lenguaje():
-    return Nodo("_lenguaje", [Nodo.Eleccion([])])
+    return Nodo(
+        "_lenguaje",
+        [
+            Nodo.Eleccion(
+                [
+                    _estructura_lenguaje(),
+                    _uso(),
+                    _comunicacion_lenguaje(),
+                    _representacion_lenguaje(),
+                ]
+            )
+        ],
+    )
+
+
+def _estructura_lenguaje():
+    return Nodo("_estructura_lenguaje", [Nodo.Eleccion([_sintaxis(), _semantica()])])
+
+
+def _sintaxis():
+    return Nodo(
+        "_sintaxis",
+        [
+            Nodo.Eleccion(
+                [
+                    "regla",
+                    "gramatica",
+                    "produccion",
+                    "derivacion",
+                    "token",
+                    "terminal",
+                    "no_terminal",
+                    "simbolo",
+                    "expresion",
+                    "sentencia",
+                    "clausula",
+                    "predicado",
+                    "argumento",
+                    "modificador",
+                    "conector",
+                ]
+            )
+        ],
+    )
+
+
+def _semantica():
+    return Nodo(
+        "_semantica",
+        [
+            Nodo.Eleccion(
+                [
+                    "significado",
+                    "referencia",
+                    "denotacion",
+                    "connotacion",
+                    "contexto",
+                    "interpretacion",
+                    "ambiguedad",
+                    "sinonimo",
+                    "antonimo",
+                    "hiperonimo",
+                    "hiponimo",
+                    "meronimo",
+                    "metafora",
+                    "metonimia",
+                    "pragmatica",
+                ]
+            )
+        ],
+    )
+
+
+def _uso():
+    return Nodo("_uso", [Nodo.Eleccion([_descripcion(), _instruccion()])])
+
+
+def _descripcion():
+    return Nodo(
+        "_descripcion",
+        [
+            Nodo.Eleccion(
+                [
+                    "nombre",
+                    "etiqueta",
+                    "identificador",
+                    "definicion",
+                    "descripcion",
+                    "especificacion",
+                    "caracterizacion",
+                    "clasificacion",
+                    "categoria",
+                    "tipo",
+                    "instancia",
+                    "ejemplo",
+                    "contraejemplo",
+                    "analogia",
+                    "metafora",
+                ]
+            )
+        ],
+    )
+
+
+def _instruccion():
+    return Nodo(
+        "_instruccion",
+        [
+            Nodo.Eleccion(
+                [
+                    "comando",
+                    "orden",
+                    "instruccion",
+                    "directiva",
+                    "procedimiento",
+                    "algoritmo",
+                    "receta",
+                    "protocolo",
+                    "guia",
+                    "regla",
+                    "norma",
+                    "restriccion",
+                    "permiso",
+                    "prohibicion",
+                    "recomendacion",
+                ]
+            )
+        ],
+    )
+
+
+def _comunicacion_lenguaje():
+    return Nodo("_comunicacion_lenguaje", [Nodo.Eleccion([_emisor(), _receptor()])])
+
+
+def _emisor():
+    return Nodo(
+        "_emisor",
+        [
+            Nodo.Eleccion(
+                [
+                    "hablante",
+                    "escritor",
+                    "codificador",
+                    "transmisor",
+                    "fuente",
+                    "autor",
+                    "creador",
+                    "generador",
+                    "publicador",
+                    "difusor",
+                    "iniciador",
+                    "provocador",
+                    "respondedor",
+                    "interlocutor",
+                    "narrador",
+                ]
+            )
+        ],
+    )
+
+
+def _receptor():
+    return Nodo(
+        "_receptor",
+        [
+            Nodo.Eleccion(
+                [
+                    "oyente",
+                    "lector",
+                    "decodificador",
+                    "receptor",
+                    "destino",
+                    "audiencia",
+                    "publico",
+                    "interprete",
+                    "procesador",
+                    "evaluador",
+                    "critico",
+                    "respondedor",
+                    "interlocutor",
+                    "participante",
+                    "observador",
+                ]
+            )
+        ],
+    )
+
+
+def _representacion_lenguaje():
+    return Nodo(
+        "_representacion_lenguaje",
+        [Nodo.Eleccion([_simbolo_representacion_lenguaje(), _referente()])],
+    )
+
+
+def _simbolo_representacion_lenguaje():
+    return Nodo(
+        "_simbolo_representacion_lenguaje",
+        [
+            Nodo.Eleccion(
+                [
+                    "signo",
+                    "icono",
+                    "indice",
+                    "señal",
+                    "codigo",
+                    "token",
+                    "marca",
+                    "huella",
+                    "traza",
+                    "firma",
+                    "hash",
+                    "identificador",
+                    "referencia",
+                    "puntero",
+                    "enlace",
+                ]
+            )
+        ],
+    )
+
+
+def _referente():
+    return Nodo(
+        "_referente",
+        [
+            Nodo.Eleccion(
+                [
+                    "objeto",
+                    "concepto",
+                    "entidad",
+                    "proceso",
+                    "relacion",
+                    "propiedad",
+                    "estado",
+                    "evento",
+                    "accion",
+                    "situacion",
+                    "contexto",
+                    "mundo",
+                    "modelo",
+                    "abstraccion",
+                    "idea",
+                ]
+            )
+        ],
+    )
 
 
 def _causalidad():
-    return Nodo("_causalidad", [Nodo.Eleccion([])])
+    return Nodo(
+        "_causalidad",
+        [
+            Nodo.Eleccion(
+                [
+                    _relaciones_causalidad(),
+                    _cadenas(),
+                    _probabilidad_causalidad(),
+                    _intervencion(),
+                ]
+            )
+        ],
+    )
+
+
+def _relaciones_causalidad():
+    return Nodo("_relaciones_causalidad", [Nodo.Eleccion([_causa(), _efecto()])])
+
+
+def _causa():
+    return Nodo(
+        "_causa",
+        [
+            Nodo.Eleccion(
+                [
+                    "origen",
+                    "fuente",
+                    "raiz",
+                    "trigger",
+                    "detonante",
+                    "factor",
+                    "condicion",
+                    "antecedente",
+                    "pre-requisito",
+                    "necesario",
+                    "suficiente",
+                    "contribuyente",
+                    "inhibidor",
+                    "catalizador",
+                    "amplificador",
+                ]
+            )
+        ],
+    )
+
+
+def _efecto():
+    return Nodo(
+        "_efecto",
+        [
+            Nodo.Eleccion(
+                [
+                    "resultado",
+                    "consecuencia",
+                    "impacto",
+                    "cambio",
+                    "transformacion",
+                    "respuesta",
+                    "reaccion",
+                    "salida",
+                    "producto",
+                    "efecto",
+                    "derivado",
+                    "secundario",
+                    "colateral",
+                    "cascada",
+                    "propagacion",
+                ]
+            )
+        ],
+    )
+
+
+def _cadenas():
+    return Nodo("_cadenas", [Nodo.Eleccion([_directa(), _indirecta()])])
+
+
+def _directa():
+    return Nodo(
+        "_directa",
+        [
+            Nodo.Eleccion(
+                [
+                    "inmediata",
+                    "proxima",
+                    "directa",
+                    "lineal",
+                    "simple",
+                    "obvia",
+                    "determinista",
+                    "predecible",
+                    "controlable",
+                    "reversible",
+                    "observable",
+                    "medible",
+                    "cuantificable",
+                    "trazable",
+                    "verificable",
+                ]
+            )
+        ],
+    )
+
+
+def _indirecta():
+    return Nodo(
+        "_indirecta",
+        [
+            Nodo.Eleccion(
+                [
+                    "mediada",
+                    "lejana",
+                    "indirecta",
+                    "no_lineal",
+                    "compleja",
+                    "oculta",
+                    "estocastica",
+                    "impredecible",
+                    "incontrolable",
+                    "irreversible",
+                    "latente",
+                    "emergente",
+                    "sistemica",
+                    "difusa",
+                    "acumulada",
+                ]
+            )
+        ],
+    )
+
+
+def _probabilidad_causalidad():
+    return Nodo(
+        "_probabilidad_causalidad",
+        [Nodo.Eleccion([_certeza(), _incertidumbre_probabilidad_causalidad()])],
+    )
+
+
+def _certeza():
+    return Nodo(
+        "_certeza",
+        [
+            Nodo.Eleccion(
+                [
+                    "determinista",
+                    "necesario",
+                    "inevitable",
+                    "seguro",
+                    "garantizado",
+                    "cierto",
+                    "definido",
+                    "absoluto",
+                    "completo",
+                    "total",
+                    "incondicional",
+                    "universal",
+                    "siempre",
+                    "invariable",
+                    "constante",
+                ]
+            )
+        ],
+    )
+
+
+def _incertidumbre_probabilidad_causalidad():
+    return Nodo(
+        "_incertidumbre_probabilidad_causalidad",
+        [
+            Nodo.Eleccion(
+                [
+                    "probabilistico",
+                    "estocastico",
+                    "aleatorio",
+                    "posible",
+                    "contingente",
+                    "condicional",
+                    "parcial",
+                    "aproximado",
+                    "estimado",
+                    "incierto",
+                    "variable",
+                    "dependiente",
+                    "contextual",
+                    "situacional",
+                    "emergente",
+                ]
+            )
+        ],
+    )
+
+
+def _intervencion():
+    return Nodo(
+        "_intervencion", [Nodo.Eleccion([_control_intervencion(), _influencia()])]
+    )
+
+
+def _control_intervencion():
+    return Nodo(
+        "_control_intervencion",
+        [
+            Nodo.Eleccion(
+                [
+                    "manipulacion",
+                    "ajuste",
+                    "regulacion",
+                    "modificacion",
+                    "intervencion",
+                    "correccion",
+                    "optimizacion",
+                    "direccion",
+                    "guia",
+                    "supervision",
+                    "monitoreo",
+                    "retroalimentacion",
+                    "adaptacion",
+                    "aprendizaje",
+                    "evolucion",
+                ]
+            )
+        ],
+    )
+
+
+def _influencia():
+    return Nodo(
+        "_influencia",
+        [
+            Nodo.Eleccion(
+                [
+                    "sesgo",
+                    "incentivo",
+                    "presion",
+                    "atraccion",
+                    "repulsion",
+                    "facilitacion",
+                    "inhibicion",
+                    "amplificacion",
+                    "atenuacion",
+                    "modulacion",
+                    "sincronizacion",
+                    "perturbacion",
+                    "estabilizacion",
+                    "direccion",
+                    "orientacion",
+                ]
+            )
+        ],
+    )
 
 
 def _incertidumbre():
-    return Nodo("_incertidumbre", [Nodo.Eleccion([])])
+    return Nodo(
+        "_incertidumbre",
+        [
+            Nodo.Eleccion(
+                [
+                    _tipos_incertidumbre(),
+                    _manejo(),
+                    _decision_incertidumbre(),
+                    _informacion_incertidumbre(),
+                ]
+            )
+        ],
+    )
+
+
+def _tipos_incertidumbre():
+    return Nodo("_tipos_incertidumbre", [Nodo.Eleccion([_aleatoria(), _epistemica()])])
+
+
+def _aleatoria():
+    return Nodo(
+        "_aleatoria",
+        [
+            Nodo.Eleccion(
+                [
+                    "ruido",
+                    "varianza",
+                    "fluctuacion",
+                    "oscilacion",
+                    "perturbacion",
+                    "error",
+                    "desviacion",
+                    "dispersion",
+                    "heterogeneidad",
+                    "variabilidad",
+                    "estocasticidad",
+                    "aleatoriedad",
+                    "caos",
+                    "turbulencia",
+                    "ruido_blanco",
+                ]
+            )
+        ],
+    )
+
+
+def _epistemica():
+    return Nodo(
+        "_epistemica",
+        [
+            Nodo.Eleccion(
+                [
+                    "ignorancia",
+                    "desconocimiento",
+                    "modelo_incorrecto",
+                    "datos_insuficientes",
+                    "sesgo",
+                    "ambiguedad",
+                    "vaguedad",
+                    "imprecision",
+                    "aproximacion",
+                    "estimacion",
+                    "suposicion",
+                    "hipotesis",
+                    "creencia",
+                    "opinion",
+                    "conjetura",
+                ]
+            )
+        ],
+    )
+
+
+def _manejo():
+    return Nodo("_manejo", [Nodo.Eleccion([_estimacion(), _reduccion()])])
+
+
+def _estimacion():
+    return Nodo(
+        "_estimacion",
+        [
+            Nodo.Eleccion(
+                [
+                    "media",
+                    "mediana",
+                    "moda",
+                    "varianza",
+                    "desviacion",
+                    "intervalo",
+                    "confianza",
+                    "prediccion",
+                    "proyeccion",
+                    "simulacion",
+                    "montecarlo",
+                    "bootstrap",
+                    "bayesiano",
+                    "frecuentista",
+                    "aproximacion",
+                ]
+            )
+        ],
+    )
+
+
+def _reduccion():
+    return Nodo(
+        "_reduccion",
+        [
+            Nodo.Eleccion(
+                [
+                    "datos",
+                    "experimento",
+                    "observacion",
+                    "medicion",
+                    "muestreo",
+                    "prueba",
+                    "validacion",
+                    "verificacion",
+                    "refinamiento",
+                    "actualizacion",
+                    "aprendizaje",
+                    "adaptacion",
+                    "convergencia",
+                    "especializacion",
+                    "precision",
+                ]
+            )
+        ],
+    )
+
+
+def _decision_incertidumbre():
+    return Nodo("_decision_incertidumbre", [Nodo.Eleccion([_riesgo(), _cautela()])])
+
+
+def _riesgo():
+    return Nodo(
+        "_riesgo",
+        [
+            Nodo.Eleccion(
+                [
+                    "probabilidad",
+                    "impacto",
+                    "severidad",
+                    "frecuencia",
+                    "exposicion",
+                    "vulnerabilidad",
+                    "amenaza",
+                    "peligro",
+                    "coste",
+                    "beneficio",
+                    "trade-off",
+                    "umbral",
+                    "tolerancia",
+                    "aversion",
+                    "neutralidad",
+                ]
+            )
+        ],
+    )
+
+
+def _cautela():
+    return Nodo(
+        "_cautela",
+        [
+            Nodo.Eleccion(
+                [
+                    "conservador",
+                    "prudente",
+                    "cauteloso",
+                    "minmax",
+                    "satisficing",
+                    "robusto",
+                    "redundante",
+                    "resiliente",
+                    "margen",
+                    "buffer",
+                    "reserva",
+                    "contingencia",
+                    "plan_b",
+                    "fallback",
+                    "hedging",
+                ]
+            )
+        ],
+    )
+
+
+def _informacion_incertidumbre():
+    return Nodo(
+        "_informacion_incertidumbre", [Nodo.Eleccion([_completa(), _parcial()])]
+    )
+
+
+def _completa():
+    return Nodo(
+        "_completa",
+        [
+            Nodo.Eleccion(
+                [
+                    "perfecta",
+                    "total",
+                    "exhaustiva",
+                    "determinista",
+                    "conocida",
+                    "observable",
+                    "medible",
+                    "verificable",
+                    "trazable",
+                    "reproducible",
+                    "consistente",
+                    "coherente",
+                    "completa",
+                    "suficiente",
+                    "adecuada",
+                ]
+            )
+        ],
+    )
+
+
+def _parcial():
+    return Nodo(
+        "_parcial",
+        [
+            Nodo.Eleccion(
+                [
+                    "imperfecta",
+                    "incompleta",
+                    "ruidosa",
+                    "sesgada",
+                    "limitada",
+                    "local",
+                    "parcial",
+                    "aproximada",
+                    "estimada",
+                    "incierta",
+                    "ambigua",
+                    "vaga",
+                    "imprecisa",
+                    "contradictoria",
+                    "insuficiente",
+                ]
+            )
+        ],
+    )
 
 
 def _objetivos():
-    return Nodo("_objetivos", [Nodo.Eleccion([])])
+    return Nodo(
+        "_objetivos",
+        [Nodo.Eleccion([_tipos_objetivos(), _estado(), _prioridad(), _progreso()])],
+    )
+
+
+def _tipos_objetivos():
+    return Nodo("_tipos_objetivos", [Nodo.Eleccion([_inmediatos(), _lejanos()])])
+
+
+def _inmediatos():
+    return Nodo(
+        "_inmediatos",
+        [
+            Nodo.Eleccion(
+                [
+                    "tarea",
+                    "accion",
+                    "paso",
+                    "subobjetivo",
+                    "micro",
+                    "local",
+                    "inmediato",
+                    "tactico",
+                    "operacional",
+                    "concreto",
+                    "especifico",
+                    "medible",
+                    "alcanzable",
+                    "relevante",
+                    "temporal",
+                ]
+            )
+        ],
+    )
+
+
+def _lejanos():
+    return Nodo(
+        "_lejanos",
+        [
+            Nodo.Eleccion(
+                [
+                    "meta",
+                    "vision",
+                    "mision",
+                    "estrategia",
+                    "macro",
+                    "global",
+                    "largo_plazo",
+                    "aspiracion",
+                    "ideal",
+                    "abstracto",
+                    "general",
+                    "ambicioso",
+                    "transformador",
+                    "sistemico",
+                    "evolutivo",
+                ]
+            )
+        ],
+    )
+
+
+def _estado():
+    return Nodo("_estado", [Nodo.Eleccion([_activo(), _completado()])])
+
+
+def _activo():
+    return Nodo(
+        "_activo",
+        [
+            Nodo.Eleccion(
+                [
+                    "pendiente",
+                    "en_progreso",
+                    "bloqueado",
+                    "esperando",
+                    "activo",
+                    "priorizado",
+                    "urgente",
+                    "critico",
+                    "asignado",
+                    "planificado",
+                    "iniciado",
+                    "retomado",
+                    "acelerado",
+                    "en_riesgo",
+                    "atrasado",
+                ]
+            )
+        ],
+    )
+
+
+def _completado():
+    return Nodo(
+        "_completado",
+        [
+            Nodo.Eleccion(
+                [
+                    "logrado",
+                    "exitoso",
+                    "fallido",
+                    "cancelado",
+                    "abandonado",
+                    "superado",
+                    "obsoleto",
+                    "reemplazado",
+                    "archivado",
+                    "aprendido",
+                    "evaluado",
+                    "documentado",
+                    "reproducible",
+                    "escalable",
+                    "transferible",
+                ]
+            )
+        ],
+    )
+
+
+def _prioridad():
+    return Nodo("_prioridad", [Nodo.Eleccion([_urgente(), _diferible()])])
+
+
+def _urgente():
+    return Nodo(
+        "_urgente",
+        [
+            Nodo.Eleccion(
+                [
+                    "critico",
+                    "inmediato",
+                    "vital",
+                    "esencial",
+                    "imprescindible",
+                    "urgente",
+                    "prioritario",
+                    "primero",
+                    "maximo",
+                    "tope",
+                    "deadline",
+                    "bloqueante",
+                    "dependencia",
+                    "cuello",
+                    "bottleneck",
+                ]
+            )
+        ],
+    )
+
+
+def _diferible():
+    return Nodo(
+        "_diferible",
+        [
+            Nodo.Eleccion(
+                [
+                    "secundario",
+                    "opcional",
+                    "deseable",
+                    "conveniente",
+                    "eventual",
+                    "futuro",
+                    "planificado",
+                    "postergable",
+                    "flexible",
+                    "adaptable",
+                    "negociable",
+                    "ajustable",
+                    "diferible",
+                    "pausable",
+                    "cancelable",
+                ]
+            )
+        ],
+    )
+
+
+def _progreso():
+    return Nodo("_progreso", [Nodo.Eleccion([_avance(), _retroceso()])])
+
+
+def _avance():
+    return Nodo(
+        "_avance",
+        [
+            Nodo.Eleccion(
+                [
+                    "incremento",
+                    "mejora",
+                    "aceleracion",
+                    "optimizacion",
+                    "convergencia",
+                    "aprendizaje",
+                    "crecimiento",
+                    "expansion",
+                    "consolidacion",
+                    "estabilizacion",
+                    "refinamiento",
+                    "perfeccionamiento",
+                    "maduracion",
+                    "especializacion",
+                    "eficiencia",
+                ]
+            )
+        ],
+    )
+
+
+def _retroceso():
+    return Nodo(
+        "_retroceso",
+        [
+            Nodo.Eleccion(
+                [
+                    "degradacion",
+                    "error",
+                    "fallo",
+                    "retroceso",
+                    "divergencia",
+                    "inestabilidad",
+                    "deterioro",
+                    "perdida",
+                    "reduccion",
+                    "desaceleracion",
+                    "bloqueo",
+                    "estancamiento",
+                    "regresion",
+                    "colapso",
+                    "reinicio",
+                ]
+            )
+        ],
+    )
 
 
 def _valores():
-    return Nodo("_valores", [Nodo.Eleccion([])])
+    return Nodo(
+        "_valores",
+        [
+            Nodo.Eleccion(
+                [
+                    _utilidad(),
+                    _prioridad_valores(),
+                    _comparacion_valores(),
+                    _cambio_valores(),
+                ]
+            )
+        ],
+    )
+
+
+def _utilidad():
+    return Nodo("_utilidad", [Nodo.Eleccion([_alto(), _bajo()])])
+
+
+def _alto():
+    return Nodo(
+        "_alto",
+        [
+            Nodo.Eleccion(
+                [
+                    "esencial",
+                    "critico",
+                    "vital",
+                    "maximo",
+                    "optimo",
+                    "eficiente",
+                    "efectivo",
+                    "valioso",
+                    "util",
+                    "necesario",
+                    "imprescindible",
+                    "beneficioso",
+                    "productivo",
+                    "rentable",
+                    "ventajoso",
+                ]
+            )
+        ],
+    )
+
+
+def _bajo():
+    return Nodo(
+        "_bajo",
+        [
+            Nodo.Eleccion(
+                [
+                    "prescindible",
+                    "innecesario",
+                    "inutil",
+                    "costoso",
+                    "ineficiente",
+                    "contraproducente",
+                    "perjudicial",
+                    "redundante",
+                    "obsoleto",
+                    "superfluo",
+                    "accesorio",
+                    "decorativo",
+                    "simbolico",
+                    "marginal",
+                    "irrelevante",
+                ]
+            )
+        ],
+    )
+
+
+def _prioridad_valores():
+    return Nodo("_prioridad_valores", [Nodo.Eleccion([_esencial(), _prescindible()])])
+
+
+def _esencial():
+    return Nodo(
+        "_esencial",
+        [
+            Nodo.Eleccion(
+                [
+                    "vital",
+                    "critico",
+                    "necesario",
+                    "imprescindible",
+                    "fundamental",
+                    "basico",
+                    "primario",
+                    "principal",
+                    "central",
+                    "nuclear",
+                    "core",
+                    "minimo",
+                    "requerido",
+                    "obligatorio",
+                    "mandatorio",
+                ]
+            )
+        ],
+    )
+
+
+def _prescindible():
+    return Nodo(
+        "_prescindible",
+        [
+            Nodo.Eleccion(
+                [
+                    "opcional",
+                    "secundario",
+                    "adicional",
+                    "complementario",
+                    "auxiliar",
+                    "accesorio",
+                    "alternativo",
+                    "sustituible",
+                    "reemplazable",
+                    "flexible",
+                    "negociable",
+                    "ajustable",
+                    "variable",
+                    "contingente",
+                    "condicional",
+                ]
+            )
+        ],
+    )
+
+
+def _comparacion_valores():
+    return Nodo("_comparacion_valores", [Nodo.Eleccion([_mejor(), _peor()])])
+
+
+def _mejor():
+    return Nodo(
+        "_mejor",
+        [
+            Nodo.Eleccion(
+                [
+                    "superior",
+                    "optimo",
+                    "maximo",
+                    "preferido",
+                    "dominante",
+                    "eficiente",
+                    "efectivo",
+                    "robusto",
+                    "fiable",
+                    "preciso",
+                    "rapido",
+                    "escalable",
+                    "mantenible",
+                    "simple",
+                    "elegante",
+                ]
+            )
+        ],
+    )
+
+
+def _peor():
+    return Nodo(
+        "_peor",
+        [
+            Nodo.Eleccion(
+                [
+                    "inferior",
+                    "suboptimo",
+                    "minimo",
+                    "descartado",
+                    "dominado",
+                    "ineficiente",
+                    "inefectivo",
+                    "fragil",
+                    "no_fiable",
+                    "impreciso",
+                    "lento",
+                    "no_escalable",
+                    "dificil",
+                    "complejo",
+                    "torpe",
+                ]
+            )
+        ],
+    )
+
+
+def _cambio_valores():
+    return Nodo("_cambio_valores", [Nodo.Eleccion([_aumento(), _disminucion()])])
+
+
+def _aumento():
+    return Nodo(
+        "_aumento",
+        [
+            Nodo.Eleccion(
+                [
+                    "incremento",
+                    "crecimiento",
+                    "expansion",
+                    "amplificacion",
+                    "aceleracion",
+                    "mejora",
+                    "optimizacion",
+                    "maximizacion",
+                    "escalado",
+                    "proliferacion",
+                    "multiplicacion",
+                    "refuerzo",
+                    "consolidacion",
+                    "maduracion",
+                    "evolucion",
+                ]
+            )
+        ],
+    )
+
+
+def _disminucion():
+    return Nodo(
+        "_disminucion",
+        [
+            Nodo.Eleccion(
+                [
+                    "decremento",
+                    "reduccion",
+                    "contraccion",
+                    "atenuacion",
+                    "desaceleracion",
+                    "degradacion",
+                    "deterioro",
+                    "minimizacion",
+                    "simplificacion",
+                    "eliminacion",
+                    "extincion",
+                    "colapso",
+                    "convergencia",
+                    "especializacion",
+                    "poda",
+                ]
+            )
+        ],
+    )
 
 
 def _relaciones():
-    return Nodo("_relaciones", [Nodo.Eleccion([])])
+    return Nodo(
+        "_relaciones",
+        [Nodo.Eleccion([_tipo(), _fuerza(), _direccion_relaciones(), _naturaleza()])],
+    )
+
+
+def _tipo():
+    return Nodo("_tipo", [Nodo.Eleccion([_simetrica(), _asimetrica()])])
+
+
+def _simetrica():
+    return Nodo(
+        "_simetrica",
+        [
+            Nodo.Eleccion(
+                [
+                    "igual",
+                    "par",
+                    "reciproca",
+                    "mutua",
+                    "bilateral",
+                    "equilibrada",
+                    "justa",
+                    "fair",
+                    "compartida",
+                    "cooperativa",
+                    "horizontal",
+                    "democratica",
+                    "consensuada",
+                    "negociada",
+                    "acordada",
+                ]
+            )
+        ],
+    )
+
+
+def _asimetrica():
+    return Nodo(
+        "_asimetrica",
+        [
+            Nodo.Eleccion(
+                [
+                    "desigual",
+                    "unilateral",
+                    "jerarquica",
+                    "dominante",
+                    "subordinada",
+                    "dependiente",
+                    "parasita",
+                    "explotadora",
+                    "autoritaria",
+                    "vertical",
+                    "impuesta",
+                    "forzada",
+                    "heredada",
+                    "estructural",
+                    "sistemica",
+                ]
+            )
+        ],
+    )
+
+
+def _fuerza():
+    return Nodo("_fuerza", [Nodo.Eleccion([_fuerte(), _debil()])])
+
+
+def _fuerte():
+    return Nodo(
+        "_fuerte",
+        [
+            Nodo.Eleccion(
+                [
+                    "estrecha",
+                    "intensa",
+                    "profunda",
+                    "solida",
+                    "robusta",
+                    "critica",
+                    "vital",
+                    "necesaria",
+                    "dependiente",
+                    "acoplada",
+                    "integrada",
+                    "fusionada",
+                    "inseparable",
+                    "central",
+                    "nuclear",
+                ]
+            )
+        ],
+    )
+
+
+def _debil():
+    return Nodo(
+        "_debil",
+        [
+            Nodo.Eleccion(
+                [
+                    "lejana",
+                    "tenue",
+                    "superficial",
+                    "fragil",
+                    "opcional",
+                    "contingente",
+                    "temporal",
+                    "desacoplada",
+                    "independiente",
+                    "modular",
+                    "separable",
+                    "periferica",
+                    "marginal",
+                    "accidental",
+                    "casual",
+                ]
+            )
+        ],
+    )
+
+
+def _direccion_relaciones():
+    return Nodo(
+        "_direccion_relaciones", [Nodo.Eleccion([_unidireccional(), _bidireccional()])]
+    )
+
+
+def _unidireccional():
+    return Nodo(
+        "_unidireccional",
+        [
+            Nodo.Eleccion(
+                [
+                    "flujo",
+                    "dependencia",
+                    "herencia",
+                    "delegacion",
+                    "llamada",
+                    "envio",
+                    "publicacion",
+                    "notificacion",
+                    "comando",
+                    "control",
+                    "supervision",
+                    "monitoreo",
+                    "alimentacion",
+                    "provision",
+                    "suministro",
+                ]
+            )
+        ],
+    )
+
+
+def _bidireccional():
+    return Nodo(
+        "_bidireccional",
+        [
+            Nodo.Eleccion(
+                [
+                    "intercambio",
+                    "dialogo",
+                    "negociacion",
+                    "retroalimentacion",
+                    "sincronizacion",
+                    "coordinacion",
+                    "comunicacion",
+                    "colaboracion",
+                    "competencia",
+                    "interaccion",
+                    "conexion",
+                    "enlace",
+                    "canal",
+                    "protocolo",
+                    "sesion",
+                ]
+            )
+        ],
+    )
+
+
+def _naturaleza():
+    return Nodo("_naturaleza", [Nodo.Eleccion([_cooperativa(), _competitiva()])])
+
+
+def _cooperativa():
+    return Nodo(
+        "_cooperativa",
+        [
+            Nodo.Eleccion(
+                [
+                    "alianza",
+                    "colaboracion",
+                    "sinergia",
+                    "mutualismo",
+                    "solidaridad",
+                    "equipo",
+                    "red",
+                    "comunidad",
+                    "ecosistema",
+                    "simbiosis",
+                    "complementariedad",
+                    "integracion",
+                    "fusion",
+                    "coordinacion",
+                    "armonia",
+                ]
+            )
+        ],
+    )
+
+
+def _competitiva():
+    return Nodo(
+        "_competitiva",
+        [
+            Nodo.Eleccion(
+                [
+                    "rivalidad",
+                    "competencia",
+                    "conflicto",
+                    "disputa",
+                    "lucha",
+                    "dominacion",
+                    "exclusion",
+                    "monopolio",
+                    "zero_sum",
+                    "guerra",
+                    "predacion",
+                    "parasitismo",
+                    "explotacion",
+                    "sabotaje",
+                    "traicion",
+                ]
+            )
+        ],
+    )
 
 
 def _ciclos():
-    return Nodo("_ciclos", [Nodo.Eleccion([])])
+    return Nodo(
+        "_ciclos",
+        [
+            Nodo.Eleccion(
+                [_fases_ciclos(), _periodicidad(), _escala_ciclos(), _estado()]
+            )
+        ],
+    )
+
+
+def _fases_ciclos():
+    return Nodo(
+        "_fases_ciclos", [Nodo.Eleccion([_inicio_fases_ciclos(), _desarrollo()])]
+    )
+
+
+def _inicio_fases_ciclos():
+    return Nodo(
+        "_fases_ciclos",
+        [
+            Nodo.Eleccion(
+                [
+                    "nacimiento",
+                    "creacion",
+                    "inicializacion",
+                    "activacion",
+                    "lanzamiento",
+                    "arranque",
+                    "comienzo",
+                    "genesis",
+                    "origen",
+                    "fundacion",
+                    "instanciacion",
+                    "construccion",
+                    "configuracion",
+                    "preparacion",
+                    "calibracion",
+                ]
+            )
+        ],
+    )
+
+
+def _desarrollo():
+    return Nodo(
+        "_fases_ciclos",
+        [
+            Nodo.Eleccion(
+                [
+                    "crecimiento",
+                    "expansion",
+                    "maduracion",
+                    "optimizacion",
+                    "especializacion",
+                    "consolidacion",
+                    "estabilizacion",
+                    "refinamiento",
+                    "aprendizaje",
+                    "adaptacion",
+                    "evolucion",
+                    "mejora",
+                    "escalado",
+                    "profundizacion",
+                    "diversificacion",
+                ]
+            )
+        ],
+    )
+
+
+def _periodicidad():
+    return Nodo("_periodicidad", [Nodo.Eleccion([_regular(), _irregular()])])
+
+
+def _regular():
+    return Nodo(
+        "_regular",
+        [
+            Nodo.Eleccion(
+                [
+                    "constante",
+                    "periodico",
+                    "ciclico",
+                    "ritmico",
+                    "sincronizado",
+                    "predecible",
+                    "estable",
+                    "uniforme",
+                    "sistematico",
+                    "repetitivo",
+                    "rutinario",
+                    "programado",
+                    "planificado",
+                    "determinista",
+                    "metronomico",
+                ]
+            )
+        ],
+    )
+
+
+def _irregular():
+    return Nodo(
+        "_irregular",
+        [
+            Nodo.Eleccion(
+                [
+                    "variable",
+                    "aperiodico",
+                    "estocastico",
+                    "aleatorio",
+                    "impredecible",
+                    "inestable",
+                    "caotico",
+                    "turbulento",
+                    "espontaneo",
+                    "reactivo",
+                    "adaptativo",
+                    "emergente",
+                    "contingente",
+                    "situacional",
+                    "contextual",
+                ]
+            )
+        ],
+    )
+
+
+def _escala_ciclos():
+    return Nodo("_escala_ciclos", [Nodo.Eleccion([_corto(), _largo()])])
+
+
+def _corto():
+    return Nodo(
+        "_corto",
+        [
+            Nodo.Eleccion(
+                [
+                    "inmediato",
+                    "rapido",
+                    "micro",
+                    "local",
+                    "tactico",
+                    "operacional",
+                    "reactivo",
+                    "instantaneo",
+                    "temporal",
+                    "transitorio",
+                    "efimero",
+                    "momentaneo",
+                    "puntual",
+                    "urgente",
+                    "critico",
+                ]
+            )
+        ],
+    )
+
+
+def _largo():
+    return Nodo(
+        "_largo",
+        [
+            Nodo.Eleccion(
+                [
+                    "prolongado",
+                    "lento",
+                    "macro",
+                    "global",
+                    "estrategico",
+                    "evolutivo",
+                    "historico",
+                    "generacional",
+                    "estructural",
+                    "sistemico",
+                    "profundo",
+                    "fundamental",
+                    "transformador",
+                    "permanente",
+                    "duradero",
+                ]
+            )
+        ],
+    )
+
+
+def _estado():
+    return Nodo("estado", [Nodo.Eleccion([_activo_estado(), _inactivo])])
+
+
+def _activo_estado():
+    return Nodo(
+        "_activo_estado",
+        [
+            Nodo.Eleccion(
+                [
+                    "ejecutando",
+                    "procesando",
+                    "iterando",
+                    "avanzando",
+                    "creciendo",
+                    "evolucionando",
+                    "aprendiendo",
+                    "adaptando",
+                    "optimizando",
+                    "explorando",
+                    "explotando",
+                    "comunicando",
+                    "cooperando",
+                    "compitiendo",
+                    "sobreviviendo",
+                ]
+            )
+        ],
+    )
+
+
+def _inactivo():
+    return Nodo(
+        "_inactivo",
+        [
+            Nodo.Eleccion(
+                [
+                    "dormido",
+                    "pausado",
+                    "bloqueado",
+                    "esperando",
+                    "suspendido",
+                    "detenido",
+                    "terminado",
+                    "agotado",
+                    "saturado",
+                    "estancado",
+                    "convergido",
+                    "estabilizado",
+                    "extinto",
+                    "archivado",
+                    "completado",
+                ]
+            )
+        ],
+    )
 
 
 def _limites():
-    return Nodo("_limites", [Nodo.Eleccion([])])
+    return Nodo(
+        "_limites",
+        [
+            Nodo.Eleccion(
+                [_tipos_limites(), _estado_limites(), _respuesta(), _gestion_limites()]
+            )
+        ],
+    )
+
+
+def _tipos_limites():
+    return Nodo(
+        "_tipos_limites", [Nodo.Eleccion([_fisicos_tipos_limites(), _logicos()])]
+    )
+
+
+def _fisicos_tipos_limites():
+    return Nodo(
+        "_fisicos_tipos_limites",
+        [
+            Nodo.Eleccion(
+                [
+                    "pared",
+                    "barrera",
+                    "frontera",
+                    "borde",
+                    "superficie",
+                    "membrana",
+                    "interfaz",
+                    "umbral",
+                    "limite",
+                    "capacidad",
+                    "maximo",
+                    "minimo",
+                    "rango",
+                    "dominio",
+                    "alcance",
+                ]
+            )
+        ],
+    )
+
+
+def _logicos():
+    return Nodo(
+        "_logicos",
+        [
+            Nodo.Eleccion(
+                [
+                    "restriccion",
+                    "regla",
+                    "condicion",
+                    "invariante",
+                    "precondicion",
+                    "postcondicion",
+                    "contrato",
+                    "especificacion",
+                    "requisito",
+                    "permiso",
+                    "prohibicion",
+                    "validacion",
+                    "verificacion",
+                    "assertion",
+                    "guardia",
+                ]
+            )
+        ],
+    )
+
+
+def _estado_limites():
+    return Nodo("_estado_limites", [Nodo.Eleccion([_alcanzado(), _superado()])])
+
+
+def _alcanzado():
+    return Nodo(
+        "_alcanzado",
+        [
+            Nodo.Eleccion(
+                [
+                    "lleno",
+                    "saturado",
+                    "maximo",
+                    "minimo",
+                    "agotado",
+                    "completo",
+                    "terminado",
+                    "bloqueado",
+                    "detenido",
+                    "estancado",
+                    "convergido",
+                    "estabilizado",
+                    "optimo",
+                    "critico",
+                    "umbral",
+                ]
+            )
+        ],
+    )
+
+
+def _superado():
+    return Nodo(
+        "_superado",
+        [
+            Nodo.Eleccion(
+                [
+                    "desbordado",
+                    "excedido",
+                    "violado",
+                    "roto",
+                    "sobrepasado",
+                    "transgredido",
+                    "ignorado",
+                    "bypass",
+                    "workaround",
+                    "hack",
+                    "exploit",
+                    "overflow",
+                    "underflow",
+                    "wrap",
+                    "truncado",
+                ]
+            )
+        ],
+    )
+
+
+def _respuesta():
+    return Nodo("_respuesta", [Nodo.Eleccion([_bloqueo(), _desbordamiento()])])
+
+
+def _bloqueo():
+    return Nodo(
+        "_bloqueo",
+        [
+            Nodo.Eleccion(
+                [
+                    "parada",
+                    "espera",
+                    "suspension",
+                    "rechazo",
+                    "error",
+                    "excepcion",
+                    "timeout",
+                    "deadlock",
+                    "livelock",
+                    "starvation",
+                    "throttling",
+                    "rate_limit",
+                    "circuit_breaker",
+                    "backpressure",
+                    "shed_load",
+                ]
+            )
+        ],
+    )
+
+
+def _desbordamiento():
+    return Nodo(
+        "_desbordamiento",
+        [
+            Nodo.Eleccion(
+                [
+                    "overflow",
+                    "wrap",
+                    "truncado",
+                    "perdida",
+                    "descarte",
+                    "degradacion",
+                    "fallback",
+                    "graceful",
+                    "recovery",
+                    "reinicio",
+                    "reset",
+                    "rollback",
+                    "compensacion",
+                    "mitigacion",
+                    "adaptacion",
+                ]
+            )
+        ],
+    )
+
+
+def _gestion_limites():
+    return Nodo(
+        "_gestion_limites",
+        [Nodo.Eleccion([_control_gestion_limites(), _adaptacion_gestion_limites()])],
+    )
+
+
+def _control_gestion_limites():
+    return Nodo(
+        "_control_gestion_limites",
+        [
+            Nodo.Eleccion(
+                [
+                    "monitoreo",
+                    "supervision",
+                    "enforcement",
+                    "validacion",
+                    "verificacion",
+                    "auditoria",
+                    "trazabilidad",
+                    "logging",
+                    "alertas",
+                    "umbrales",
+                    "politicas",
+                    "reglas",
+                    "contratos",
+                    "invariantes",
+                    "assertions",
+                ]
+            )
+        ],
+    )
+
+
+def _adaptacion_gestion_limites():
+    return Nodo(
+        "_adaptacion_gestion_limites",
+        [
+            Nodo.Eleccion(
+                [
+                    "ajuste",
+                    "flexibilizacion",
+                    "renegociacion",
+                    "extension",
+                    "compresion",
+                    "escalado",
+                    "dinamico",
+                    "elastico",
+                    "adaptativo",
+                    "reactivo",
+                    "proactivo",
+                    "predictivo",
+                    "aprendizaje",
+                    "evolucion",
+                    "optimizacion",
+                ]
+            )
+        ],
+    )
 
 
 def _cambio():
-    return Nodo("_cambio", [Nodo.Eleccion([])])
+    return Nodo(
+        "_cambio",
+        [
+            Nodo.Eleccion(
+                [_tipo_cambio(), _direccion_cambio(), _causa_cambio(), _efecto_cambio()]
+            )
+        ],
+    )
+
+
+def _tipo_cambio():
+    return Nodo("_tipo_cambio", [Nodo.Eleccion([_gradual(), _abrupto()])])
+
+
+def _gradual():
+    return Nodo(
+        "_gradual",
+        [
+            Nodo.Eleccion(
+                [
+                    "incremental",
+                    "continuo",
+                    "suave",
+                    "lento",
+                    "progresivo",
+                    "acumulativo",
+                    "evolutivo",
+                    "refinamiento",
+                    "optimizacion",
+                    "convergencia",
+                    "aprendizaje",
+                    "adaptacion",
+                    "maduracion",
+                    "especializacion",
+                    "consolidacion",
+                ]
+            )
+        ],
+    )
+
+
+def _abrupto():
+    return Nodo(
+        "_abrupto",
+        [
+            Nodo.Eleccion(
+                [
+                    "discontinuo",
+                    "brusco",
+                    "rapido",
+                    "salto",
+                    "ruptura",
+                    "transicion",
+                    "fase",
+                    "critico",
+                    "umbral",
+                    "tipping_point",
+                    "cascada",
+                    "colapso",
+                    "emergencia",
+                    "revolucion",
+                    "transformacion",
+                ]
+            )
+        ],
+    )
+
+
+def _direccion_cambio():
+    return Nodo(
+        "_direccion_cambio",
+        [Nodo.Eleccion([_aumento_direccion_cambio(), _disminucion_direccion_cambio()])],
+    )
+
+
+def _aumento_direccion_cambio():
+    return Nodo(
+        "_aumento_direccion_cambio",
+        [
+            Nodo.Eleccion(
+                [
+                    "crecimiento",
+                    "expansion",
+                    "amplificacion",
+                    "aceleracion",
+                    "intensificacion",
+                    "escalado",
+                    "proliferacion",
+                    "multiplicacion",
+                    "refuerzo",
+                    "potenciacion",
+                    "maximizacion",
+                    "optimizacion",
+                    "mejora",
+                    "avance",
+                    "progreso",
+                ]
+            )
+        ],
+    )
+
+
+def _disminucion_direccion_cambio():
+    return Nodo(
+        "_disminucion_direccion_cambio",
+        [
+            Nodo.Eleccion(
+                [
+                    "reduccion",
+                    "contraccion",
+                    "atenuacion",
+                    "desaceleracion",
+                    "simplificacion",
+                    "minimizacion",
+                    "poda",
+                    "eliminacion",
+                    "degradacion",
+                    "deterioro",
+                    "perdida",
+                    "extincion",
+                    "colapso",
+                    "convergencia",
+                    "especializacion",
+                ]
+            )
+        ],
+    )
+
+
+def _causa_cambio():
+    return Nodo("_causa_cambio", [Nodo.Eleccion([_interno(), _externo()])])
+
+
+def _interno():
+    return Nodo(
+        "_interno",
+        [
+            Nodo.Eleccion(
+                [
+                    "mutacion",
+                    "aprendizaje",
+                    "adaptacion",
+                    "optimizacion",
+                    "evolucion",
+                    "maduracion",
+                    "crecimiento",
+                    "degradacion",
+                    "agotamiento",
+                    "saturacion",
+                    "fallo",
+                    "error",
+                    "innovacion",
+                    "creatividad",
+                    "reorganizacion",
+                ]
+            )
+        ],
+    )
+
+
+def _externo():
+    return Nodo(
+        "_externo",
+        [
+            Nodo.Eleccion(
+                [
+                    "presion",
+                    "perturbacion",
+                    "estimulo",
+                    "señal",
+                    "evento",
+                    "colision",
+                    "interaccion",
+                    "competencia",
+                    "cooperacion",
+                    "ambiente",
+                    "recurso",
+                    "restriccion",
+                    "oportunidad",
+                    "amenaza",
+                    "cambio_contexto",
+                ]
+            )
+        ],
+    )
+
+
+def _efecto_cambio():
+    return Nodo("_efecto_cambio", [Nodo.Eleccion([_local(), _global()])])
+
+
+def _local():
+    return Nodo(
+        "_local",
+        [
+            Nodo.Eleccion(
+                [
+                    "puntual",
+                    "inmediato",
+                    "directo",
+                    "especifico",
+                    "concreto",
+                    "observable",
+                    "medible",
+                    "controlable",
+                    "reversible",
+                    "trazable",
+                    "aislado",
+                    "contenido",
+                    "limitado",
+                    "parcial",
+                    "temporal",
+                ]
+            )
+        ],
+    )
+
+
+def _global():
+    return Nodo(
+        "_global",
+        [
+            Nodo.Eleccion(
+                [
+                    "sistemico",
+                    "indirecto",
+                    "difuso",
+                    "emergente",
+                    "acumulado",
+                    "cascada",
+                    "no_lineal",
+                    "impredecible",
+                    "irreversible",
+                    "permanente",
+                    "estructural",
+                    "transformador",
+                    "evolutivo",
+                    "historico",
+                    "fundamental",
+                ]
+            )
+        ],
+    )
 
 
 def _estructura():
-    return Nodo("_estructura", [Nodo.Eleccion([])])
+    return Nodo(
+        "_estructura",
+        [
+            Nodo.Eleccion(
+                [
+                    _organizacion_estructura(),
+                    _conexiones(),
+                    _rigidez(),
+                    _escala_estructura(),
+                ]
+            )
+        ],
+    )
 
+
+def _organizacion_estructura():
+    return Nodo("_organizacion_estructura", [Nodo.Eleccion([_jerarquica(), _plana()])])
+
+
+def _jerarquica():
+    return Nodo(
+        "_jerarquica",
+        [
+            Nodo.Eleccion(
+                [
+                    "arbol",
+                    "padre",
+                    "hijo",
+                    "nivel",
+                    "profundidad",
+                    "raiz",
+                    "hoja",
+                    "rama",
+                    "subárbol",
+                    "ancestro",
+                    "descendiente",
+                    "rango",
+                    "orden",
+                    "cadena",
+                    "escalon",
+                ]
+            )
+        ],
+    )
+
+
+def _plana():
+    return Nodo(
+        "_plana",
+        [
+            Nodo.Eleccion(
+                [
+                    "red",
+                    "grafo",
+                    "par",
+                    "igual",
+                    "horizontal",
+                    "distribuido",
+                    "descentralizado",
+                    "autonomo",
+                    "independiente",
+                    "modular",
+                    "loosely_coupled",
+                    "microservicio",
+                    "peer",
+                    "mesh",
+                    "swarm",
+                ]
+            )
+        ],
+    )
+
+
+def _conexiones():
+    return Nodo("_conexiones", [Nodo.Eleccion([_densas(), _dispersas()])])
+
+
+def _densas():
+    return Nodo(
+        "_densas",
+        [
+            Nodo.Eleccion(
+                [
+                    "acoplado",
+                    "integrado",
+                    "dependiente",
+                    "cohesivo",
+                    "monolitico",
+                    "centralizado",
+                    "sincronizado",
+                    "coordinado",
+                    "orquestado",
+                    "controlado",
+                    "dirigido",
+                    "planificado",
+                    "rigido",
+                    "estrecho",
+                    "fuerte",
+                ]
+            )
+        ],
+    )
+
+
+def _dispersas():
+    return Nodo(
+        "_dispersas",
+        [
+            Nodo.Eleccion(
+                [
+                    "desacoplado",
+                    "independiente",
+                    "autonomo",
+                    "modular",
+                    "distribuido",
+                    "eventual",
+                    "asincrono",
+                    "reactivo",
+                    "emergente",
+                    "flexible",
+                    "adaptativo",
+                    "resiliente",
+                    "tolerante",
+                    "loose",
+                    "debil",
+                ]
+            )
+        ],
+    )
+
+
+def _rigidez():
+    return Nodo("_rigidez", [Nodo.Eleccion([_fija(), _flexible()])])
+
+
+def _fija():
+    return Nodo(
+        "_fija",
+        [
+            Nodo.Eleccion(
+                [
+                    "estatica",
+                    "rigida",
+                    "inmutable",
+                    "determinista",
+                    "predecible",
+                    "estable",
+                    "consistente",
+                    "uniforme",
+                    "estandarizada",
+                    "normalizada",
+                    "formalizada",
+                    "especificada",
+                    "contratada",
+                    "garantizada",
+                    "certificada",
+                ]
+            )
+        ],
+    )
+
+
+def _flexible():
+    return Nodo(
+        "_flexible",
+        [
+            Nodo.Eleccion(
+                [
+                    "dinamica",
+                    "adaptativa",
+                    "mutable",
+                    "estocastica",
+                    "impredecible",
+                    "variable",
+                    "inconsistente",
+                    "heterogenea",
+                    "personalizada",
+                    "contextual",
+                    "situacional",
+                    "emergente",
+                    "evolutiva",
+                    "plastica",
+                    "maleable",
+                ]
+            )
+        ],
+    )
+
+
+def _escala_estructura():
+    return Nodo("_escala_estructura", [Nodo.Eleccion([_simple(), _compleja()])])
+
+
+def _simple():
+    return Nodo(
+        "_simple",
+        [
+            Nodo.Eleccion(
+                [
+                    "pequeno",
+                    "unitario",
+                    "atomico",
+                    "elemental",
+                    "primitivo",
+                    "basico",
+                    "minimo",
+                    "reducido",
+                    "compacto",
+                    "conciso",
+                    "claro",
+                    "obvio",
+                    "directo",
+                    "lineal",
+                    "trivial",
+                ]
+            )
+        ],
+    )
+
+
+def _compleja():
+    return Nodo(
+        "_compleja",
+        [
+            Nodo.Eleccion(
+                [
+                    "grande",
+                    "compuesto",
+                    "molecular",
+                    "sistemico",
+                    "emergente",
+                    "no_lineal",
+                    "caotico",
+                    "jerarquico",
+                    "recursivo",
+                    "fractal",
+                    "adaptativo",
+                    "evolutivo",
+                    "distribuido",
+                    "paralelo",
+                    "concurrente",
+                ]
+            )
+        ],
+    )
+#endregion
 
 guia = {"programa": _programa()}
