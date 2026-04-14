@@ -691,7 +691,7 @@ def _letra():
                     "l",
                     "m",
                     "n",
-                    "ñ",
+                    "nh",
                     "o",
                     "p",
                     "q",
@@ -718,7 +718,7 @@ def _letra():
                     "L",
                     "M",
                     "N",
-                    "Ñ",
+                    "nh",
                     "O",
                     "P",
                     "Q",
@@ -2334,7 +2334,7 @@ def _sincronizacion():
                     "monitor",
                     "candado",
                     "espera",
-                    "señal",
+                    "senhal",
                     "bloqueo",
                     "desbloqueo",
                     "atomico",
@@ -2424,7 +2424,7 @@ def _control():
                     "pausa",
                     "reanudacion",
                     "terminacion",
-                    "señal",
+                    "senhal",
                     "interrupcion",
                     "prioridad",
                     "planificacion",
@@ -2641,7 +2641,7 @@ def _flujo():
                     "generador",
                     "callback",
                     "evento",
-                    "señal",
+                    "senhal",
                     "trampa",
                 ]
             )
@@ -3466,7 +3466,7 @@ def _respuestas():
                     "accion",
                     "reaccion",
                     "respuesta",
-                    "señal",
+                    "senhal",
                     "comando",
                     "orden",
                     "instruccion",
@@ -3590,7 +3590,7 @@ def _locales():
                     "socket",
                     "memoria",
                     "archivo",
-                    "señal",
+                    "senhal",
                     "semaforo",
                     "cola",
                     "buffer",
@@ -3683,7 +3683,7 @@ def _asincrono():
                     "cola",
                     "buffer",
                     "notificacion",
-                    "señal",
+                    "senhal",
                     "interrupcion",
                     "hook",
                     "trigger",
@@ -4112,7 +4112,7 @@ def _fin():
                     "archivado",
                     "reporte",
                     "log",
-                    "señal",
+                    "senhal",
                     "notificacion",
                     "propagacion",
                 ]
@@ -4135,7 +4135,7 @@ def _entrada_transformacion():
             Nodo.Eleccion(
                 [
                     "dato",
-                    "señal",
+                    "senhal",
                     "evento",
                     "solicitud",
                     "parametro",
@@ -4165,7 +4165,7 @@ def _salida_transformacion():
                     "respuesta",
                     "producto",
                     "efecto",
-                    "señal",
+                    "senhal",
                     "evento",
                     "notificacion",
                     "error",
@@ -4448,7 +4448,7 @@ def _observacion():
                     "dato",
                     "experiencia",
                     "feedback",
-                    "señal",
+                    "senhal",
                     "recompensa",
                     "penalizacion",
                     "error",
@@ -4893,7 +4893,7 @@ def _aversion():
                     "coste",
                     "riesgo",
                     "perdida",
-                    "daño",
+                    "danho",
                     "deterioro",
                     "disminucion",
                     "fracaso",
@@ -6569,7 +6569,7 @@ def _lejanas():
             Nodo.Eleccion(
                 [
                     "desconocido",
-                    "extraño",
+                    "extranho",
                     "enemigo",
                     "indiferente",
                     "potencial",
@@ -6679,7 +6679,7 @@ def _fisicas_propiedades_objetos():
         [
             Nodo.Eleccion(
                 [
-                    "tamaño",
+                    "tamanho",
                     "forma",
                     "peso",
                     "color",
@@ -6765,7 +6765,7 @@ def _deteriorado():
             Nodo.Eleccion(
                 [
                     "roto",
-                    "dañado",
+                    "danhado",
                     "desgastado",
                     "obsoleto",
                     "corrupto",
@@ -6913,7 +6913,7 @@ def _informacion():
 
 
 def _representacion():
-    return Nodo("_representacion", [Nodo.Eleccion([_simbolos(), _señales()])])
+    return Nodo("_representacion", [Nodo.Eleccion([_simbolos(), _senhales()])])
 
 
 def _simbolos():
@@ -6929,7 +6929,7 @@ def _simbolos():
                     "token",
                     "codigo",
                     "signo",
-                    "señal",
+                    "senhal",
                     "patron",
                     "estructura",
                     "formato",
@@ -6943,9 +6943,9 @@ def _simbolos():
     )
 
 
-def _señales():
+def _senhales():
     return Nodo(
-        "_señales",
+        "_senhales",
         [
             Nodo.Eleccion(
                 [
@@ -7601,7 +7601,7 @@ def _simbolo_representacion_lenguaje():
                     "signo",
                     "icono",
                     "indice",
-                    "señal",
+                    "senhal",
                     "codigo",
                     "token",
                     "marca",
@@ -9540,7 +9540,7 @@ def _externo():
                     "presion",
                     "perturbacion",
                     "estimulo",
-                    "señal",
+                    "senhal",
                     "evento",
                     "colision",
                     "interaccion",
