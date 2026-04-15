@@ -1,6 +1,6 @@
 from array import array
 import sys
-import Core.Entities.Elementos.Simples.Bot.ADN.GuiaNodos as Guia
+import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica as Guia
 
 
 class ADN_Lineal:
