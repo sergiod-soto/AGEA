@@ -357,7 +357,7 @@ def _variablesClase():
 
 
 def _funcionesClase():
-    return Nodo([_funcion(), Nodo.Eleccion([_funciones(), _stop()])])
+    return Nodo([_funcionClase(), Nodo.Eleccion([_funcionesClase(), _stop()])])
 
 
 def _operacion():
