@@ -1,14 +1,12 @@
 class Compiler:
-    '''
-    
-    '''
-    
+    """ """
+
     BITS = 5
     MASK = (1 << BITS) - 1  # 0b11111
 
     def __init__(self):
-        self.data = None      # bytearray
-        self.length = 0       # número de elementos (no bytes)
+        self.data = None  # bytearray
+        self.length = 0  # número de elementos (no bytes)
 
     # --------------------------------------------------
     # 1) Convertir lista de ints -> formato empaquetado
@@ -55,19 +53,25 @@ class Compiler:
 
         print("=== DEBUG DNA ===")
         print(f"Longitud: {self.length}")
-        print(f"Bytes: {len(self.data)}")
+        print(f"Mostrando: {min(self.length, limit)} elementos\n")
 
-        # imprimir binario
-        print("\nBinario (primeros bytes):")
-        for b in self.data[:min(16, len(self.data))]:
-            print(f"{b:08b}", end=" ")
-        print()
+        bits_list = []
+        values_list = []
 
-        # imprimir valores decodificados
-        print("\nValores decimales:")
         for i in range(min(self.length, limit)):
-            print(self._get(i), end=" ")
-        print("\n=================")
+            v = self._get(i)
+            values_list.append(v)
+            bits_list.append(f"{v:05b}")  # representación en 5 bits
+
+        # línea binaria alineada
+        print("Bits:")
+        print(" | ".join(bits_list))
+
+        # línea decimal alineada
+        print("\nDec:")
+        print(" | ".join(f"{v:2d}" for v in values_list))
+
+        print("\n===================")
 
     # --------------------------------------------------
     # Internos: acceso bit a bit
@@ -97,10 +101,15 @@ class Compiler:
             val |= self.data[byte_pos + 1] << (8 - offset)
 
         return val & self.MASK
-    
-    
+
+
 def compiler_test():
-    print("a?")
-    adn_lista = [0,1,1,1,0,2,1,0,1]
-    print("lista: " + str(adn_lista))
-    
+    compilador = Compiler()
+
+    adn_lista = [1, 0, 2]
+    compilador.from_list(adn_lista)
+
+    compilador.debug_print()
+
+
+compiler_test()
