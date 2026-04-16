@@ -97,3 +97,10 @@ class Compiler:
             val |= self.data[byte_pos + 1] << (8 - offset)
 
         return val & self.MASK
+    
+    
+def compiler_test():
+    print("a?")
+    adn_lista = [0,1,1,1,0,2,1,0,1]
+    print("lista: " + str(adn_lista))
+    

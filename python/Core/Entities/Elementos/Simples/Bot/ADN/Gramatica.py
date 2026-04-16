@@ -4,7 +4,7 @@ class Genoma:
         self.contexto = Genoma.Contexto()
         self.adn = adn
 
-    def get_adn_lineal():
+    def get_adn():
         pass
 
     def add_gen():
@@ -13,7 +13,7 @@ class Genoma:
     class Contexto:
 
         def __init__(self):
-            self.adn = Genoma.get_adn_lineal()
+            self.adn = Genoma.get_adn()
             self.ite = 0
 
         def next_adn(self):
@@ -32,17 +32,16 @@ class Nodo:
         def compilar(self, genoma: Genoma):
             contexto = genoma.contexto
             item = self.opciones[contexto.next_adn()]
-            contexto.ite += 1
 
             if isinstance(item, str):
                 return item
 
             if hasattr(
                 item, "compilar"
-            ):  # es Eleccion, Nodo o Tab. Ej: Nodo.Eleccion([ _dato(), ... ,_variable()])
+            ):  # es Eleccion, Nodo o Tab. Ej: Nodo.Eleccion([ _dato, ... ,_variable])
                 return item.compilar(contexto)
 
-            if callable(item):  # es una funcion. Ej: _dato()
+            if callable(item):  # es una funcion. Ej: _dato
                 return item().compilar(contexto)
 
             if isinstance(
@@ -68,10 +67,10 @@ class Nodo:
                     partes.append(item)
 
                 if hasattr(item, "compilar"):
-                    partes.append(item.compilar(contexto))
+                    partes.append(item.compilar(genoma))
 
                 if callable(item):
-                    partes.append(item().compilar(contexto))
+                    partes.append(item().compilar(genoma))
 
                 if isinstance(item, list):
                     partes.append("\t")
@@ -80,7 +79,6 @@ class Nodo:
             return resultado.join(partes)
 
     def compilar_lista(self, lista: list, genoma: Genoma):
-        contexto = genoma.contexto
         resultado = ""
         partes = []
 
@@ -91,24 +89,23 @@ class Nodo:
                 continue
 
             if hasattr(elemento, "compilar"):
-                partes.append(elemento.compilar(contexto))
+                partes.append(elemento.compilar(genoma))
                 continue
 
             if callable(elemento):
-                partes.append(elemento().compilar(contexto))
+                partes.append(elemento().compilar(genoma))
                 continue
 
             if isinstance(elemento, list):
-                partes.append(self.compilar_lista(elemento, contexto))
+                partes.append(self.compilar_lista(elemento, genoma))
                 continue
 
         return resultado.join(partes)
 
-    def __init__(self, nombre: str, items: list, genoma: Genoma):
-        contexto = genoma.contexto
+    def __init__(self, nombre: str, items: list):
+
         self.nombre = nombre
         self.items = items
-        self.contexto = contexto
 
     def get_nombre(self):
         return self.nombre
@@ -130,14 +127,14 @@ def _programa():
     return Nodo(
         "_programa",
         [
-            _codigoInyectado(),  # -----------------------    Codigo inyectado post analisis
+            _codigoInyectado,  # -----------------------    Codigo inyectado post analisis
             "\\n",
             "\\n",
             "#---------------------------------",
             "\\n",
             "# FIN IMPORTS LIBRERIAS POST ANALISIS",
             "\\n",
-            _importsHardCoded(),  # ----------------------    imports que todos los bots disponen sin coste
+            _importsHardCoded,  # ----------------------    imports que todos los bots disponen sin coste
             "\\n",
             "#---------------------------------",
             "\\n",
@@ -151,7 +148,7 @@ def _programa():
             "\\n",
             "#---------------------------------",
             "\\n",
-            _clases(),
+            # _clases,
             "\\n",
             "#---------------------------------",
             "\\n",
@@ -163,7 +160,7 @@ def _programa():
             "\\n",
             "#---------------------------------",
             "\\n",
-            _funciones(),
+            _funciones,
             # "\\n",
             # "#---------------------------------",
             # "\\n",
@@ -171,7 +168,7 @@ def _programa():
             # "\\n",
             # "#---------------------------------",
             # "\\n",
-            # _declaracionVariablesGlobales(),
+            # _declaracionVariablesGlobales,
             "\\n",
             "\\n",
             "\\n",
@@ -181,7 +178,7 @@ def _programa():
             "\\n",
             "#---------------------------------",
             "\\n",
-            _codigo(),
+            _codigo,
         ],
     )
 
@@ -194,9 +191,9 @@ def _asignacion():
     return Nodo(
         "_asignacion",
         [
-            _variable(),
+            _variable,
             " = ",
-            Nodo.Eleccion([_dato(), _variable(), _llamadaFuncion(), _operacion()]),
+            Nodo.Eleccion([_dato, _variable, _llamadaFuncion, _operacion]),
             "\\n",
         ],
     )
@@ -208,11 +205,11 @@ def _control():
         [
             Nodo.Eleccion(
                 [
-                    _bucle(),
-                    _condicional(),
-                    _controlFunciones(),
-                    _controlEstructural(),
-                    _declaracionEstructural(),
+                    _bucle,
+                    _condicional,
+                    _controlFunciones,
+                    _controlEstructural,
+                    _declaracionEstructural,
                 ]
             )
         ],
@@ -220,17 +217,17 @@ def _control():
 
 
 def _bucle():
-    return Nodo("_bucle", [Nodo.Eleccion([_for(), _while(), _break(), _continue()])])
+    return Nodo("_bucle", [Nodo.Eleccion([_for, _while])])
 
 
 def _for():
     return Nodo(
-        "_for", [Nodo.Eleccion([_forLista(), _forIndice(), _forNumerico(), _forDict()])]
+        "_for", [Nodo.Eleccion([_forLista, _forIndice, _forNumerico, _forDict])]
     )
 
 
 def _condicional():
-    return Nodo("_condicional", [Nodo.Eleccion([_if(), _match()])])
+    return Nodo("_condicional", [Nodo.Eleccion([_if, _match])])
 
 
 def _if():
@@ -238,12 +235,12 @@ def _if():
         "_if",
         [
             "if ",
-            _condicion(),
+            _condicion,
             ":",
             "\\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([[Nodo.Eleccion([_else(), _elif()])], _stop()]),
+            Nodo.Eleccion([[Nodo.Eleccion([_else(), _elif()])], _stop]),
         ],
     )
 
@@ -253,27 +250,27 @@ def _elif():
         "_elif",
         [
             "elif ",
-            _condicion(),
+            _condicion,
             ":",
             "\\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([Nodo.Eleccion([_else(), _elif()]), _stop()]),
+            Nodo.Eleccion([Nodo.Eleccion([_else, _elif]), _stop]),
             "\\n",
         ],
     )
 
 
 def _else():
-    return Nodo("_else", ["else:", "\\n", Nodo.Tab(_codigo()), "\\n"])
+    return Nodo("_else", ["else:", "\\n", Nodo.Tab(_codigo), "\\n"])
 
 
 def _condicion():
-    return Nodo("_condicion", ["(", _dato(), " ", _comparacion(), " ", _dato(), ")"])
+    return Nodo("_condicion", ["(", _dato, " ", _comparacion(), " ", _dato, ")"])
 
 
 def _controlFunciones():
-    return Nodo("_controlFunciones", [Nodo.Eleccion([_return(), _yield()])])
+    return Nodo("_controlFunciones", [Nodo.Eleccion([_return, _yield])])
 
 
 def _return():
@@ -281,7 +278,7 @@ def _return():
         "_return",
         [
             "return ",
-            Nodo.Eleccion([["\\e", [_dato(), _llamadaFuncion()]], _stop()]),
+            Nodo.Eleccion([["\\e", [_dato, _llamadaFuncion]], _stop]),
             "\\n",
         ],
     )
@@ -289,7 +286,7 @@ def _return():
 
 def _yield():
     return Nodo(
-        "_yield", ["yield ", " ", Nodo.Eleccion([_dato(), _llamadaFuncion()]), "\\n"]
+        "_yield", ["yield ", " ", Nodo.Eleccion([_dato, _llamadaFuncion]), "\\n"]
     )
 
 
@@ -303,21 +300,21 @@ def _try():
         [
             "try:",
             "\\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
             "except",
-            Nodo.Eleccion([[" ", _palabra()], _stop()]),
+            Nodo.Eleccion([[" ", _palabra()], _stop]),
             ":",
             "\\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([_else(), _finally(), [_else(), _finally()]]),
+            Nodo.Eleccion([_else, _finally, [_else, _finally]]),
         ],
     )
 
 
 def _finally():
-    return Nodo("_finally", ["finally:", "\\n", Nodo.Tab(_codigo()), "\\n"])
+    return Nodo("_finally", ["finally:", "\\n", Nodo.Tab(_codigo), "\\n"])
 
 
 def _with():
@@ -325,156 +322,163 @@ def _with():
         "_with",
         [
             "with open(",
-            _textoDirectorioLocal(),
+            _textoDirectorioLocal,
             Nodo.Eleccion(["r", "w"]),
             ") as ",
-            _variable(),
+            _variable,
             ":",
             "\\n",
-            _codigo(),
+            _codigo,
         ],
     )
 
 
 def _declaracionEstructural():
-    return Nodo(
-        "_declaracionEstructural", [Nodo.Eleccion([_llamadaFuncion(), _clase()])]
-    )
+    return Nodo("_declaracionEstructural", [Nodo.Eleccion([_llamadaFuncion, _clase])])
 
 
 def _argumentos():
     return Nodo(
-        "_argumentos", [[_argumento(), Nodo.Eleccion([[", ", _argumentos()], _stop()])]]
+        "_argumentos", [[_argumento, Nodo.Eleccion([[", ", _argumentos], _stop])]]
     )
 
 
 def _argumento():
-    return Nodo("_argumento", [_dato()])
+    return Nodo("_argumento", [_dato])
 
 
 def _variablesClase():
-    return Nodo([_variable(), Nodo.Eleccion([_variablesClase(), _stop()])])
+    return Nodo("_variablesClase", [_variable, Nodo.Eleccion([_variablesClase, _stop])])
 
 
 def _funcionesClase():
-    return Nodo([_funcionClase(), Nodo.Eleccion([_funcionesClase(), _stop()])])
+    return Nodo(
+        "_funcionesClase", [_funcionClase, Nodo.Eleccion([_funcionesClase, _stop])]
+    )
+
+
+def _funcionClase():
+    return Nodo("_funcionClase", [])
 
 
 def _operacion():
     return Nodo(
-        [
-            Nodo.Eleccion(
-                [_operacionAritmetica(), _operacionLogica(), _operacionBitwise()]
-            )
-        ]
+        "_operacion",
+        [Nodo.Eleccion([_operacionAritmetica, _operacionLogica, _operacionBitwise])],
     )
 
 
 def _operacionAritmetica():
     return Nodo(
+        "_operacionAritmetica",
         [
             Nodo.Eleccion(
                 [
-                    _suma(),
-                    _resta(),
-                    _multiplicacion(),
-                    _division(),
-                    _modulo(),
-                    _potencia(),
-                    _raiz(),
+                    _suma,
+                    _resta,
+                    _multiplicacion,
+                    _division,
+                    _modulo,
+                    _potencia,
+                    _raiz,
                 ]
             )
-        ]
+        ],
     )
 
 
 def _suma():
     return Nodo(
+        "_suma",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloSuma(),
+            _simboloSuma,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _resta():
     return Nodo(
+        "_resta",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloResta(),
+            _simboloResta,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _multiplicacion():
     return Nodo(
+        "_multiplicacion",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloMultiplicacion(),
+            _simboloMultiplicacion,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _division():
     return Nodo(
+        "_division",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloDivision(),
+            _simboloDivision,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _modulo():
     return Nodo(
+        "_modulo",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloModulo(),
+            _simboloModulo,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _potencia():
     return Nodo(
+        "_potencia",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ",
-            _simboloPotencia(),
+            _simboloPotencia,
             " ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
-        ]
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
+        ],
     )
 
 
 def _raiz():
     return Nodo(
+        "_raiz",
         [
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             " ** (1 / ",
-            Nodo.Eleccion([_variable(), _numero(), _funcion(), _operacion()]),
+            Nodo.Eleccion([_variable, _numero, _funcion, _operacion]),
             ")",
-        ]
+        ],
     )
 
 
 def _comparacion():
-    return Nodo(
-        "_comparacion", ["(", _dato(), " ", _simboloComparacion(), " ", _dato(), ")"]
-    )
+    return Nodo("_comparacion", ["(", _dato, " ", _simboloComparacion, " ", _dato, ")"])
 
 
 def _simboloSuma():
@@ -515,11 +519,11 @@ def _operacionBitwise():
         [
             Nodo.Eleccion(
                 [
-                    _mascaraAnd(),
-                    _mascaraOr(),
-                    _mascaraNot(),
-                    _mascaraShiftIzquierda(),
-                    _mascaraShiftDerecha(),
+                    _mascaraAnd,
+                    _mascaraOr,
+                    _mascaraNot,
+                    _mascaraShiftIzquierda,
+                    _mascaraShiftDerecha,
                 ]
             )
         ],
@@ -527,39 +531,35 @@ def _operacionBitwise():
 
 
 def _mascaraAnd():
-    return Nodo("_mascaraAnd", [_dato(), " & ", _dato()])
+    return Nodo("_mascaraAnd", [_dato, " & ", _dato])
 
 
 def _mascaraOr():
-    return Nodo("_mascaraOr", [_dato(), "|", _dato()])
+    return Nodo("_mascaraOr", [_dato, "|", _dato])
 
 
 def _mascaraNot():
-    return Nodo("_mascaraNot", ["~", _dato()])
+    return Nodo("_mascaraNot", ["~", _dato])
 
 
 def _comentario():
-    return Nodo(
-        "_comentario", [Nodo.Eleccion([_comentarioLinea(), _comentarioBloque()])]
-    )
+    return Nodo("_comentario", [Nodo.Eleccion([_comentarioLinea, _comentarioBloque])])
 
 
 def _comentarioLinea():
-    return Nodo("_comentarioLinea", ["# ", _contenidoComentario(), "\\n"])
+    return Nodo("_comentarioLinea", ["# ", _contenidoComentario, "\\n"])
 
 
 def _comentarioBloque():
-    return Nodo(
-        "_comentarioBloque", ["'''", "\\n", _contenidoComentario(), "\\n", "'''"]
-    )
+    return Nodo("_comentarioBloque", ["'''", "\\n", _contenidoComentario, "\\n", "'''"])
 
 
 def _contenidoComentario():
     return Nodo(
         "_contenidoComentario",
         [
-            Nodo.Eleccion([_poolStrings(), _textoLetras()]),
-            Nodo.Eleccion([_contenidoComentario(), _stop()]),
+            Nodo.Eleccion([_poolStrings, _textoLetras]),
+            Nodo.Eleccion([_contenidoComentario, _stop]),
         ],
     )
 
@@ -568,8 +568,8 @@ def _textoLetrasSimbolos():
     return Nodo(
         "_textoLetrasSimbolos",
         [
-            Nodo.Eleccion([_letra(), _simbolo()]),
-            Nodo.Eleccion([_textoLetrasSimbolos(), _stop()]),
+            Nodo.Eleccion([_letra, _simbolo]),
+            Nodo.Eleccion([_textoLetrasSimbolos, _stop]),
         ],
     )
 
@@ -578,26 +578,26 @@ def _textoLetrasNumeros():
     return Nodo(
         "_textoLetrasNumeros",
         [
-            Nodo.Eleccion([_letra(), _digito()]),
-            Nodo.Eleccion([_textoLetrasNumeros(), _stop()]),
+            Nodo.Eleccion([_letra, _digito]),
+            Nodo.Eleccion([_textoLetrasNumeros, _stop]),
         ],
     )
 
 
 def _textoLetras():
-    return Nodo("_textoLetras", [_letra(), Nodo.Eleccion([_textoLetras(), _stop()])])
+    return Nodo("_textoLetras", [_letra, Nodo.Eleccion([_textoLetras, _stop])])
 
 
-def _textos():
+def _texto():
     return Nodo(
-        "_textos",
+        "_texto",
         [
             Nodo.Eleccion(
                 [
-                    _textoLetras(),
-                    _textoLetrasNumeros(),
-                    _textoLetrasSimbolos(),
-                    _textoDirectorios(),
+                    _textoLetras,
+                    _textoLetrasNumeros,
+                    _textoLetrasSimbolos,
+                    _textoDirectorios,
                 ]
             )
         ],
@@ -605,12 +605,12 @@ def _textos():
 
 
 def _variable():
-    return Nodo("_variable", [_letra(), _textoLetrasNumeros()])
+    return Nodo("_variable", [_letra, _textoLetrasNumeros])
 
 
 def _funciones():
     return Nodo(
-        "_funciones", [_funcion(), "\\n", Nodo.Eleccion([_funciones(), _stop()]), "\\n"]
+        "_funciones", [_funcion, "\\n", Nodo.Eleccion([_funciones, _stop]), "\\n"]
     )
 
 
@@ -618,9 +618,9 @@ def _funciones():
 #     return Nodo(
 #         "_declaracionVariablesGlobales",
 #         [
-#             _variable(),
+#             _variable,
 #             "\\n",
-#             Nodo.Eleccion([_declaracionVariablesGlobales(), _stop()]),
+#             Nodo.Eleccion([_declaracionVariablesGlobales(), _stop]),
 #             "\\n",
 #         ],
 #     )
@@ -632,15 +632,15 @@ def _codigo():
         [
             Nodo.Eleccion(
                 [
-                    _operacion(),
-                    _asignacion(),
-                    _control(),
-                    _funcion(),
-                    _clase(),
-                    _comentario(),
+                    _operacion,
+                    _asignacion,
+                    _control,
+                    _funcion,
+                    _clase,
+                    _comentario,
                 ]
             ),
-            Nodo.Eleccion([_codigo(), _stop()]),
+            Nodo.Eleccion([_codigo, _stop]),
         ],
     )
 
@@ -651,37 +651,16 @@ def _codigoFuncion():
         [
             Nodo.Eleccion(
                 [
-                    _operacion(),
-                    _asignacion(),
-                    _controlFuncion(),
-                    _ejecucion(),
-                    _comentario(),
-                    _return(),
-                    _yield(),
+                    _operacion,
+                    _asignacion,
+                    _controlFuncion,
+                    _ejecucion,
+                    _comentario,
+                    _return,
+                    _yield,
                 ]
             ),
-            Nodo.Eleccion([_codigoFuncion(), _stop()]),
-        ],
-    )
-
-
-def _codigoFuncionAsincrona():
-    return Nodo(
-        "_codigoFuncionAsincrona",
-        [
-            Nodo.Eleccion(
-                [
-                    _operacion(),
-                    _asignacion(),
-                    _controlAsincrono(),
-                    _ejecucion(),
-                    _comentario(),
-                    _return(),
-                    _yield(),
-                    _await(),
-                ]
-            ),
-            Nodo.Eleccion([_codigoFuncionAsincrona(), _stop()]),
+            Nodo.Eleccion([_codigoFuncion, _stop]),
         ],
     )
 
@@ -692,17 +671,55 @@ def _codigoBucle():
         [
             Nodo.Eleccion(
                 [
-                    _operacion(),
-                    _asignacion(),
-                    _control(),
-                    _ejecucion(),
-                    _comentario(),
-                    _return(),
-                    _break(),
-                    _continue(),
+                    _operacion,
+                    _asignacion,
+                    _control,
+                    _ejecucion,
+                    _comentario,
+                    _return,
+                    _break,  # solo aquí
+                    _continue,  # solo aquí
                 ]
             ),
-            Nodo.Eleccion([_codigoBucle(), _stop()]),
+            Nodo.Eleccion([_codigoBucle, _stop]),
+        ],
+    )
+
+
+def _controlFuncion():
+    return Nodo(
+        "_control",
+        [
+            Nodo.Eleccion(
+                [
+                    _bucle,
+                    _condicional,
+                    _controlFunciones,
+                    _controlEstructural,
+                    _declaracionEstructural,
+                ]
+            )
+        ],
+    )
+
+
+def _codigoFuncionAsincrona():
+    return Nodo(
+        "_codigoFuncionAsincrona",
+        [
+            Nodo.Eleccion(
+                [
+                    _operacion,
+                    _asignacion,
+                    _controlAsincrono,
+                    _ejecucion,
+                    _comentario,
+                    _return,
+                    _yield,
+                    _await,
+                ]
+            ),
+            Nodo.Eleccion([_codigoFuncionAsincrona, _stop]),
         ],
     )
 
@@ -713,70 +730,68 @@ def _codigoGenerador():
         [
             Nodo.Eleccion(
                 [
-                    _operacion(),
-                    _asignacion(),
-                    _control(),
-                    _ejecucion(),
-                    _comentario(),
-                    _yield(),
+                    _operacion,
+                    _asignacion,
+                    _control,
+                    _ejecucion,
+                    _comentario,
+                    _yield,
                 ]
             ),
-            Nodo.Eleccion([_codigoGenerador(), _stop()]),
+            Nodo.Eleccion([_codigoGenerador, _stop]),
         ],
     )
 
 
 def _conjunto():
-    return Nodo(
-        "_conjunto", [Nodo.Eleccion([_lista(), _tupla(), _diccionario(), _set()])]
-    )
+    return Nodo("_conjunto", [Nodo.Eleccion([_lista, _tupla, _diccionario, _set])])
 
 
 def _set():
-    return Nodo("_set", [_variable(), " = ", "{", _argumentos(), "}"])
+    return Nodo("_set", [_variable, " = ", "{", _argumentos, "}"])
 
 
 def _diccionario():
-    return Nodo("_diccionario", [_variable(), " = ", "{", _argumentosKV(), "}", "\n"])
+    return Nodo("_diccionario", [_variable, " = ", "{", _argumentosKV, "}", "\n"])
 
 
 def _argumentosKV():
     return Nodo(
         "_argumentosKV",
-        [_argumentoKV(), Nodo.Eleccion([[", ", _argumentosKV()], _stop()])],
+        [_argumentoKV, Nodo.Eleccion([[", ", _argumentosKV], _stop])],
     )
 
 
 def _argumentoKV():
-    return Nodo("_argumentoKV", [_string(), ": ", Nodo.Eleccion([_dato(), _funcion()])])
+    return Nodo("_argumentoKV", [_string, ": ", Nodo.Eleccion([_dato, _funcion])])
 
 
 def _tupla():
-    return Nodo("_tupla", ["(", _argumentos(), ")", "\\n"])
+    return Nodo("_tupla", ["(", _argumentos, ")", "\\n"])
 
 
 def _lista():
-    return Nodo("_lista", ["[", _argumentos(), "]", "\\n"])
+    return Nodo("_lista", ["[", _argumentos, "]", "\\n"])
 
 
 def _bool():
-    return Nodo("_bool", [Nodo.Eleccion([_true(), _false()])])
+    return Nodo("_bool", [Nodo.Eleccion([_true, _false])])
 
 
 def _string():
-    return Nodo("_string", ['"', _palabra(), '"'])
+    return Nodo("_string", ['"', _palabra, '"'])
 
 
 def _palabra():
-    return Nodo("_palabra", [_char(), Nodo.Eleccion([_palabra(), _stop()])])
+    return Nodo("_palabra", [_char, Nodo.Eleccion([_palabra, _stop])])
 
 
 def _char():
-    return Nodo("_char", [Nodo.Eleccion([_letra(), _simbolo()])])
+    return Nodo("_char", [Nodo.Eleccion([_letra, _simbolo])])
 
 
 def _letra():
-    return Nodo("_letra", [Nodo.Eleccion([_minuscula(), _mayuscula()])])
+    return Nodo("_letra", [Nodo.Eleccion([_minuscula, _mayuscula])])
 
 
 def _minuscula():
@@ -863,14 +878,14 @@ def _simbolo():
         [
             Nodo.Eleccion(
                 [
-                    _simboloAritmetico(),
-                    _simboloLogico(),
-                    _simboloComparacion(),
-                    _parentesis(),
-                    _corchetes(),
-                    _llaves(),
-                    _comillas(),
-                    _simboloTexto(),
+                    _simboloAritmetico,
+                    _simboloLogico,
+                    _simboloComparacion,
+                    _parentesis,
+                    _corchetes,
+                    _llaves,
+                    _comillas,
+                    _simboloTexto,
                 ]
             )
         ],
@@ -883,12 +898,12 @@ def _simboloAritmetico():
         [
             Nodo.Eleccion(
                 [
-                    _simboloSuma(),
-                    _simboloResta(),
-                    _simboloMultiplicacion(),
-                    _simboloDivision(),
-                    _simboloModulo(),
-                    _simboloPotencia(),
+                    _simboloSuma,
+                    _simboloResta,
+                    _simboloMultiplicacion,
+                    _simboloDivision,
+                    _simboloModulo,
+                    _simboloPotencia,
                 ]
             )
         ],
@@ -896,7 +911,7 @@ def _simboloAritmetico():
 
 
 def _simboloLogico():
-    return Nodo("_simboloLogico", [Nodo.Eleccion([_and(), _or(), _not()])])
+    return Nodo("_simboloLogico", [Nodo.Eleccion([_and, _or, _not])])
 
 
 def _and():
@@ -913,16 +928,16 @@ def _not():
 
 def _simboloComparacion():
     return Nodo(
-        "",
+        "_simboloComparacion",
         [
             Nodo.Eleccion(
                 [
-                    _equal(),
-                    _notEqual(),
-                    _greaterThan(),
-                    _lowerThan(),
-                    _greaterOrEqualThan(),
-                    _lowerOrEqualThan(),
+                    _equal,
+                    _notEqual,
+                    _greaterThan,
+                    _lowerThan,
+                    _greaterOrEqualThan,
+                    _lowerOrEqualThan,
                 ]
             )
         ],
@@ -1013,20 +1028,20 @@ def _comillas():
 
 def _numero():
     return Nodo(
-        "__numero",
+        "_numero",
         [
-            Nodo.Eleccion([_positivo(), _negativo()]),
-            Nodo.Eleccion([_integer(), _double(), _complex()]),
+            Nodo.Eleccion([_positivo, _negativo]),
+            Nodo.Eleccion([_integer, _double, _complex]),
         ],
     )
 
 
 def _integer():
-    return Nodo("_integer", [_digito(), Nodo.Eleccion([_integer(), _stop()])])
+    return Nodo("_integer", [_digito, Nodo.Eleccion([_integer, _stop])])
 
 
 def _double():
-    return Nodo("_double", [_integer(), ".", _integer()])
+    return Nodo("_double", [_integer, ".", _integer])
 
 
 def _complex():
@@ -1034,11 +1049,11 @@ def _complex():
         "_complex",
         [
             "complex(",
-            Nodo.Eleccion([_positivo(), _negativo()]),
-            Nodo.Eleccion([_integer(), _double()]),
+            Nodo.Eleccion([_positivo, _negativo]),
+            Nodo.Eleccion([_integer, _double]),
             ", ",
-            Nodo.Eleccion([_positivo(), _negativo()]),
-            Nodo.Eleccion([_integer(), _double()]),
+            Nodo.Eleccion([_positivo, _negativo]),
+            Nodo.Eleccion([_integer, _double]),
             ")",
         ],
     )
@@ -1064,15 +1079,15 @@ def _dato():
         [
             Nodo.Eleccion(
                 [
-                    _numero(),
-                    _string(),
-                    _bool(),
-                    _conjunto(),
-                    _variable(),
-                    _funcion(),
-                    _leerAtributoClase(),
-                    _llamadaFuncion(),
-                    _invocarMetodo(),
+                    _numero,
+                    _string,
+                    _bool,
+                    _conjunto,
+                    _variable,
+                    _funcion,
+                    _leerAtributoClase,
+                    _llamadaFuncion,
+                    _invocarMetodo,
                 ]
             )
         ],
@@ -1085,12 +1100,12 @@ def _operacionLogica():
         [
             Nodo.Eleccion(
                 [
-                    _operacionAnd(),
-                    _operacionOr(),
-                    _operacionNot(),
-                    _comparacion(),
-                    _true(),
-                    _false(),
+                    _operacionAnd,
+                    _operacionOr,
+                    _operacionNot,
+                    _comparacion,
+                    _true,
+                    _false,
                 ]
             )
         ],
@@ -1098,27 +1113,23 @@ def _operacionLogica():
 
 
 def _operacionAnd():
-    return Nodo(
-        "_operacionAnd", ["(", _comparacion(), " ", _and(), " ", _comparacion(), ")"]
-    )
+    return Nodo("_operacionAnd", ["(", _comparacion, " ", _and, " ", _comparacion, ")"])
 
 
 def _operacionOr():
-    return Nodo(
-        "_operacionOr", ["(", _comparacion(), " ", _or(), " ", _comparacion(), ")"]
-    )
+    return Nodo("_operacionOr", ["(", _comparacion, " ", _or, " ", _comparacion, ")"])
 
 
 def _operacionNot():
-    return Nodo("_operacionNot", [_not(), "(", _comparacion(), ")"])
+    return Nodo("_operacionNot", [_not, "(", _comparacion, ")"])
 
 
 def _mascaraShiftIzquierda():
-    return Nodo("_mascaraShiftIzquierda", ["<<", _dato()])
+    return Nodo("_mascaraShiftIzquierda", ["<<", _dato])
 
 
 def _mascaraShiftDerecha():
-    return Nodo("_mascaraShiftDerecha", [">>", _dato()])
+    return Nodo("_mascaraShiftDerecha", [">>", _dato])
 
 
 def _forLista():
@@ -1126,12 +1137,12 @@ def _forLista():
         "_forLista",
         [
             "for ",
-            _variable(),
+            _variable,
             " in ",
-            _variable(),
+            _variable,
             ":",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
             "\\n",
         ],
     )
@@ -1142,16 +1153,16 @@ def _forIndice():
         "_forIndice",
         [
             "for ",
-            _variable(),
+            _variable,
             ", ",
-            _variable(),
+            _variable,
             " in enumerate(",
-            _variable(),
+            _variable,
             ", start=",
-            _integer(),
+            _integer,
             "):",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
             "\\n",
         ],
     )
@@ -1162,22 +1173,22 @@ def _forNumerico():
         "_forNumerico",
         [
             "for ",
-            _variable(),
+            _variable,
             " in range(",
             Nodo.Eleccion(
                 [
-                    [Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()])],
+                    [Nodo.Eleccion([_integer, _variable, _llamadaFuncion])],
                     [
-                        Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()]),
+                        Nodo.Eleccion([_integer, _variable, _llamadaFuncion]),
                         ", ",
-                        Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()]),
+                        Nodo.Eleccion([_integer, _variable, _llamadaFuncion]),
                     ],
                     [
-                        Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()]),
+                        Nodo.Eleccion([_integer, _variable, _llamadaFuncion]),
                         ", ",
-                        Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()]),
+                        Nodo.Eleccion([_integer, _variable, _llamadaFuncion]),
                         ", ",
-                        Nodo.Eleccion([_integer(), _variable(), _llamadaFuncion()]),
+                        Nodo.Eleccion([_integer, _variable, _llamadaFuncion]),
                     ],
                 ]
             ),
@@ -1194,12 +1205,12 @@ def _forDict():
         "_forDict",
         [
             "for ",
-            _variable(),
+            _variable,
             " in ",
-            _variable(),
+            _variable,
             ":",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
             "\\n",
         ],
     )
@@ -1214,12 +1225,12 @@ def _while():
         "_while",
         [
             "while ",
-            _condicion(),
+            _condicion,
             ":",
             "\\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([["\\n", _else()], _stop()]),
+            Nodo.Eleccion([["\\n", _else], _stop]),
             "\\n",
         ],
     )
@@ -1234,11 +1245,11 @@ def _match():
         "_match",
         [
             "match ",
-            Nodo.Eleccion([_variable(), _funcion()]),
+            Nodo.Eleccion([_variable, _funcion]),
             ":",
             "\\n",
             _cases(),
-            Nodo.Eleccion([["case _:", "\\n", _codigo()], _stop()]),
+            Nodo.Eleccion([["case _:", "\\n", _codigo], _stop]),
         ],
     )
 
@@ -1248,12 +1259,12 @@ def _cases():
         "_cases",
         [
             "case ",
-            _palabra(),
+            _palabra,
             ":",
             "\n",
-            Nodo.Tab(_codigo()),
+            Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([_cases(), _stop()]),
+            Nodo.Eleccion([_cases, _stop]),
         ],
     )
 
@@ -1264,8 +1275,8 @@ def _declaracionFuncion():
         [
             Nodo.Eleccion(
                 [
-                    _declaracionFuncionNormal(),
-                    _declaracionFuncionMetodo(),
+                    _declaracionFuncionNormal,
+                    _declaracionFuncionMetodo,
                 ]
             ),
             "\\n",
@@ -1278,13 +1289,13 @@ def _declaracionFuncionNormal():
         "_declaracionFuncionNormal",
         [
             "def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(",
-            _argumentos(),
+            _argumentos,
             "):",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([[_pass()], [_codigoFuncion()]])),
+            Nodo.Tab(Nodo.Eleccion([[_pass], [_codigoFuncion]])),
             "\\n",
         ],
     )
@@ -1295,13 +1306,13 @@ def _declaracionFuncionAsincrona():
         "_declaracionFuncionAsincrona",
         [
             "async def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(",
-            _argumentos(),
+            _argumentos,
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([[_pass()], [_codigoFuncionAsincrona()]])),
+            Nodo.Tab(Nodo.Eleccion([[_pass], [_codigoFuncionAsincrona]])),
             "\\n",
         ],
     )
@@ -1312,13 +1323,13 @@ def _declaracionFuncionGeneradora():
         "_declaracionFuncionGeneradora",
         [
             "def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(",
-            _argumentos(),
+            _argumentos,
             ")=",
             "\\n",
-            Nodo.Tab(_codigoGenerador()),
+            Nodo.Tab(_codigoGenerador),
             "\\n",
         ],
     )
@@ -1329,9 +1340,9 @@ def _declaracionFuncionLambda():
         "_declaracionFuncionLambda",
         [
             "lambda ",
-            _argumentosLambda(),
+            _argumentosLambda,
             "= ",
-            _expresionSimple(),
+            _expresionSimple,
         ],
     )
 
@@ -1342,13 +1353,13 @@ def _declaracionMetodo():
         [
             Nodo.Eleccion(
                 [
-                    _declaracionMetodoNormal(),
-                    _declaracionMetodoAsincrono(),
-                    _declaracionMetodoEstatico(),
-                    _declaracionMetodoClase(),
+                    _declaracionMetodoNormal,
+                    _declaracionMetodoAsincrono,
+                    _declaracionMetodoEstatico,
+                    _declaracionMetodoClase,
                 ]
             ),
-            Nodo.Eleccion([_declaracionMetodo(), _stop()]),
+            Nodo.Eleccion([_declaracionMetodo, _stop]),
         ],
     )
 
@@ -1358,13 +1369,13 @@ def _declaracionMetodoNormal():
         "_declaracionMetodoNormal",
         [
             "def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(self",
-            Nodo.Eleccion([[", ", _argumentos()], _stop()]),
+            Nodo.Eleccion([[", ", _argumentos], _stop]),
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([_pass(), _codigoFuncion()])),
+            Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
         ],
     )
@@ -1375,13 +1386,13 @@ def _declaracionMetodoAsincrono():
         "_declaracionMetodoAsincrono",
         [
             "async def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(self",
-            Nodo.Eleccion([[", ", _argumentos()], _stop()]),
+            Nodo.Eleccion([[", ", _argumentos], _stop]),
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([_pass(), _codigoFuncionAsincrona()])),
+            Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncionAsincrona])),
             "\\n",
         ],
     )
@@ -1394,13 +1405,13 @@ def _declaracionMetodoEstatico():
             "@staticmethod",
             "\\n",
             "def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(",
-            _argumentos(),
+            _argumentos,
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([_pass(), _codigoFuncion()])),
+            Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
         ],
     )
@@ -1413,13 +1424,13 @@ def _declaracionMetodoClase():
             "@classmethod",
             "\\n",
             "def ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(cls",
-            Nodo.Eleccion([[", ", _argumentos()], _stop()]),
+            Nodo.Eleccion([[", ", _argumentos], _stop]),
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([_pass(), _codigoFuncion()])),
+            Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
         ],
     )
@@ -1428,17 +1439,44 @@ def _declaracionMetodoClase():
 def _clase():
     return Nodo(
         "_clase",
-        [Nodo.Eleccion([_declaracionClase(), _instanciacionClase(), _usarClase()])],
+        [Nodo.Eleccion([_declaracionClase, _instanciacionClase, _usarClase])],
     )
+
+
+######
+
+
+######
+def _usarClase():
+    return Nodo("_usarClase", [Nodo.Eleccion([_invocarMetodo, _atributoClase])])
+
+
+def _atributoClase():
+    return Nodo(
+        "_atributoClase", [Nodo.Eleccion([_leerAtributoClase, _escribirAtributoClase])]
+    )
+
+
+def _leerAtributoClase():
+    return Nodo("_leerAtributoClase", [_variable, ".", _variable])
+
+
+def _escribirAtributoClase():
+    return Nodo("_escribirAtributoClase", [_variable, ".", _variable, " = ", _dato])
+
+
+#######
+
+#######
 
 
 def _herencia():
     return Nodo(
         "_herencia",
         [
-            _letra(),
-            _textoLetrasNumeros(),
-            Nodo.Eleccion([[", ", _herencia()], _stop()]),
+            _letra,
+            _textoLetrasNumeros,
+            Nodo.Eleccion([[", ", _herencia], _stop]),
         ],
     )
 
@@ -1446,11 +1484,7 @@ def _herencia():
 def _metodosClase():
     return Nodo(
         "_metodosClase",
-        [
-            Nodo.Eleccion(
-                [[_declaracionMetodo(), "\\n", Nodo.Tab(_metodosClase())], _stop()]
-            )
-        ],
+        [Nodo.Eleccion([[_declaracionMetodo, "\\n", Nodo.Tab(_metodosClase)], _stop])],
     )
 
 
@@ -1459,10 +1493,10 @@ def _constructorClase():
         "_constructorClase",
         [
             "def __init__(self",
-            Nodo.Eleccion([[", ", _argumentos()], _stop()]),
+            Nodo.Eleccion([[", ", _argumentos], _stop]),
             ")=",
             "\\n",
-            Nodo.Tab(Nodo.Eleccion([_pass(), _codigoFuncion()])),
+            Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
         ],
     )
@@ -1475,11 +1509,7 @@ def _pass():
 def _atributosClase():
     return Nodo(
         "_atributosClase",
-        [
-            Nodo.Eleccion(
-                [[_variable(), " = ", _dato(), "\\n", _atributosClase()], _stop()]
-            )
-        ],
+        [Nodo.Eleccion([[_variable, " = ", _dato, "\\n", _atributosClase], _stop])],
     )
 
 
@@ -1489,16 +1519,16 @@ def _builtinOtrosUtilidad():
         [
             Nodo.Eleccion(
                 [
-                    ["len(", _argumentos(), ")"],
-                    ["all(", _argumentos(), ")"],
-                    ["any(", _argumentos(), ")"],
-                    ["zip(", _argumentos(), ")"],
-                    ["slice(", _argumentos(), ")"],
-                    ["super(", _argumentos(), ")"],
-                    ["object(", _argumentos(), ")"],
-                    ["staticmethod(", _argumentos(), ")"],
-                    ["classmethod(", _argumentos(), ")"],
-                    ["property(", _argumentos(), ")"],
+                    ["len(", _argumentos, ")"],
+                    ["all(", _argumentos, ")"],
+                    ["any(", _argumentos, ")"],
+                    ["zip(", _argumentos, ")"],
+                    ["slice(", _argumentos, ")"],
+                    ["super(", _argumentos, ")"],
+                    ["object(", _argumentos, ")"],
+                    ["staticmethod(", _argumentos, ")"],
+                    ["classmethod(", _argumentos, ")"],
+                    ["property(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1511,10 +1541,10 @@ def _builtinOtrosEjecucion():
         [
             Nodo.Eleccion(
                 [
-                    ["eval(", _argumentos(), ")"],
-                    ["exec(", _argumentos(), ")"],
-                    ["compile(", _argumentos(), ")"],
-                    ["__import__(", _argumentos(), ")"],
+                    ["eval(", _argumentos, ")"],
+                    ["exec(", _argumentos, ")"],
+                    ["compile(", _argumentos, ")"],
+                    ["__import__(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1524,7 +1554,7 @@ def _builtinOtrosEjecucion():
 def _builtinOtros():
     return Nodo(
         "_builtinOtros",
-        [Nodo.Eleccion([_builtinOtrosUtilidad(), _builtinOtrosEjecucion()])],
+        [Nodo.Eleccion([_builtinOtrosUtilidad, _builtinOtrosEjecucion])],
     )
 
 
@@ -1534,9 +1564,9 @@ def _builtinIOFichero():
         [
             Nodo.Eleccion(
                 [
-                    ["open(", _argumentos(), ")"],
-                    ["read(", _argumentos(), ")"],
-                    ["write(", _argumentos(), ")"],
+                    ["open(", _argumentos, ")"],
+                    ["read(", _argumentos, ")"],
+                    ["write(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1549,9 +1579,9 @@ def _builtinIOTexto():
         [
             Nodo.Eleccion(
                 [
-                    ["print(", _argumentos(), ")"],
-                    ["input(", _argumentos(), ")"],
-                    ["format(", _argumentos(), ")"],
+                    ["print(", _argumentos, ")"],
+                    ["input(", _argumentos, ")"],
+                    ["format(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1559,7 +1589,7 @@ def _builtinIOTexto():
 
 
 def _builtinIO():
-    return Nodo("_builtinIO", [Nodo.Eleccion([_builtinIOTexto(), _builtinIOFichero()])])
+    return Nodo("_builtinIO", [Nodo.Eleccion([_builtinIOTexto, _builtinIOFichero])])
 
 
 def _builtinInspeccionAtributos():
@@ -1568,12 +1598,12 @@ def _builtinInspeccionAtributos():
         [
             Nodo.Eleccion(
                 [
-                    ["hasattr(", _argumentos(), ")"],
-                    ["getattr(", _argumentos(), ")"],
-                    ["setattr(", _argumentos(), ")"],
-                    ["delattr(", _argumentos(), ")"],
-                    ["dir(", _argumentos(), ")"],
-                    ["vars(", _argumentos(), ")"],
+                    ["hasattr(", _argumentos, ")"],
+                    ["getattr(", _argumentos, ")"],
+                    ["setattr(", _argumentos, ")"],
+                    ["delattr(", _argumentos, ")"],
+                    ["dir(", _argumentos, ")"],
+                    ["vars(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1586,10 +1616,10 @@ def _builtinInspeccionTipos():
         [
             Nodo.Eleccion(
                 [
-                    ["type(", _argumentos(), ")"],
-                    ["isinstance(", _argumentos(), ")"],
-                    ["issubclass(", _argumentos(), ")"],
-                    ["callable(", _argumentos(), ")"],
+                    ["type(", _argumentos, ")"],
+                    ["isinstance(", _argumentos, ")"],
+                    ["issubclass(", _argumentos, ")"],
+                    ["callable(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1599,7 +1629,7 @@ def _builtinInspeccionTipos():
 def _builtinInspeccion():
     return Nodo(
         "_builtinInspeccion",
-        [Nodo.Eleccion([_builtinInspeccionTipos(), _builtinInspeccionAtributos()])],
+        [Nodo.Eleccion([_builtinInspeccionTipos, _builtinInspeccionAtributos])],
     )
 
 
@@ -1609,9 +1639,9 @@ def _builtinIteracionFuncional():
         [
             Nodo.Eleccion(
                 [
-                    ["map(", _argumentos(), ")"],
-                    ["filter(", _argumentos(), ")"],
-                    ["reduce(", _argumentos(), ")"],
+                    ["map(", _argumentos, ")"],
+                    ["filter(", _argumentos, ")"],
+                    ["reduce(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1624,13 +1654,13 @@ def _builtinIteracionBasica():
         [
             Nodo.Eleccion(
                 [
-                    ["range(", _argumentos(), ")"],
-                    ["enumerate(", _argumentos(), ")"],
-                    ["zip(", _argumentos(), ")"],
-                    ["reversed(", _argumentos(), ")"],
-                    ["sorted(", _argumentos(), ")"],
-                    ["iter(", _argumentos(), ")"],
-                    ["next(", _argumentos(), ")"],
+                    ["range(", _argumentos, ")"],
+                    ["enumerate(", _argumentos, ")"],
+                    ["zip(", _argumentos, ")"],
+                    ["reversed(", _argumentos, ")"],
+                    ["sorted(", _argumentos, ")"],
+                    ["iter(", _argumentos, ")"],
+                    ["next(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1647,23 +1677,23 @@ def _builtinIteracion():
 def _builtinMatematicasAvanzadas():
     return Nodo(
         "_builtinMatematicasAvanzadas",
-        [Nodo.Eleccion([["hash(", _argumentos(), ")"], ["id(", _argumentos(), ")"]])],
+        [Nodo.Eleccion([["hash(", _argumentos, ")"], ["id(", _argumentos, ")"]])],
     )
 
 
 def _builtinMatematicasBasicas():
     return Nodo(
-        "",
+        "_builtinMatematicasBasicas",
         [
             Nodo.Eleccion(
                 [
-                    ["abs(", _argumentos(), ")"],
-                    ["round(", _argumentos(), ")"],
-                    ["min(", _argumentos(), ")"],
-                    ["max(", _argumentos(), ")"],
-                    ["sum(", _argumentos(), ")"],
-                    ["pow(", _argumentos(), ")"],
-                    ["divmod(", _argumentos(), ")"],
+                    ["abs(", _argumentos, ")"],
+                    ["round(", _argumentos, ")"],
+                    ["min(", _argumentos, ")"],
+                    ["max(", _argumentos, ")"],
+                    ["sum(", _argumentos, ")"],
+                    ["pow(", _argumentos, ")"],
+                    ["divmod(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1683,14 +1713,14 @@ def _builtinConversionTexto():
         [
             Nodo.Eleccion(
                 [
-                    ["str(", _argumentos(), ")"],
-                    ["repr(", _argumentos(), ")"],
-                    ["ascii(", _argumentos(), ")"],
-                    ["chr(", _argumentos(), ")"],
-                    ["ord(", _argumentos(), ")"],
-                    ["hex(", _argumentos(), ")"],
-                    ["oct(", _argumentos(), ")"],
-                    ["bin(", _argumentos(), ")"],
+                    ["str(", _argumentos, ")"],
+                    ["repr(", _argumentos, ")"],
+                    ["ascii(", _argumentos, ")"],
+                    ["chr(", _argumentos, ")"],
+                    ["ord(", _argumentos, ")"],
+                    ["hex(", _argumentos, ")"],
+                    ["oct(", _argumentos, ")"],
+                    ["bin(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1703,13 +1733,13 @@ def _builtinConversionSecuencia():
         [
             Nodo.Eleccion(
                 [
-                    ["list(", _argumentos(), ")"],
-                    ["tuple(", _argumentos(), ")"],
-                    ["set(", _argumentos(), ")"],
-                    ["frozenset(", _argumentos(), ")"],
-                    ["dict(", _argumentos(), ")"],
-                    ["bytes(", _argumentos(), ")"],
-                    ["bytearray(", _argumentos(), ")"],
+                    ["list(", _argumentos, ")"],
+                    ["tuple(", _argumentos, ")"],
+                    ["set(", _argumentos, ")"],
+                    ["frozenset(", _argumentos, ")"],
+                    ["dict(", _argumentos, ")"],
+                    ["bytes(", _argumentos, ")"],
+                    ["bytearray(", _argumentos, ")"],
                 ]
             )
         ],
@@ -1721,10 +1751,10 @@ def _builtinConversionNumerico():
         "_builtinConversionNumerico",
         [
             Nodo.Eleccion()[
-                ["int(", _argumentos(), ")"],
-                ["float(", _argumentos(), ")"],
-                ["complex(", _argumentos(), ")"],
-                ["bool(", _argumentos(), ")"],
+                ["int(", _argumentos, ")"],
+                ["float(", _argumentos, ")"],
+                ["complex(", _argumentos, ")"],
+                ["bool(", _argumentos, ")"],
             ],
         ],
     )
@@ -1736,9 +1766,9 @@ def _builtinConversion():
         [
             Nodo.Eleccion(
                 [
-                    _builtinConversionNumerico(),
-                    _builtinConversionSecuencia(),
-                    _builtinConversionTexto(),
+                    _builtinConversionNumerico,
+                    _builtinConversionSecuencia,
+                    _builtinConversionTexto,
                 ]
             )
         ],
@@ -1775,13 +1805,13 @@ def _builtin():
         [
             Nodo.Eleccion(
                 [
-                    _builtinTipos(),
-                    _builtinConversion(),
-                    _builtinMatematicas(),
-                    _builtinIteracion(),
-                    _builtinInspeccion(),
-                    _builtinIO(),
-                    _builtinOtros(),
+                    _builtinTipos,
+                    _builtinConversion,
+                    _builtinMatematicas,
+                    _builtinIteracion,
+                    _builtinInspeccion,
+                    _builtinIO,
+                    _builtinOtros,
                 ]
             )
         ],
@@ -1793,16 +1823,16 @@ def _declaracionClase():
         "_declaracionClase",
         [
             "class ",
-            _letra(),
-            _textoLetrasNumeros(),
-            Nodo.Eleccion([["(", _herencia(), ")"], _stop()]),
+            _letra,
+            _textoLetrasNumeros,
+            Nodo.Eleccion([["(", _herencia(), ")"], _stop]),
             ":",
             "\\n",
-            Nodo.Tab(_atributosClase()),
+            Nodo.Tab(_atributosClase),
             "\\n",
-            Nodo.Tab(_constructor()),
+            Nodo.Tab(_constructor),
             "\\n",
-            Nodo.Tab(_metodosClase()),
+            Nodo.Tab(_metodosClase),
             "\\n",
         ],
     )
@@ -1817,30 +1847,30 @@ def _instanciacionClase():
     return Nodo(
         "_instanciacionClase",
         [
-            _variable(),
+            _variable,
             " = ",
-            _letra(),
-            _textoLetrasNumeros(),
+            _letra,
+            _textoLetrasNumeros,
             "(",
-            Nodo.Eleccion([[_argumentos()], _stop()]),
+            Nodo.Eleccion([[_argumentos], _stop]),
             ")",
         ],
     )
 
 
 def _usoClase():
-    return Nodo("_usoClase", [Nodo.Eleccion([_invocarMetodo(), _atributoClase()])])
+    return Nodo("_usoClase", [Nodo.Eleccion([_invocarMetodo, _atributoClase])])
 
 
 def _encadenarMetodo():
     return Nodo(
         "_encadenarMetodo",
         [
-            _variable(),
+            _variable,
             "(",
-            Nodo.Eleccion([_argumentos(), _stop()]),
+            Nodo.Eleccion([_argumentos, _stop]),
             ")",
-            Nodo.Eleccion([[".", _encadenarMetodo()], _stop()]),
+            Nodo.Eleccion([[".", _encadenarMetodo], _stop]),
         ],
     )
 
@@ -1848,7 +1878,7 @@ def _encadenarMetodo():
 def _atributoClase():
     return Nodo(
         "_atributoClase",
-        [Nodo.Eleccion([_leerAtributoClase(), _escribirAtributoClase()])],
+        [Nodo.Eleccion([_leerAtributoClase, _escribirAtributoClase])],
     )
 
 
@@ -1857,7 +1887,7 @@ def _leerAtributoClase():
 
 
 def _escribirAtributoClase():
-    return Nodo("", [_variable(), ".", _variable(), " = ", _dato()])
+    return Nodo("_escribirAtributoClase", [_variable, ".", _variable, " = ", _dato])
 
 
 def _raise():
@@ -1865,9 +1895,7 @@ def _raise():
         "_raise",
         [
             "raise",
-            Nodo.Eleccion(
-                [[" ", Nodo.Eleccion([_llamadaFuncion(), _variable()])], _stop()]
-            ),
+            Nodo.Eleccion([[" ", Nodo.Eleccion([_llamadaFuncion, _variable])], _stop]),
         ],
     )
 
@@ -1875,34 +1903,30 @@ def _raise():
 def _ejecucion():
     return Nodo(
         "_ejecucion",
-        [
-            Nodo.Eleccion(
-                [_funcion(), _clase(), _builtin(), _acessoFichero(), _accesoInternet()]
-            )
-        ],
+        [Nodo.Eleccion([_funcion, _clase, _builtin, _acessoFichero, _accesoInternet])],
     )
 
 
 def _funcion():
-    return Nodo("_funcion", [Nodo.Eleccion(["declaracionFuncion", "llamadaFuncion"])])
+    return Nodo("_funcion", [Nodo.Eleccion([_declaracionFuncion(), _llamadaFuncion])])
 
 
 def _llamadaFuncion():
     return Nodo(
         "_llamadaFuncion",
-        [_variable(), "(", Nodo.Eleccion([[_argumentos()], _stop()]), ")"],
+        [_variable, "(", Nodo.Eleccion([[_argumentos], _stop]), ")"],
     )
 
 
 def _invocarMetodo():
     return Nodo(
         "_invocarMetodo",
-        [Nodo.Eleccion([_variable(), _llamadaFuncion()]), ".", _encadenarMetodo()],
+        [Nodo.Eleccion([_variable, _llamadaFuncion]), ".", _encadenarMetodo],
     )
 
 
 def _accesoRecurso():
-    return Nodo("_accesoRecurso", [_accesoFichero(), _accesoInternet()])
+    return Nodo("_accesoRecurso", [_accesoFichero, _accesoInternet])
 
 
 def _accesoFichero():
@@ -1911,10 +1935,10 @@ def _accesoFichero():
         [
             Nodo.Eleccion(
                 [
-                    _leerFichero(),
-                    _escribirFichero(),
-                    _anadirFichero(),
-                    _leerEscribirFichero(),
+                    _leerFichero,
+                    _escribirFichero,
+                    _anadirFichero,
+                    _leerEscribirFichero,
                 ]
             )
         ],
@@ -1926,12 +1950,12 @@ def _leerFichero():
         "_leerFichero",
         [
             "with open(",
-            _textoDirectorioLocal(),
+            _textoDirectorioLocal,
             ", 'r') as ",
-            _variable(),
+            _variable,
             "=",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
         ],
     )
 
@@ -1941,12 +1965,12 @@ def _escribirFichero():
         "_escribirFichero",
         [
             "with open(",
-            _textoDirectorioLocal(),
+            _textoDirectorioLocal,
             ", 'w') as ",
-            _variable(),
+            _variable,
             "=",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
         ],
     )
 
@@ -1956,12 +1980,12 @@ def _anadirFichero():
         "_anadirFichero",
         [
             "with open(",
-            _textoDirectorioLocal(),
+            _textoDirectorioLocal,
             ", 'a') as ",
-            _variable(),
+            _variable,
             "=",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
         ],
     )
 
@@ -1971,34 +1995,34 @@ def _leerEscribirFichero():
         "_leerEscribirFichero",
         [
             "with open(",
-            _textoDirectorioLocal(),
+            _textoDirectorioLocal,
             ", 'r+') as ",
-            _variable(),
+            _variable,
             "=",
             "\\n",
-            Nodo.Tab(_codigoFuncion()),
+            Nodo.Tab(_codigoFuncion),
         ],
     )
 
 
 def _accesoInternet():
-    return Nodo("_accesoInternet", [Nodo.Eleccion([_httpGet(), _httpPost()])])
+    return Nodo("_accesoInternet", [Nodo.Eleccion([_httpGet, _httpPost])])
 
 
 def _httpGet():
-    return Nodo("_httpGet", ["requests.get(", _textoDirectorioWeb(), ")"])
+    return Nodo("_httpGet", ["requests.get(", _textoDirectorioWeb, ")"])
 
 
 def _httpPost():
     return Nodo(
-        "_httpPost", ["requests.post(", _textoDirectorioWeb(), ", data=", _dato(), ")"]
+        "_httpPost", ["requests.post(", _textoDirectorioWeb, ", data=", _dato, ")"]
     )
 
 
 def _textoDirectorios():
     return Nodo(
         "_textoDirectorios",
-        [Nodo.Eleccion([_textoDirectorioLocal(), _textoDirectorioWeb()])],
+        [Nodo.Eleccion([_textoDirectorioLocal, _textoDirectorioWeb])],
     )
 
 
@@ -2008,9 +2032,9 @@ def _textoDirectorioLocal():
         [
             Nodo.Eleccion(
                 [
-                    _textoDirectorioWindows(),
-                    _textoDirectorioLinux(),
-                    _textoDirectorioMac(),
+                    _textoDirectorioWindows,
+                    _textoDirectorioLinux,
+                    _textoDirectorioMac,
                 ]
             )
         ],
@@ -2021,8 +2045,8 @@ def _textoDirectorioWindows():
     return Nodo(
         "_textoDirectorioWindows",
         [
-            Nodo.Eleccion([_letra(), _digito(), _simboloDirectorioWindows()]),
-            Nodo.Eleccion([["\\\\", _textoDirectorioWindows()], _stop()]),
+            Nodo.Eleccion([_letra, _digito, _simboloDirectorioWindows]),
+            Nodo.Eleccion([["\\\\", _textoDirectorioWindows], _stop]),
         ],
     )
 
@@ -2031,8 +2055,8 @@ def _textoDirectorioLinux():
     return Nodo(
         "_textoDirectorioLinux",
         [
-            Nodo.Eleccion(["letra", _digito(), _simboloDirectorioLinux()]),
-            Nodo.Eleccion([["/", _textoDirectorioLinux()], _stop()]),
+            Nodo.Eleccion(["letra", _digito, _simboloDirectorioLinux]),
+            Nodo.Eleccion([["/", _textoDirectorioLinux], _stop]),
         ],
     )
 
@@ -2041,29 +2065,126 @@ def _textoDirectorioMac():
     return Nodo(
         "_textoDirectorioMac",
         [
-            Nodo.Eleccion([_letra(), _digito(), _simboloDirectorioMac()]),
-            Nodo.Eleccion([["/", _textoDirectorioMac()], _stop()]),
+            Nodo.Eleccion([_letra, _digito, _simboloDirectorioMac]),
+            Nodo.Eleccion([["/", _textoDirectorioMac], _stop]),
         ],
     )
 
 
-# TODO _simboloDirectorioWindows
 def _simboloDirectorioWindows():
-    return Nodo("_simboloDirectorioWindows", [])
+    return Nodo(
+        "_simboloDirectorioWindows",
+        [
+            " ",
+            "!",
+            "#",
+            "$",
+            "%",
+            "&",
+            "'",
+            "(",
+            ")",
+            "+",
+            ",",
+            "-",
+            ".",
+            ";",
+            "=",
+            "@",
+            "[",
+            "]",
+            "^",
+            "_",
+            "`",
+            "{",
+            "}",
+            "~",
+        ],
+    )
 
 
-# TODO _simboloDirectorioLinux
 def _simboloDirectorioLinux():
-    return Nodo("_simboloDirectorioLinux", [])
+    return Nodo(
+        "_simboloDirectorioLinux",
+        " ",
+        "!",
+        '"',
+        "#",
+        "$",
+        "%",
+        "&",
+        "'",
+        "(",
+        ")",
+        "*",
+        "+",
+        ",",
+        "-",
+        ".",
+        "/",
+        ":",
+        ";",
+        "<",
+        "=",
+        ">",
+        "?",
+        "@",
+        "[",
+        "\\",
+        "]",
+        "^",
+        "_",
+        "`",
+        "{",
+        "|",
+        "}",
+        "~",
+    )
 
 
-# TODO _simboloDirectorioMac
 def _simboloDirectorioMac():
-    return Nodo("_simboloDirectorioMac", [])
+    return Nodo(
+        "_simboloDirectorioMac",
+        [
+            " ",
+            "!",
+            '"',
+            "#",
+            "$",
+            "%",
+            "&",
+            "'",
+            "(",
+            ")",
+            "*",
+            "+",
+            ",",
+            "-",
+            ".",
+            "/",
+            ":",
+            ";",
+            "<",
+            "=",
+            ">",
+            "?",
+            "@",
+            "[",
+            "\\",
+            "]",
+            "^",
+            "_",
+            "`",
+            "{",
+            "|",
+            "}",
+            "~",
+        ],
+    )
 
 
 def _textoDirectorioWeb():
-    return Nodo("_textoDirectorioWeb", [Nodo.Eleccion([_urlWeb(), _urlLocal()])])
+    return Nodo("_textoDirectorioWeb", [Nodo.Eleccion([_urlWeb, _urlLocal])])
 
 
 def _urlWeb():
@@ -2071,11 +2192,11 @@ def _urlWeb():
         "_urlWeb",
         [
             Nodo.Eleccion(["http=//", "https=//"]),
-            _textoDirectorioExterno(),
-            Nodo.Eleccion([[".", _textoDirectorioExterno()], _stop()]),
-            Nodo.Eleccion([[".", _textoDirectorioExterno()], _stop()]),
-            Nodo.Eleccion([["/", _directorioExternoRuta()], _stop()]),
-            Nodo.Eleccion([["?", _directorioExternoParametros()], _stop()]),
+            _textoDirectorioExterno,
+            Nodo.Eleccion([[".", _textoDirectorioExterno], _stop]),
+            Nodo.Eleccion([[".", _textoDirectorioExterno], _stop]),
+            Nodo.Eleccion([["/", _directorioExternoRuta], _stop]),
+            Nodo.Eleccion([["?", _directorioExternoParametros], _stop]),
         ],
     )
 
@@ -2084,8 +2205,8 @@ def _textoDirectorioExterno():
     return Nodo(
         "_textoDirectorioExterno",
         [
-            Nodo.Eleccion([_letra(), _digito(), _simboloDirectorioExterno()]),
-            Nodo.Eleccion([_textoDirectorioExterno(), _stop()]),
+            Nodo.Eleccion([_letra, _digito, _simboloDirectorioExterno]),
+            Nodo.Eleccion([_textoDirectorioExterno, _stop]),
         ],
     )
 
@@ -2101,8 +2222,8 @@ def _directorioExternoRuta():
     return Nodo(
         "_directorioExternoRuta",
         [
-            _textoDirectorioExterno(),
-            Nodo.Eleccion([["/", _directorioExternoRuta()], _stop()]),
+            _textoDirectorioExterno,
+            Nodo.Eleccion([["/", _directorioExternoRuta], _stop]),
         ],
     )
 
@@ -2111,10 +2232,10 @@ def _directorioExternoParametros():
     return Nodo(
         "_directorioExternoParametros",
         [
-            _textoDirectorioExterno(),
+            _textoDirectorioExterno,
             "=",
-            _textoDirectorioExterno(),
-            Nodo.Eleccion([["&", _directorioExternoParametros()], _stop()]),
+            _textoDirectorioExterno,
+            Nodo.Eleccion([["&", _directorioExternoParametros], _stop]),
         ],
     )
 
@@ -2123,10 +2244,10 @@ def _urlLocal():
     return Nodo(
         "_urlLocal",
         [
-            Nodo.Eleccion(["http=//", "https=//"]),
-            Nodo.Eleccion(["localhost", "127.0.0.1", "0.0.0.0", "ipLocal"]),
-            Nodo.Eleccion([["=", _puerto()], _stop()]),
-            Nodo.Eleccion([["/", _directorioExternoRuta()], _stop()]),
+            Nodo.Eleccion(["http//", "https//"]),
+            Nodo.Eleccion(["localhost", "127.0.0.1", "0.0.0.0", _ipLocal]),
+            Nodo.Eleccion([[":", _puerto], _stop]),
+            Nodo.Eleccion([["/", _directorioExternoRuta], _stop]),
         ],
     )
 
@@ -2135,21 +2256,21 @@ def _ipLocal():
     return Nodo(
         "_ipLocal",
         [
-            _digito(),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
+            _digito,
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
             ".",
-            _digito(),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
+            _digito,
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
             ".",
-            _digito(),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
+            _digito,
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
             ".",
-            _digito(),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
+            _digito,
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
         ],
     )
 
@@ -2158,11 +2279,11 @@ def _puerto():
     return Nodo(
         "_puerto",
         [
-            _digito(),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
-            Nodo.Eleccion([_digito(), _stop()]),
+            _digito,
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
+            Nodo.Eleccion([_digito, _stop]),
         ],
     )
 
@@ -2197,39 +2318,39 @@ def _poolStrings():
         [
             Nodo.Eleccion(
                 [
-                    _computacion(),
-                    _sistema(),
-                    _logica(),
-                    _agentes(),
-                    _espacio(),
-                    _tiempo(),
-                    _percepcion(),
-                    _comunicacion(),
-                    _cualidades(),
-                    _magnitudes(),
-                    _procesos(),
-                    _procesos_mentales(),
-                    _emociones(),
-                    _comportamiento(),
-                    _mundo(),
-                    _biologia(),
-                    _fisica(),
-                    _matematicas(),
-                    _sociedad(),
-                    _personas(),
-                    _objetos(),
-                    _informacion(),
-                    _economia(),
-                    _lenguaje(),
-                    _causalidad(),
-                    _incertidumbre(),
-                    _objetivos(),
-                    _valores(),
-                    _relaciones(),
-                    _ciclos(),
-                    _limites(),
-                    _cambio(),
-                    _estructura(),
+                    _computacion,
+                    _sistema,
+                    _logica,
+                    _agentes,
+                    _espacio,
+                    _tiempo,
+                    _percepcion,
+                    _comunicacion,
+                    _cualidades,
+                    _magnitudes,
+                    _procesos,
+                    _procesos_mentales,
+                    _emociones,
+                    _comportamiento,
+                    _mundo,
+                    _biologia,
+                    _fisica,
+                    _matematicas,
+                    _sociedad,
+                    _personas,
+                    _objetos,
+                    _informacion,
+                    _economia,
+                    _lenguaje,
+                    _causalidad,
+                    _incertidumbre,
+                    _objetivos,
+                    _valores,
+                    _relaciones,
+                    _ciclos,
+                    _limites,
+                    _cambio,
+                    _estructura,
                 ]
             )
         ],
