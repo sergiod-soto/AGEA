@@ -7,7 +7,7 @@ import signal
 
 from Core.Entities.Elementos.Simples.Bot.ADN.ADN import Genoma, Gen
 import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica as Guia
-import Core.Entities.Elementos.Simples.Bot.ADN.Compiler as Compiler
+import Core.Entities.Elementos.Simples.Bot.ADN.Empaquetador as Empaquetador
 
 
 
@@ -198,4 +198,4 @@ if __name__ == "__main__":
     # print("Python finalizado limpiamente")
     
     
-    Compiler.compiler_test()
+    Empaquetador.compiler_test()
