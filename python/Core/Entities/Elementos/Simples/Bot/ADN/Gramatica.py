@@ -240,7 +240,7 @@ def _if():
             "\\n",
             Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([[Nodo.Eleccion([_else(), _elif()])], _stop]),
+            Nodo.Eleccion([[Nodo.Eleccion([_else, _elif])], _stop]),
         ],
     )
 
@@ -266,7 +266,44 @@ def _else():
 
 
 def _condicion():
-    return Nodo("_condicion", ["(", _dato, " ", _comparacion(), " ", _dato, ")"])
+    return Nodo(
+        "_condicion",
+        [
+            Nodo.Eleccion(
+                [
+                    _comparacion,
+                    _comparacionMembership,
+                    _comparacionIdentidad,
+                    _operacionLogica,
+                    _bool,
+                    _variable,
+                    _llamadaFuncion,
+                ]
+            )
+        ],
+    )
+
+
+def _comparacionMembership():
+    return Nodo(
+        "_comparacionMembership",
+        [
+            _dato,
+            Nodo.Eleccion([" in ", " not in "]),
+            _dato,
+        ],
+    )
+
+
+def _comparacionIdentidad():
+    return Nodo(
+        "_comparacionIdentidad",
+        [
+            _dato,
+            Nodo.Eleccion([" is ", " is not "]),
+            _dato,
+        ],
+    )
 
 
 def _controlFunciones():
@@ -291,7 +328,7 @@ def _yield():
 
 
 def _controlEstructural():
-    return Nodo("_controlEstructural", [_try()])
+    return Nodo("_controlEstructural", [_try])
 
 
 def _try():
@@ -303,12 +340,12 @@ def _try():
             Nodo.Tab(_codigo),
             "\\n",
             "except",
-            Nodo.Eleccion([[" ", _palabra()], _stop]),
+            Nodo.Eleccion([[" ", _palabra], _stop]),
             ":",
             "\\n",
             Nodo.Tab(_codigo),
             "\\n",
-            Nodo.Eleccion([_else, _finally, [_else, _finally]]),
+            Nodo.Eleccion([Nodo.Eleccion([_else, _finally, [_else, _finally]]), _stop]),
         ],
     )
 
@@ -478,7 +515,7 @@ def _raiz():
 
 
 def _comparacion():
-    return Nodo("_comparacion", ["(", _dato, " ", _simboloComparacion, " ", _dato, ")"])
+    return Nodo("_comparacion", [_dato, " ", _simboloComparacion, " ", _dato])
 
 
 def _simboloSuma():
@@ -535,7 +572,7 @@ def _mascaraAnd():
 
 
 def _mascaraOr():
-    return Nodo("_mascaraOr", [_dato, "|", _dato])
+    return Nodo("_mascaraOr", [_dato, " | ", _dato])
 
 
 def _mascaraNot():
@@ -634,6 +671,7 @@ def _codigo():
                 [
                     _operacion,
                     _asignacion,
+                    _ejecucion,
                     _control,
                     _funcion,
                     _clase,
@@ -1113,21 +1151,23 @@ def _operacionLogica():
 
 
 def _operacionAnd():
-    return Nodo("_operacionAnd", ["(", _comparacion, " ", _and, " ", _comparacion, ")"])
+    return Nodo("_operacionAnd", ["(", _condicion, " ", _and, " ", _condicion, ")"])
 
 
 def _operacionOr():
-    return Nodo("_operacionOr", ["(", _comparacion, " ", _or, " ", _comparacion, ")"])
+    return Nodo("_operacionOr", ["(", _condicion, " ", _or, " ", _condicion, ")"])
 
 
 def _operacionNot():
-    return Nodo("_operacionNot", [_not, "(", _comparacion, ")"])
+    return Nodo("_operacionNot", [_not, "(", _condicion, ")"])
 
 
+# TODO testear
 def _mascaraShiftIzquierda():
     return Nodo("_mascaraShiftIzquierda", ["<<", _dato])
 
 
+# TODO testear
 def _mascaraShiftDerecha():
     return Nodo("_mascaraShiftDerecha", [">>", _dato])
 
@@ -1194,7 +1234,7 @@ def _forNumerico():
             ),
             "):",
             "\\n",
-            Nodo.Tab(_codigoBucle()),
+            Nodo.Tab(_codigoBucle),
             "\\n",
         ],
     )
@@ -1248,7 +1288,7 @@ def _match():
             Nodo.Eleccion([_variable, _funcion]),
             ":",
             "\\n",
-            _cases(),
+            _cases,
             Nodo.Eleccion([["case _:", "\\n", _codigo], _stop]),
         ],
     )
@@ -1310,7 +1350,7 @@ def _declaracionFuncionAsincrona():
             _textoLetrasNumeros,
             "(",
             _argumentos,
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([[_pass], [_codigoFuncionAsincrona]])),
             "\\n",
@@ -1327,7 +1367,7 @@ def _declaracionFuncionGeneradora():
             _textoLetrasNumeros,
             "(",
             _argumentos,
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(_codigoGenerador),
             "\\n",
@@ -1341,7 +1381,7 @@ def _declaracionFuncionLambda():
         [
             "lambda ",
             _argumentosLambda,
-            "= ",
+            ": ",
             _expresionSimple,
         ],
     )
@@ -1373,7 +1413,7 @@ def _declaracionMetodoNormal():
             _textoLetrasNumeros,
             "(self",
             Nodo.Eleccion([[", ", _argumentos], _stop]),
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
@@ -1390,7 +1430,7 @@ def _declaracionMetodoAsincrono():
             _textoLetrasNumeros,
             "(self",
             Nodo.Eleccion([[", ", _argumentos], _stop]),
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncionAsincrona])),
             "\\n",
@@ -1409,7 +1449,7 @@ def _declaracionMetodoEstatico():
             _textoLetrasNumeros,
             "(",
             _argumentos,
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
@@ -1428,7 +1468,7 @@ def _declaracionMetodoClase():
             _textoLetrasNumeros,
             "(cls",
             Nodo.Eleccion([[", ", _argumentos], _stop]),
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
@@ -1494,7 +1534,7 @@ def _constructorClase():
         [
             "def __init__(self",
             Nodo.Eleccion([[", ", _argumentos], _stop]),
-            ")=",
+            "):",
             "\\n",
             Nodo.Tab(Nodo.Eleccion([_pass, _codigoFuncion])),
             "\\n",
@@ -1670,7 +1710,7 @@ def _builtinIteracionBasica():
 def _builtinIteracion():
     return Nodo(
         "_builtinIteracion",
-        [Nodo.Eleccion([_builtinIteracionBasica(), _builtinIteracionFuncional()])],
+        [Nodo.Eleccion([_builtinIteracionBasica, _builtinIteracionFuncional])],
     )
 
 
@@ -1703,7 +1743,7 @@ def _builtinMatematicasBasicas():
 def _builtinMatematicas():
     return Nodo(
         "_builtinMatematicas",
-        [Nodo.Eleccion([_builtinMatematicasBasicas(), _builtinMatematicasAvanzadas()])],
+        [Nodo.Eleccion([_builtinMatematicasBasicas, _builtinMatematicasAvanzadas])],
     )
 
 
@@ -1750,12 +1790,14 @@ def _builtinConversionNumerico():
     return Nodo(
         "_builtinConversionNumerico",
         [
-            Nodo.Eleccion()[
-                ["int(", _argumentos, ")"],
-                ["float(", _argumentos, ")"],
-                ["complex(", _argumentos, ")"],
-                ["bool(", _argumentos, ")"],
-            ],
+            Nodo.Eleccion(
+                [
+                    ["int(", _argumentos, ")"],
+                    ["float(", _argumentos, ")"],
+                    ["complex(", _argumentos, ")"],
+                    ["bool(", _argumentos, ")"],
+                ]
+            )
         ],
     )
 
@@ -1825,7 +1867,7 @@ def _declaracionClase():
             "class ",
             _letra,
             _textoLetrasNumeros,
-            Nodo.Eleccion([["(", _herencia(), ")"], _stop]),
+            Nodo.Eleccion([["(", _herencia, ")"], _stop]),
             ":",
             "\\n",
             Nodo.Tab(_atributosClase),
@@ -1875,21 +1917,6 @@ def _encadenarMetodo():
     )
 
 
-def _atributoClase():
-    return Nodo(
-        "_atributoClase",
-        [Nodo.Eleccion([_leerAtributoClase, _escribirAtributoClase])],
-    )
-
-
-def _leerAtributoClase():
-    return Nodo("_leerAtributoClase", ["variable", ".", "variable"])
-
-
-def _escribirAtributoClase():
-    return Nodo("_escribirAtributoClase", [_variable, ".", _variable, " = ", _dato])
-
-
 def _raise():
     return Nodo(
         "_raise",
@@ -1908,7 +1935,7 @@ def _ejecucion():
 
 
 def _funcion():
-    return Nodo("_funcion", [Nodo.Eleccion([_declaracionFuncion(), _llamadaFuncion])])
+    return Nodo("_funcion", [Nodo.Eleccion([_declaracionFuncion, _llamadaFuncion])])
 
 
 def _llamadaFuncion():
@@ -1953,7 +1980,7 @@ def _leerFichero():
             _textoDirectorioLocal,
             ", 'r') as ",
             _variable,
-            "=",
+            ":",
             "\\n",
             Nodo.Tab(_codigoFuncion),
         ],
@@ -2075,30 +2102,34 @@ def _simboloDirectorioWindows():
     return Nodo(
         "_simboloDirectorioWindows",
         [
-            " ",
-            "!",
-            "#",
-            "$",
-            "%",
-            "&",
-            "'",
-            "(",
-            ")",
-            "+",
-            ",",
-            "-",
-            ".",
-            ";",
-            "=",
-            "@",
-            "[",
-            "]",
-            "^",
-            "_",
-            "`",
-            "{",
-            "}",
-            "~",
+            Nodo.Eleccion(
+                [
+                    " ",
+                    "!",
+                    "#",
+                    "$",
+                    "%",
+                    "&",
+                    "'",
+                    "(",
+                    ")",
+                    "+",
+                    ",",
+                    "-",
+                    ".",
+                    ";",
+                    "=",
+                    "@",
+                    "[",
+                    "]",
+                    "^",
+                    "_",
+                    "`",
+                    "{",
+                    "}",
+                    "~",
+                ]
+            )
         ],
     )
 
@@ -2106,39 +2137,45 @@ def _simboloDirectorioWindows():
 def _simboloDirectorioLinux():
     return Nodo(
         "_simboloDirectorioLinux",
-        " ",
-        "!",
-        '"',
-        "#",
-        "$",
-        "%",
-        "&",
-        "'",
-        "(",
-        ")",
-        "*",
-        "+",
-        ",",
-        "-",
-        ".",
-        "/",
-        ":",
-        ";",
-        "<",
-        "=",
-        ">",
-        "?",
-        "@",
-        "[",
-        "\\",
-        "]",
-        "^",
-        "_",
-        "`",
-        "{",
-        "|",
-        "}",
-        "~",
+        [
+            Nodo.Eleccion(
+                [
+                    " ",
+                    "!",
+                    '"',
+                    "#",
+                    "$",
+                    "%",
+                    "&",
+                    "'",
+                    "(",
+                    ")",
+                    "*",
+                    "+",
+                    ",",
+                    "-",
+                    ".",
+                    "/",
+                    ":",
+                    ";",
+                    "<",
+                    "=",
+                    ">",
+                    "?",
+                    "@",
+                    "[",
+                    "\\",
+                    "]",
+                    "^",
+                    "_",
+                    "`",
+                    "{",
+                    "|",
+                    "}",
+                    "~",
+                ]
+            )
+        ],
     )
 
 
@@ -2146,39 +2183,43 @@ def _simboloDirectorioMac():
     return Nodo(
         "_simboloDirectorioMac",
         [
-            " ",
-            "!",
-            '"',
-            "#",
-            "$",
-            "%",
-            "&",
-            "'",
-            "(",
-            ")",
-            "*",
-            "+",
-            ",",
-            "-",
-            ".",
-            "/",
-            ":",
-            ";",
-            "<",
-            "=",
-            ">",
-            "?",
-            "@",
-            "[",
-            "\\",
-            "]",
-            "^",
-            "_",
-            "`",
-            "{",
-            "|",
-            "}",
-            "~",
+            Nodo.Eleccion(
+                [
+                    " ",
+                    "!",
+                    '"',
+                    "#",
+                    "$",
+                    "%",
+                    "&",
+                    "'",
+                    "(",
+                    ")",
+                    "*",
+                    "+",
+                    ",",
+                    "-",
+                    ".",
+                    "/",
+                    ":",
+                    ";",
+                    "<",
+                    "=",
+                    ">",
+                    "?",
+                    "@",
+                    "[",
+                    "\\",
+                    "]",
+                    "^",
+                    "_",
+                    "`",
+                    "{",
+                    "|",
+                    "}",
+                    "~",
+                ]
+            )
         ],
     )
 
@@ -2191,7 +2232,7 @@ def _urlWeb():
     return Nodo(
         "_urlWeb",
         [
-            Nodo.Eleccion(["http=//", "https=//"]),
+            Nodo.Eleccion(["http//", "https//"]),
             _textoDirectorioExterno,
             Nodo.Eleccion([[".", _textoDirectorioExterno], _stop]),
             Nodo.Eleccion([[".", _textoDirectorioExterno], _stop]),
@@ -2360,12 +2401,12 @@ def _poolStrings():
 def _computacion():
     return Nodo(
         "_computacion",
-        [Nodo.Eleccion([_datos(), _operaciones(), _memoria(), _concurrencia()])],
+        [Nodo.Eleccion([_datos, _operaciones, _memoria, _concurrencia])],
     )
 
 
 def _datos():
-    return Nodo("_datos", [Nodo.Eleccion([_tipos(), _estructuras()])])
+    return Nodo("_datos", [Nodo.Eleccion([_tipos, _estructuras])])
 
 
 def _tipos():
@@ -2423,7 +2464,7 @@ def _estructuras():
 
 
 def _operaciones():
-    return Nodo("_operaciones", [Nodo.Eleccion([_aritmeticas(), _logicas()])])
+    return Nodo("_operaciones", [Nodo.Eleccion([_aritmeticas, _logicas])])
 
 
 def _aritmeticas():
@@ -2481,7 +2522,7 @@ def _logicas():
 
 
 def _memoria():
-    return Nodo("_memoria", [Nodo.Eleccion([_gestion(), _acceso()])])
+    return Nodo("_memoria", [Nodo.Eleccion([_gestion, _acceso])])
 
 
 def _gestion():
@@ -2539,7 +2580,7 @@ def _acceso():
 
 
 def _concurrencia():
-    return Nodo("_concurrencia", [Nodo.Eleccion([_sincronizacion(), _comunicacion()])])
+    return Nodo("_concurrencia", [Nodo.Eleccion([_sincronizacion, _comunicacion])])
 
 
 def _sincronizacion():
@@ -2597,13 +2638,11 @@ def _comunicacion():
 
 
 def _sistema():
-    return Nodo(
-        "_sistema", [Nodo.Eleccion([_procesos(), _archivos(), _red(), _recursos()])]
-    )
+    return Nodo("_sistema", [Nodo.Eleccion([_procesos, _archivos, _red, _recursos])])
 
 
 def _procesos():
-    return Nodo("_procesos", [Nodo.Eleccion([_estados(), _control()])])
+    return Nodo("_procesos", [Nodo.Eleccion([_estados, _control_procesos])])
 
 
 def _estados():
@@ -2633,7 +2672,7 @@ def _estados():
     )
 
 
-def _control():
+def _control_procesos():
     return Nodo(
         "_control",
         [
@@ -2661,7 +2700,7 @@ def _control():
 
 
 def _archivos():
-    return Nodo("_archivos", [Nodo.Eleccion([_operaciones_archivos(), _rutas()])])
+    return Nodo("_archivos", [Nodo.Eleccion([_operaciones_archivos, _rutas])])
 
 
 def _operaciones_archivos():
@@ -2719,7 +2758,7 @@ def _rutas():
 
 
 def _red():
-    return Nodo("_red", [Nodo.Eleccion([_protocolos(), _endpoints()])])
+    return Nodo("_red", [Nodo.Eleccion([_protocolos, _endpoints])])
 
 
 def _protocolos():
@@ -2777,7 +2816,7 @@ def _endpoints():
 
 
 def _recursos():
-    return Nodo("_recursos", [Nodo.Eleccion([_tiempo(), _energia()])])
+    return Nodo("_recursos", [Nodo.Eleccion([_tiempo, _energia])])
 
 
 def _tiempo():
@@ -2835,11 +2874,11 @@ def _energia():
 
 
 def _logica():
-    return Nodo("_logica", [Nodo.Eleccion([_control(), _evaluacion(), _patrones()])])
+    return Nodo("_logica", [Nodo.Eleccion([_control, _evaluacion, _patrones])])
 
 
 def _control():
-    return Nodo("_logica", [Nodo.Eleccion([_flujo(), _condiciones()])])
+    return Nodo("_logica", [Nodo.Eleccion([_flujo, _condiciones])])
 
 
 def _flujo():
@@ -2897,7 +2936,7 @@ def _condiciones():
 
 
 def _evaluacion():
-    return Nodo("_logica", [Nodo.Eleccion([_comparacion_evaluacion(), _validacion()])])
+    return Nodo("_logica", [Nodo.Eleccion([_comparacion_evaluacion, _validacion])])
 
 
 def _comparacion_evaluacion():
@@ -2955,7 +2994,7 @@ def _validacion():
 
 
 def _patrones():
-    return Nodo("_logica", [Nodo.Eleccion([_busqueda(), _matching()])])
+    return Nodo("_logica", [Nodo.Eleccion([_busqueda, _matching])])
 
 
 def _busqueda():
@@ -3015,12 +3054,12 @@ def _matching():
 def _agentes():
     return Nodo(
         "_agentes",
-        [Nodo.Eleccion([_roles(), _relaciones_agentes(), _estados_agentes()])],
+        [Nodo.Eleccion([_roles, _relaciones_agentes, _estados_agentes])],
     )
 
 
 def _roles():
-    return Nodo("_roles", [Nodo.Eleccion([_activos(), _pasivos()])])
+    return Nodo("_roles", [Nodo.Eleccion([_activos, _pasivos])])
 
 
 def _activos():
@@ -3078,7 +3117,7 @@ def _pasivos():
 
 
 def _relaciones_agentes():
-    return Nodo("_relaciones_agentes", [Nodo.Eleccion([_jerarquia(), _dependencia()])])
+    return Nodo("_relaciones_agentes", [Nodo.Eleccion([_jerarquia, _dependencia])])
 
 
 def _jerarquia():
@@ -3136,7 +3175,7 @@ def _dependencia():
 
 
 def _estados_agentes():
-    return Nodo("_estados_agentes", [Nodo.Eleccion([_vitales(), _operativos()])])
+    return Nodo("_estados_agentes", [Nodo.Eleccion([_vitales, _operativos])])
 
 
 def _vitales():
@@ -3194,11 +3233,11 @@ def _operativos():
 
 
 def _espacio():
-    return Nodo("_espacio", [Nodo.Eleccion([_posicion(), _direccion(), _dimension()])])
+    return Nodo("_espacio", [Nodo.Eleccion([_posicion, _direccion, _dimension])])
 
 
 def _posicion():
-    return Nodo("_posicion", [Nodo.Eleccion([_absoluta(), _relativa_posicion()])])
+    return Nodo("_posicion", [Nodo.Eleccion([_absoluta, _relativa_posicion])])
 
 
 def _absoluta():
@@ -3256,7 +3295,7 @@ def _relativa_posicion():
 
 
 def _direccion():
-    return Nodo("_direccion", [Nodo.Eleccion([_cardinal(), _relativa_direccion()])])
+    return Nodo("_direccion", [Nodo.Eleccion([_cardinal, _relativa_direccion])])
 
 
 def _cardinal():
@@ -3314,7 +3353,7 @@ def _relativa_direccion():
 
 
 def _dimension():
-    return Nodo("_dimension", [Nodo.Eleccion([_tamanho(), _distancia])])
+    return Nodo("_dimension", [Nodo.Eleccion([_tamanho, _distancia])])
 
 
 def _tamanho():
@@ -3372,11 +3411,11 @@ def _distancia():
 
 
 def _tiempo():
-    return Nodo("_tiempo", [Nodo.Eleccion([_secuencia(), _duracion(), _frecuencia()])])
+    return Nodo("_tiempo", [Nodo.Eleccion([_secuencia, _duracion, _frecuencia])])
 
 
 def _secuencia():
-    return Nodo("_secuencia", [Nodo.Eleccion([_orden(), _fases()])])
+    return Nodo("_secuencia", [Nodo.Eleccion([_orden, _fases])])
 
 
 def _orden():
@@ -3434,7 +3473,7 @@ def _fases():
 
 
 def _duracion():
-    return Nodo("_duracion", [Nodo.Eleccion([_intervalos(), _limites_duracion()])])
+    return Nodo("_duracion", [Nodo.Eleccion([_intervalos, _limites_duracion])])
 
 
 def _intervalos():
@@ -3493,7 +3532,7 @@ def _limites_duracion():
 
 def _frecuencia():
     return Nodo(
-        "_frecuencia", [Nodo.Eleccion([_ciclos_frecuencia(), _patrones_frecuencia()])]
+        "_frecuencia", [Nodo.Eleccion([_ciclos_frecuencia, _patrones_frecuencia])]
     )
 
 
@@ -3552,13 +3591,11 @@ def _patrones_frecuencia():
 
 
 def _percepcion():
-    return Nodo(
-        "_percepcion", [Nodo.Eleccion([_entrada(), _procesamiento(), _salida()])]
-    )
+    return Nodo("_percepcion", [Nodo.Eleccion([_entrada, _procesamiento, _salida])])
 
 
 def _entrada():
-    return Nodo("_entrada", [Nodo.Eleccion([_senhales(), _eventos()])])
+    return Nodo("_entrada", [Nodo.Eleccion([_senhales, _eventos])])
 
 
 def _senhales():
@@ -3616,7 +3653,7 @@ def _eventos():
 
 
 def _procesamiento():
-    return Nodo("_procesamiento", [Nodo.Eleccion([_filtrado(), _clasificacion()])])
+    return Nodo("_procesamiento", [Nodo.Eleccion([_filtrado, _clasificacion])])
 
 
 def _filtrado():
@@ -3674,7 +3711,7 @@ def _clasificacion():
 
 
 def _salida():
-    return Nodo("_salida", [Nodo.Eleccion([_respuestas(), _acciones()])])
+    return Nodo("_salida", [Nodo.Eleccion([_respuestas, _acciones])])
 
 
 def _respuestas():
@@ -3734,12 +3771,12 @@ def _acciones():
 def _comunicacion():
     return Nodo(
         "_comunicacion",
-        [Nodo.Eleccion([_mensajes(), _canales(), _protocolos_comunicacion()])],
+        [Nodo.Eleccion([_mensajes, _canales, _protocolos_comunicacion])],
     )
 
 
 def _mensajes():
-    return Nodo("_mensajes", [Nodo.Eleccion([_tipos_mensajes(), _formatos()])])
+    return Nodo("_mensajes", [Nodo.Eleccion([_tipos_mensajes, _formatos])])
 
 
 def _tipos_mensajes():
@@ -3797,7 +3834,7 @@ def _formatos():
 
 
 def _canales():
-    return Nodo("_canales", [Nodo.Eleccion([_locales(), _remotos()])])
+    return Nodo("_canales", [Nodo.Eleccion([_locales, _remotos])])
 
 
 def _locales():
@@ -3855,9 +3892,7 @@ def _remotos():
 
 
 def _protocolos_comunicacion():
-    return Nodo(
-        "_protocolos_comunicacion", [Nodo.Eleccion([_sincrono(), _asincrono()])]
-    )
+    return Nodo("_protocolos_comunicacion", [Nodo.Eleccion([_sincrono, _asincrono])])
 
 
 def _sincrono():
@@ -3915,13 +3950,11 @@ def _asincrono():
 
 
 def _cualidades():
-    return Nodo(
-        "_cualidades", [Nodo.Eleccion([_rendimiento(), _fiabilidad(), _escala()])]
-    )
+    return Nodo("_cualidades", [Nodo.Eleccion([_rendimiento, _fiabilidad, _escala])])
 
 
 def _rendimiento():
-    return Nodo("_rendimiento", [Nodo.Eleccion([_velocidad(), _eficiencia()])])
+    return Nodo("_rendimiento", [Nodo.Eleccion([_velocidad, _eficiencia])])
 
 
 def _velocidad():
@@ -3979,7 +4012,7 @@ def _eficiencia():
 
 
 def _fiabilidad():
-    return Nodo("_fiabilidad", [Nodo.Eleccion([_estabilidad(), _precision()])])
+    return Nodo("_fiabilidad", [Nodo.Eleccion([_estabilidad, _precision])])
 
 
 def _estabilidad():
@@ -4037,7 +4070,7 @@ def _precision():
 
 
 def _escala():
-    return Nodo("_escala", [Nodo.Eleccion([_tamanho_escala(), _complejidad()])])
+    return Nodo("_escala", [Nodo.Eleccion([_tamanho_escala, _complejidad])])
 
 
 def _tamanho_escala():
@@ -4095,11 +4128,11 @@ def _complejidad():
 
 
 def _magnitudes():
-    return Nodo("_magnitudes", [Nodo.Eleccion([_cantidad(), _medida(), _limite()])])
+    return Nodo("_magnitudes", [Nodo.Eleccion([_cantidad, _medida, _limite])])
 
 
 def _cantidad():
-    return Nodo("_cantidad", [Nodo.Eleccion([_discreta(), _continua()])])
+    return Nodo("_cantidad", [Nodo.Eleccion([_discreta, _continua])])
 
 
 def _discreta():
@@ -4157,7 +4190,7 @@ def _continua():
 
 
 def _medida():
-    return Nodo("_medida", [Nodo.Eleccion([_absoluta_medida(), _relativa()])])
+    return Nodo("_medida", [Nodo.Eleccion([_absoluta_medida, _relativa])])
 
 
 def _absoluta_medida():
@@ -4215,7 +4248,7 @@ def _relativa():
 
 
 def _limite():
-    return Nodo("_limite", [Nodo.Eleccion([_minimo(), _maximo()])])
+    return Nodo("_limite", [Nodo.Eleccion([_minimo, _maximo])])
 
 
 def _minimo():
@@ -4275,16 +4308,12 @@ def _maximo():
 def _procesos():
     return Nodo(
         "_procesos",
-        [
-            Nodo.Eleccion(
-                [_ciclo(), _transformacion(), _control_procesos(), _optimizacion()]
-            )
-        ],
+        [Nodo.Eleccion([_ciclo, _transformacion, _control_procesos, _optimizacion])],
     )
 
 
 def _ciclo():
-    return Nodo("_ciclo", [Nodo.Eleccion([_inicio(), _fin()])])
+    return Nodo("_ciclo", [Nodo.Eleccion([_inicio, _fin])])
 
 
 def _inicio():
@@ -4344,7 +4373,7 @@ def _fin():
 def _transformacion():
     return Nodo(
         "_transformacion",
-        [Nodo.Eleccion([_entrada_transformacion(), _salida_transformacion()])],
+        [Nodo.Eleccion([_entrada_transformacion, _salida_transformacion])],
     )
 
 
@@ -4403,7 +4432,7 @@ def _salida_transformacion():
 
 
 def _control_procesos():
-    return Nodo("_control_procesos", [Nodo.Eleccion([_supervision(), _correccion()])])
+    return Nodo("_control_procesos", [Nodo.Eleccion([_supervision, _correccion])])
 
 
 def _supervision():
@@ -4461,7 +4490,7 @@ def _correccion():
 
 
 def _optimizacion():
-    return Nodo("_optimizacion", [Nodo.Eleccion([_mejora(), _ajuste()])])
+    return Nodo("_optimizacion", [Nodo.Eleccion([_mejora, _ajuste])])
 
 
 def _mejora():
@@ -4524,12 +4553,12 @@ def _procesos_mentales():
         [
             Nodo.Eleccion(
                 [
-                    _cognicion(),
-                    _razonamiento(),
-                    _aprendizaje(),
-                    _decision(),
-                    _creatividad(),
-                    _metacognicion(),
+                    _cognicion,
+                    _razonamiento,
+                    _aprendizaje,
+                    _decision,
+                    _creatividad,
+                    _metacognicion,
                 ]
             )
         ],
@@ -4537,7 +4566,7 @@ def _procesos_mentales():
 
 
 def _cognicion():
-    return Nodo("_cognicion", [Nodo.Eleccion([_atencion(), _memoria_cognicion()])])
+    return Nodo("_cognicion", [Nodo.Eleccion([_atencion, _memoria_cognicion])])
 
 
 def _atencion():
@@ -4595,7 +4624,7 @@ def _memoria_cognicion():
 
 
 def _razonamiento():
-    return Nodo("_razonamiento", [Nodo.Eleccion([_deduccion(), _induccion()])])
+    return Nodo("_razonamiento", [Nodo.Eleccion([_deduccion, _induccion])])
 
 
 def _deduccion():
@@ -4653,7 +4682,7 @@ def _induccion():
 
 
 def _aprendizaje():
-    return Nodo("_aprendizaje", [Nodo.Eleccion([_observacion(), _adaptacion()])])
+    return Nodo("_aprendizaje", [Nodo.Eleccion([_observacion, _adaptacion])])
 
 
 def _observacion():
@@ -4711,7 +4740,7 @@ def _adaptacion():
 
 
 def _decision():
-    return Nodo("_decision", [Nodo.Eleccion([_evaluacion_decision(), _eleccion()])])
+    return Nodo("_decision", [Nodo.Eleccion([_evaluacion_decision, _eleccion])])
 
 
 def _evaluacion_decision():
@@ -4769,7 +4798,7 @@ def _eleccion():
 
 
 def _creatividad():
-    return Nodo("_creatividad", [Nodo.Eleccion([_generacion(), _combinacion()])])
+    return Nodo("_creatividad", [Nodo.Eleccion([_generacion, _combinacion])])
 
 
 def _generacion():
@@ -4827,7 +4856,7 @@ def _combinacion():
 
 
 def _metacognicion():
-    return Nodo("_metacognicion", [Nodo.Eleccion([_reflexion(), _autoregulacion()])])
+    return Nodo("_metacognicion", [Nodo.Eleccion([_reflexion, _autoregulacion])])
 
 
 def _reflexion():
@@ -4887,12 +4916,12 @@ def _autoregulacion():
 def _emociones():
     return Nodo(
         "_emociones",
-        [Nodo.Eleccion([_valencia(), _activacion(), _sociales(), _motivacion()])],
+        [Nodo.Eleccion([_valencia, _activacion, _sociales, _motivacion])],
     )
 
 
 def _valencia():
-    return Nodo("_valencia", [Nodo.Eleccion([_positivas(), _negativas()])])
+    return Nodo("_valencia", [Nodo.Eleccion([_positivas, _negativas])])
 
 
 def _positivas():
@@ -4950,7 +4979,7 @@ def _negativas():
 
 
 def _activacion():
-    return Nodo("_activacion", [Nodo.Eleccion([_alta(), _baja()])])
+    return Nodo("_activacion", [Nodo.Eleccion([_alta, _baja])])
 
 
 def _alta():
@@ -5008,7 +5037,7 @@ def _baja():
 
 
 def _sociales():
-    return Nodo("_sociales", [Nodo.Eleccion([_empatia(), _rechazo()])])
+    return Nodo("_sociales", [Nodo.Eleccion([_empatia, _rechazo])])
 
 
 def _empatia():
@@ -5066,7 +5095,7 @@ def _rechazo():
 
 
 def _motivacion():
-    return Nodo("_motivacion", [Nodo.Eleccion([_atraccion(), _aversion()])])
+    return Nodo("_motivacion", [Nodo.Eleccion([_atraccion, _aversion])])
 
 
 def _atraccion():
@@ -5129,10 +5158,10 @@ def _comportamiento():
         [
             Nodo.Eleccion(
                 [
-                    _movimiento(),
-                    _interaccion(),
-                    _estrategia(),
-                    _adaptacion_comportamiento(),
+                    _movimiento,
+                    _interaccion,
+                    _estrategia,
+                    _adaptacion_comportamiento,
                 ]
             )
         ],
@@ -5140,7 +5169,7 @@ def _comportamiento():
 
 
 def _movimiento():
-    return Nodo("_movimiento", [Nodo.Eleccion([_aproximacion(), _evitacion()])])
+    return Nodo("_movimiento", [Nodo.Eleccion([_aproximacion, _evitacion])])
 
 
 def _aproximacion():
@@ -5198,7 +5227,7 @@ def _evitacion():
 
 
 def _interaccion():
-    return Nodo("_interaccion", [Nodo.Eleccion([_cooperacion(), _competicion()])])
+    return Nodo("_interaccion", [Nodo.Eleccion([_cooperacion, _competicion])])
 
 
 def _cooperacion():
@@ -5256,7 +5285,7 @@ def _competicion():
 
 
 def _estrategia():
-    return Nodo("_estrategia", [Nodo.Eleccion([_ofensiva(), _defensiva()])])
+    return Nodo("_estrategia", [Nodo.Eleccion([_ofensiva, _defensiva])])
 
 
 def _ofensiva():
@@ -5315,7 +5344,7 @@ def _defensiva():
 
 def _adaptacion_comportamiento():
     return Nodo(
-        "_adaptacion_comportamiento", [Nodo.Eleccion([_exploracion(), _explotacion()])]
+        "_adaptacion_comportamiento", [Nodo.Eleccion([_exploracion, _explotacion])]
     )
 
 
@@ -5376,12 +5405,12 @@ def _explotacion():
 def _mundo():
     return Nodo(
         "_mundo",
-        [Nodo.Eleccion([_entorno(), _recursos_mundo(), _fenomenos(), _escala_mundo()])],
+        [Nodo.Eleccion([_entorno, _recursos_mundo, _fenomenos, _escala_mundo])],
     )
 
 
 def _entorno():
-    return Nodo("_entorno", [Nodo.Eleccion([_terreno(), _clima()])])
+    return Nodo("_entorno", [Nodo.Eleccion([_terreno, _clima])])
 
 
 def _terreno():
@@ -5439,7 +5468,7 @@ def _clima():
 
 
 def _recursos_mundo():
-    return Nodo("_recursos_mundo", [Nodo.Eleccion([_naturales(), _artificiales()])])
+    return Nodo("_recursos_mundo", [Nodo.Eleccion([_naturales, _artificiales])])
 
 
 def _naturales():
@@ -5502,7 +5531,7 @@ def _artificiales():
 
 
 def _fenomenos():
-    return Nodo("_fenomenos", [Nodo.Eleccion([_fisicos(), _quimicos()])])
+    return Nodo("_fenomenos", [Nodo.Eleccion([_fisicos, _quimicos])])
 
 
 def _fisicos():
@@ -5560,7 +5589,7 @@ def _quimicos():
 
 
 def _escala_mundo():
-    return Nodo("_escala_mundo", [Nodo.Eleccion([_micro(), _macro()])])
+    return Nodo("_escala_mundo", [Nodo.Eleccion([_micro, _macro])])
 
 
 def _micro():
@@ -5620,16 +5649,12 @@ def _macro():
 def _biologia():
     return Nodo(
         "_biologia",
-        [
-            Nodo.Eleccion(
-                [_organismos(), _procesos_biologia(), _ecosistema(), _evolucion()]
-            )
-        ],
+        [Nodo.Eleccion([_organismos, _procesos_biologia, _ecosistema, _evolucion])],
     )
 
 
 def _organismos():
-    return Nodo("_organismos", [Nodo.Eleccion([_partes(), _funciones_organismos()])])
+    return Nodo("_organismos", [Nodo.Eleccion([_partes, _funciones_organismos])])
 
 
 def _partes():
@@ -5687,9 +5712,7 @@ def _funciones_organismos():
 
 
 def _procesos_biologia():
-    return Nodo(
-        "_procesos_biologia", [Nodo.Eleccion([_metabolismo(), _reproduccion()])]
-    )
+    return Nodo("_procesos_biologia", [Nodo.Eleccion([_metabolismo, _reproduccion])])
 
 
 def _metabolismo():
@@ -5747,9 +5770,7 @@ def _reproduccion():
 
 
 def _ecosistema():
-    return Nodo(
-        "_ecosistema", [Nodo.Eleccion([_relaciones_ecosistema(), _equilibrio()])]
-    )
+    return Nodo("_ecosistema", [Nodo.Eleccion([_relaciones_ecosistema, _equilibrio])])
 
 
 def _relaciones_ecosistema():
@@ -5807,7 +5828,7 @@ def _equilibrio():
 
 
 def _evolucion():
-    return Nodo("_evolucion", [Nodo.Eleccion([_seleccion(), _mutacion()])])
+    return Nodo("_evolucion", [Nodo.Eleccion([_seleccion, _mutacion])])
 
 
 def _seleccion():
@@ -5867,16 +5888,12 @@ def _mutacion():
 def _fisica():
     return Nodo(
         "_fisica",
-        [
-            Nodo.Eleccion(
-                [_materia(), _energia_fisica(), _fuerzas(), _movimiento_fisica()]
-            )
-        ],
+        [Nodo.Eleccion([_materia, _energia_fisica, _fuerzas, _movimiento_fisica])],
     )
 
 
 def _materia():
-    return Nodo("_materia", [Nodo.Eleccion([_estados_materia(), _propiedades()])])
+    return Nodo("_materia", [Nodo.Eleccion([_estados_materia, _propiedades])])
 
 
 def _estados_materia():
@@ -5935,7 +5952,7 @@ def _propiedades():
 
 def _energia_fisica():
     return Nodo(
-        "_energia_fisica", [Nodo.Eleccion([_tipos_energia_fisica(), _transferencia()])]
+        "_energia_fisica", [Nodo.Eleccion([_tipos_energia_fisica, _transferencia])]
     )
 
 
@@ -5994,7 +6011,7 @@ def _transferencia():
 
 
 def _fuerzas():
-    return Nodo("_fuerzas", [Nodo.Eleccion([_atraccion_fuerzas(), _repulsion()])])
+    return Nodo("_fuerzas", [Nodo.Eleccion([_atraccion_fuerzas, _repulsion])])
 
 
 def _atraccion_fuerzas():
@@ -6054,7 +6071,7 @@ def _repulsion():
 def _movimiento_fisica():
     return Nodo(
         "_movimiento_fisica",
-        [Nodo.Eleccion([_velocidad_movimiento_fisica(), _aceleracion])],
+        [Nodo.Eleccion([_velocidad_movimiento_fisica, _aceleracion])],
     )
 
 
@@ -6117,7 +6134,7 @@ def _matematicas():
         "_matematicas",
         [
             Nodo.Eleccion(
-                [_algebra(), _geometria(), _probabilidad(), _optimizacion_matematicas()]
+                [_algebra, _geometria, _probabilidad, _optimizacion_matematicas]
             )
         ],
     )
@@ -6125,7 +6142,7 @@ def _matematicas():
 
 def _algebra():
     return Nodo(
-        "_algebra", [Nodo.Eleccion([_operaciones_algebra(), _estructuras_algebra()])]
+        "_algebra", [Nodo.Eleccion([_operaciones_algebra, _estructuras_algebra])]
     )
 
 
@@ -6184,7 +6201,7 @@ def _estructuras_algebra():
 
 
 def _geometria():
-    return Nodo("_geometria", [Nodo.Eleccion([_formas(), _transformaciones()])])
+    return Nodo("_geometria", [Nodo.Eleccion([_formas, _transformaciones])])
 
 
 def _formas():
@@ -6243,7 +6260,7 @@ def _transformaciones():
 
 def _probabilidad():
     return Nodo(
-        "_probabilidad", [Nodo.Eleccion([_eventos_probabilidad(), _distribuciones()])]
+        "_probabilidad", [Nodo.Eleccion([_eventos_probabilidad, _distribuciones])]
     )
 
 
@@ -6302,7 +6319,7 @@ def _distribuciones():
 
 
 def _optimizacion_matematicas():
-    return Nodo("_optimizacion_matematicas", [Nodo.Eleccion([_maximos(), _minimos()])])
+    return Nodo("_optimizacion_matematicas", [Nodo.Eleccion([_maximos, _minimos])])
 
 
 def _maximos():
@@ -6365,10 +6382,10 @@ def _sociedad():
         [
             Nodo.Eleccion(
                 [
-                    _estructura_sociedad(),
-                    _interaccion_sociedad(),
-                    _recursos_sociedad(),
-                    _normas(),
+                    _estructura_sociedad,
+                    _interaccion_sociedad,
+                    _recursos_sociedad,
+                    _normas,
                 ]
             )
         ],
@@ -6378,11 +6395,7 @@ def _sociedad():
 def _estructura_sociedad():
     return Nodo(
         "_estructura_sociedad",
-        [
-            Nodo.Eleccion(
-                [_jerarquia_estructura_sociedad(), _roles_estructura_sociedad()]
-            )
-        ],
+        [Nodo.Eleccion([_jerarquia_estructura_sociedad, _roles_estructura_sociedad])],
     )
 
 
@@ -6443,7 +6456,7 @@ def _roles_estructura_sociedad():
 def _interaccion_sociedad():
     return Nodo(
         "_interaccion_sociedad",
-        [Nodo.Eleccion([_cooperacion_interaccion_sociedad(), _conflicto()])],
+        [Nodo.Eleccion([_cooperacion_interaccion_sociedad, _conflicto])],
     )
 
 
@@ -6502,9 +6515,7 @@ def _conflicto():
 
 
 def _recursos_sociedad():
-    return Nodo(
-        "_recursos_sociedad", [Nodo.Eleccion([_distribucion(), _competencia()])]
-    )
+    return Nodo("_recursos_sociedad", [Nodo.Eleccion([_distribucion, _competencia])])
 
 
 def _distribucion():
@@ -6562,7 +6573,7 @@ def _competencia():
 
 
 def _normas():
-    return Nodo("_normas", [Nodo.Eleccion([_reglas(), _sanciones()])])
+    return Nodo("_normas", [Nodo.Eleccion([_reglas, _sanciones])])
 
 
 def _reglas():
@@ -6625,10 +6636,10 @@ def _personas():
         [
             Nodo.Eleccion(
                 [
-                    _identidad(),
-                    _capacidades(),
-                    _relaciones_personas(),
-                    _estados_personas(),
+                    _identidad,
+                    _capacidades,
+                    _relaciones_personas,
+                    _estados_personas,
                 ]
             )
         ],
@@ -6636,7 +6647,7 @@ def _personas():
 
 
 def _identidad():
-    return Nodo("_identidad", [Nodo.Eleccion([_nombre(), _rol()])])
+    return Nodo("_identidad", [Nodo.Eleccion([_nombre, _rol])])
 
 
 def _nombre():
@@ -6694,7 +6705,7 @@ def _rol():
 
 
 def _capacidades():
-    return Nodo("_capacidades", [Nodo.Eleccion([_fisicas(), _mentales()])])
+    return Nodo("_capacidades", [Nodo.Eleccion([_fisicas, _mentales])])
 
 
 def _fisicas():
@@ -6752,7 +6763,7 @@ def _mentales():
 
 
 def _relaciones_personas():
-    return Nodo("_relaciones_personas", [Nodo.Eleccion([_cercanas(), _lejanas()])])
+    return Nodo("_relaciones_personas", [Nodo.Eleccion([_cercanas, _lejanas])])
 
 
 def _cercanas():
@@ -6812,7 +6823,7 @@ def _lejanas():
 def _estados_personas():
     return Nodo(
         "_estados_personas",
-        [Nodo.Eleccion([_fisicos_estados_personas(), _mentales_estados_personas()])],
+        [Nodo.Eleccion([_fisicos_estados_personas, _mentales_estados_personas])],
     )
 
 
@@ -6876,10 +6887,10 @@ def _objetos():
         [
             Nodo.Eleccion(
                 [
-                    _propiedades_objetos(),
-                    _estados_objetos(),
-                    _relaciones_objetos(),
-                    _usos(),
+                    _propiedades_objetos,
+                    _estados_objetos,
+                    _relaciones_objetos,
+                    _usos,
                 ]
             )
         ],
@@ -6889,7 +6900,7 @@ def _objetos():
 def _propiedades_objetos():
     return Nodo(
         "_propiedades_objetos",
-        [Nodo.Eleccion([_fisicas_propiedades_objetos(), _funcionales()])],
+        [Nodo.Eleccion([_fisicas_propiedades_objetos, _funcionales])],
     )
 
 
@@ -6948,7 +6959,7 @@ def _funcionales():
 
 
 def _estados_objetos():
-    return Nodo("_estados_objetos", [Nodo.Eleccion([_intacto(), _deteriorado()])])
+    return Nodo("_estados_objetos", [Nodo.Eleccion([_intacto, _deteriorado])])
 
 
 def _intacto():
@@ -7006,7 +7017,7 @@ def _deteriorado():
 
 
 def _relaciones_objetos():
-    return Nodo("_relaciones_objetos", [Nodo.Eleccion([_contenedor(), _contenido()])])
+    return Nodo("_relaciones_objetos", [Nodo.Eleccion([_contenedor, _contenido])])
 
 
 def _contenedor():
@@ -7064,7 +7075,7 @@ def _contenido():
 
 
 def _usos():
-    return Nodo("_usos", [Nodo.Eleccion([_herramienta(), _obstaculo()])])
+    return Nodo("_usos", [Nodo.Eleccion([_herramienta, _obstaculo])])
 
 
 def _herramienta():
@@ -7124,16 +7135,12 @@ def _obstaculo():
 def _informacion():
     return Nodo(
         "_informacion",
-        [
-            Nodo.Eleccion(
-                [_representacion(), _organizacion(), _flujo_informacion(), _calidad()]
-            )
-        ],
+        [Nodo.Eleccion([_representacion, _organizacion, _flujo_informacion, _calidad])],
     )
 
 
 def _representacion():
-    return Nodo("_representacion", [Nodo.Eleccion([_simbolos(), _senhales()])])
+    return Nodo("_representacion", [Nodo.Eleccion([_simbolos, _senhales])])
 
 
 def _simbolos():
@@ -7193,7 +7200,7 @@ def _senhales():
 def _organizacion():
     return Nodo(
         "_organizacion",
-        [Nodo.Eleccion([_jerarquia_organizacion(), _red_organizacion()])],
+        [Nodo.Eleccion([_jerarquia_organizacion, _red_organizacion])],
     )
 
 
@@ -7252,7 +7259,7 @@ def _red_organizacion():
 
 
 def _flujo_informacion():
-    return Nodo("_flujo_informacion", [Nodo.Eleccion([_fuente(), _destino()])])
+    return Nodo("_flujo_informacion", [Nodo.Eleccion([_fuente, _destino])])
 
 
 def _fuente():
@@ -7310,7 +7317,7 @@ def _destino():
 
 
 def _calidad():
-    return Nodo("_calidad", [Nodo.Eleccion([_precision_calidad(), _completitud()])])
+    return Nodo("_calidad", [Nodo.Eleccion([_precision_calidad, _completitud])])
 
 
 def _precision_calidad():
@@ -7373,10 +7380,10 @@ def _economia():
         [
             Nodo.Eleccion(
                 [
-                    _recursos_economia(),
-                    _intercambio(),
-                    _estrategia_economia(),
-                    _equilibrio_economia(),
+                    _recursos_economia,
+                    _intercambio,
+                    _estrategia_economia,
+                    _equilibrio_economia,
                 ]
             )
         ],
@@ -7384,7 +7391,7 @@ def _economia():
 
 
 def _recursos_economia():
-    return Nodo("_recursos_economia", [Nodo.Eleccion([_escasez(), _abundancia()])])
+    return Nodo("_recursos_economia", [Nodo.Eleccion([_escasez, _abundancia])])
 
 
 def _escasez():
@@ -7442,7 +7449,7 @@ def _abundancia():
 
 
 def _intercambio():
-    return Nodo("_intercambio", [Nodo.Eleccion([_coste(), _beneficio()])])
+    return Nodo("_intercambio", [Nodo.Eleccion([_coste, _beneficio])])
 
 
 def _coste():
@@ -7500,7 +7507,7 @@ def _beneficio():
 
 
 def _estrategia_economia():
-    return Nodo("_estrategia_economia", [Nodo.Eleccion([_inversion(), _ahorro()])])
+    return Nodo("_estrategia_economia", [Nodo.Eleccion([_inversion, _ahorro])])
 
 
 def _inversion():
@@ -7558,7 +7565,7 @@ def _ahorro():
 
 
 def _equilibrio_economia():
-    return Nodo("_equilibrio_economia", [Nodo.Eleccion([_oferta(), _demanda()])])
+    return Nodo("_equilibrio_economia", [Nodo.Eleccion([_oferta, _demanda])])
 
 
 def _oferta():
@@ -7621,10 +7628,10 @@ def _lenguaje():
         [
             Nodo.Eleccion(
                 [
-                    _estructura_lenguaje(),
-                    _uso(),
-                    _comunicacion_lenguaje(),
-                    _representacion_lenguaje(),
+                    _estructura_lenguaje,
+                    _uso,
+                    _comunicacion_lenguaje,
+                    _representacion_lenguaje,
                 ]
             )
         ],
@@ -7632,7 +7639,7 @@ def _lenguaje():
 
 
 def _estructura_lenguaje():
-    return Nodo("_estructura_lenguaje", [Nodo.Eleccion([_sintaxis(), _semantica()])])
+    return Nodo("_estructura_lenguaje", [Nodo.Eleccion([_sintaxis, _semantica])])
 
 
 def _sintaxis():
@@ -7690,7 +7697,7 @@ def _semantica():
 
 
 def _uso():
-    return Nodo("_uso", [Nodo.Eleccion([_descripcion(), _instruccion()])])
+    return Nodo("_uso", [Nodo.Eleccion([_descripcion, _instruccion])])
 
 
 def _descripcion():
@@ -7748,7 +7755,7 @@ def _instruccion():
 
 
 def _comunicacion_lenguaje():
-    return Nodo("_comunicacion_lenguaje", [Nodo.Eleccion([_emisor(), _receptor()])])
+    return Nodo("_comunicacion_lenguaje", [Nodo.Eleccion([_emisor, _receptor])])
 
 
 def _emisor():
@@ -7808,7 +7815,7 @@ def _receptor():
 def _representacion_lenguaje():
     return Nodo(
         "_representacion_lenguaje",
-        [Nodo.Eleccion([_simbolo_representacion_lenguaje(), _referente()])],
+        [Nodo.Eleccion([_simbolo_representacion_lenguaje, _referente])],
     )
 
 
@@ -7872,10 +7879,10 @@ def _causalidad():
         [
             Nodo.Eleccion(
                 [
-                    _relaciones_causalidad(),
-                    _cadenas(),
-                    _probabilidad_causalidad(),
-                    _intervencion(),
+                    _relaciones_causalidad,
+                    _cadenas,
+                    _probabilidad_causalidad,
+                    _intervencion,
                 ]
             )
         ],
@@ -7883,7 +7890,7 @@ def _causalidad():
 
 
 def _relaciones_causalidad():
-    return Nodo("_relaciones_causalidad", [Nodo.Eleccion([_causa(), _efecto()])])
+    return Nodo("_relaciones_causalidad", [Nodo.Eleccion([_causa, _efecto])])
 
 
 def _causa():
@@ -7941,7 +7948,7 @@ def _efecto():
 
 
 def _cadenas():
-    return Nodo("_cadenas", [Nodo.Eleccion([_directa(), _indirecta()])])
+    return Nodo("_cadenas", [Nodo.Eleccion([_directa, _indirecta])])
 
 
 def _directa():
@@ -8001,7 +8008,7 @@ def _indirecta():
 def _probabilidad_causalidad():
     return Nodo(
         "_probabilidad_causalidad",
-        [Nodo.Eleccion([_certeza(), _incertidumbre_probabilidad_causalidad()])],
+        [Nodo.Eleccion([_certeza, _incertidumbre_probabilidad_causalidad])],
     )
 
 
@@ -8060,9 +8067,7 @@ def _incertidumbre_probabilidad_causalidad():
 
 
 def _intervencion():
-    return Nodo(
-        "_intervencion", [Nodo.Eleccion([_control_intervencion(), _influencia()])]
-    )
+    return Nodo("_intervencion", [Nodo.Eleccion([_control_intervencion, _influencia])])
 
 
 def _control_intervencion():
@@ -8125,10 +8130,10 @@ def _incertidumbre():
         [
             Nodo.Eleccion(
                 [
-                    _tipos_incertidumbre(),
-                    _manejo(),
-                    _decision_incertidumbre(),
-                    _informacion_incertidumbre(),
+                    _tipos_incertidumbre,
+                    _manejo,
+                    _decision_incertidumbre,
+                    _informacion_incertidumbre,
                 ]
             )
         ],
@@ -8136,7 +8141,7 @@ def _incertidumbre():
 
 
 def _tipos_incertidumbre():
-    return Nodo("_tipos_incertidumbre", [Nodo.Eleccion([_aleatoria(), _epistemica()])])
+    return Nodo("_tipos_incertidumbre", [Nodo.Eleccion([_aleatoria, _epistemica])])
 
 
 def _aleatoria():
@@ -8194,7 +8199,7 @@ def _epistemica():
 
 
 def _manejo():
-    return Nodo("_manejo", [Nodo.Eleccion([_estimacion(), _reduccion()])])
+    return Nodo("_manejo", [Nodo.Eleccion([_estimacion, _reduccion])])
 
 
 def _estimacion():
@@ -8252,7 +8257,7 @@ def _reduccion():
 
 
 def _decision_incertidumbre():
-    return Nodo("_decision_incertidumbre", [Nodo.Eleccion([_riesgo(), _cautela()])])
+    return Nodo("_decision_incertidumbre", [Nodo.Eleccion([_riesgo, _cautela])])
 
 
 def _riesgo():
@@ -8310,9 +8315,7 @@ def _cautela():
 
 
 def _informacion_incertidumbre():
-    return Nodo(
-        "_informacion_incertidumbre", [Nodo.Eleccion([_completa(), _parcial()])]
-    )
+    return Nodo("_informacion_incertidumbre", [Nodo.Eleccion([_completa, _parcial])])
 
 
 def _completa():
@@ -8372,12 +8375,12 @@ def _parcial():
 def _objetivos():
     return Nodo(
         "_objetivos",
-        [Nodo.Eleccion([_tipos_objetivos(), _estado(), _prioridad(), _progreso()])],
+        [Nodo.Eleccion([_tipos_objetivos, _estado, _prioridad, _progreso])],
     )
 
 
 def _tipos_objetivos():
-    return Nodo("_tipos_objetivos", [Nodo.Eleccion([_inmediatos(), _lejanos()])])
+    return Nodo("_tipos_objetivos", [Nodo.Eleccion([_inmediatos, _lejanos])])
 
 
 def _inmediatos():
@@ -8435,7 +8438,7 @@ def _lejanos():
 
 
 def _estado():
-    return Nodo("_estado", [Nodo.Eleccion([_activo(), _completado()])])
+    return Nodo("_estado", [Nodo.Eleccion([_activo, _completado])])
 
 
 def _activo():
@@ -8493,7 +8496,7 @@ def _completado():
 
 
 def _prioridad():
-    return Nodo("_prioridad", [Nodo.Eleccion([_urgente(), _diferible()])])
+    return Nodo("_prioridad", [Nodo.Eleccion([_urgente, _diferible])])
 
 
 def _urgente():
@@ -8551,7 +8554,7 @@ def _diferible():
 
 
 def _progreso():
-    return Nodo("_progreso", [Nodo.Eleccion([_avance(), _retroceso()])])
+    return Nodo("_progreso", [Nodo.Eleccion([_avance, _retroceso])])
 
 
 def _avance():
@@ -8614,10 +8617,10 @@ def _valores():
         [
             Nodo.Eleccion(
                 [
-                    _utilidad(),
-                    _prioridad_valores(),
-                    _comparacion_valores(),
-                    _cambio_valores(),
+                    _utilidad,
+                    _prioridad_valores,
+                    _comparacion_valores,
+                    _cambio_valores,
                 ]
             )
         ],
@@ -8625,7 +8628,7 @@ def _valores():
 
 
 def _utilidad():
-    return Nodo("_utilidad", [Nodo.Eleccion([_alto(), _bajo()])])
+    return Nodo("_utilidad", [Nodo.Eleccion([_alto, _bajo])])
 
 
 def _alto():
@@ -8683,7 +8686,7 @@ def _bajo():
 
 
 def _prioridad_valores():
-    return Nodo("_prioridad_valores", [Nodo.Eleccion([_esencial(), _prescindible()])])
+    return Nodo("_prioridad_valores", [Nodo.Eleccion([_esencial, _prescindible])])
 
 
 def _esencial():
@@ -8741,7 +8744,7 @@ def _prescindible():
 
 
 def _comparacion_valores():
-    return Nodo("_comparacion_valores", [Nodo.Eleccion([_mejor(), _peor()])])
+    return Nodo("_comparacion_valores", [Nodo.Eleccion([_mejor, _peor])])
 
 
 def _mejor():
@@ -8799,7 +8802,7 @@ def _peor():
 
 
 def _cambio_valores():
-    return Nodo("_cambio_valores", [Nodo.Eleccion([_aumento(), _disminucion()])])
+    return Nodo("_cambio_valores", [Nodo.Eleccion([_aumento, _disminucion])])
 
 
 def _aumento():
@@ -8859,12 +8862,12 @@ def _disminucion():
 def _relaciones():
     return Nodo(
         "_relaciones",
-        [Nodo.Eleccion([_tipo(), _fuerza(), _direccion_relaciones(), _naturaleza()])],
+        [Nodo.Eleccion([_tipo, _fuerza, _direccion_relaciones, _naturaleza])],
     )
 
 
 def _tipo():
-    return Nodo("_tipo", [Nodo.Eleccion([_simetrica(), _asimetrica()])])
+    return Nodo("_tipo", [Nodo.Eleccion([_simetrica, _asimetrica])])
 
 
 def _simetrica():
@@ -8922,7 +8925,7 @@ def _asimetrica():
 
 
 def _fuerza():
-    return Nodo("_fuerza", [Nodo.Eleccion([_fuerte(), _debil()])])
+    return Nodo("_fuerza", [Nodo.Eleccion([_fuerte, _debil])])
 
 
 def _fuerte():
@@ -8981,7 +8984,7 @@ def _debil():
 
 def _direccion_relaciones():
     return Nodo(
-        "_direccion_relaciones", [Nodo.Eleccion([_unidireccional(), _bidireccional()])]
+        "_direccion_relaciones", [Nodo.Eleccion([_unidireccional, _bidireccional])]
     )
 
 
@@ -9040,7 +9043,7 @@ def _bidireccional():
 
 
 def _naturaleza():
-    return Nodo("_naturaleza", [Nodo.Eleccion([_cooperativa(), _competitiva()])])
+    return Nodo("_naturaleza", [Nodo.Eleccion([_cooperativa, _competitiva])])
 
 
 def _cooperativa():
@@ -9100,18 +9103,12 @@ def _competitiva():
 def _ciclos():
     return Nodo(
         "_ciclos",
-        [
-            Nodo.Eleccion(
-                [_fases_ciclos(), _periodicidad(), _escala_ciclos(), _estado()]
-            )
-        ],
+        [Nodo.Eleccion([_fases_ciclos, _periodicidad, _escala_ciclos, _estado])],
     )
 
 
 def _fases_ciclos():
-    return Nodo(
-        "_fases_ciclos", [Nodo.Eleccion([_inicio_fases_ciclos(), _desarrollo()])]
-    )
+    return Nodo("_fases_ciclos", [Nodo.Eleccion([_inicio_fases_ciclos, _desarrollo])])
 
 
 def _inicio_fases_ciclos():
@@ -9169,7 +9166,7 @@ def _desarrollo():
 
 
 def _periodicidad():
-    return Nodo("_periodicidad", [Nodo.Eleccion([_regular(), _irregular()])])
+    return Nodo("_periodicidad", [Nodo.Eleccion([_regular, _irregular])])
 
 
 def _regular():
@@ -9227,7 +9224,7 @@ def _irregular():
 
 
 def _escala_ciclos():
-    return Nodo("_escala_ciclos", [Nodo.Eleccion([_corto(), _largo()])])
+    return Nodo("_escala_ciclos", [Nodo.Eleccion([_corto, _largo])])
 
 
 def _corto():
@@ -9285,7 +9282,7 @@ def _largo():
 
 
 def _estado():
-    return Nodo("estado", [Nodo.Eleccion([_activo_estado(), _inactivo])])
+    return Nodo("estado", [Nodo.Eleccion([_activo_estado, _inactivo])])
 
 
 def _activo_estado():
@@ -9347,16 +9344,14 @@ def _limites():
         "_limites",
         [
             Nodo.Eleccion(
-                [_tipos_limites(), _estado_limites(), _respuesta(), _gestion_limites()]
+                [_tipos_limites, _estado_limites, _respuesta, _gestion_limites]
             )
         ],
     )
 
 
 def _tipos_limites():
-    return Nodo(
-        "_tipos_limites", [Nodo.Eleccion([_fisicos_tipos_limites(), _logicos()])]
-    )
+    return Nodo("_tipos_limites", [Nodo.Eleccion([_fisicos_tipos_limites, _logicos])])
 
 
 def _fisicos_tipos_limites():
@@ -9414,7 +9409,7 @@ def _logicos():
 
 
 def _estado_limites():
-    return Nodo("_estado_limites", [Nodo.Eleccion([_alcanzado(), _superado()])])
+    return Nodo("_estado_limites", [Nodo.Eleccion([_alcanzado, _superado])])
 
 
 def _alcanzado():
@@ -9472,7 +9467,7 @@ def _superado():
 
 
 def _respuesta():
-    return Nodo("_respuesta", [Nodo.Eleccion([_bloqueo(), _desbordamiento()])])
+    return Nodo("_respuesta", [Nodo.Eleccion([_bloqueo, _desbordamiento])])
 
 
 def _bloqueo():
@@ -9532,7 +9527,7 @@ def _desbordamiento():
 def _gestion_limites():
     return Nodo(
         "_gestion_limites",
-        [Nodo.Eleccion([_control_gestion_limites(), _adaptacion_gestion_limites()])],
+        [Nodo.Eleccion([_control_gestion_limites, _adaptacion_gestion_limites])],
     )
 
 
@@ -9595,14 +9590,14 @@ def _cambio():
         "_cambio",
         [
             Nodo.Eleccion(
-                [_tipo_cambio(), _direccion_cambio(), _causa_cambio(), _efecto_cambio()]
+                [_tipo_cambio, _direccion_cambio, _causa_cambio, _efecto_cambio]
             )
         ],
     )
 
 
 def _tipo_cambio():
-    return Nodo("_tipo_cambio", [Nodo.Eleccion([_gradual(), _abrupto()])])
+    return Nodo("_tipo_cambio", [Nodo.Eleccion([_gradual, _abrupto])])
 
 
 def _gradual():
@@ -9662,7 +9657,7 @@ def _abrupto():
 def _direccion_cambio():
     return Nodo(
         "_direccion_cambio",
-        [Nodo.Eleccion([_aumento_direccion_cambio(), _disminucion_direccion_cambio()])],
+        [Nodo.Eleccion([_aumento_direccion_cambio, _disminucion_direccion_cambio])],
     )
 
 
@@ -9721,7 +9716,7 @@ def _disminucion_direccion_cambio():
 
 
 def _causa_cambio():
-    return Nodo("_causa_cambio", [Nodo.Eleccion([_interno(), _externo()])])
+    return Nodo("_causa_cambio", [Nodo.Eleccion([_interno, _externo])])
 
 
 def _interno():
@@ -9779,7 +9774,7 @@ def _externo():
 
 
 def _efecto_cambio():
-    return Nodo("_efecto_cambio", [Nodo.Eleccion([_local(), _global()])])
+    return Nodo("_efecto_cambio", [Nodo.Eleccion([_local, _global])])
 
 
 def _local():
@@ -9842,10 +9837,10 @@ def _estructura():
         [
             Nodo.Eleccion(
                 [
-                    _organizacion_estructura(),
-                    _conexiones(),
-                    _rigidez(),
-                    _escala_estructura(),
+                    _organizacion_estructura,
+                    _conexiones,
+                    _rigidez,
+                    _escala_estructura,
                 ]
             )
         ],
@@ -9853,7 +9848,7 @@ def _estructura():
 
 
 def _organizacion_estructura():
-    return Nodo("_organizacion_estructura", [Nodo.Eleccion([_jerarquica(), _plana()])])
+    return Nodo("_organizacion_estructura", [Nodo.Eleccion([_jerarquica, _plana])])
 
 
 def _jerarquica():
@@ -9911,7 +9906,7 @@ def _plana():
 
 
 def _conexiones():
-    return Nodo("_conexiones", [Nodo.Eleccion([_densas(), _dispersas()])])
+    return Nodo("_conexiones", [Nodo.Eleccion([_densas, _dispersas])])
 
 
 def _densas():
@@ -9969,7 +9964,7 @@ def _dispersas():
 
 
 def _rigidez():
-    return Nodo("_rigidez", [Nodo.Eleccion([_fija(), _flexible()])])
+    return Nodo("_rigidez", [Nodo.Eleccion([_fija, _flexible])])
 
 
 def _fija():
@@ -10027,7 +10022,7 @@ def _flexible():
 
 
 def _escala_estructura():
-    return Nodo("_escala_estructura", [Nodo.Eleccion([_simple(), _compleja()])])
+    return Nodo("_escala_estructura", [Nodo.Eleccion([_simple, _compleja])])
 
 
 def _simple():
@@ -10086,4 +10081,4 @@ def _compleja():
 
 # endregion
 
-guia = {"programa": _programa()}
+guia = {"programa": _programa}
