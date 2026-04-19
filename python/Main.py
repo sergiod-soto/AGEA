@@ -6,7 +6,7 @@ import os
 import signal
 
 from Core.Entities.Elementos.Simples.Bot.ADN.ADN import Genoma, Gen
-import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica as Guia
+import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Base_Gramatica as Guia
 import Core.Entities.Elementos.Simples.Bot.ADN.Empaquetador as Empaquetador
 
 

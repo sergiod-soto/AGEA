@@ -4,7 +4,7 @@ import pytest
 from Core.Entities.Elementos.Simples.Bot.ADN.ADN import Genoma, Gen
 from Core.Entities.Elementos.Simples.Bot.ADN import Empaquetador
 from Core.Entities.Elementos.Simples.Bot.ADN.Empaquetador import generar
-import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica as Guia
+import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Base_Gramatica as Guia
 
 
 # @pytest.fixture
