@@ -1,28 +1,9 @@
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.StringsPool import _stringsPool
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Inyeccion import _codigoInyectado, _importsHardCoded
-
-
-
-
-
-###################################################################################
-#
-#
-#   #   Inicio definicion de gramatica  #
-#
-#
-####################################################################################
-
-
-####################################################################################
-#   Zona de codigo fijo hecho a mano
-###
-
-
-
-###
-####################################################################################
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Inyeccion import (
+    _codigoInyectado,
+    _importsHardCoded,
+)
 
 
 def _programa():
@@ -105,7 +86,7 @@ def _controlAsincrono():
                 [
                     _bucleAsincrono,
                     _condicional,
-                    _controlFunciones,
+                    _control,
                     _controlEstructural,
                     _declaracionEstructural,
                     _withAsincrono,
@@ -144,7 +125,8 @@ def _forAsincrono():
             ),
             ":",
             "\n",
-            Nodo.Tab(_codigoFuncionAsincrona),  # cuerpo puede tener awaits
+            Nodo.Tab(_codigoFuncionAsincrona),
+            "\n",
         ],
     )
 
@@ -160,6 +142,7 @@ def _withAsincrono():
             ":",
             "\n",
             Nodo.Tab(_codigoFuncionAsincrona),
+            "\n",
         ],
     )
 
@@ -172,7 +155,6 @@ def _control():
                 [
                     _bucle,
                     _condicional,
-                    _controlFunciones,
                     _controlEstructural,
                     _declaracionEstructural,
                 ]
@@ -267,21 +249,6 @@ def _comparacionIdentidad():
             _dato,
             Nodo.Eleccion([" is ", " is not "]),
             _dato,
-        ],
-    )
-
-
-def _controlFunciones():
-    return Nodo(
-        "_controlFunciones",
-        [
-            Nodo.Eleccion(
-                [
-                    _return,
-                    _yield,
-                    _raise,
-                ]
-            ),
         ],
     )
 
@@ -432,41 +399,57 @@ def _argumento():
             )
         ],
     )
-    
+
+
 def _parametros():
-    return Nodo("_parametros", [
-        _parametro,
-        Nodo.Eleccion([[", ", _parametros], _stop]),
-    ])
-    
+    return Nodo(
+        "_parametros",
+        [
+            _parametro,
+            Nodo.Eleccion([[", ", _parametros], _stop]),
+        ],
+    )
+
+
 def _parametro():
-    return Nodo("_parametro", [
-        Nodo.Eleccion([
-            _parametroNormal,
-            _parametroDefault,
-            _parametroAnotado,
-            _parametroAnotadoDefault,
-            _parametroArgs,
-            _parametroKwargs,
-        ])
-    ])
-    
+    return Nodo(
+        "_parametro",
+        [
+            Nodo.Eleccion(
+                [
+                    _parametroNormal,
+                    _parametroDefault,
+                    _parametroAnotado,
+                    _parametroAnotadoDefault,
+                    _parametroArgs,
+                    _parametroKwargs,
+                ]
+            )
+        ],
+    )
+
+
 def _parametroNormal():
     return Nodo("_parametroNormal", [_variable])
+
 
 def _parametroDefault():
     return Nodo("_parametroDefault", [_variable, "=", _dato])
 
+
 def _parametroAnotado():
     return Nodo("_parametroAnotado", [_variable, ": ", _builtinTipos])
 
+
 def _parametroAnotadoDefault():
-    return Nodo("_parametroAnotadoDefault", [
-        _variable, ": ", _builtinTipos, " = ", _dato
-    ])
+    return Nodo(
+        "_parametroAnotadoDefault", [_variable, ": ", _builtinTipos, " = ", _dato]
+    )
+
 
 def _parametroArgs():
     return Nodo("_parametroArgs", ["*", _variable])
+
 
 def _parametroKwargs():
     return Nodo("_parametroKwargs", ["**", _variable])
@@ -934,7 +917,7 @@ def _codigoFuncion():
                 [
                     _operacion,
                     _asignacion,
-                    _controlFuncion,
+                    _control,
                     _ejecucion,
                     _comentario,
                     _return,
@@ -963,23 +946,6 @@ def _codigoBucle():
                 ]
             ),
             Nodo.Eleccion([_codigoBucle, _stop]),
-        ],
-    )
-
-
-def _controlFuncion():
-    return Nodo(
-        "_control",
-        [
-            Nodo.Eleccion(
-                [
-                    _bucle,
-                    _condicional,
-                    _controlFunciones,
-                    _controlEstructural,
-                    _declaracionEstructural,
-                ]
-            )
         ],
     )
 
@@ -1424,7 +1390,7 @@ def _forLista():
             _variable,
             ":",
             "\n",
-            Nodo.Tab(_codigoFuncion),
+            Nodo.Tab(_codigoBucle),
             "\n",
         ],
     )
@@ -1444,7 +1410,7 @@ def _forIndice():
             _integer,
             "):",
             "\n",
-            Nodo.Tab(_codigoFuncion),
+            Nodo.Tab(_codigoBucle),
             "\n",
         ],
     )
@@ -1486,13 +1452,62 @@ def _forDict():
     return Nodo(
         "_forDict",
         [
+            Nodo.Eleccion(
+                [
+                    _forDictKeys,
+                    _forDictValues,
+                    _forDictItems,
+                ]
+            )
+        ],
+    )
+
+
+def _forDictKeys():
+    return Nodo(
+        "_forDictKeys",
+        [
             "for ",
             _variable,
             " in ",
             _variable,
-            ":",
+            ".keys():",
             "\n",
-            Nodo.Tab(_codigoFuncion),
+            Nodo.Tab(_codigoBucle),
+            "\n",
+        ],
+    )
+
+
+def _forDictValues():
+    return Nodo(
+        "_forDictValues",
+        [
+            "for ",
+            _variable,
+            " in ",
+            _variable,
+            ".values():",
+            "\n",
+            Nodo.Tab(_codigoBucle),
+            "\n",
+        ],
+    )
+
+
+def _forDictItems():
+    return Nodo(
+        "_forDictItems",
+        [
+            "for ",
+            _variable,
+            ", ",
+            _variable,
+            " in ",
+            _variable,
+            ".items():",
+            "\n",
+            Nodo.Tab(_codigoBucle),
             "\n",
         ],
     )
@@ -1510,7 +1525,7 @@ def _while():
             _condicion,
             ":",
             "\n",
-            Nodo.Tab(_codigo),
+            Nodo.Tab(_codigoBucle),
             "\n",
             Nodo.Eleccion([["\n", _else], _stop]),
             "\n",
@@ -2210,10 +2225,6 @@ def _instanciacionClase():
     )
 
 
-def _usoClase():
-    return Nodo("_usoClase", [Nodo.Eleccion([_invocarMetodo, _atributoClase])])
-
-
 def _encadenarMetodo():
     return Nodo(
         "_encadenarMetodo",
@@ -2240,7 +2251,16 @@ def _raise():
 def _ejecucion():
     return Nodo(
         "_ejecucion",
-        [Nodo.Eleccion([_funcion, _clase, _builtin, _accesoRecurso])],
+        [
+            Nodo.Eleccion(
+                [
+                    _funcion,
+                    _clase,
+                    _builtin,
+                    _accesoRecurso,
+                ]
+            )
+        ],
     )
 
 
@@ -2641,4 +2661,3 @@ def _puerto():
 
 def _stop():
     return Nodo("_stop", [""])
-
