@@ -919,6 +919,7 @@ def _codigo():
                     _funcion,
                     _clase,
                     _comentario,
+                    _librerias,
                 ]
             ),
             Nodo.Eleccion([_codigo, _stop]),
@@ -2890,3 +2891,209 @@ def _puerto():
 
 def _stop():
     return Nodo("_stop", [""])
+
+
+def _librerias():
+    return Nodo(
+        "_librerias",
+        [
+            _libreria,
+            Nodo.Eleccion([_librerias, _stop]),
+        ],
+    )
+
+
+def _libreria():
+    return Nodo(
+        "_libreria",
+        [
+            Nodo.Eleccion(
+                [
+                    _libreriaNumerica,
+                    _libreriaDatos,
+                    _libreriaAprendizaje,
+                    _libreriaPercepcion,
+                    _libreriaLenguaje,
+                    _libreriaInteraccion,
+                    _libreriaSistema,
+                    _libreriaSeguridad,
+                ]
+            )
+        ],
+    )
+
+
+def _libreriaNumerica():
+    return Nodo(
+        "_libreriaNumerica",
+        [
+            Nodo.Eleccion(
+                [
+                    _libreriaNumpy,
+                    _libreriaScipy,
+                ]
+            )
+        ],
+    )
+
+
+def _libreriaNumpy():
+    return Nodo(
+        "_libreriaNumpy",
+        [
+            Nodo.Eleccion(
+                [
+                    _numpyAtributos,
+                    _numpyFunciones,
+                    _numpyFuncionalidades,
+                ]
+            )
+        ],
+    )
+
+
+def _numpyAtributos():
+    return Nodo(
+        "_numpyAtributos",
+        [
+            Nodo.Eleccion(
+                [
+                    "np.pi",
+                    "np.inf",
+                    "np.nan",
+                    "np.e",
+                ]
+            )
+        ],
+    )
+
+
+def _numpyFunciones():
+    return Nodo(
+        "_numpyFunciones",
+        [
+            Nodo.Eleccion(
+                [
+                    _numpyFuncionesArray,
+                    _numpyFuncionesOperacion,
+                    _numpyFuncionesEstadistica,
+                ]
+            )
+        ],
+    )
+
+
+def _numpyFuncionesArray():
+    return Nodo(
+        "_numpyFuncionesArray",
+        [
+            Nodo.Eleccion(
+                [
+                    ["np.array(", _argumentos, ")"],
+                    ["np.zeros(", _argumentos, ")"],
+                    ["np.ones(", _argumentos, ")"],
+                    ["np.arange(", _argumentos, ")"],
+                    ["np.linspace(", _argumentos, ")"],
+                    ["np.reshape(", _argumentos, ")"],
+                ]
+            )
+        ],
+    )
+
+
+def _numpyFuncionesOperacion():
+    return Nodo(
+        "_numpyFuncionesOperacion",
+        [
+            Nodo.Eleccion(
+                [
+                    ["np.dot(", _argumentos, ")"],
+                    ["np.transpose(", _argumentos, ")"],
+                    ["np.concatenate(", _argumentos, ")"],
+                    ["np.linalg.inv(", _argumentos, ")"],
+                    ["np.linalg.eigvals(", _argumentos, ")"],
+                ]
+            )
+        ],
+    )
+
+
+def _numpyFuncionesEstadistica():
+    return Nodo(
+        "_numpyFuncionesEstadistica",
+        [
+            Nodo.Eleccion(
+                [
+                    ["np.mean(", _argumentos, ")"],
+                    ["np.std(", _argumentos, ")"],
+                    ["np.min(", _argumentos, ")"],
+                    ["np.max(", _argumentos, ")"],
+                    ["np.sum(", _argumentos, ")"],
+                    ["np.median(", _argumentos, ")"],
+                ]
+            )
+        ],
+    )
+
+
+def _numpyFuncionalidades():
+    return Nodo(
+        "_numpyFuncionalidades",
+        [
+            Nodo.Eleccion(
+                [
+                    _numpyNormalizacion,
+                    _numpyProductoMatricial,
+                    _numpyEstadisticaCompleta,
+                ]
+            )
+        ],
+    )
+
+
+def _numpyNormalizacion():
+    return Nodo(
+        "_numpyNormalizacion",
+        [
+            _variable,
+            " = (",
+            _variable,
+            " - np.mean(",
+            _variable,
+            ")) / np.std(",
+            _variable,
+            ")\n",
+        ],
+    )
+
+
+def _numpyProductoMatricial():
+    return Nodo(
+        "_numpyProductoMatricial",
+        [
+            _variable,
+            " = np.dot(",
+            _variable,
+            ", ",
+            _variable,
+            ".T)\n",
+        ],
+    )
+
+
+def _numpyEstadisticaCompleta():
+    return Nodo(
+        "_numpyEstadisticaCompleta",
+        [
+            _variable,
+            ' = {"mean": np.mean(',
+            _variable,
+            '), "std": np.std(',
+            _variable,
+            '), "min": np.min(',
+            _variable,
+            '), "max": np.max(',
+            _variable,
+            ")}\n",
+        ],
+    )

@@ -1,21 +1,30 @@
 class Genoma:
-    
+
     librerias_usadas = {}
 
     def __init__(self, adn: list):
         self.contexto = Genoma.Contexto()
         self.adn = adn
 
-    def get_adn():
+    def get_adn(self):
         pass
 
-    def add_gen():
+    def add_gen(self):
         pass
+    
+    def get_imports(self):
+        partes = []
+        
+        for x, y in self.librerias_usadas:
+            string1 = x + y
+            string2 = y + x
+        
 
     class Contexto:
 
         def __init__(self):
             self.adn = Genoma.get_adn()
+            self.librerias_usadas = Genoma.librerias_usadas
             self.ite = 0
 
         def next_adn(self):
@@ -80,6 +89,24 @@ class Nodo:
 
             return resultado.join(partes)
 
+    class Import:
+
+        def __init__(self, libreria: str, paquete: str, gestor: set, nodo: "Nodo"):
+            self.nodo = nodo
+           
+            if gestor is None:
+                raise Exception("Se ha intentado registrar un import con el set de imports a None")
+            
+            
+            
+        def compilar(self):
+            return self.nodo.compilar()
+
+    def __init__(self, nombre: str, items: list):
+
+        self.nombre = nombre
+        self.items = items
+
     def compilar_lista(self, lista: list, genoma: Genoma):
         resultado = ""
         partes = []
@@ -96,8 +123,6 @@ class Nodo:
 
             if callable(elemento):
                 partes.append(elemento().compilar(genoma))
-                
-                if()
                 continue
 
             if isinstance(elemento, list):
@@ -105,11 +130,6 @@ class Nodo:
                 continue
 
         return resultado.join(partes)
-
-    def __init__(self, nombre: str, items: list):
-
-        self.nombre = nombre
-        self.items = items
 
     def get_nombre(self):
         return self.nombre
