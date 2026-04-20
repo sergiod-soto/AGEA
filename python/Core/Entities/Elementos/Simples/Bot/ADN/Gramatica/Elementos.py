@@ -1,4 +1,6 @@
 class Genoma:
+    
+    librerias_usadas = {}
 
     def __init__(self, adn: list):
         self.contexto = Genoma.Contexto()
@@ -94,6 +96,8 @@ class Nodo:
 
             if callable(elemento):
                 partes.append(elemento().compilar(genoma))
+                
+                if()
                 continue
 
             if isinstance(elemento, list):

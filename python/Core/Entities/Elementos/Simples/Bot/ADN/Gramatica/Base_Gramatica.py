@@ -10,57 +10,22 @@ def _programa():
     return Nodo(
         "_programa",
         [
-            _codigoInyectado,  # -----------------------    Codigo inyectado post analisis
-            "\n",
-            "\n",
-            "#---------------------------------",
-            "\n",
-            "# FIN IMPORTS LIBRERIAS POST ANALISIS",
-            "\n",
+            "#---------------------------------\n",
             _importsHardCoded,  # ----------------------    Imports que todos los bots disponen sin coste
             "\n",
-            "#---------------------------------",
+            "#---------------------------------\n",
+            "# Codigo Inyectado\n",
+            "#---------------------------------\n",
+            _codigoInyectado,  # -----------------------   Codigo inyectado a mano
             "\n",
-            "#---------------------------------",
-            "\n",
-            "\n",
-            "\n",
-            "#---------------------------------",
-            "\n",
-            "# Clases:",
-            "\n",
-            "#---------------------------------",
-            "\n",
-            # _clases,
-            "\n",
-            "#---------------------------------",
-            "\n",
-            "\n",
-            "\n",
-            "#---------------------------------",
-            "\n",
-            "# Funciones:",
-            "\n",
-            "#---------------------------------",
-            "\n",
+            "#---------------------------------\n",
+            "# Funciones:\n",
+            "#---------------------------------\n",
             _funciones,
-            # "\n",
-            # "#---------------------------------",
-            # "\n",
-            # "# Variables globales:",
-            # "\n",
-            # "#---------------------------------",
-            # "\n",
-            # _declaracionVariablesGlobales,
             "\n",
-            "\n",
-            "\n",
-            "#---------------------------------",
-            "\n",
-            "# Codigo:",
-            "\n",
-            "#---------------------------------",
-            "\n",
+            "#---------------------------------\n",
+            "# Codigo:\n",
+            "#---------------------------------\n",
             _codigo,
         ],
     )
@@ -110,6 +75,58 @@ def _bucleAsincrono():
     )
 
 
+def _codigoBucleAsincrono():
+    return Nodo(
+        "_codigoBucleAsincrono",
+        [
+            Nodo.Eleccion(
+                [
+                    _operacion,
+                    _asignacion,
+                    _controlAsincrono,
+                    _ejecucion,
+                    _comentario,
+                    _return,
+                    _await,
+                    _break,
+                    _continue,
+                ]
+            ),
+            Nodo.Eleccion([_codigoBucleAsincrono, _stop]),
+        ],
+    )
+
+
+def _whileAsincrono():
+    return Nodo(
+        "_whileAsincrono",
+        [
+            "while ",
+            _condicion,
+            ":",
+            "\n",
+            Nodo.Tab(_codigoBucleAsincrono),
+            "\n",
+            Nodo.Eleccion([["\n", _else], _stop]),
+            "\n",
+        ],
+    )
+
+
+def _bucleAsincrono():
+    return Nodo(
+        "_bucleAsincrono",
+        [
+            Nodo.Eleccion(
+                [
+                    _forAsincrono,
+                    _whileAsincrono,
+                ]
+            )
+        ],
+    )
+
+
 def _forAsincrono():
     return Nodo(
         "_forAsincrono",
@@ -125,7 +142,7 @@ def _forAsincrono():
             ),
             ":",
             "\n",
-            Nodo.Tab(_codigoFuncionAsincrona),
+            Nodo.Tab(_codigoBucleAsincrono),
             "\n",
         ],
     )
@@ -821,7 +838,7 @@ def _contenidoComentario():
     return Nodo(
         "_contenidoComentario",
         [
-            Nodo.Eleccion([_stringsPool, _textoLetras]),
+            Nodo.Eleccion([_stringsPool, _texto]),
             Nodo.Eleccion([_contenidoComentario, _stop]),
         ],
     )
@@ -983,6 +1000,7 @@ def _codigoGenerador():
                     _ejecucion,
                     _comentario,
                     _yield,
+                    _return,
                 ]
             ),
             Nodo.Eleccion([_codigoGenerador, _stop]),
@@ -991,7 +1009,20 @@ def _codigoGenerador():
 
 
 def _conjunto():
-    return Nodo("_conjunto", [Nodo.Eleccion([_lista, _tupla, _diccionario, _set])])
+    return Nodo(
+        "_conjunto",
+        [
+            Nodo.Eleccion(
+                [
+                    _lista,
+                    _tupla,
+                    _diccionario,
+                    _set,
+                    _comprehension,
+                ]
+            )
+        ],
+    )
 
 
 def _set():
@@ -1026,7 +1057,45 @@ def _bool():
 
 
 def _string():
-    return Nodo("_string", ['"', _palabra, '"'])
+    return Nodo(
+        "_string",
+        [
+            Nodo.Eleccion(
+                [
+                    _stringNormal,
+                    _stringF,
+                ]
+            )
+        ],
+    )
+
+
+def _stringNormal():
+    return Nodo(
+        "_stringNormal",
+        [
+            '"',
+            _palabra,
+            '"',
+        ],
+    )
+
+
+def _stringF():
+    return Nodo(
+        "_stringF",
+        [
+            'f"',
+            _textoLetras,
+            Nodo.Eleccion(
+                [
+                    ["{", _expresionSimple, "}", _textoLetras],
+                    _stop,
+                ]
+            ),
+            '"',
+        ],
+    )
 
 
 def _palabra():
@@ -1332,10 +1401,11 @@ def _dato():
                     _conjunto,
                     _variable,
                     _declaracionFuncionLambda,
-                    _funcion,
                     _leerAtributoClase,
                     _llamadaFuncion,
                     _invocarMetodo,
+                    _expresionTernaria,
+                    _comprehension,
                 ]
             )
         ],
@@ -1509,6 +1579,88 @@ def _forDictItems():
             "\n",
             Nodo.Tab(_codigoBucle),
             "\n",
+        ],
+    )
+
+
+def _comprehension():
+    return Nodo(
+        "_comprehension",
+        [
+            Nodo.Eleccion(
+                [
+                    _listComprehension,
+                    _dictComprehension,
+                    _setComprehension,
+                    _generatorExpression,
+                ]
+            )
+        ],
+    )
+
+
+def _listComprehension():
+    return Nodo(
+        "_listComprehension",
+        [
+            "[",
+            _expresionSimple,
+            " for ",
+            _variable,
+            " in ",
+            _dato,
+            Nodo.Eleccion([[" if ", _condicion], _stop]),
+            "]",
+        ],
+    )
+
+
+def _dictComprehension():
+    return Nodo(
+        "_dictComprehension",
+        [
+            "{",
+            _expresionSimple,
+            ": ",
+            _expresionSimple,
+            " for ",
+            _variable,
+            " in ",
+            _dato,
+            Nodo.Eleccion([[" if ", _condicion], _stop]),
+            "}",
+        ],
+    )
+
+
+def _setComprehension():
+    return Nodo(
+        "_setComprehension",
+        [
+            "{",
+            _expresionSimple,
+            " for ",
+            _variable,
+            " in ",
+            _dato,
+            Nodo.Eleccion([[" if ", _condicion], _stop]),
+            "}",
+        ],
+    )
+
+
+def _generatorExpression():
+    return Nodo(
+        "_generatorExpression",
+        [
+            "(",
+            _expresionSimple,
+            " for ",
+            _variable,
+            " in ",
+            _dato,
+            Nodo.Eleccion([[" if ", _condicion], _stop]),
+            ")",
         ],
     )
 
@@ -1715,11 +1867,11 @@ def _expresionTernaria():
     return Nodo(
         "_expresionTernaria",
         [
-            _expresionSimple,
+            _dato,
             " if ",
             _condicion,
             " else ",
-            _expresionSimple,
+            _dato,
         ],
     )
 
@@ -1816,30 +1968,68 @@ def _declaracionMetodoClase():
 def _clase():
     return Nodo(
         "_clase",
-        [Nodo.Eleccion([_declaracionClase, _instanciacionClase, _usarClase])],
+        [
+            Nodo.Eleccion(
+                [
+                    _declaracionClase,
+                    _instanciacionClase,
+                    _usarClase,
+                ]
+            )
+        ],
     )
 
 
-######
-
-
-######
 def _usarClase():
-    return Nodo("_usarClase", [Nodo.Eleccion([_invocarMetodo, _atributoClase])])
+    return Nodo(
+        "_usarClase",
+        [
+            Nodo.Eleccion(
+                [
+                    _invocarMetodo,
+                    _atributoClase,
+                ]
+            )
+        ],
+    )
 
 
 def _atributoClase():
     return Nodo(
-        "_atributoClase", [Nodo.Eleccion([_leerAtributoClase, _escribirAtributoClase])]
+        "_atributoClase",
+        [
+            Nodo.Eleccion(
+                [
+                    _leerAtributoClase,
+                    _escribirAtributoClase,
+                ]
+            )
+        ],
     )
 
 
 def _leerAtributoClase():
-    return Nodo("_leerAtributoClase", [_variable, ".", _variable])
+    return Nodo(
+        "_leerAtributoClase",
+        [
+            _variable,
+            ".",
+            _variable,
+        ],
+    )
 
 
 def _escribirAtributoClase():
-    return Nodo("_escribirAtributoClase", [_variable, ".", _variable, " = ", _dato])
+    return Nodo(
+        "_escribirAtributoClase",
+        [
+            _variable,
+            ".",
+            _variable,
+            " = ",
+            _dato,
+        ],
+    )
 
 
 #######
@@ -2254,8 +2444,8 @@ def _ejecucion():
         [
             Nodo.Eleccion(
                 [
-                    _funcion,
-                    _clase,
+                    _llamadaFuncion,
+                    _invocarMetodo,
                     _builtin,
                     _accesoRecurso,
                 ]
@@ -2265,25 +2455,64 @@ def _ejecucion():
 
 
 def _funcion():
-    return Nodo("_funcion", [Nodo.Eleccion([_declaracionFuncion, _llamadaFuncion])])
+    return Nodo(
+        "_funcion",
+        [
+            Nodo.Eleccion(
+                [
+                    _declaracionFuncion,
+                    _llamadaFuncion,
+                ]
+            )
+        ],
+    )
 
 
 def _llamadaFuncion():
     return Nodo(
         "_llamadaFuncion",
-        [_variable, "(", Nodo.Eleccion([[_argumentos], _stop]), ")"],
+        [
+            _variable,
+            "(",
+            Nodo.Eleccion(
+                [
+                    [_argumentos],
+                    _stop,
+                ]
+            ),
+            ")",
+        ],
     )
 
 
 def _invocarMetodo():
     return Nodo(
         "_invocarMetodo",
-        [Nodo.Eleccion([_variable, _llamadaFuncion]), ".", _encadenarMetodo],
+        [
+            Nodo.Eleccion(
+                [
+                    _variable,
+                    _llamadaFuncion,
+                ]
+            ),
+            ".",
+            _encadenarMetodo,
+        ],
     )
 
 
 def _accesoRecurso():
-    return Nodo("_accesoRecurso", [_accesoFichero, _accesoInternet])
+    return Nodo(
+        "_accesoRecurso",
+        [
+            Nodo.Eleccion(
+                [
+                    _accesoFichero,
+                    _accesoInternet,
+                ]
+            )
+        ],
+    )
 
 
 def _accesoFichero():
