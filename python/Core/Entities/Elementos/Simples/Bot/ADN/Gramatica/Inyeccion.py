@@ -64,4 +64,11 @@ def _importsHardCoded():
 
 
 def _codigoInyectado():
+    '''
+        Codigo escrito 100% a mano. 
+        No puede depender de nada contenido en Base_Gramatica.py
+        
+        Se ejecuta despues de _importsHardCoded y antes de _funciones
+    '''
+    
     return Nodo("_codigoInyectado", [""])
