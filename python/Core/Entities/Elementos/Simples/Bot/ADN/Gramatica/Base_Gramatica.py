@@ -4,6 +4,7 @@ from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Inyeccion import (
     _codigoInyectado,
     _importsHardCoded,
 )
+from Librerias import _libreria
 
 
 def _programa():
@@ -919,7 +920,7 @@ def _codigo():
                     _funcion,
                     _clase,
                     _comentario,
-                    _librerias,
+                    _libreria,
                 ]
             ),
             Nodo.Eleccion([_codigo, _stop]),
