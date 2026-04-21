@@ -74,23 +74,23 @@ class Nodo:
             partes = []
 
             for item in self.items:
+                
+                partes.append("\t")
+                
                 if isinstance(item, str):
-                    partes.append("\t")
                     partes.append(item)
                     continue
 
                 if hasattr(item, "compilar"):
-                    partes.append("\t")
                     partes.append(item.compilar(genoma))
                     continue
 
                 if callable(item):
-                    partes.append("\t")
                     partes.append(item().compilar(genoma))
                     continue
 
                 if isinstance(item, list):
-                    raise TypeError(f"No se permiten listas en  Tab")
+                    raise TypeError(f"No se permiten listas en la lista de Tab")
 
                 raise TypeError(f"Elemento no reconocido en Tab: {type(item)}")
 
