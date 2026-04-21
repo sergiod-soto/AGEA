@@ -4,9 +4,9 @@ from collections import defaultdict
 class Genoma:
 
     def __init__(self, adn: list):
-        self.contexto = Genoma.Contexto(self)
         self.adn = adn
         self.librerias_usadas = defaultdict(set)
+        self.contexto = Genoma.Contexto(self)
 
     def get_adn(self):
         pass
@@ -46,8 +46,7 @@ class Nodo:
             self.opciones = opciones
 
         def compilar(self, genoma: Genoma):
-            contexto = genoma.contexto
-            item = self.opciones[contexto.next_adn()]
+            item = self.opciones[genoma.contexto.next_adn()]
 
             if isinstance(item, str):
                 return item
@@ -55,10 +54,10 @@ class Nodo:
             if hasattr(
                 item, "compilar"
             ):  # es Eleccion, Nodo o Tab. Ej: Nodo.Eleccion([ _dato, ... ,_variable])
-                return item.compilar(contexto)
+                return item.compilar(genoma)
 
             if callable(item):  # es una funcion. Ej: _dato
-                return item().compilar(contexto)
+                return item().compilar(genoma)
 
             if isinstance(
                 item, list
@@ -73,25 +72,25 @@ class Nodo:
 
         def compilar(self, genoma: Genoma):
             partes = []
-            partes.append("\t")
 
             for item in self.items:
                 if isinstance(item, str):
+                    partes.append("\t")
                     partes.append(item)
                     continue
 
                 if hasattr(item, "compilar"):
+                    partes.append("\t")
                     partes.append(item.compilar(genoma))
                     continue
 
                 if callable(item):
+                    partes.append("\t")
                     partes.append(item().compilar(genoma))
                     continue
 
                 if isinstance(item, list):
-                    partes.append("\t")
-                    partes.append(Nodo.compilar_lista(item, genoma))
-                    continue
+                    raise TypeError(f"No se permiten listas en  Tab")
 
                 raise TypeError(f"Elemento no reconocido en Tab: {type(item)}")
 
@@ -113,7 +112,7 @@ class Nodo:
         def compilar(self, genoma: Genoma):
             if self.libreria is None and self.paquetes is None:
                 # import vacio que indica fin de imports
-                return genoma.Contexto.get_imports()
+                return genoma.contexto.get_imports()
 
             self._agregar(
                 self.libreria, self.paquetes, genoma.contexto.librerias_usadas
@@ -126,7 +125,7 @@ class Nodo:
         self.items = items
 
     @staticmethod
-    def compilar_lista(self, lista: list, genoma: Genoma):
+    def compilar_lista(lista: list, genoma: Genoma):
         partes = []
 
         for elemento in lista:
@@ -144,7 +143,7 @@ class Nodo:
                 continue
 
             if isinstance(elemento, list):
-                partes.append(self.compilar_lista(elemento, genoma))
+                partes.append(Nodo.compilar_lista(elemento, genoma))
                 continue
 
             raise TypeError(
