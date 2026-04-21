@@ -895,18 +895,6 @@ def _funciones():
     )
 
 
-# def _declaracionVariablesGlobales():
-#     return Nodo(
-#         "_declaracionVariablesGlobales",
-#         [
-#             _variable,
-#             "\n",
-#             Nodo.Eleccion([_declaracionVariablesGlobales(), _stop]),
-#             "\n",
-#         ],
-#     )
-
-
 def _codigo():
     return Nodo(
         "_codigo",
