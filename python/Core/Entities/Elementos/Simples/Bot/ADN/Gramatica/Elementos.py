@@ -1,36 +1,41 @@
+from collections import defaultdict
+
+
 class Genoma:
 
-    librerias_usadas = {}
-
     def __init__(self, adn: list):
-        self.contexto = Genoma.Contexto()
+        self.contexto = Genoma.Contexto(self)
         self.adn = adn
+        self.librerias_usadas = defaultdict(set)
 
     def get_adn(self):
         pass
 
     def add_gen(self):
         pass
-    
-    def get_imports(self):
-        partes = []
-        
-        for x, y in self.librerias_usadas:
-            string1 = x + y
-            string2 = y + x
-        
 
     class Contexto:
 
-        def __init__(self):
-            self.adn = Genoma.get_adn()
-            self.librerias_usadas = Genoma.librerias_usadas
+        def __init__(self, genoma: "Genoma"):
+            self.adn = genoma.adn
+            self.librerias_usadas = genoma.librerias_usadas
             self.ite = 0
 
         def next_adn(self):
             elemento = self.adn[self.ite]
             self.ite += 1
             return elemento
+
+        def get_imports(self):
+            partes = []
+            for libreria, paquetes in self.librerias_usadas.items():
+                if libreria is None:
+                    for paquete in sorted(paquetes):
+                        partes.append(f"import {paquete}")
+                else:
+                    paquetes_str = ", ".join(sorted(paquetes))
+                    partes.append(f"from {libreria} import {paquetes_str}")
+            return "\n".join(partes)
 
 
 class Nodo:
@@ -67,48 +72,61 @@ class Nodo:
             self.items = items
 
         def compilar(self, genoma: Genoma):
-            contexto = genoma.contexto
-            resultado = ""
             partes = []
+            partes.append("\t")
 
             for item in self.items:
-                partes.append("\t")
-
                 if isinstance(item, str):
                     partes.append(item)
+                    continue
 
                 if hasattr(item, "compilar"):
                     partes.append(item.compilar(genoma))
+                    continue
 
                 if callable(item):
                     partes.append(item().compilar(genoma))
+                    continue
 
                 if isinstance(item, list):
                     partes.append("\t")
                     partes.append(Nodo.compilar_lista(item, genoma))
+                    continue
 
-            return resultado.join(partes)
+                raise TypeError(f"Elemento no reconocido en Tab: {type(item)}")
+
+            return "".join(partes)
 
     class Import:
 
-        def __init__(self, libreria: str, paquete: str, gestor: set, nodo: "Nodo"):
-            self.nodo = nodo
-           
-            if gestor is None:
-                raise Exception("Se ha intentado registrar un import con el set de imports a None")
-            
-            
-            
-        def compilar(self):
-            return self.nodo.compilar()
+        def __init__(self, libreria: str, paquetes: list[str]):
+            self.libreria = libreria
+            self.paquetes = paquetes
+
+        def _agregar(self, libreria: str, paquetes: list[str], librerias_usadas: set):
+            for paquete in paquetes:
+                self._agregar_paquete(libreria, paquete, librerias_usadas)
+
+        def _agregar_paquete(self, libreria: str, paquete: str, librerias_usadas: set):
+            librerias_usadas[libreria].add(paquete)
+
+        def compilar(self, genoma: Genoma):
+            if self.libreria is None and self.paquetes is None:
+                # import vacio que indica fin de imports
+                return genoma.Contexto.get_imports()
+
+            self._agregar(
+                self.libreria, self.paquetes, genoma.contexto.librerias_usadas
+            )
+            return ""
 
     def __init__(self, nombre: str, items: list):
 
         self.nombre = nombre
         self.items = items
 
+    @staticmethod
     def compilar_lista(self, lista: list, genoma: Genoma):
-        resultado = ""
         partes = []
 
         for elemento in lista:
@@ -129,10 +147,14 @@ class Nodo:
                 partes.append(self.compilar_lista(elemento, genoma))
                 continue
 
-        return resultado.join(partes)
+            raise TypeError(
+                f"Elemento no reconocido en compilar_lista: {type(elemento)}"
+            )
+
+        return "".join(partes)
 
     def get_nombre(self):
         return self.nombre
 
     def compilar(self, genoma: Genoma):
-        return self.compilar_lista(self.items, genoma)
+        return Nodo.compilar_lista(self.items, genoma)

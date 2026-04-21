@@ -7,37 +7,58 @@ def _importsHardCoded():
         [
             #
             # Tipos y estructuras
-            "from functools import reduce\n",
-            "from collections import defaultdict, Counter, deque, OrderedDict, namedtuple\n",
-            "from itertools import chain, combinations, permutations, product\n\n",
+            Nodo.Import("functools", ["reduce"]),
+            Nodo.Import(
+                "collections",
+                ["defaultdict", "Counter", "deque", "OrderedDict", "namedtuple"],
+            ),
+            Nodo.Import(
+                "itertools", ["chain", "combinations", "permutations", "product"]
+            ),
+            "\n",
             #
             # Strings y texto
-            "import string\n\n",
+            Nodo.Import(None, ["string"]),
+            "\n",
             #
             # Sistema básico
-            "import os\n",
-            "import sys\n",
-            "import math\n",
-            "import time\n",
-            "import copy\n",
-            "import json\n\n",
+            Nodo.Import(None, ["os"]),
+            Nodo.Import(None, ["sys"]),
+            Nodo.Import(None, ["math"]),
+            Nodo.Import(None, ["time"]),
+            Nodo.Import(None, ["copy"]),
+            Nodo.Import(None, ["json"]),
+            "\n",
             #
             # Utilidades de código
-            "from typing import List, Dict, Tuple, Optional, Any, Union\n",
+            Nodo.Import(
+                "typing", ["List", "Dict", "Tuple", "Optional", "Any", "Union"]
+            ),
+            "\n",
             #
             # Estructuras adicionales
-            "from functools import wraps, partial, lru_cache\n\n",
+            Nodo.Import("functools", ["wraps", "partial", "lru_cache"]),
+            "\n",
             #
             # Números
-            "import statistics\n\n",
+            Nodo.Import(None, ["statistics"]),
+            "\n",
             #
             # Control del programa
-            "import warnings\n",
-            "from abc import ABC, abstractmethod\n\n",
+            Nodo.Import(None, ["warnings"]),
+            Nodo.Import("abc", ["ABC", "abstractmethod"]),
+            "\n",
             #
             # Inspección básica
-            "import inspect\n",
-            "from enum import Enum, auto\n\n",
+            Nodo.Import(None, ["inspect"]),
+            Nodo.Import("enum", ["Enum", "auto"]),
+            #
+            #
+            #######################################################
+            Nodo.Import(None, None),
+            #######################################################
+            #
+            #
         ],
     )
 
