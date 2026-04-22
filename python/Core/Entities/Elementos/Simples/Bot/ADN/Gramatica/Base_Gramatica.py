@@ -368,24 +368,12 @@ def _with():
             "with ",
             Nodo.Eleccion(
                 [
-                    [
-                        "open(",
-                        _textoDirectorioLocal,
-                        Nodo.Eleccion(
-                            [
-                                "'r'",
-                                "'w'",
-                                "'a'",
-                                "'r+'",
-                            ],
-                        ),
-                        ")",
-                    ],
                     _llamadaFuncion,
+                    _variable,
+                    _invocarMetodo,
                 ]
             ),
-            " as ",
-            _variable,
+            Nodo.Eleccion([[" as ", _variable], _stop]),
             ":\n",
             Nodo.Tab(_codigoFuncion),
             "\n",
@@ -909,11 +897,12 @@ def _texto():
                     _textoLetras,
                     _textoLetrasNumeros,
                     _textoLetrasSimbolos,
-                    _textoDirectorios,
                 ]
             )
         ],
     )
+    
+    
 
 
 def _variable():
@@ -2527,7 +2516,6 @@ def _ejecucion():
                     _llamadaFuncion,
                     _invocarMetodo,
                     _builtin,
-                    _accesoRecurso,
                 ]
             )
         ],
@@ -2579,7 +2567,6 @@ def _invocarMetodo():
             _encadenarMetodo,
         ],
     )
-
 
 
 def _none():
