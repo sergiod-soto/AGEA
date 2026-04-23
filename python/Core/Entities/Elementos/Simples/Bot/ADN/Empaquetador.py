@@ -1,6 +1,6 @@
 '''
     benchmark:
-        1.000 millones: 876 segundos para la lectura de los ~24.000 bloques
+        1.000 millones: 876 segundos para la lectura, en ~24.000 bloques
 '''
 
     

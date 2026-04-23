@@ -1,5 +1,5 @@
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Capacidades.Acceso_Recurso import _accesoRecurso
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Capacidades.acceso_recurso import _accesoRecurso
 
 
 def _capacidad():

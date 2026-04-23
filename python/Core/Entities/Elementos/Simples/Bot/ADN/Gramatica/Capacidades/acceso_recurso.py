@@ -1,4 +1,4 @@
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
 
 
 def _accesoRecurso():
@@ -32,7 +32,7 @@ def _accesoFichero():
 
 
 def _leerFichero():
-    from Base_Gramatica import _variable, _codigoFuncion
+    from base_gramatica import _variable, _codigoFuncion
 
     return Nodo(
         "_leerFichero",
@@ -49,7 +49,7 @@ def _leerFichero():
 
 
 def _escribirFichero():
-    from Base_Gramatica import _variable, _codigoFuncion
+    from base_gramatica import _variable, _codigoFuncion
 
     return Nodo(
         "_escribirFichero",
@@ -66,7 +66,7 @@ def _escribirFichero():
 
 
 def _anadirFichero():
-    from Base_Gramatica import _variable, _codigoFuncion
+    from base_gramatica import _variable, _codigoFuncion
 
     return Nodo(
         "_anadirFichero",
@@ -83,7 +83,7 @@ def _anadirFichero():
 
 
 def _leerEscribirFichero():
-    from Base_Gramatica import _variable, _codigoFuncion
+    from base_gramatica import _variable, _codigoFuncion
 
     return Nodo(
         "_leerEscribirFichero",
@@ -108,7 +108,7 @@ def _httpGet():
 
 
 def _httpPost():
-    from Base_Gramatica import _dato
+    from base_gramatica import _dato
 
     return Nodo(
         "_httpPost", ["requests.post(", _textoDirectorioWeb, ", data=", _dato, ")"]
@@ -138,7 +138,7 @@ def _textoDirectorioLocal():
 
 
 def _textoDirectorioWindows():
-    from Base_Gramatica import _letra, _digito, _stop
+    from base_gramatica import _letra, _digito, _stop
 
     return Nodo(
         "_textoDirectorioWindows",
@@ -150,7 +150,7 @@ def _textoDirectorioWindows():
 
 
 def _textoDirectorioLinux():
-    from Base_Gramatica import _letra, _digito, _stop
+    from base_gramatica import _letra, _digito, _stop
 
     return Nodo(
         "_textoDirectorioLinux",
@@ -162,7 +162,7 @@ def _textoDirectorioLinux():
 
 
 def _textoDirectorioMac():
-    from Base_Gramatica import _letra, _digito, _stop
+    from base_gramatica import _letra, _digito, _stop
 
     return Nodo(
         "_textoDirectorioMac",
@@ -328,7 +328,7 @@ def _textoDirectorioWeb():
 
 
 def _urlWeb():
-    from Base_Gramatica import _stop
+    from base_gramatica import _stop
 
     return Nodo(
         "_urlWeb",
@@ -344,7 +344,7 @@ def _urlWeb():
 
 
 def _textoDirectorioExterno():
-    from Base_Gramatica import _letra, _digito, _stop
+    from base_gramatica import _letra, _digito, _stop
 
     return Nodo(
         "_textoDirectorioExterno",
@@ -380,7 +380,7 @@ def _simboloDirectorioExterno():
 
 
 def _directorioExternoRuta():
-    from Base_Gramatica import _stop
+    from base_gramatica import _stop
 
     return Nodo(
         "_directorioExternoRuta",
@@ -392,7 +392,7 @@ def _directorioExternoRuta():
 
 
 def _directorioExternoParametros():
-    from Base_Gramatica import _stop
+    from base_gramatica import _stop
 
     return Nodo(
         "_directorioExternoParametros",
@@ -406,7 +406,7 @@ def _directorioExternoParametros():
 
 
 def _urlLocal():
-    from Base_Gramatica import _stop
+    from base_gramatica import _stop
 
     return Nodo(
         "_urlLocal",
@@ -420,7 +420,7 @@ def _urlLocal():
 
 
 def _ipLocal():
-    from Base_Gramatica import _digito, _stop
+    from base_gramatica import _digito, _stop
 
     return Nodo(
         "_ipLocal",
@@ -445,7 +445,7 @@ def _ipLocal():
 
 
 def _puerto():
-    from Base_Gramatica import _digito, _stop
+    from base_gramatica import _digito, _stop
 
     return Nodo(
         "_puerto",
