@@ -14,7 +14,7 @@ import Core.Entities.Elementos.Simples.Bot.ADN.Empaquetador as Empaquetador
 from Core.Mundo.Generacion.Generacion import Generacion
 from Dev.Testing import FakeClient
 from Dev.Testing.Estados import set_estados
-import Utils.Sistema.FuncionesCSV as FuncionesCSV
+import Utils.Sistema.funciones_csv as funciones_csv
 import Core.Mundo.Datos as Datos
 import Services.Conexion.Conexion as Conexion
 
@@ -67,7 +67,7 @@ alto = alto
 
 ruta_script = os.path.dirname(os.path.abspath(__file__))
 ruta_archivo = os.path.join(ruta_script, nombre_fichero_urls)
-rutas_ficheros = FuncionesCSV.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
+rutas_ficheros = funciones_csv.leer_csv(ruta_archivo, ("ALIAS", "DIRECCION"))
 
 
 #

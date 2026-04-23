@@ -1,5 +1,5 @@
-from Services.Serializaciones.Mundo import serializar_mundo
-from Services.Serializaciones.Bots import serializar_bots
+from Services.Serializaciones.mundo import serializar_mundo
+from Services.Serializaciones.bots import serializar_bots
 
 
 def serializacion_actualizacion(shared_data):

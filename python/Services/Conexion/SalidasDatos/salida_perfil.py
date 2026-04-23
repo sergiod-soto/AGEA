@@ -1,4 +1,4 @@
-from Utils.Ficheros.LeerJSON import leer_JSON_Datos
+from Utils.Ficheros.leer_JSON import leer_JSON_Datos
 
 
 def salida_perfil(shared_data, mensaje):

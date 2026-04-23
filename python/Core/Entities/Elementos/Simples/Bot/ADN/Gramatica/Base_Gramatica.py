@@ -1,5 +1,5 @@
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.StringsPool import _stringsPool
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.strings_pool import _stringsPool
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Inyeccion import (
     _codigoInyectado,
     _importsHardCoded,

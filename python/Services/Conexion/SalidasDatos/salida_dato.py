@@ -1,4 +1,4 @@
-from Services.Conexion.SalidasDatos.SalidaBot import salida_bot_full
+from Conexion.SalidasDatos.salida_bot import salida_bot_full
 
 
 def salida_dato(shared_data, entrada):
