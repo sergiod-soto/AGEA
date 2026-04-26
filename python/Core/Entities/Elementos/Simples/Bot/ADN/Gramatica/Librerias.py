@@ -1,4 +1,4 @@
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
 
 
 def _libreria():
@@ -62,7 +62,7 @@ def _libreriaScipy():
 
 
 def _scipyFunciones():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_scipyFunciones",
@@ -84,7 +84,7 @@ def _scipyFunciones():
 
 
 def _scipyOptimizacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_scipyOptimizacion",
@@ -132,7 +132,7 @@ def _numpyFunciones():
 
 
 def _numpyFuncionesArray():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_numpyFuncionesArray",
@@ -152,7 +152,7 @@ def _numpyFuncionesArray():
 
 
 def _numpyFuncionesOperacion():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_numpyFuncionesOperacion",
@@ -171,7 +171,7 @@ def _numpyFuncionesOperacion():
 
 
 def _numpyFuncionesEstadistica():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_numpyFuncionesEstadistica",
@@ -206,7 +206,7 @@ def _numpyFuncionalidades():
 
 
 def _numpyNormalizacion():
-    from Base_Gramatica import _variable
+    from base_gramatica import _variable
 
     return Nodo(
         "_numpyNormalizacion",
@@ -224,7 +224,7 @@ def _numpyNormalizacion():
 
 
 def _numpyProductoMatricial():
-    from Base_Gramatica import _variable
+    from base_gramatica import _variable
 
     return Nodo(
         "_numpyProductoMatricial",
@@ -240,7 +240,7 @@ def _numpyProductoMatricial():
 
 
 def _numpyEstadisticaCompleta():
-    from Base_Gramatica import _variable
+    from base_gramatica import _variable
 
     return Nodo(
         "_numpyEstadisticaCompleta",
@@ -274,7 +274,7 @@ def _libreriaPandas():
 
 
 def _pandasCreacion():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_pandasCreacion",
@@ -293,7 +293,7 @@ def _pandasCreacion():
 
 
 def _pandasOperacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pandasOperacion",
@@ -313,7 +313,7 @@ def _pandasOperacion():
 
 
 def _pandasAgregacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pandasAgregacion",
@@ -347,7 +347,7 @@ def _libreriaPolars():
 
 
 def _polarsCreacion():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_polarsCreacion",
@@ -365,7 +365,7 @@ def _polarsCreacion():
 
 
 def _polarsOperacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_polarsOperacion",
@@ -420,7 +420,7 @@ def _libreriaSklearn():
 
 
 def _sklearnModelos():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_sklearnModelos",
@@ -474,7 +474,7 @@ def _sklearnModelos():
 
 
 def _sklearnPreprocesado():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_sklearnPreprocesado",
@@ -507,7 +507,7 @@ def _sklearnPreprocesado():
 
 
 def _sklearnEvaluacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_sklearnEvaluacion",
@@ -538,7 +538,7 @@ def _libreriaKeras():
 
 
 def _kerasModelo():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_kerasModelo",
@@ -554,7 +554,7 @@ def _kerasModelo():
 
 
 def _kerasCapas():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_kerasCapas",
@@ -573,7 +573,7 @@ def _kerasCapas():
 
 
 def _kerasEntrenamiento():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_kerasEntrenamiento",
@@ -602,7 +602,7 @@ def _libreriaTorch():
 
 
 def _torchTensores():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_torchTensores",
@@ -621,7 +621,7 @@ def _torchTensores():
 
 
 def _torchRed():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_torchRed",
@@ -642,7 +642,7 @@ def _torchRed():
 
 
 def _torchEntrenamiento():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_torchEntrenamiento",
@@ -677,7 +677,7 @@ def _libreriaOpencv():
 
 
 def _opencvIO():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_opencvIO",
@@ -695,7 +695,7 @@ def _opencvIO():
 
 
 def _opencvTransformacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_opencvTransformacion",
@@ -714,7 +714,7 @@ def _opencvTransformacion():
 
 
 def _opencvDeteccion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_opencvDeteccion",
@@ -743,7 +743,7 @@ def _libreriaPillow():
 
 
 def _pillowIO():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pillowIO",
@@ -760,7 +760,7 @@ def _pillowIO():
 
 
 def _pillowTransformacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pillowTransformacion",
@@ -795,7 +795,7 @@ def _libreriaNltk():
 
 
 def _nltkTokenizacion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_nltkTokenizacion",
@@ -812,7 +812,7 @@ def _nltkTokenizacion():
 
 
 def _nltkAnalisis():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_nltkAnalisis",
@@ -839,7 +839,7 @@ def _libreriaSpacy():
 
 
 def _spacyProcesado():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_spacyProcesado",
@@ -857,7 +857,7 @@ def _spacyProcesado():
 
 
 def _spacyEntidades():
-    from Base_Gramatica import _variable
+    from base_gramatica import _variable
 
     return Nodo(
         "_spacyEntidades",
@@ -900,7 +900,7 @@ def _libreriaFlask():
 
 
 def _flaskApp():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_flaskApp",
@@ -916,7 +916,7 @@ def _flaskApp():
 
 
 def _flaskRutas():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_flaskRutas",
@@ -946,7 +946,7 @@ def _libreriaFastapi():
 
 
 def _fastapiApp():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_fastapiApp",
@@ -963,7 +963,7 @@ def _fastapiApp():
 
 
 def _fastapiRutas():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_fastapiRutas",
@@ -991,7 +991,7 @@ def _libreriaRequests():
 
 
 def _requestsLlamadas():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_requestsLlamadas",
@@ -1009,7 +1009,7 @@ def _requestsLlamadas():
 
 
 def _requestsSesion():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_requestsSesion",
@@ -1044,7 +1044,7 @@ def _libreriaPathlib():
 
 
 def _pathlibRutas():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pathlibRutas",
@@ -1062,7 +1062,7 @@ def _pathlibRutas():
 
 
 def _pathlibOperaciones():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_pathlibOperaciones",
@@ -1082,7 +1082,7 @@ def _pathlibOperaciones():
 
 
 def _libreriaSubprocess():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_libreriaSubprocess",
@@ -1112,7 +1112,7 @@ def _libreriaLogging():
 
 
 def _loggingConfig():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_loggingConfig",
@@ -1129,7 +1129,7 @@ def _loggingConfig():
 
 
 def _loggingUso():
-    from Base_Gramatica import _argumentos
+    from base_gramatica import _argumentos
 
     return Nodo(
         "_loggingUso",
@@ -1154,7 +1154,7 @@ def _libreriaSeguridad():
 
 
 def _libreriaHashlib():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_libreriaHashlib",
@@ -1173,7 +1173,7 @@ def _libreriaHashlib():
 
 
 def _libreriaSecrets():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_libreriaSecrets",
@@ -1192,7 +1192,7 @@ def _libreriaSecrets():
 
 
 def _libreriaJwt():
-    from Base_Gramatica import _argumentos, _variable
+    from base_gramatica import _argumentos, _variable
 
     return Nodo(
         "_libreriaJwt",

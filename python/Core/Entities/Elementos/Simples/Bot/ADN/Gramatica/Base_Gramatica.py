@@ -1,11 +1,13 @@
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.librerias import _libreria
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.strings_pool import _stringsPool
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Inyeccion import (
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Capacidades.capacidades import (
+    _capacidad,
+)
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.inyeccion import (
     _codigoInyectado,
     _importsHardCoded,
 )
-from Librerias import _libreria
-from Capacidades.Capacidades import _capacidad
 
 
 """
@@ -901,8 +903,6 @@ def _texto():
             )
         ],
     )
-    
-    
 
 
 def _variable():
@@ -927,9 +927,10 @@ def _codigo():
                     _control,
                     _funcion,
                     _clase,
+                    _raise,
                     _comentario,
                     _libreria,
-                    _raise,
+                    _capacidad,
                 ]
             ),
             Nodo.Eleccion([_codigo, _stop]),
@@ -1314,40 +1315,52 @@ def _simboloTexto():
     return Nodo(
         "_simboloTexto",
         [
-            " ",
-            "!",
-            '"',
-            "@",
-            "·",
-            "#",
-            "$",
-            "~",
-            "%",
-            "&",
-            "¬",
-            "/",
-            "?",
-            "¿",
-            "¡",
-            "^",
-            "`",
-            "+",
-            "*",
-            "¨",
-            "ç",
-            ",",
-            ";",
-            ".",
-            ":",
-            "-",
-            "_",
-            "\n",
-            "\t",
-            "\\",
-            "<",
-            ">",
-            "º",
-            "ª",
+            Nodo.Eleccion(
+                [
+                    Nodo.Eleccion(
+                        [
+                            " ",
+                            "!",
+                            '"',
+                            "@",
+                            "·",
+                            "#",
+                            "$",
+                            "~",
+                            "%",
+                            "&",
+                            "¬",
+                            "/",
+                            "?",
+                            "¿",
+                            "¡",
+                            "^",
+                            "`",
+                        ]
+                    ),
+                    Nodo.Eleccion(
+                        [
+                            "+",
+                            "*",
+                            "¨",
+                            "ç",
+                            ",",
+                            ";",
+                            ".",
+                            ":",
+                            "-",
+                            "_",
+                            "\n",
+                            "\t",
+                            "\\",
+                            "<",
+                            ">",
+                            "º",
+                            "ª",
+                        ]
+                    ),
+                ]
+            )
         ],
     )
 

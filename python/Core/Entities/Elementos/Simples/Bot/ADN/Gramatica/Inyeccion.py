@@ -1,4 +1,4 @@
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Elementos import Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
 
 
 def _importsHardCoded():

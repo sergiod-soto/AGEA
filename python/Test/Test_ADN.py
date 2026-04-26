@@ -1,72 +1,47 @@
-# test Core.Entities.Elemento.Simples.Bot.ADN.ADN.py
-
 import pytest
-from Core.Entities.Elementos.Simples.Bot.ADN.ADN import Genoma, Gen
-from Core.Entities.Elementos.Simples.Bot.ADN import Empaquetador
-from Core.Entities.Elementos.Simples.Bot.ADN.Empaquetador import generar
-import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Base_Gramatica as Guia
+from typing import List, Union
+from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Genoma, Nodo
+from Core.Entities.Elementos.Simples.Bot.ADN import empaquetador
+from Core.Entities.Elementos.Simples.Bot.ADN.empaquetador import PackedDNA
+import Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.base_gramatica as gramatica
 
 
-# @pytest.fixture
-# def crear_genoma_palabra_sd():
-#     genoma = Genoma()
+@pytest.fixture
+def crear_nodo_palabra_cf() -> List[Union[Nodo, Genoma]]:
+    genoma = Genoma([0, 0, 2, 0, 0, 0, 5, 1])
 
-#     gen_palabra1 = Gen([0], "palabra")
-#     gen_char1 = Gen([0, 0], "char")
-#     gen_letra1 = Gen([0, 0, 0], "letra")
-#     gen_palabra2 = Gen([0, 1], "palabra")
-#     gen_char2 = Gen([0, 1, 0], "char")
-#     gen_letra2 = Gen([0, 1, 0, 0], "letra")
+    # declaramos
+    nodo_palabra = gramatica._palabra()
 
-#     genoma.add_gen(gen_palabra1)
-
-#     gen_palabra1.add_elemento(gen_char1)
-#     gen_palabra1.add_elemento(0)
-#     gen_palabra1.add_elemento(gen_palabra2)
-
-#     gen_char1.add_elemento(0)
-#     gen_char1.add_elemento(gen_letra1)
-
-#     gen_letra1.add_elemento(19)
-
-#     gen_palabra2.add_elemento(gen_char2)
-#     gen_palabra2.add_elemento(1)
-
-#     gen_char2.add_elemento(0)
-#     gen_char2.add_elemento(gen_letra2)
-
-#     gen_letra2.add_elemento(3)
-
-#     return genoma
+    return [nodo_palabra, genoma]
 
 
-# # def test_creacion_correcta_genoma(crear_genoma_palabra_sd):
-# #     print("\n\n")
-
-# #     # crear_genoma_palabra_sd["0"].print_gen()
-# #     genoma = crear_genoma_palabra_sd
-# #     for gen in genoma.genes:
-# #         print(f"gen id: ({gen}),")
-# #         print(f"\tprint: {genoma.genes[gen].print_gen()}")
-# #         print(f"\tADN: {genoma.genes[gen].get_adn()}")
-# #         print("\tGenerarOld:")
-# #         print(Compiler.generarOld(
-# #                 entrada=genoma.genes[gen].nombre,
-# #                 tokens=0,
-# #                 tokensArray=0,
-# #                 adn = genoma.genes[gen].get_adn())
-# #             )
-# #         print(":" * 20)
-# #         print()
-# #     print("-" * 50)
-# #     assert crear_genoma_palabra_sd.get_adn() == [0, 19, 0, 0, 3, 1]
+def test_generacion_codigo_palabra_cf(crear_nodo_palabra_cf):
+    nodo = crear_nodo_palabra_cf[0]
+    genoma = crear_nodo_palabra_cf[1]
+    compilado = nodo.compilar(genoma)
+    print("Codigo:")
+    print(compilado)
+    assert compilado == "cf"
 
 
-# def test_pruebas(crear_genoma_palabra_sd):
-#     genoma = crear_genoma_palabra_sd
-#     gen = genoma.genes["0.1.0.0"]
-#     adn_generado = generar(gen, Guia.guia)
-#     print("ADN generado:")
-#     print(adn_generado)
+def test_pruebas(crear_nodo_palabra_cf: List[Union[Nodo, Genoma]]):
+    nodo = crear_nodo_palabra_cf[0]
+    genoma = crear_nodo_palabra_cf[1]
+    compilado = nodo.compilar(genoma)
+    
+    hijos = nodo.get_hijos()
+    print("Nodo principal:\n")
+    print(nodo.get_nombre())
+    i = 0
+    for hijo in hijos:
+        print("\t" + str(i) + " - " + hijo.get_nombre())
+        i += 1
+        subhijos = hijo.get_hijos()
+        j = 0
+        print("hijos de " + str(hijo.get_nombre() + ": (" + str(len(hijo.get_hijos())) + ")"))
+        for sub_h in subhijos:
+            print("\t\t" + str(i) + "." + str(j) + "- " + sub_h.get_nombre())
+            j += 1
 
-#     assert 1 == 1
+    assert True
