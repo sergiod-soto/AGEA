@@ -4,20 +4,37 @@
 '''
 
 
+class ADNAgotadoError(Exception):
+    """Se lanza cuando se intenta leer mas ADN del disponible."""
+    pass
+
+
+class ADNSobranteError(Exception):
+    """Se lanza cuando termina la compilacion y queda ADN sin consumir."""
+    pass
+
+
 class PackedDNA:
     BITS = 5
     MASK = (1 << BITS) - 1  # 0b11111
-    HEADER_BYTES = 8         # 8 bytes para almacenar length
+    HEADER_BYTES = 8         # bytes reservados para la longitud total
 
     def __init__(self):
         self.data = None
         self.length = 0
 
-        # estado lectura secuencial
+        # estado lectura secuencial en memoria
         self._byte_pos = 0
         self._bitbuf = 0
         self._bits_in_buf = 0
         self._read_count = 0
+
+        # lectura streaming desde fichero
+        self._file = None
+        self._chunk_size = 4096
+        self._buf = []
+        self._buf_pos = 0
+        self._global_pos = 0   # indice absoluto global — referencia para offsets de nodos
 
     # --------------------------------------------------
     # construir desde lista
@@ -26,14 +43,12 @@ class PackedDNA:
         self.length = len(values)
         total_bits = self.length * self.BITS
         total_bytes = (total_bits + 7) // 8
-
         self.data = bytearray(total_bytes)
-
         for i, v in enumerate(values):
             self._set(i, v)
 
     # --------------------------------------------------
-    # guardar / cargar completo en memoria
+    # guardar / cargar en memoria
     # --------------------------------------------------
     def save(self, filepath: str):
         with open(filepath, "wb") as f:
@@ -46,59 +61,110 @@ class PackedDNA:
             self.data = bytearray(f.read())
 
     # --------------------------------------------------
-    # lectura de rango [inicio, fin) sin cargar todo en memoria
-    # inicio y fin son indices de elementos de adn (no bytes)
+    # apertura para streaming desde fichero
     # --------------------------------------------------
-    @staticmethod
-    def leer_rango(filepath: str, inicio: int, fin: int) -> list[int]:
+    def open(self, filepath: str, chunk_size: int = 4096) -> "PackedDNA":
         """
-        Lee los elementos ADN en el rango [inicio, fin) directamente
-        desde el fichero sin cargarlo completo en memoria.
+        Abre el fichero para lectura por chunks sin cargarlo en memoria.
+        Pensado para usarse con context manager o con close() manual.
         """
-        if fin <= inicio:
-            return []
+        self._file = open(filepath, "rb")
+        self._chunk_size = chunk_size
+        self.length = int.from_bytes(self._file.read(self.HEADER_BYTES), "little")
+        self._buf = []
+        self._buf_pos = 0
+        self._global_pos = 0
+        return self
 
-        n = fin - inicio
+    def close(self):
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
-        with open(filepath, "rb") as f:
-            # leer length de la cabecera
-            length = int.from_bytes(f.read(PackedDNA.HEADER_BYTES), "little")
+    def __enter__(self):
+        return self
 
-            if inicio >= length:
-                raise ValueError(
-                    f"inicio={inicio} fuera del rango del ADN (length={length})"
-                )
-            if fin > length:
-                raise ValueError(
-                    f"fin={fin} fuera del rango del ADN (length={length})"
-                )
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False  # nunca suprime excepciones
 
-            # calcular byte exacto donde empieza el elemento 'inicio'
-            bit_inicio = inicio * PackedDNA.BITS
-            byte_inicio = bit_inicio // 8
-            bit_offset = bit_inicio % 8   # bits a descartar del primer byte
+    # --------------------------------------------------
+    # lectura secuencial streaming — un elemento a la vez
+    # --------------------------------------------------
+    def next(self) -> int:
+        """
+        Devuelve el siguiente elemento del ADN.
+        Pide un nuevo chunk al fichero cuando el buffer local se agota.
+        Lanza ADNAgotadoError si no queda ADN.
+        """
+        if self._file is None:
+            raise RuntimeError("Fichero no abierto. Usar open() primero.")
 
-            # seek al byte correcto (cabecera + offset)
-            f.seek(PackedDNA.HEADER_BYTES + byte_inicio)
+        if self._global_pos >= self.length:
+            raise ADNAgotadoError(
+                f"ADN agotado en posicion {self._global_pos} "
+                f"(longitud total: {self.length})"
+            )
 
-            # calcular cuantos bytes necesitamos leer
-            # n elementos * 5 bits + bits_offset iniciales + 7 para redondear arriba
-            bits_necesarios = n * PackedDNA.BITS + bit_offset
-            bytes_necesarios = (bits_necesarios + 7) // 8
-            raw = f.read(bytes_necesarios)
+        if self._buf_pos >= len(self._buf):
+            self._cargar_chunk()
 
-        # decodificar
+        valor = self._buf[self._buf_pos]
+        self._buf_pos += 1
+        self._global_pos += 1
+        return valor
+
+    def elementos_restantes(self) -> int:
+        """Cuantos elementos quedan sin consumir."""
+        return self.length - self._global_pos
+
+    # --------------------------------------------------
+    # leer rango [inicio, fin] con seek directo
+    # --------------------------------------------------
+    def leer_rango(self, inicio: int, fin: int) -> list[int]:
+        """
+        Devuelve los elementos en el rango [inicio, fin] inclusive
+        haciendo seek directo al byte correspondiente.
+        No altera el estado de lectura secuencial.
+        Funciona tanto con fichero abierto como con data en memoria.
+        """
+        if inicio < 0 or fin >= self.length or inicio > fin:
+            raise ValueError(
+                f"Rango invalido [{inicio}, {fin}] "
+                f"para ADN de longitud {self.length}"
+            )
+
+        n = fin - inicio + 1
+
+        if self.data is not None:
+            # lectura desde memoria — acceso directo
+            return [self._get(i) for i in range(inicio, fin + 1)]
+
+        if self._file is not None:
+            return self._leer_rango_fichero(inicio, n)
+
+        raise RuntimeError("No hay datos. Usar open() o load() primero.")
+
+    def _leer_rango_fichero(self, inicio: int, n: int) -> list[int]:
+        """Seek directo al byte del elemento 'inicio' y decodifica n elementos."""
+        bit_inicio = inicio * self.BITS
+        byte_inicio = bit_inicio // 8
+        offset_inicial = bit_inicio % 8  # bits a descartar del primer byte
+
+        # bytes necesarios para cubrir offset_inicial + n*5 bits
+        bits_necesarios = offset_inicial + n * self.BITS
+        bytes_necesarios = (bits_necesarios + 7) // 8
+
+        self._file.seek(self.HEADER_BYTES + byte_inicio)
+        raw = bytearray(self._file.read(bytes_necesarios))
+
         out = [0] * n
-        mask = PackedDNA.MASK
-        bitbuf = 0
-        bits_in_buf = 0
-        byte_pos = 0
+        mask = self.MASK
 
-        # cargar primer byte descartando los bits de offset
-        if byte_pos < len(raw):
-            bitbuf = raw[byte_pos] >> bit_offset
-            bits_in_buf = 8 - bit_offset
-            byte_pos += 1
+        # inicializar buffer descartando los bits del offset
+        bitbuf = raw[0] >> offset_inicial
+        bits_in_buf = 8 - offset_inicial
+        byte_pos = 1
 
         for i in range(n):
             while bits_in_buf < 5 and byte_pos < len(raw):
@@ -113,15 +179,16 @@ class PackedDNA:
         return out
 
     # --------------------------------------------------
-    # abrir fichero para lectura streaming por chunks
-    # devuelve un PackedDNAStream — usado por Genoma
+    # interno — cargar siguiente chunk desde fichero
     # --------------------------------------------------
-    @staticmethod
-    def abrir_stream(filepath: str, chunk_size: int = 4096) -> "PackedDNAStream":
-        return PackedDNAStream(filepath, chunk_size)
+    def _cargar_chunk(self):
+        inicio = self._global_pos
+        fin = min(inicio + self._chunk_size - 1, self.length - 1)
+        self._buf = self._leer_rango_fichero(inicio, fin - inicio + 1)
+        self._buf_pos = 0
 
     # --------------------------------------------------
-    # reset lectura en memoria
+    # reset y lectura por bloque (para data en memoria)
     # --------------------------------------------------
     def reset_lectura(self):
         self._byte_pos = 0
@@ -129,12 +196,12 @@ class PackedDNA:
         self._bits_in_buf = 0
         self._read_count = 0
 
-    # --------------------------------------------------
-    # lectura por bloque optimizada (en memoria)
-    # --------------------------------------------------
     def leer_bloque_fast(self, n: int = 4096) -> list[int]:
         if self.data is None:
-            raise ValueError("No hay datos cargados en memoria")
+            raise ValueError(
+                "No hay datos en memoria. "
+                "leer_bloque_fast solo funciona con load()."
+            )
 
         remaining = self.length - self._read_count
         if remaining <= 0:
@@ -171,17 +238,16 @@ class PackedDNA:
     # --------------------------------------------------
     # debug
     # --------------------------------------------------
-    def debug_print(self, limit=50):
+    def debug_print(self, limit: int = 50):
         self.reset_lectura()
         vals = self.leer_bloque_fast(limit)
-
         print("Bits:")
         print(" | ".join(f"{v:05b}" for v in vals))
         print("Dec:")
         print(" | ".join(str(v) for v in vals))
 
     # --------------------------------------------------
-    # metodos internos
+    # metodos internos de acceso a memoria
     # --------------------------------------------------
     def _set(self, i: int, value: int):
         bit_pos = i * self.BITS
@@ -208,131 +274,3 @@ class PackedDNA:
             val |= self.data[byte_pos + 1] << (8 - offset)
 
         return val & self.MASK
-
-
-class PackedDNAStream:
-    """
-    Lectura streaming de un fichero PackedDNA por chunks.
-    Mantiene el fichero abierto mientras dure la compilacion.
-    Usado internamente por Genoma.desde_fichero().
-    """
-
-    def __init__(self, filepath: str, chunk_size: int = 4096):
-        self.filepath = filepath
-        self.chunk_size = chunk_size
-
-        self._file = open(filepath, "rb")
-
-        # leer cabecera
-        self.length = int.from_bytes(
-            self._file.read(PackedDNA.HEADER_BYTES), "little"
-        )
-
-        # estado del stream
-        self._buffer: list[int] = []
-        self._buf_pos = 0          # indice local dentro del buffer actual
-        self._global_pos = 0       # indice global — usado para offsets de nodos
-
-        # estado bit a bit del fichero
-        self._byte_pos = 0
-        self._bitbuf = 0
-        self._bits_in_buf = 0
-
-        # cargar primer chunk
-        self._cargar_chunk()
-
-    def next(self) -> int:
-        """
-        Devuelve el siguiente elemento del ADN e incrementa el indice global.
-        Lanza ADNAgotadoError si no quedan elementos.
-        """
-        if self._global_pos >= self.length:
-            raise ADNAgotadoError(
-                f"ADN agotado en posicion {self._global_pos} "
-                f"(length={self.length})"
-            )
-
-        # si el buffer local se agoto, pedir siguiente chunk
-        if self._buf_pos >= len(self._buffer):
-            self._cargar_chunk()
-            if not self._buffer:
-                raise ADNAgotadoError(
-                    f"ADN agotado inesperadamente en posicion {self._global_pos}"
-                )
-
-        valor = self._buffer[self._buf_pos]
-        self._buf_pos += 1
-        self._global_pos += 1
-        return valor
-
-    def current_pos(self) -> int:
-        """Posicion global actual (indice del proximo elemento sin consumir)."""
-        return self._global_pos
-
-    def hay_restante(self) -> bool:
-        """True si queda al menos un elemento sin consumir."""
-        return self._global_pos < self.length
-
-    def close(self):
-        if self._file and not self._file.closed:
-            self._file.close()
-
-    def _cargar_chunk(self):
-        """Carga el siguiente chunk desde el fichero al buffer interno."""
-        remaining = self.length - self._global_pos - self._buf_pos + (
-            len(self._buffer) - self._buf_pos
-            if self._buffer else 0
-        )
-
-        # calcular cuantos elementos quedan realmente
-        elementos_restantes = self.length - (
-            self._global_pos - (len(self._buffer) - self._buf_pos)
-            if self._buffer else self._global_pos
-        )
-        n = min(self.chunk_size, max(0, self.length - self._global_pos))
-
-        if n <= 0:
-            self._buffer = []
-            self._buf_pos = 0
-            return
-
-        out = [0] * n
-        mask = PackedDNA.MASK
-
-        data_file = self._file
-        byte_pos = self._byte_pos
-        bitbuf = self._bitbuf
-        bits_in_buf = self._bits_in_buf
-
-        for i in range(n):
-            while bits_in_buf < 5:
-                byte = data_file.read(1)
-                if not byte:
-                    # fichero terminado antes de lo esperado
-                    raise ADNAgotadoError(
-                        f"Fichero truncado leyendo elemento {self._global_pos + i}"
-                    )
-                bitbuf |= byte[0] << bits_in_buf
-                bits_in_buf += 8
-                byte_pos += 1
-
-            out[i] = bitbuf & mask
-            bitbuf >>= 5
-            bits_in_buf -= 5
-
-        self._byte_pos = byte_pos
-        self._bitbuf = bitbuf
-        self._bits_in_buf = bits_in_buf
-
-        self._buffer = out
-        self._buf_pos = 0
-
-
-class ADNAgotadoError(Exception):
-    """El ADN se ha agotado antes de terminar la compilacion."""
-    pass
-
-
-class ADNSobranteError(Exception):
-    """La compilacion termino pero quedaba ADN sin consumir."""
-    pass
