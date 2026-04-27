@@ -51,5 +51,26 @@ def test_pruebas(crear_nodo_palabra_cf: List[Union[Nodo, Genoma]]):
     i = 0
     for hijo in nodo_char.get_hijos():
         print("\t" + str(i) + " - " + hijo.get_nombre())
+        
+    print("\n\nOFFSETS")
+    print("nodo _palabra:")
+    offset_palabra = nodo.get_offsets()
+    print("\t" + str(offset_palabra[0]) + ", " + str(offset_palabra[1]))
+    print("nodo _char:")
+    nodo_char = nodo.get_hijos()[0]
+    offset_char = nodo_char.get_offsets()
+    print("\t" + str(offset_char[0]) + ", " + str(offset_char[1]))
+    print("nodo _letra:")
+    nodo_letra = nodo_char.get_hijos()[0]
+    offset_letra = nodo_letra.get_offsets()
+    print("\t" + str(offset_letra[0]) + ", " + str(offset_letra[1]))
+    print("nodo _minuscula:")
+    nodo_minuscula = nodo_letra.get_hijos()[0]
+    offset_minuscula = nodo_minuscula.get_offsets()
+    print("\t" + str(offset_minuscula[0]) + ", " + str(offset_minuscula[1]))
+    print("nodo _palabra2:")
+    nodo_palabra2 = nodo.get_hijos()[1]
+    offset_palabra2 = nodo_palabra2.get_offsets()
+    print("\t" + str(offset_palabra2[0]) + ", " + str(offset_palabra2[1]))
 
     assert True

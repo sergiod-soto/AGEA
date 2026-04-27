@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Union
+from typing import List
 
 
 class Genoma:
@@ -56,7 +56,7 @@ class Nodo:
         def __init__(self, opciones: list):
             self.opciones = opciones
 
-        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
+        def compilar(self, genoma: "Genoma", padre: "Nodo" = None):
             item = self.opciones[genoma.contexto.next_adn()]
 
             if isinstance(item, str):
@@ -84,10 +84,6 @@ class Nodo:
 
             raise TypeError(f"Elemento no reconocido en Eleccion: {type(item)}")
 
-        def get_nodos(self, genoma: Genoma):
-            # mantenido por compatibilidad, pero ya no es necesario en el flujo principal
-            return None
-
     class Tab:
 
         def __init__(self, items):
@@ -97,7 +93,7 @@ class Nodo:
             else:
                 self.items = items
 
-        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
+        def compilar(self, genoma: "Genoma", padre: "Nodo" = None):
             partes = []
 
             for item in self.items:
@@ -126,9 +122,6 @@ class Nodo:
 
             return "".join(partes)
 
-        def get_nodos(self, genoma: Genoma):
-            return None
-
     class Import:
 
         def __init__(self, libreria: str, paquetes: list):
@@ -139,7 +132,7 @@ class Nodo:
             for paquete in paquetes:
                 librerias_usadas[libreria].add(paquete)
 
-        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
+        def compilar(self, genoma: "Genoma", padre: "Nodo" = None):
             if self.libreria is None and self.paquetes is None:
                 # import vacio — senial de fin de imports, vuelca lo acumulado
                 return genoma.contexto.get_imports()
@@ -149,9 +142,6 @@ class Nodo:
             )
             return ""
 
-        def get_nodos(self, genoma: Genoma):
-            return None
-
     def __init__(self, nombre: str, items: list):
         self.nombre = nombre
         self.items = items
@@ -160,6 +150,9 @@ class Nodo:
         self.adn_offset_max = -1
 
     def compilar(self, genoma: Genoma) -> str:
+        # registrar inicio antes de compilar nada — incluye lo que consuman los hijos
+        self.adn_offset_min = genoma.contexto.ite
+
         partes = []
 
         for elemento in self.items:
@@ -171,8 +164,8 @@ class Nodo:
             if callable(elemento):
                 # funcion de gramatica: _dato, _variable, etc.
                 nodo = elemento()
-                resultado = nodo.compilar(genoma)   # puebla nodo.hijos recursivamente
-                self.hijos.append(nodo)             # guardamos ya con sus hijos
+                resultado = nodo.compilar(genoma)   # propaga offsets recursivamente
+                self.hijos.append(nodo)
                 partes.append(resultado)
                 continue
 
@@ -207,6 +200,10 @@ class Nodo:
                 f"Elemento no reconocido en compilar [{self.nombre}]: {type(elemento)}"
             )
 
+        # registrar fin tras compilar todo, hijos incluidos
+        # ite apunta al siguiente sin consumir, por eso restamos 1
+        self.adn_offset_max = genoma.contexto.ite - 1
+
         return "".join(partes)
 
     def get_hijos(self) -> List["Nodo"]:
@@ -215,5 +212,30 @@ class Nodo:
     def get_nombre(self) -> str:
         return self.nombre
 
+    def get_offsets(self) -> tuple:
+        return self.adn_offset_min, self.adn_offset_max
+
+    def imprimir_arbol(self, nivel: int = 0):
+        """
+        Imprime el arbol de nodos con sus offsets para depuracion.
+        Ejemplo de salida:
+            _programa: [0 - 42]
+              _funciones: [0 - 20]
+                _funcion: [0 - 10]
+              _codigo: [21 - 42]
+        """
+        sangria = "  " * nivel
+        print(
+            f"{sangria}{self.nombre}: "
+            f"[{self.adn_offset_min} - {self.adn_offset_max}]"
+        )
+        for hijo in self.hijos:
+            if isinstance(hijo, Nodo):
+                hijo.imprimir_arbol(nivel + 1)
+
     def __repr__(self):
-        return f"Nodo({self.nombre!r}, hijos={len(self.hijos)})"
+        return (
+            f"Nodo({self.nombre!r}, "
+            f"offsets=[{self.adn_offset_min}-{self.adn_offset_max}], "
+            f"hijos={len(self.hijos)})"
+        )
