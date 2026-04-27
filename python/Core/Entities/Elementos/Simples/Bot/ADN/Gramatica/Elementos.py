@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import List, Union
 
 
-
 class Genoma:
     """
     Clase usada para individualizar la gramatica de un bot,
@@ -57,112 +56,92 @@ class Nodo:
         def __init__(self, opciones: list):
             self.opciones = opciones
 
-        def compilar(self, genoma: Genoma):
+        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
             item = self.opciones[genoma.contexto.next_adn()]
 
             if isinstance(item, str):
                 return item
 
-            if hasattr(
-                item, "compilar"
-            ):  # es Eleccion, Nodo o Tab. Ej: Nodo.Eleccion([ _dato, ... ,_variable])
-                return item.compilar(genoma)
+            if isinstance(item, list):
+                # array de elementos dentro de una eleccion: Nodo.Eleccion([[_a, _b], _c])
+                nodo_lista = Nodo("_eleccion_lista", item)
+                resultado = nodo_lista.compilar(genoma)
+                if padre is not None:
+                    padre.hijos.append(nodo_lista)
+                return resultado
 
-            if callable(item):  # es una funcion. Ej: _dato
-                return item().compilar(genoma)
+            if callable(item):
+                # funcion de gramatica: _dato, _variable, etc.
+                nodo = item()
+                resultado = nodo.compilar(genoma)
+                if padre is not None:
+                    padre.hijos.append(nodo)
+                return resultado
 
-            if isinstance(
-                item, list
-            ):  # Array. Se puede encontrar como conjunto de elementos que conforman una posibilidad en una eleccion. Ej: [_a(), _b()]
-                return Nodo._compilar_lista(item, genoma)
+            if hasattr(item, "compilar"):
+                # Eleccion, Tab, Import anidados
+                return item.compilar(genoma, padre)
 
-            raise TypeError(f"Elemento no reconocido: {type(item)}")
+            raise TypeError(f"Elemento no reconocido en Eleccion: {type(item)}")
 
         def get_nodos(self, genoma: Genoma):
-            eleccion = self.opciones[genoma.contexto.get_current_adn()]
-
-            if isinstance(eleccion, str):
-                return None
-
-            if hasattr(eleccion, "get_nodos"):
-                return [eleccion.get_nodos(genoma)]
-
-            if callable(eleccion):
-                return [eleccion()]
-
-            if isinstance(eleccion, list):
-                return Nodo._get_hijos_lista(eleccion, genoma)
+            # mantenido por compatibilidad, pero ya no es necesario en el flujo principal
+            return None
 
     class Tab:
-        def __init__(self, items: list):
-            self.items = items
 
-        def compilar(self, genoma: Genoma):
+        def __init__(self, items):
+            # items puede ser un callable (funcion de gramatica) o una lista
+            if callable(items):
+                self.items = [items]
+            else:
+                self.items = items
+
+        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
             partes = []
-            hijos = []
 
             for item in self.items:
-
                 partes.append("\t")
 
                 if isinstance(item, str):
                     partes.append(item)
                     continue
 
-                if hasattr(item, "compilar"):
-                    partes.append(item.compilar(genoma))
+                if callable(item):
+                    nodo = item()
+                    resultado = nodo.compilar(genoma)
+                    if padre is not None:
+                        padre.hijos.append(nodo)
+                    partes.append(resultado)
                     continue
 
-                if callable(item):
-                    partes.append(item().compilar(genoma))
-                    hijos.append([item()])
+                if hasattr(item, "compilar"):
+                    partes.append(item.compilar(genoma, padre))
                     continue
 
                 if isinstance(item, list):
-                    raise TypeError(f"No se permiten listas en la lista de Tab")
+                    raise TypeError("No se permiten listas directas en Tab")
 
                 raise TypeError(f"Elemento no reconocido en Tab: {type(item)}")
 
             return "".join(partes)
 
         def get_nodos(self, genoma: Genoma):
-            hijos = []
-            for hijo in self.items:
-
-                if isinstance(hijo, str):
-                    continue
-
-                if hasattr(hijo, "get_nodos"):
-                    hijos.append(hijo.get_nodos(genoma))
-                    continue
-
-                if callable(hijo):
-                    hijos.append([hijo()])
-                    continue
-
-                if isinstance(hijo, list):
-                    raise TypeError(f"No se permiten listas en la lista de Tab")
-
-                raise TypeError(f"Elemento no reconocido en Tab: {type(hijo)}")
-
-            return hijos
+            return None
 
     class Import:
 
-        def __init__(self, libreria: str, paquetes: list[str]):
+        def __init__(self, libreria: str, paquetes: list):
             self.libreria = libreria
             self.paquetes = paquetes
 
-        def _agregar(self, libreria: str, paquetes: list[str], librerias_usadas: set):
+        def _agregar(self, libreria: str, paquetes: list, librerias_usadas: dict):
             for paquete in paquetes:
-                self._agregar_paquete(libreria, paquete, librerias_usadas)
+                librerias_usadas[libreria].add(paquete)
 
-        def _agregar_paquete(self, libreria: str, paquete: str, librerias_usadas: set):
-            librerias_usadas[libreria].add(paquete)
-
-        def compilar(self, genoma: Genoma):
+        def compilar(self, genoma: Genoma, padre: "Nodo" = None):
             if self.libreria is None and self.paquetes is None:
-                # import vacio que indica fin de imports
+                # import vacio — senial de fin de imports, vuelca lo acumulado
                 return genoma.contexto.get_imports()
 
             self._agregar(
@@ -174,80 +153,67 @@ class Nodo:
             return None
 
     def __init__(self, nombre: str, items: list):
-
         self.nombre = nombre
         self.items = items
-        self.hijos = []
+        self.hijos: List["Nodo"] = []
         self.adn_offset_min = -1
         self.adn_offset_max = -1
 
-    def _compilar_lista(self, lista: list, genoma: Genoma):
+    def compilar(self, genoma: Genoma) -> str:
         partes = []
 
-        for elemento in lista:
+        for elemento in self.items:
 
             if isinstance(elemento, str):
                 partes.append(elemento)
                 continue
 
-            if hasattr(elemento, "compilar"):
-                subhijos = elemento.get_nodos(genoma)
-                if subhijos is not None and subhijos != []:
-                    for hijo in subhijos:
-                        if hijo is None:
-                            continue
-                        self.hijos.append(hijo)
-                #
-                partes.append(elemento.compilar(genoma))
-
+            if callable(elemento):
+                # funcion de gramatica: _dato, _variable, etc.
+                nodo = elemento()
+                resultado = nodo.compilar(genoma)   # puebla nodo.hijos recursivamente
+                self.hijos.append(nodo)             # guardamos ya con sus hijos
+                partes.append(resultado)
                 continue
 
-            if callable(elemento):
-                self.hijos.append(elemento())
-                #
-                partes.append(elemento().compilar(genoma))
+            if isinstance(elemento, Nodo.Eleccion):
+                partes.append(elemento.compilar(genoma, padre=self))
+                continue
+
+            if isinstance(elemento, Nodo.Tab):
+                partes.append(elemento.compilar(genoma, padre=self))
+                continue
+
+            if isinstance(elemento, Nodo.Import):
+                partes.append(elemento.compilar(genoma, padre=self))
+                continue
+
+            if isinstance(elemento, Nodo):
+                # nodo instanciado directamente
+                resultado = elemento.compilar(genoma)
+                self.hijos.append(elemento)
+                partes.append(resultado)
                 continue
 
             if isinstance(elemento, list):
-                # subhijos = Nodo._get_hijos_lista(elemento, genoma)
-                # for subhijo in subhijos:
-                #     self.hijos.append(subhijo)
-                #
-                partes.append(Nodo._compilar_lista(elemento, genoma))
+                # array plano de elementos: [_a, _b, "texto"]
+                nodo_lista = Nodo("_lista", elemento)
+                resultado = nodo_lista.compilar(genoma)
+                self.hijos.extend(nodo_lista.hijos)
+                partes.append(resultado)
                 continue
 
             raise TypeError(
-                f"Elemento no reconocido en _compilar_lista: {type(elemento)}"
+                f"Elemento no reconocido en compilar [{self.nombre}]: {type(elemento)}"
             )
 
         return "".join(partes)
 
-    def _get_hijos_lista(self, lista: list, genoma: Genoma):
-        hijos = []
-
-        for item in lista:
-            if isinstance(item, str):
-                continue
-
-            if hasattr(item, "get_nodos"):
-                hijos.append(item.get_nodos(genoma))
-                continue
-
-            if callable(item):
-                hijos.append([item()])
-                continue
-
-            if isinstance(item, list):
-                hijos.append(self._get_hijos_lista(item, genoma))
-                continue
-
-        return hijos
-
     def get_hijos(self) -> List["Nodo"]:
         return self.hijos
 
-    def get_nombre(self):
+    def get_nombre(self) -> str:
         return self.nombre
 
-    def compilar(self, genoma: Genoma):
-        return Nodo._compilar_lista(self, self.items, genoma)
+    def __repr__(self):
+        return f"Nodo({self.nombre!r}, hijos={len(self.hijos)})"

@@ -41,7 +41,15 @@ def test_pruebas(crear_nodo_palabra_cf: List[Union[Nodo, Genoma]]):
         j = 0
         print("hijos de " + str(hijo.get_nombre() + ": (" + str(len(hijo.get_hijos())) + ")"))
         for sub_h in subhijos:
-            print("\t\t" + str(i) + "." + str(j) + "- " + sub_h.get_nombre())
+            print("\t\t" + str(i) + "." + str(j) + " - " + sub_h.get_nombre())
             j += 1
+        
+    nodo_char = hijos[0]
+    
+    print("\nHijo " + nodo_char.get_nombre() + ":")
+    print("Numero de hijos: " + str(len(nodo_char.get_hijos())))
+    i = 0
+    for hijo in nodo_char.get_hijos():
+        print("\t" + str(i) + " - " + hijo.get_nombre())
 
     assert True
