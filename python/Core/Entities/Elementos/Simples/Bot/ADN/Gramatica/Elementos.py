@@ -1,6 +1,18 @@
 from collections import defaultdict
 from typing import List
 
+'''
+# compilacion normal
+with Genoma.desde_fichero("adn.bin", chunk_size=4096) as genoma:
+    codigo = nodo_programa.compilar(genoma)
+# → ADNSobranteError si queda ADN
+# → ADNAgotadoError si se agota antes de terminar
+# → fichero cerrado en cualquier caso
+
+# consulta de rango sin afectar la compilacion
+adn_trozo = genoma.leer_rango(0, 99)
+'''
+
 
 class Genoma:
     """
@@ -224,7 +236,7 @@ class Nodo:
                 _funcion: [0 - 10]
               _codigo: [21 - 42]
         """
-        sangria = "  " * nivel
+        sangria = "\t" * nivel
         print(
             f"{sangria}{self.nombre}: "
             f"[{self.adn_offset_min} - {self.adn_offset_max}]"
