@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+from typing import Callable
+from bitarray import bitarray
+
 
 """
     Clase padre a heredar para la generacion de puzzles.
@@ -13,6 +16,8 @@ from abc import ABC, abstractmethod
     - posible feedback de las acciones 
 """
 
+MAX_BOTS: int = 1_000_000  # ajustar según el sistema
+
 
 class Puzzle(ABC):
 
@@ -20,15 +25,13 @@ class Puzzle(ABC):
         def __init__(
             self,
             nombre: str,
-            cd: int,
             premio,
-            acciones: list[function],
-            maquinaEstados: Puzzle.MaquinaEstados,
+            maquinaEstados: "Puzzle.MaquinaEstados",
+            cd: int = 0,  # numero de tics que un bot tiene que esperar antes de volver a intentarlo
         ):
             self.nombre = nombre
             self.cd = cd
             self.premio = premio
-            self.acciones = acciones
             self.maquinaEstados = maquinaEstados
 
     class MaquinaEstados:
@@ -37,10 +40,11 @@ class Puzzle(ABC):
 
             def __init__(
                 self,
-                opciones: list[function],
-                # puede que, segun el estado, se puedan realizar diferentes acciones.
+                opciones: list[Callable],
+                # diferentes estados pueden tener diferentes acciones.
                 # para instanciarlo, se puede hacer:
-                # ([
+                #
+                # Estado([
                 #     partial(mi_funct, "Inicio"),
                 #     lambda: print("Algo específico"),
                 # ])
@@ -53,26 +57,53 @@ class Puzzle(ABC):
         def __init__(self, estados: list[Estado], estado_inicial: Estado = None):
             self.estados = estados
             self.estado_inicial = estado_inicial or estados[0]
-            self.estado_actual = estado_inicial
+            self.estado_actual = self.estado_inicial
 
         def get_estado_actual(self):
             return self.estado_actual
 
         def reset_maquina(self):
-            self.estado_actual = self.estados[0]
+            self.estado_actual = self.estado_inicial
 
-    # _____________________________________________________________________________________________
+        def ejecutar_accion(self, accion: Callable) -> Estado:
+            resultado = accion()
+            # la acción retorna el nuevo Estado o None si no hay cambio
+            self.estado_actual = resultado
+            return resultado
+
+        # _____________________________________________________________________________________________
 
     def __init__(self, parametros: PuzzleParams):
         self.parametros = parametros
+        self._resuelto_por = bitarray(MAX_BOTS)
+        self._resuelto_por.setall(0)
+        self.historial: list[Callable] = []  # ↓
+        # usado para guardar los pasos que ha dado el bot
+        # (en ciertos puzzles, siempre estara vacio para forzar uso de la memoria)
 
-    def get_list_acciones(self) -> list[function]:
+    def get_list_acciones(self) -> list[Callable]:
         """
         retorna la lista de posibles acciones del estado actual
         """
 
-        return self.parametros.acciones
+        return self.parametros.maquinaEstados.get_estado_actual().get_opciones()
 
+    def marcar_resuelto(self, bot_id: int) -> None:
+        self._resuelto_por[bot_id] = 1
+
+    def ha_resuelto(self, bot_id: int) -> bool:
+        return self._resuelto_por[bot_id]
+
+    def actualizar_ids(self, reasignaciones: list[tuple[int, int]]) -> None:
+        for id_viejo, id_nuevo in reasignaciones:
+            self._resuelto_por[id_nuevo] = self._resuelto_por[id_viejo]
+            self._resuelto_por[id_viejo] = 0
+
+    #   __________________________________________
+    #   metodos a implementar por cada puzzle
+    #   __________________________________________
+    #
+    @abstractmethod
     def reset_estado_inicial(self):
         """
         reinicia el puzzle al estado base
@@ -81,7 +112,7 @@ class Puzzle(ABC):
         pass
 
     @abstractmethod
-    def get_premio(self):
+    def otorgar_premio(self):
         """
         retorna el premio
         """
