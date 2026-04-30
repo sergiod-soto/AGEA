@@ -2,4 +2,7 @@
 
 
 class Premio:
-    pass
+    
+    def __init__():
+        
+        pass

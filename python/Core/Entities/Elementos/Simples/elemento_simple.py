@@ -1,4 +1,4 @@
-from Core.Entities.elemento import Elemento
+from Core.Entities.Elementos.elemento import Elemento
 
 
 class Elemento_Simple(Elemento):

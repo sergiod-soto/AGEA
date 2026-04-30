@@ -1,4 +1,4 @@
-from Core.Entities.Elemento import Elemento
+from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 
 #
 # las piedras son elementos que pueden ser movidas a cambio de energia, no 
@@ -11,5 +11,5 @@ from Core.Entities.Elemento import Elemento
 
 
 
-class Piedra(Elemento):
+class Piedra(Elemento_Simple):
     pass

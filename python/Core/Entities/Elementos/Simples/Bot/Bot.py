@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
-from Core.Entities.Elemento import Elemento
-from Core.Entities.Elementos.Simples.Bot import Controlador
-from Exceptions import *
+from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
+from Core.Entities.Elementos.Simples.Bot.controlador import obtener_siguiente_apellido
+from exceptions import *
 
 
 stats_bots = [
@@ -51,7 +51,7 @@ def generarApellidos(ape1, ape2):
     return apellidos
 
 
-class Bot(Elemento):
+class Bot(Elemento_Simple):
 
     class Stats:
 
@@ -276,7 +276,7 @@ class Bot(Elemento):
             print("ERROR CON LOS STATS")
 
     def inicializar_apellido(self):
-        return Controlador.obtener_siguiente_apellido()
+        return obtener_siguiente_apellido()
 
     def set_casilla(self, new_casilla: Tuple[int, int]):
         self.stats = new_casilla

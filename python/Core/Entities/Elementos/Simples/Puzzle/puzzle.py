@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 from bitarray import bitarray
+from Core.Entities.Elementos.Simples.Puzzle.premio import Premio
 
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 
@@ -18,12 +19,16 @@ class Puzzle(ABC, Elemento_Simple):
 
     class MaquinaEstados:
         def __init__(
-            self, estados: list["Puzzle.Estado"], estado_inicial: "Puzzle.Estado" = None
+            self,
+            estados: list["Puzzle.Estado"],
+            estado_inicial: "Puzzle.Estado" = None,
+            bot_id: int = None,  #   obtiene el id del bot que lo usa si el puzzle es personal
         ):
             self.estados = estados
             self.estado_inicial = estado_inicial or estados[0]
             self.estado_actual = self.estado_inicial
             self.historial: list[Callable] = []
+            self.bot_id = bot_id
 
         def get_estado_actual(self) -> "Puzzle.Estado":
             return self.estado_actual
@@ -42,16 +47,18 @@ class Puzzle(ABC, Elemento_Simple):
         def __init__(
             self,
             nombre: str,
-            premio,
+            premios: list[Premio],
             estados: list["Puzzle.Estado"],
             estado_inicial: "Puzzle.Estado" = None,
             cd: int = 0,
+            abstracto: bool = False,
         ):
             self.nombre = nombre
             self.cd = cd
-            self.premio = premio
+            self.premios = premios
             self.estados = estados
             self.estado_inicial = estado_inicial
+            self.abstracto = abstracto
 
     # _____________________________________________________________________________________________
 
@@ -61,11 +68,16 @@ class Puzzle(ABC, Elemento_Simple):
         self._resuelto_por = bitarray(MAX_BOTS)
         self._resuelto_por.setall(0)
 
-    def iniciar_bot(self, bot_id: int) -> None:
+    def iniciar_bot(self, bot_id: int = None) -> None:
         """El mundo llama a esto cuando un bot empieza a interactuar con el puzzle."""
         self.maquinasEstados[bot_id] = Puzzle.MaquinaEstados(
-            self.parametros.estados, self.parametros.estado_inicial
+            self.parametros.estados,
+            self.parametros.estado_inicial,
+            bot_id,
         )
+
+    def es_abstracto(self):
+        return self.parametros.abstracto
 
     def abandonar_bot(self, bot_id: int) -> None:
         """El mundo llama a esto cuando un bot abandona el puzzle. Resetea su progreso."""
@@ -97,7 +109,7 @@ class Puzzle(ABC, Elemento_Simple):
         self.maquinasEstados.update(maquinas_nuevas)
 
     @abstractmethod
-    def get_premio(self):
+    def dar_premio(self, premio: Premio):
         pass
 
     @abstractmethod

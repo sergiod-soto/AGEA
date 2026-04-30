@@ -7,5 +7,4 @@
 
 class Elemento:
 
-    def __init__():
-        pass
+    mundo = None
