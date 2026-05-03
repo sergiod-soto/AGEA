@@ -5,4 +5,5 @@ como una semilla hasta que se entierra
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 class Latente(Temporal):
-    pass
+    def __init__(self):
+        super().__init__()

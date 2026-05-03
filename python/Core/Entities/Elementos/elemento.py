@@ -4,7 +4,12 @@
 # pueden interactuar entre ellos en funcion de su presencia en las proximidades
 #
 
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
-class Elemento:
+
+class Elemento(Comportamiento):
 
     mundo = None
+
+    def __init__(self):
+        super().__init__()

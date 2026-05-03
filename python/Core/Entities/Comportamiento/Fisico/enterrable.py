@@ -1,8 +1,28 @@
+from abc import abstractmethod
+
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 
 
 class Enterrable(Fisico):
 
-    def __init__(self, enterrable: bool = True):
+    def __init__(self):
         super().__init__()
-        self.enterrable = enterrable
+
+        self.enterrable: bool = True
+        self.enterrado = False
+
+    @abstractmethod
+    def check_enterrable(self) -> bool:
+        pass
+
+    @abstractmethod
+    def check_desenterrable(self) -> bool:
+        pass
+
+    @abstractmethod
+    def enterrar(self):
+        pass
+
+    @abstractmethod
+    def desenterrar(self):
+        pass

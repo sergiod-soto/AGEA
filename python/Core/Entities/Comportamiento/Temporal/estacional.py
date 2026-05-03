@@ -1,4 +1,5 @@
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 class Estacional(Temporal):
-    pass
+    def __init__(self):
+        super().__init__()

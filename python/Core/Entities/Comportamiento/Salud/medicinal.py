@@ -1,4 +1,5 @@
 from Core.Entities.Comportamiento.Salud.salud import Salud
 
 class Medicinal(Salud):
-    pass
+    def __init__(self):
+        super().__init__()

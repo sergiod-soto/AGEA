@@ -1,4 +1,5 @@
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 
 class Interactuable(Interaccion):
-    pass
+    def __init__(self):
+        super().__init__()
