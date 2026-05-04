@@ -1,9 +1,18 @@
-from Core.Entities.Comportamiento.Material.material import Material
+from abc import abstractmethod
 
-class Convinable(Material):
-    '''
-    Indica si 2 Elementos iguales se pueden fusionar en uno solo.
-    Como crafteable, per reversible
-    '''
-    def __init__(self):
+from Core.Entities.Comportamiento.Material.material import Material
+from Core.Entities.Elementos.elemento import Elemento
+
+"""
+un elemento es Combinable si puede ser dividido en 2 elementos iguales de inferior cantidad
+"""
+
+
+class Combinable(Material):
+    def __init__(self, elemento: Elemento, cantidad_max: float = None):
         super().__init__()
+        self.elemento = elemento
+        self.cantidad_max = cantidad_max or float("inf")
+
+    @abstractmethod
+    def combinar(self, elemento: Elemento) -> bool: ...

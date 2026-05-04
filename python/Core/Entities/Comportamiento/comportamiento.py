@@ -46,5 +46,5 @@ class Comportamiento:
     @classmethod
     def desde_dict(cls, datos: dict):
         obj = cls.__new__(cls)
-        obj.__dict__.update(datos)
+        obj.__dict__.update(datos) 
         return obj
