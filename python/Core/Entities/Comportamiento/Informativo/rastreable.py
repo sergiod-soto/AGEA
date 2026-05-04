@@ -19,11 +19,4 @@ class Rastreable(Informativo):
         super().__init__()
         self.condiciones_rastro = condiciones_rastro or []
 
-    def dejar_rastro(self, terreno) -> Rastro | None:
-        for condiciones, intensidad_base in self.condiciones_rastro:
-            if all(c.evaluar() for c in condiciones):
-                return Rastro(
-                    origen=self,
-                    intensidad=intensidad_base * terreno.calcular_intensidad(self),
-                )
-        return None
+    def dejar_rastro(self, terreno) -> Rastro | None: ...
