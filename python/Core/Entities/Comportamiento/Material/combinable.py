@@ -15,4 +15,16 @@ class Combinable(Material):
         self.cantidad_max = cantidad_max or float("inf")
 
     @abstractmethod
-    def combinar(self, elemento: Elemento) -> bool: ...
+    def combinar(self, elemento: Elemento) -> Elemento:
+        """
+        Intenta combinar 2 Elementos combinables iguales.
+        
+        En caso de lograrlo sin problemas, retorna None.
+        
+        Si no se pueden combinar, retorna el Elemento original.
+        
+        Si se pueden combinar, pero el resultado supera el maximo, el
+        Elemento objetivo se pone al maximo y se retorna el original con
+        la cantidad sobrante
+        """
+        ...

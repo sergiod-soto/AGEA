@@ -42,8 +42,7 @@ class Empujable(Fisico):
         Intenta mover la entidad una celda en `direccion`.
         Devuelve un Elemento si choca contra algo, True si tendria exito o False si no puede.
         """
-        pass
+        ...
 
     @abstractmethod
-    def push(self, direccion) -> bool:
-        pass
+    def push(self, direccion) -> bool: ...
