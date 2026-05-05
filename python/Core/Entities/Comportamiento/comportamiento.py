@@ -46,5 +46,9 @@ class Comportamiento:
     @classmethod
     def desde_dict(cls, datos: dict):
         obj = cls.__new__(cls)
-        obj.__dict__.update(datos) 
+        obj.__dict__.update(datos)
         return obj
+
+    def declarar_comportamientos(*clases):
+        """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
+        return type("Comportamientos", clases, {})

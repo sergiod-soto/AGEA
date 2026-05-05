@@ -9,8 +9,8 @@ class Elemento_Simple(Elemento):
         tamanho: float,
         distancia_visible: int,
         casilla: tuple[int, int],
+        capa: int,
         rotacion: int = 0,
-        capa: int = 0,
     ):
         self.tipo = tipo
         self.tamanho = tamanho

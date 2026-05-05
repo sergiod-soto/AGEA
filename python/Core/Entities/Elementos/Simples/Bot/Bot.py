@@ -1,7 +1,13 @@
 from typing import Optional, Tuple
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Core.Entities.Elementos.Simples.Bot.controlador import obtener_siguiente_apellido
-from exceptions import *
+from Core.Entities.Elementos.Simples.Bot.Controlador import obtener_siguiente_apellido
+from Exceptions import *
+from Core.Entities.Comportamiento.comportamiento import Comportamiento as C
+
+
+comportamientos = C.declarar_comportamientos(
+
+)
 
 
 stats_bots = [

@@ -1,6 +1,6 @@
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
-from Core.Entities.Elementos.Abstractos.Marcadores.Tiempo.estacion import Estacion
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.estacion import Estacion
 
 
 class Estacional(Temporal):

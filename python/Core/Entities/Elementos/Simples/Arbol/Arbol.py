@@ -1,4 +1,10 @@
-from Core.Entities.Elemento import Elemento
+from Core.Entities.Elementos.elemento import Elemento
+from Core.Entities.Comportamiento.comportamiento import Comportamiento as C
+
+
+comportamientos = C.declarar_comportamientos(
+
+)
 
 # los arboles no se pueden mover. generan comida y semillas periodicamente
 # las semillas se convierten en arbol despues de un tiempo si no hay mas de una cierta
