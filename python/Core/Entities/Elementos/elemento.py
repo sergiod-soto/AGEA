@@ -11,6 +11,7 @@ class Elemento(Comportamiento):
 
     mundo = None
 
-    def __init__(self, capa: int):
+    def __init__(self, tipo: type, capa: int):
         super().__init__()
         self.capa = capa
+        self.tipo = tipo

@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Callable
+from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 from bitarray import bitarray
-from Core.Entities.Elementos.Simples.Puzzle.premio import Premio
-
-from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
+from Core.Entities.Elementos.Abstractos.Puzzle.premio import Premio
 
 MAX_BOTS: int = 1_000_000
 
 
-class Puzzle(ABC, Elemento_Simple):
+class Puzzle(ABC, Elemento_Abstracto):
 
     class Estado:
         def __init__(self, opciones: list[Callable]):
@@ -63,6 +62,7 @@ class Puzzle(ABC, Elemento_Simple):
     # _____________________________________________________________________________________________
 
     def __init__(self, parametros: PuzzleParams):
+        super().__init__(tipo=Puzzle)
         self.parametros = parametros
         self.maquinasEstados: dict[int, Puzzle.MaquinaEstados] = {}
         self._resuelto_por = bitarray(MAX_BOTS)
