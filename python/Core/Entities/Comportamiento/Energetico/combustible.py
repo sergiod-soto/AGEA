@@ -3,9 +3,17 @@ from Core.Entities.Comportamiento.Energetico.energetico import Energetico
 
 class Combustible(Energetico):
     """
-    no se mira la parte de arder, si no la parte energetica.
-    util para poder crear cosas que almacenen energia, desligado del
+    No se mira la parte de arder, si no la parte energetica.
+
+    Util para poder crear cosas que almacenen energia, desligado del
     proceso de combustion
+
+    Parametros:
+
+    - energia_maxima: float,
+    - ratio_emision: float,
+    - energia_actual: float = None,
+    - ratio_recarga: float = 0.0
     """
 
     def __init__(

@@ -5,6 +5,14 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Consumible(Interaccion):
+    """
+    Todo lo que puede ser consumido por otro Elemento
+
+    Metodos abstractos:
+
+    consumir(self, por: Elemento)
+    """
+
     def __init__(self, valor_nutritivo: float = None, valor_hidratacion: float = None):
         super().__init__()
         self.valor_nutritivo = valor_nutritivo

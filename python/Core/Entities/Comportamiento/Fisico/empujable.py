@@ -5,6 +5,16 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Empujable(Fisico):
+    """
+    Parametros:
+
+    - coste_empujar: float
+
+    Metodos abstractos:
+
+    - check_push(self, direccion) -> Elemento | True | False
+    - push(self, direccion) -> bool
+    """
 
     def __init__(self, coste_empujar: float):
         super().__init__()

@@ -1,6 +1,9 @@
+from abc import abstractmethod
+
 from Core.Entities.Comportamiento.Informativo.informativo import Informativo
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.rastro import Rastro
+from Core.Entities.Elementos.Simples.Terreno.terreno import Terreno
 
 
 class Rastreable(Informativo):
@@ -9,7 +12,11 @@ class Rastreable(Informativo):
 
     Los rastros tienen una intensidad (%) en funcion del terreno.
 
-    Los stats del rastro dependen de las caracteristicas del Elemento que las produjo
+    El codigo del rastro depende de las caracteristicas del Elemento que las produjo
+
+    Metodos abstractos:
+
+    dejar_rastro(self, terreno: Terreno) -> Rastro | None:
     """
 
     def __init__(
@@ -19,4 +26,5 @@ class Rastreable(Informativo):
         super().__init__()
         self.condiciones_rastro = condiciones_rastro or []
 
-    def dejar_rastro(self, terreno) -> Rastro | None: ...
+    @abstractmethod
+    def dejar_rastro(self, terreno: Terreno) -> Rastro | None: ...

@@ -5,7 +5,13 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Recolectable(Interaccion):
-    """indica si puede ser recolectardo para obtener Elemento(s)"""
+    """
+    Indica si puede ser recolectardo para obtener Elemento(s)
+
+    Metodos abstractos:
+
+    recolectar(self, por: Elemento)
+    """
 
     def __init__(self, contenido: dict[str, tuple[Elemento, float]] = None):
         super().__init__()
@@ -13,4 +19,3 @@ class Recolectable(Interaccion):
 
     @abstractmethod
     def recolectar(self, por: Elemento): ...
-

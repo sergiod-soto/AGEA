@@ -11,7 +11,7 @@ comportamientos = C.declarar_comportamientos(
 class Condicion(Elemento_Abstracto):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(Condicion)
     
     @abstractmethod
     def evaluar(self, contexto: dict) -> bool: ...

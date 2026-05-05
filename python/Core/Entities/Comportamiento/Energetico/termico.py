@@ -5,9 +5,13 @@ class Termico(Energetico):
     """
     recomendable añadir sistema de cache en el que se precalcula la U
     con un elemento para no recalcularla en cada tick.
-    """
 
-    activo = False
+    Parametros:
+
+    - self.temperatura_propia: float
+    - self.tasa_transferencia: float
+    - self.radio: float
+    """
 
     def __init__(
         self, temperatura_propia: float, tasa_transferencia: float, radio: float
@@ -16,6 +20,7 @@ class Termico(Energetico):
         self.temperatura_propia = temperatura_propia
         self.tasa_transferencia = tasa_transferencia
         self.radio = radio
+        self.termico = True
 
     def tick(self, elementos: list[(float, float)]) -> float:
         """

@@ -6,6 +6,22 @@ from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 
 class Erosionable(Material):
+    """
+    Parametros:
+
+    condiciones: list[tuple[list[Condicion], float]]
+
+    durabilidad_max: float
+
+    durabilidad_actual: float = None
+
+    Metodos abstractos:
+
+    erosionar(self, cantidad: float)
+
+    _destruir(self, efecto: Accion)
+    """
+
     def __init__(
         self,
         condiciones: list[tuple[list[Condicion], float]],
@@ -27,4 +43,4 @@ class Erosionable(Material):
     def erosionar(self, cantidad: float): ...
 
     @abstractmethod
-    def destruir(self, efecto: Accion): ...
+    def _destruir(self, efecto: Accion): ...

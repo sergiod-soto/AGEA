@@ -4,6 +4,22 @@ from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 
 
 class Destruible(Interaccion):
+    """
+    Solo se interactua dañandolo o restaurandolo.
+
+    Al llegar la durabilidad a 0, es cuando se destruye.
+
+    -------------------------------------------------------.
+
+    Metodos abstractos:
+
+    danhar(self, danho: float)
+
+    restaurar(self, danho: float)
+
+    _destruir(self, danho: float)
+    """
+
     def __init__(self, durabilidad_max: float, durabilidad_actual: float = None):
         super().__init__()
         self.durabilidad_max = durabilidad_max
@@ -14,6 +30,6 @@ class Destruible(Interaccion):
 
     @abstractmethod
     def restaurar(self, danho: float): ...
-    
+
     @abstractmethod
-    def destruir(self, danho: float): ...   
+    def _destruir(self, danho: float): ...

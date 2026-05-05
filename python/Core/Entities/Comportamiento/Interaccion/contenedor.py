@@ -5,6 +5,18 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Contenedor(Interaccion):
+    """
+    Metodo con el que un Elemento puede equiparse cosas que no son equipables (como el agua)
+
+    Metodos abstractos:
+
+    anhadir(self, elemento: Elemento) -> bool
+
+    extraer(self, elemento: Elemento) -> Elemento
+
+    get_contenido(self) -> list[Elemento]
+    """
+
     def __init__(self, capacidad: float, contenido: list[Elemento] = None):
         super().__init__()
         self.capacidad = capacidad

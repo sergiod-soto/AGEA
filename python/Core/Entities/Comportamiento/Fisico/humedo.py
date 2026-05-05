@@ -4,6 +4,16 @@ from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 
 
 class Humedo(Fisico):
+    """
+    Parametros:
+
+    - humedad_max: float
+
+    Metodos abstractos:
+
+    - humedecer(self, cantidad)
+    - secar(self, cantidad)
+    """
 
     def __init__(self, humedad_max: float):
         super().__init__()
@@ -17,5 +27,3 @@ class Humedo(Fisico):
     @abstractmethod
     def secar(self, cantidad):
         pass
-
-

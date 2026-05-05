@@ -6,10 +6,13 @@ from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.elemento import Elemento
 
-# TODO: abstraer el concepto de Condicion, de forma que pueda pasarlo como parte de la receta como Elemento
-
 
 class Crafteable(Interaccion):
+    """
+    Metodos abstractos:
+
+    craftear(self, elementos: list[Elemento])
+    """
 
     def __init__(self, receta: tuple[str, list[Elemento]]):
         super().__init__()

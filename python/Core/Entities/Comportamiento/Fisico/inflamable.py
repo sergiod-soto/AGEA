@@ -4,6 +4,12 @@ import time
 
 
 class Inflamable(Fisico):
+    '''
+    Parametros:
+    
+    - temperatura_ignicion: float
+    '''
+    
 
     def __init__(self, temperatura_ignicion: float):
         super().__init__()

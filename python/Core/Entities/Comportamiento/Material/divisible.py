@@ -5,6 +5,19 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Divisible(Material):
+    """
+    Lo mismo que combinable pero al reves
+
+
+    Parametros:
+
+    cantidad_minima: float
+
+    Metodos abstractos:
+
+    dividir(self, cantidad: float) -> Elemento | None
+    """
+
     def __init__(self, cantidad_minima: float):
         super().__init__()
         self.cantidad_minima = cantidad_minima
