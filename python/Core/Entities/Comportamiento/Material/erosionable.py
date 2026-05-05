@@ -9,17 +9,17 @@ class Erosionable(Material):
     """
     Parametros:
 
-    condiciones: list[tuple[list[Condicion], float]]
+    - condiciones: list[tuple[list[Condicion], float]]
 
-    durabilidad_max: float
+    - durabilidad_max: float
 
-    durabilidad_actual: float = None
+    - durabilidad_actual: float = None
 
     Metodos abstractos:
 
-    erosionar(self, cantidad: float)
+    - erosionar(self, cantidad: float)
 
-    _destruir(self, efecto: Accion)
+    - _destruir(self, efecto: Accion)
     """
 
     def __init__(

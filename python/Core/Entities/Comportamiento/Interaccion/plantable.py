@@ -8,9 +8,9 @@ class Plantable(Interaccion):
     """
     Metodos abstractos:
 
-    plantar(self, agujero: Elemento)
+    - plantar(self, agujero: Elemento)
     
-    desplantar(self, por: Elemento)
+    - desplantar(self, por: Elemento)
     """
 
     def __init__(self, plantado: bool = False, plantable: bool = True):

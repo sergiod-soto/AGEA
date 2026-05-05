@@ -11,7 +11,7 @@ class Crafteable(Interaccion):
     """
     Metodos abstractos:
 
-    craftear(self, elementos: list[Elemento])
+    - craftear(self, elementos: list[Elemento])
     """
 
     def __init__(self, receta: tuple[str, list[Elemento]]):

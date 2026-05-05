@@ -13,11 +13,11 @@ class Destruible(Interaccion):
 
     Metodos abstractos:
 
-    danhar(self, danho: float)
+    - danhar(self, danho: float)
 
-    restaurar(self, danho: float)
+    - restaurar(self, danho: float)
 
-    _destruir(self, danho: float)
+    - _destruir(self, danho: float)
     """
 
     def __init__(self, durabilidad_max: float, durabilidad_actual: float = None):

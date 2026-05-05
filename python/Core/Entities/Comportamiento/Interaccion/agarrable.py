@@ -10,9 +10,9 @@ class Agarrable(Interaccion):
 
     Metodos abstractos:
 
-    agarrar(self, por: Elemento)
+    - agarrar(self, por: Elemento)
 
-    soltar(self, por: Elemento)
+    - soltar(self, por: Elemento)
     """
 
     def __init__(self, agarrado_por: Elemento):

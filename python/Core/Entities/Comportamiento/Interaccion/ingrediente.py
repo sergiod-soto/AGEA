@@ -6,13 +6,21 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Ingrediente(Interaccion):
+    """
+    Forma parte de una receta.
 
-    def __init__(self, recetas: dict[str, Crafteable] = None):
+    Parametros:
+
+    - recetas: dict[str, Crafteable]
+    """
+
+    def __init__(self, recetas: dict[str, Crafteable]):
         super().__init__()
-        self.recetas = recetas or {}
-        if recetas is not None:
-            for nombre, crafteable in recetas.items():
-                self.incluir_en_receta((nombre, crafteable))
+        self.recetas = recetas
+
+        for nombre, crafteable in recetas.items():
+            self.incluir_en_receta((nombre, crafteable))
+
         Elemento.mundo.bus.suscribir(f"manipulado_{id(self)}", self.on_manipulado)
 
     def on_manipulado(self) -> None:

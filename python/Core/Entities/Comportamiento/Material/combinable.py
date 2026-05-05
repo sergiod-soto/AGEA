@@ -10,13 +10,13 @@ class Combinable(Material):
 
     Parametros:
 
-    elemento: Elemento (el Elemento al cual se le quiere añadir lo original)
+    - elemento: Elemento (el Elemento al cual se le quiere añadir lo original)
 
-    cantidad_max: float = None
+    - cantidad_max: float = None
 
     Metodos abstractos:
 
-    combinar(self, elemento: Elemento) -> Elemento
+    - combinar(self, elemento: Elemento) -> Elemento
     """
 
     def __init__(self, elemento: Elemento, cantidad_max: float = None):

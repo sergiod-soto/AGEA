@@ -8,7 +8,7 @@ class Golpeable(Material):
     """
     Metodos abstractos:
 
-    golpear(self, por: Elemento)
+    - golpear(self, por: Elemento)
     """
 
     def __init__(self):

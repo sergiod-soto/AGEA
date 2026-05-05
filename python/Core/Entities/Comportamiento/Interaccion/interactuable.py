@@ -8,7 +8,7 @@ class Interactuable(Interaccion):
     """
     Metodos abstractos:
 
-    interaccion(self, por:Elemento)
+    - interaccion(self, por:Elemento)
     """
 
     def __init__(self):

@@ -5,7 +5,23 @@ from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 
 class Perecedero(Temporal):
-    """Durabilidad decae con el tiempo a un ritmo diferente segun condiciones"""
+    """
+    Durabilidad decae con el tiempo a un ritmo diferente segun condiciones.
+
+    Parametros:
+
+    - tiempo_maximo_perecedero: float
+
+    - condiciones: list[tuple[list[Condicion], float]]
+
+    - tiempo_actual_perecedero: float = None
+
+    Metodos abstractos:
+
+    - tick(self) -> None
+
+    - desaparecer(self) -> None
+    """
 
     def __init__(
         self,

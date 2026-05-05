@@ -11,9 +11,9 @@ class Equipable(Interaccion):
 
     Metodos abstractos:
 
-    equipar(self, por: Elemento) -> bool
+    - equipar(self, por: Elemento) -> bool
 
-    desequipar(self, por: Elemento) -> Elemento
+    - desequipar(self, por: Elemento) -> Elemento
     """
 
     def __init__(

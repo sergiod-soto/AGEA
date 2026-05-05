@@ -4,6 +4,11 @@ from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.estacion import Es
 
 
 class Estacional(Temporal):
+    """
+    Parametros:
+
+    - acciones_por_estacion: dict[Estacion, list[Accion]]
+    """
 
     def __init__(self, acciones_por_estacion: dict[Estacion, list[Accion]]):
         super().__init__()

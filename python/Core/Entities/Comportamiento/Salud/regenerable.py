@@ -5,6 +5,18 @@ from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 
 class Regenerable(Temporal):
+    """
+    Indica que el Elemento tiene stats que regeneran con el tiempo
+
+    Parametros:
+
+    - tasas_regeneracion: list[tuple[Stat, float]]
+
+    Metodos abstractos:
+
+    - tick(self)
+    """
+
     def __init__(
         self,
         tasas_regeneracion: list[tuple[Stat, float]],

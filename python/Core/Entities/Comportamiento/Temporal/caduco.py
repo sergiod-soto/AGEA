@@ -4,7 +4,21 @@ from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 
 class Caduco(Temporal):
-    """Durabilidad decae con el tiempo"""
+    """
+    Durabilidad decae con el tiempo
+    
+    Parametros:
+    
+    - duracion_max: int
+    
+    - duracion_restante: int = None
+    
+    Metodos abstractos:
+    
+    - tick(self) -> None
+    
+    - desaparecer(self) -> None
+    """
 
     def __init__(self, duracion_max: int, duracion_restante: int = None):
         super().__init__()

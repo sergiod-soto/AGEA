@@ -4,7 +4,13 @@ from Core.Entities.Comportamiento.Salud.salud import Salud
 
 
 class Hidratante(Salud):
-    """Recupera hidratacion si se ingiere"""
+    """
+    Recupera hidratacion si se ingiere
+    
+    Parametros:
+    
+    - valor_hidratacion: float
+    """
 
     def __init__(self, valor_hidratacion: float):
         super().__init__()

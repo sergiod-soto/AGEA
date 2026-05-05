@@ -10,7 +10,7 @@ class Recolectable(Interaccion):
 
     Metodos abstractos:
 
-    recolectar(self, por: Elemento)
+    - recolectar(self, por: Elemento)
     """
 
     def __init__(self, contenido: dict[str, tuple[Elemento, float]] = None):

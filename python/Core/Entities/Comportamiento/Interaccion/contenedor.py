@@ -10,11 +10,11 @@ class Contenedor(Interaccion):
 
     Metodos abstractos:
 
-    anhadir(self, elemento: Elemento) -> bool
+    - anhadir(self, elemento: Elemento) -> bool
 
-    extraer(self, elemento: Elemento) -> Elemento
+    - extraer(self, elemento: Elemento) -> Elemento
 
-    get_contenido(self) -> list[Elemento]
+    - get_contenido(self) -> list[Elemento]
     """
 
     def __init__(self, capacidad: float, contenido: list[Elemento] = None):

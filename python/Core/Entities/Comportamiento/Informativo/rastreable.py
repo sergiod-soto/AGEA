@@ -14,9 +14,13 @@ class Rastreable(Informativo):
 
     El codigo del rastro depende de las caracteristicas del Elemento que las produjo
 
+    Parametros:
+
+    - condiciones_rastro: list[tuple[list[Condicion], float]] = None
+
     Metodos abstractos:
 
-    dejar_rastro(self, terreno: Terreno) -> Rastro | None:
+    - dejar_rastro(self, terreno: Terreno) -> Rastro | None:
     """
 
     def __init__(

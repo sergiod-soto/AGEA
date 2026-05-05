@@ -8,14 +8,13 @@ class Divisible(Material):
     """
     Lo mismo que combinable pero al reves
 
-
     Parametros:
 
-    cantidad_minima: float
+    - cantidad_minima: float
 
     Metodos abstractos:
 
-    dividir(self, cantidad: float) -> Elemento | None
+    - dividir(self, cantidad: float) -> Elemento | None
     """
 
     def __init__(self, cantidad_minima: float):

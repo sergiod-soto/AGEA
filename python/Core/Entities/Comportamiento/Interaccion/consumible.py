@@ -10,7 +10,7 @@ class Consumible(Interaccion):
 
     Metodos abstractos:
 
-    consumir(self, por: Elemento)
+    - consumir(self, por: Elemento)
     """
 
     def __init__(self, valor_nutritivo: float = None, valor_hidratacion: float = None):
