@@ -15,10 +15,10 @@ class Humedo(Fisico):
     - secar(self, cantidad)
     """
 
-    def __init__(self, humedad_max: float,**kwargs):
+    def __init__(self, humedad_max: float, **kwargs):
         super().__init__(**kwargs)
         self.humedad_max = humedad_max
-        self.humedad_actual = humedad_max
+        self.humedad_actual: float = humedad_max
 
     @abstractmethod
     def humedecer(self, cantidad):

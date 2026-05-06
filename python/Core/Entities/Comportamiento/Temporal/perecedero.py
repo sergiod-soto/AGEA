@@ -26,7 +26,7 @@ class Perecedero(Temporal):
     def __init__(
         self,
         tiempo_maximo_perecedero: float,
-        condiciones: list[tuple[list[Condicion], float]],
+        condiciones_perecedero: list[tuple[list[Condicion], float]],
         tiempo_actual_perecedero: float = None,
         **kwargs
     ):
@@ -35,7 +35,7 @@ class Perecedero(Temporal):
         self.tiempo_actual_perecedero = (
             tiempo_actual_perecedero or tiempo_maximo_perecedero
         )
-        self.condiciones = condiciones
+        self.condiciones_perecedero = condiciones_perecedero
 
         @abstractmethod
         def tick(self) -> None: ...

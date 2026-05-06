@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Salud.salud import Salud
+from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
 
 
 class Nutritivo(Salud):

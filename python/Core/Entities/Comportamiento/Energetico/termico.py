@@ -17,13 +17,13 @@ class Termico(Energetico):
         self,
         temperatura_propia: float,
         tasa_transferencia: float,
-        radio: float,
+        radio_termico: float,
         **kwargs
     ):
         super().__init__(**kwargs)
         self.temperatura_propia = temperatura_propia
         self.tasa_transferencia = tasa_transferencia
-        self.radio = radio
+        self.radio_termico = radio_termico
         self.termico = True
 
     def tick(self, elementos: list[(float, float)]) -> float:

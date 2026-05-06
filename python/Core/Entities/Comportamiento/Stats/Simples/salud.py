@@ -1,0 +1,7 @@
+from Core.Entities.Comportamiento.Stats.Simples.stat_simple import Stat_Simple
+
+
+class Salud(Stat_Simple):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)

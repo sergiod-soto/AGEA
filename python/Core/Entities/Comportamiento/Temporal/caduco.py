@@ -20,10 +20,10 @@ class Caduco(Temporal):
     - desaparecer(self) -> None
     """
 
-    def __init__(self, duracion_max: int, duracion_restante: int = None,**kwargs):
+    def __init__(self, duracion_max_caduco: int, duracion_restante_caduco: int = None,**kwargs):
         super().__init__(**kwargs)
-        self.duracion_max = duracion_max
-        self.duracion_restante = duracion_restante or duracion_max
+        self.duracion_max_caduco = duracion_max_caduco
+        self.duracion_restante_caduco = duracion_restante_caduco or duracion_max_caduco
 
         @abstractmethod
         def tick(self) -> None: ...

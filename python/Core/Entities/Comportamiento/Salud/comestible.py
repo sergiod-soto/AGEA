@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from Core.Entities.Comportamiento.Salud.salud import Salud
+from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
 from Core.Entities.Elementos.elemento import Elemento
 
 

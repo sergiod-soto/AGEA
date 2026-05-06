@@ -19,10 +19,10 @@ class Combinable(Material):
     - combinar(self, elemento: Elemento) -> Elemento
     """
 
-    def __init__(self, elemento: Elemento, cantidad_max: float = None,**kwargs):
+    def __init__(self, elemento_combinable: Elemento, cantidad_max_combinable: float = None,**kwargs):
         super().__init__(**kwargs)
-        self.elemento = elemento
-        self.cantidad_max = cantidad_max or float("inf")
+        self.elemento = elemento_combinable
+        self.cantidad_max_combinable = cantidad_max_combinable or float("inf")
 
     @abstractmethod
     def combinar(self, elemento: Elemento) -> Elemento:

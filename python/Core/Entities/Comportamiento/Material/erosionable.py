@@ -24,19 +24,19 @@ class Erosionable(Material):
 
     def __init__(
         self,
-        condiciones: list[tuple[list[Condicion], float]],
-        durabilidad_max: float,
-        durabilidad_actual: float = None,
+        condiciones_erosion: list[tuple[list[Condicion], float]],
+        durabilidad_max_erosion: float,
+        durabilidad_actual_erosion: float = None,
         **kwargs
     ):
         super().__init__(**kwargs)
-        self.durabilidad_max = durabilidad_max
-        self.condiciones = condiciones
-        self.durabilidad_actual = durabilidad_actual or durabilidad_max
+        self.durabilidad_max_erosion = durabilidad_max_erosion
+        self.condiciones_erosion = condiciones_erosion
+        self.durabilidad_actual_erosion = durabilidad_actual_erosion or durabilidad_max_erosion
 
     def tick(self) -> None:
         super().tick()
-        for condiciones, cantidad in self.condiciones:
+        for condiciones, cantidad in self.condiciones_erosion:
             if all(c.evaluar() for c in condiciones):
                 self.erosionar(cantidad)
 

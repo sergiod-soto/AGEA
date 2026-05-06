@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.elemento import Elemento
 
 
@@ -18,6 +19,7 @@ class Empujable(Fisico):
 
     def __init__(self, coste_empujar: float,**kwargs):
         super().__init__(**kwargs)
+        
 
         self.coste_empujar = coste_empujar  #   cuanta energia drena moverlo 1 ud.
         self.empujable: bool = True

@@ -8,4 +8,4 @@ class Flotable(Fisico):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.flotable = True
+        self.flotable: bool = True

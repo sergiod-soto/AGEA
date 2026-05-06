@@ -13,10 +13,8 @@ class Consumible(Interaccion):
     - consumir(self, por: Elemento)
     """
 
-    def __init__(self, valor_nutritivo: float = None, valor_hidratacion: float = None,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.valor_nutritivo = valor_nutritivo
-        self.valor_hidratacion = valor_hidratacion
 
     @abstractmethod
     def consumir(self, por: Elemento): ...

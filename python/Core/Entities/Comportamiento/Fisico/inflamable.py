@@ -15,9 +15,9 @@ class Inflamable(Fisico):
         self.temperatura_ignicion = (
             temperatura_ignicion  #   temperatura para comenzar a arder
         )
-        self.inflamable = True
-        self.ardiendo = False
-        self.tiempo_total_quemado = 0.0
+        self.inflamable: bool = True
+        self.ardiendo: bool = False
+        self._tiempo_total_quemado = 0.0
         self._hora_encendido = None
 
     def encender(self):
@@ -32,11 +32,11 @@ class Inflamable(Fisico):
 
     def apagar(self):
         self.ardiendo = False
-        self.tiempo_total_quemado += time() - self._hora_encendido
+        self._tiempo_total_quemado += time() - self._hora_encendido
         self
 
     def get_tiempo_total_quemado(self) -> float:
         if self.ardiendo is False:
-            return self.tiempo_total_quemado
+            return self._tiempo_total_quemado
         else:
-            return self.tiempo_total_quemado + (time() - self._hora_encendido)
+            return self._tiempo_total_quemado + (time() - self._hora_encendido)
