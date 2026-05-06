@@ -16,8 +16,8 @@ class Empujable(Fisico):
     - push(self, direccion) -> bool
     """
 
-    def __init__(self, coste_empujar: float):
-        super().__init__()
+    def __init__(self, coste_empujar: float,**kwargs):
+        super().__init__(**kwargs)
 
         self.coste_empujar = coste_empujar  #   cuanta energia drena moverlo 1 ud.
         self.empujable: bool = True

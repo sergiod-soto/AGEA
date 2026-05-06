@@ -20,8 +20,9 @@ class Equipable(Interaccion):
         self,
         provoca_equiparlo: dict[Elemento, Accion] = None,
         equipado_por: Elemento = None,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.provoca_equiparlo = provoca_equiparlo
         self.equipado_por = equipado_por
 

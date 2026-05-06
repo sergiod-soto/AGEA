@@ -10,8 +10,8 @@ class Luminoso(Informativo):
     - area: int = 360
     """
 
-    def __init__(self, distancia: float, area: int = 360):
-        super().__init__()
+    def __init__(self, distancia: float, area: int = 360,**kwargs):
+        super().__init__(**kwargs)
         self.distancia = distancia
         if area < 0:
             self.area = 0

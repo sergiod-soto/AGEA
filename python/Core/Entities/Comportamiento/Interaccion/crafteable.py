@@ -14,8 +14,8 @@ class Crafteable(Interaccion):
     - craftear(self, elementos: list[Elemento])
     """
 
-    def __init__(self, receta: tuple[str, list[Elemento]]):
-        super().__init__()
+    def __init__(self, receta: tuple[str, list[Elemento]],**kwargs):
+        super().__init__(**kwargs)
         self.nombre = receta[0]
         self.receta = receta[1]
         self.ingredientes = [e for e in self.receta if isinstance(e, Ingrediente)]

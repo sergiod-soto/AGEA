@@ -4,16 +4,17 @@ import time
 
 
 class Inflamable(Fisico):
-    '''
+    """
     Parametros:
-    
-    - temperatura_ignicion: float
-    '''
-    
 
-    def __init__(self, temperatura_ignicion: float):
-        super().__init__()
-        self.temperatura_ignicion = temperatura_ignicion    #   temperatura para comenzar a arder
+    - temperatura_ignicion: float
+    """
+
+    def __init__(self, temperatura_ignicion: float, **kwargs):
+        super().__init__(**kwargs)
+        self.temperatura_ignicion = (
+            temperatura_ignicion  #   temperatura para comenzar a arder
+        )
         self.inflamable = True
         self.ardiendo = False
         self.tiempo_total_quemado = 0.0

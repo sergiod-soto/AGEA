@@ -14,9 +14,13 @@ class Termico(Energetico):
     """
 
     def __init__(
-        self, temperatura_propia: float, tasa_transferencia: float, radio: float
+        self,
+        temperatura_propia: float,
+        tasa_transferencia: float,
+        radio: float,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.temperatura_propia = temperatura_propia
         self.tasa_transferencia = tasa_transferencia
         self.radio = radio

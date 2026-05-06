@@ -1,7 +1,7 @@
 class Comportamiento:
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def comportamientos(self) -> list["Comportamiento"]:
         """Retorna todos los comportamientos de la entidad"""

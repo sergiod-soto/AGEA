@@ -27,8 +27,8 @@ class Sonoro(Informativo):
         # hacer algo con el timbre...
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
 
     @staticmethod
     def generar_timbre(

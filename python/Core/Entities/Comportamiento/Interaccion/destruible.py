@@ -20,8 +20,8 @@ class Destruible(Interaccion):
     - _destruir(self, danho: float)
     """
 
-    def __init__(self, durabilidad_max: float, durabilidad_actual: float = None):
-        super().__init__()
+    def __init__(self, durabilidad_max: float, durabilidad_actual: float = None,**kwargs):
+        super().__init__(**kwargs)
         self.durabilidad_max = durabilidad_max
         self.durabilidad_actual = durabilidad_actual or durabilidad_max
 

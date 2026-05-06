@@ -13,8 +13,8 @@ class Recolectable(Interaccion):
     - recolectar(self, por: Elemento)
     """
 
-    def __init__(self, contenido: dict[str, tuple[Elemento, float]] = None):
-        super().__init__()
+    def __init__(self, contenido: dict[str, tuple[Elemento, float]] = None,**kwargs):
+        super().__init__(**kwargs)
         self.contenido = contenido or {}
 
     @abstractmethod

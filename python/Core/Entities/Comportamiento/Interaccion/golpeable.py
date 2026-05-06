@@ -11,8 +11,8 @@ class Golpeable(Material):
     - golpear(self, por: Elemento)
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
         self.golpeable = True
 
     @abstractmethod

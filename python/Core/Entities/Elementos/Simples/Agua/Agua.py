@@ -49,9 +49,13 @@ comportamientos = C.declarar_comportamientos(
 
 
 class Agua(Elemento_Simple, comportamientos):
-    
+
     cantidad_max = 20
 
-    def __init__(self, casilla: tuple[int, int], cantidad: int):
+    def __init__(
+        self,
+        casilla: tuple[int, int],
+        cantidad: int,
+    ):
         super().__init__(tipo=Agua, tamanho=1, casilla=casilla, capa=1)
         self.cantidad = cantidad

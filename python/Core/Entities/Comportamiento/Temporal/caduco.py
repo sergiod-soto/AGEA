@@ -20,8 +20,8 @@ class Caduco(Temporal):
     - desaparecer(self) -> None
     """
 
-    def __init__(self, duracion_max: int, duracion_restante: int = None):
-        super().__init__()
+    def __init__(self, duracion_max: int, duracion_restante: int = None,**kwargs):
+        super().__init__(**kwargs)
         self.duracion_max = duracion_max
         self.duracion_restante = duracion_restante or duracion_max
 

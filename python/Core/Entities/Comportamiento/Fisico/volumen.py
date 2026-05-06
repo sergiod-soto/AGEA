@@ -8,6 +8,6 @@ class Volumen(Fisico):
     - volumen: float
     """
 
-    def __init__(self, volumen: float):
-        super().__init__()
+    def __init__(self, volumen: float,**kwargs):
+        super().__init__(**kwargs)
         self.volumen = volumen

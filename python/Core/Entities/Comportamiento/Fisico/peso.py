@@ -11,6 +11,6 @@ Parametros:
 
 class Peso(Fisico):
 
-    def __init__(self, masa: float):
-        super().__init__()
-        self.masa = masa
+    def __init__(self, peso: float, **kwargs):
+        super().__init__(**kwargs)
+        self.peso = peso

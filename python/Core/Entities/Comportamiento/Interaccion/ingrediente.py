@@ -14,8 +14,8 @@ class Ingrediente(Interaccion):
     - recetas: dict[str, Crafteable]
     """
 
-    def __init__(self, recetas: dict[str, Crafteable]):
-        super().__init__()
+    def __init__(self, recetas: dict[str, Crafteable],**kwargs):
+        super().__init__(**kwargs)
         self.recetas = recetas
 
         for nombre, crafteable in recetas.items():

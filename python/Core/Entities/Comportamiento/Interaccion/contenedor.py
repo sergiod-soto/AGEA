@@ -17,8 +17,8 @@ class Contenedor(Interaccion):
     - get_contenido(self) -> list[Elemento]
     """
 
-    def __init__(self, capacidad: float, contenido: list[Elemento] = None):
-        super().__init__()
+    def __init__(self, capacidad: float, contenido: list[Elemento] = None,**kwargs):
+        super().__init__(**kwargs)
         self.capacidad = capacidad
         self.contenido = contenido or []
 

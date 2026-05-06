@@ -19,8 +19,8 @@ class Combinable(Material):
     - combinar(self, elemento: Elemento) -> Elemento
     """
 
-    def __init__(self, elemento: Elemento, cantidad_max: float = None):
-        super().__init__()
+    def __init__(self, elemento: Elemento, cantidad_max: float = None,**kwargs):
+        super().__init__(**kwargs)
         self.elemento = elemento
         self.cantidad_max = cantidad_max or float("inf")
 

@@ -12,6 +12,6 @@ class Hidratante(Salud):
     - valor_hidratacion: float
     """
 
-    def __init__(self, valor_hidratacion: float):
-        super().__init__()
+    def __init__(self, valor_hidratacion: float,**kwargs):
+        super().__init__(**kwargs)
         self.valor_hidratacion = valor_hidratacion

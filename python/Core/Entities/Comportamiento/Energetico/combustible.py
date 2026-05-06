@@ -22,8 +22,9 @@ class Combustible(Energetico):
         ratio_emision: float,
         energia_actual: float = None,
         ratio_recarga: float = 0.0,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.energia_maxima = energia_maxima
         self.ratio_emision = ratio_emision
         self.energia_actual = energia_actual or energia_maxima
@@ -49,3 +50,5 @@ class Combustible(Energetico):
 
         if self.energia_actual > self.energia_maxima:
             self.energia_actual = self.energia_maxima
+
+   

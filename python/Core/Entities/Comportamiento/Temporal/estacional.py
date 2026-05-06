@@ -10,8 +10,8 @@ class Estacional(Temporal):
     - acciones_por_estacion: dict[Estacion, list[Accion]]
     """
 
-    def __init__(self, acciones_por_estacion: dict[Estacion, list[Accion]]):
-        super().__init__()
+    def __init__(self, acciones_por_estacion: dict[Estacion, list[Accion]],**kwargs):
+        super().__init__(**kwargs)
         self.acciones_por_estacion = acciones_por_estacion
 
     def on_cambio_estacion(estacion: Estacion) -> None: ...

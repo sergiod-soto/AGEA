@@ -28,8 +28,9 @@ class Perecedero(Temporal):
         tiempo_maximo_perecedero: float,
         condiciones: list[tuple[list[Condicion], float]],
         tiempo_actual_perecedero: float = None,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.tiempo_maximo_perecedero = tiempo_maximo_perecedero
         self.tiempo_actual_perecedero = (
             tiempo_actual_perecedero or tiempo_maximo_perecedero

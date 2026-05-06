@@ -14,8 +14,8 @@ class Enterrable(Fisico):
     '''
     
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
 
         self.enterrable: bool = True
         self.enterrado = False

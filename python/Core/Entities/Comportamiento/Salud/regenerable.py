@@ -17,11 +17,8 @@ class Regenerable(Temporal):
     - tick(self)
     """
 
-    def __init__(
-        self,
-        tasas_regeneracion: list[tuple[Stat, float]],
-    ):
-        super().__init__()
+    def __init__(self, tasas_regeneracion: list[tuple[Stat, float]], **kwargs):
+        super().__init__(**kwargs)
         self.tasas_regeneracion = tasas_regeneracion
 
     @abstractmethod

@@ -9,12 +9,12 @@ class Plantable(Interaccion):
     Metodos abstractos:
 
     - plantar(self, agujero: Elemento)
-    
+
     - desplantar(self, por: Elemento)
     """
 
-    def __init__(self, plantado: bool = False, plantable: bool = True):
-        super().__init__()
+    def __init__(self, plantado: bool = False, plantable: bool = True, **kwargs):
+        super().__init__(**kwargs)
         self.plantado = plantado
         self.plantable = plantable
 

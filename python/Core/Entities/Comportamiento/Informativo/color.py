@@ -10,6 +10,6 @@ class Color(Comportamiento):
     -  rgb: tuple[int, int, int]
     """
 
-    def __init__(self, rgb: tuple[int, int, int]):
-        super().__init__()
+    def __init__(self, rgb: tuple[int, int, int],**kwargs):
+        super().__init__(**kwargs)
         self.rgb = rgb

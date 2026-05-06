@@ -27,8 +27,9 @@ class Erosionable(Material):
         condiciones: list[tuple[list[Condicion], float]],
         durabilidad_max: float,
         durabilidad_actual: float = None,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.durabilidad_max = durabilidad_max
         self.condiciones = condiciones
         self.durabilidad_actual = durabilidad_actual or durabilidad_max

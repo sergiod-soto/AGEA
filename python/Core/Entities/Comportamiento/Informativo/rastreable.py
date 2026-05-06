@@ -26,8 +26,9 @@ class Rastreable(Informativo):
     def __init__(
         self,
         condiciones_rastro: list[tuple[list[Condicion], float]] = None,
+        **kwargs
     ):
-        super().__init__()
+        super().__init__(**kwargs)
         self.condiciones_rastro = condiciones_rastro or []
 
     @abstractmethod

@@ -11,8 +11,8 @@ class Interactuable(Interaccion):
     - interaccion(self, por:Elemento)
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
 
     @abstractmethod
     def interaccion(self, por: Elemento): ...

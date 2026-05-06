@@ -20,8 +20,8 @@ class Transformable(Material):
     - get_condiciones(self)
     """
 
-    def __init__(self, dict: dict[Condicion, Elemento]):
-        super().__init__()
+    def __init__(self, dict: dict[Condicion, Elemento],**kwargs):
+        super().__init__(**kwargs)
         self.dict = dict
 
     @abstractmethod
