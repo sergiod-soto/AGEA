@@ -10,17 +10,15 @@ class Combinable(Material):
 
     Parametros:
 
-    - elemento_combinable: Elemento (el Elemento al cual se le quiere añadir lo original)
-    - cantidad_max_combinable: float = None
+    - cantidad_max_combinable: float = None (None = infinito)
 
     Metodos abstractos:
 
     - combinar(self, elemento: Elemento) -> Elemento
     """
 
-    def __init__(self, elemento_combinable: Elemento, cantidad_max_combinable: float = None,**kwargs):
+    def __init__(self, cantidad_max_combinable: float = None, **kwargs):
         super().__init__(**kwargs)
-        self.elemento = elemento_combinable
         self.cantidad_max_combinable = cantidad_max_combinable or float("inf")
 
     @abstractmethod

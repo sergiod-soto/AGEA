@@ -6,7 +6,10 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Consumible(Interaccion):
     """
-    Todo lo que puede ser consumido por otro Elemento
+    Todo lo que puede ser consumido por otro Elemento.
+    
+    NO ES SER COMIDO/BEBIDO, ESO ES COMESTIBLE, esto es,
+    por ejemplo, madera en una hoguera, la tiza al escribir, etc
 
     Parametros:
 

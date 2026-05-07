@@ -11,7 +11,7 @@ class Contenedor(Interaccion):
     Parametros:
     
     - capacidad: float
-    - contenido: list[Elemento] = None
+    - contenido_contenedor: list[Elemento] = None
 
     Metodos abstractos:
 
@@ -20,14 +20,14 @@ class Contenedor(Interaccion):
     - get_contenido(self) -> list[Elemento]
     """
 
-    def __init__(self, capacidad: float, contenido: list[Elemento] = None,**kwargs):
+    def __init__(self, capacidad: float, contenido_contenedor: list[Elemento] = None,**kwargs):
         super().__init__(**kwargs)
         self.capacidad = capacidad
-        self.contenido = contenido or []
+        self.contenido_contenedor = contenido_contenedor or []
 
     def esta_lleno(self) -> float:
         cantidad = 0.0
-        for elemento in self.contenido:
+        for elemento in self.contenido_contenedor:
             cantidad += elemento.volumen
         return cantidad
 

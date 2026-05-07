@@ -10,14 +10,14 @@ class Elemento_Simple(Elemento):
         casilla: tuple[int, int],
         capa: int,
         rotacion: int = 0,
-        persistente: bool = False,
+        persistente_en_memoria: bool = False,
         fuerza_cargado_chunks: bool = False,
     ):
         super().__init__(tipo=tipo, capa=capa)
         self.tamanho = tamanho
         self.casilla = casilla
         self.rotacion = rotacion
-        self.persistente = persistente
+        self.persistente_en_memoria = persistente_en_memoria
         self.fuerza_cargado_chunks = fuerza_cargado_chunks
 
     def serialize_tamanho(self):

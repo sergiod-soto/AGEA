@@ -24,6 +24,10 @@ from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.elemento import Elemento
 
+from Core.Entities.Elementos.Simples.Agua.diccionario_de_transformaciones import (
+    diccionario_trans_agua,
+)
+
 comportamientos = Comportamiento.declarar_comportamientos(
     Peso,
     Consumible,
@@ -31,45 +35,44 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Ingrediente,
     Combinable,
     Divisible,
-    Solido,
     Liquido,
-    Gaseoso,
     Tangible,
     Transformable,
     Transparente,
     Comestible,
     Hidratante,
-    Color,
-    Medicinal,
-    Toxico,
-    Nutritivo,
-    Perecedero,
 )
 
 
 class Agua(Elemento_Simple, comportamientos):
 
-    cantidad_max = 20
+    cantidad_max = 1000  # (ml o cm3)
 
     def __init__(
         self,
         casilla: tuple[int, int],
-        cantidad: int,
+        # Peso:
         peso: float,
-        volumen: float,
-        recetas_de: dict[str, Crafteable],
-        elemento_combinable: Elemento,
-        cantidad_minima_divisible: float,
-        dict_transformable: dict[Condicion, Elemento],
-        valor_hidratacion: float,
-        rgb_color: tuple[int, int, int],
-        valor_medicinal: float,
-        valor_toxico: float,
-        valor_nutritivo: float,
-        tiempo_maximo_perecedero: float,
-        condiciones_perecedero: list[tuple[list[Condicion], float]],
-        cantidad_max_combinable: float = None,
-        tiempo_actual_perecedero: float = None,
     ):
-        super().__init__(tipo=Agua, tamanho=1, casilla=casilla, capa=1)
-        self.cantidad = cantidad
+        if peso < 0:
+            peso = 0
+        super().__init__(
+            tipo=Agua,
+            tamanho=1,
+            casilla=casilla,
+            capa=1,
+            # Volumen:
+            volumen=peso,
+            # Peso:
+            peso=peso,
+            # Ingrediente:
+            recetas_de=recetas_de,
+            # Divisible:
+            cantidad_minima_divisible=1,
+            # Transformable:
+            dict_transformable=diccionario_trans_agua,
+            # Hidratante:
+            valor_hidratacion=valor_hidratacion,
+            # Combinable:
+            cantidad_max_combinable=cantidad_max_combinable,
+        )

@@ -3,6 +3,8 @@ from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 
 class Peso(Fisico):
     """
+    (g)
+    
     NO indica que algo pese mucho, si no que tiene masa
 
     Parametros:
