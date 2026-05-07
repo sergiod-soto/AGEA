@@ -1,44 +1,22 @@
+# crafteable.py — filtra y construye la Receta
 from abc import abstractmethod
-
-from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
-from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
-from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
+from Core.Entities.Comportamiento.Interaccion.receta import Receta
 from Core.Entities.Elementos.elemento import Elemento
 
 
 class Crafteable(Interaccion):
-    """
-    Parametros:
-
-    - receta_para: tuple[str, list[Elemento]]
-
-    Metodos abstractos:
-
-    - craftear(self, elementos: list[Elemento])
-    """
-
-    def __init__(self, receta_para: tuple[str, list[Elemento]], **kwargs):
+    def __init__(self, receta_para: Receta, **kwargs):
         super().__init__(**kwargs)
-        self.nombre = receta_para[0]
-        self.receta_para = receta_para[1]
-        self.ingredientes = [e for e in self.receta_para if isinstance(e, Ingrediente)]
-        self.condiciones = [e for e in self.receta_para if isinstance(e, Condicion)]
-        self.acciones = [e for e in self.receta_para if isinstance(e, Accion)]
-        for ingrediente in self.ingredientes:
-            ingrediente.incluir_en_receta((self.nombre, self))
+        self.receta = receta_para
+        for ingrediente in self.receta.ingredientes:
+            ingrediente.incluir_en_receta(self.receta)
 
-    def get_receta_para(self) -> list[Elemento]:
-        """
-        Consulta que necesita para ser creado
-        """
-        return self.receta_para
-
-    def condiciones_cumplidas(self) -> bool:
-        return all(c.evaluar() for c in self.condiciones)
+    def get_receta_para(self) -> list:
+        return self.receta.ingredientes + self.receta.condiciones + self.receta.acciones
 
     def ejecutar(self) -> None:
-        for accion in self.acciones:
+        for accion in self.receta.acciones:
             accion.ejecutar()
 
     @abstractmethod

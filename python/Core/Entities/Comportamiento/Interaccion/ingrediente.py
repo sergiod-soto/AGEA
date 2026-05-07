@@ -1,47 +1,30 @@
-from abc import abstractmethod
+# ingrediente.py — TYPE_CHECKING rompe el ciclo en runtime
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
-from Core.Entities.Comportamiento.Interaccion.crafteable import Crafteable
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 from Core.Entities.Elementos.elemento import Elemento
 
+if TYPE_CHECKING:
+    from Core.Entities.Comportamiento.Interaccion.receta import Receta
 
 class Ingrediente(Interaccion):
-    """
-    Forma parte de una receta.
-
-    Parametros:
-
-    - recetas_de: dict[str, Crafteable]
-    
-    Metodos abstractos:
-    
-    -
-    """
-
-    def __init__(self, recetas_de: dict[str, Crafteable],**kwargs):
+    def __init__(self, recetas_de: dict[str, Receta] = None, **kwargs):
         super().__init__(**kwargs)
-        self.recetas_de = recetas_de
-
-        for nombre, crafteable in recetas_de.items():
-            self.incluir_en_receta((nombre, crafteable))
-
+        self.recetas_de: dict[str, Receta] = recetas_de or {}
         Elemento.mundo.bus.suscribir(f"manipulado_{id(self)}", self.on_manipulado)
 
     def on_manipulado(self) -> None:
-        for crafteable in self.recetas_de.values():
-            if crafteable.condiciones_cumplidas():
-                Elemento.mundo.bus.emitir("craftear", crafteable)
+        for receta in self.recetas_de.values():
+            if receta.condiciones_cumplidas():
+                Elemento.mundo.bus.emitir("craftear", receta)
 
-    def incluir_en_receta(self, receta: tuple[str, Crafteable]) -> None:
-        """Incluye el elemento en 'parte_de_que_recetas()'"""
-
-        if self.recetas_de.get(receta[0]) is not None:
+    def incluir_en_receta(self, receta: Receta) -> None:
+        if receta.nombre in self.recetas_de:
             return
+        self.recetas_de[receta.nombre] = receta
 
-        self.recetas_de[receta[0]] = receta[1]
-
-    def parte_de_que_recetas(self) -> dict[str, Crafteable]:
-        """Retorna de que recetas este Elemento forma parte"""
+    def parte_de_que_recetas(self) -> dict[str, Receta]:
         return self.recetas_de
 
     def eliminar(self) -> None:

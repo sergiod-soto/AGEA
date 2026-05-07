@@ -17,9 +17,8 @@ class Empujable(Fisico):
     - push(self, direccion) -> bool
     """
 
-    def __init__(self, coste_empujar: float,**kwargs):
+    def __init__(self, coste_empujar: float, **kwargs):
         super().__init__(**kwargs)
-        
 
         self.coste_empujar = coste_empujar  #   cuanta energia drena moverlo 1 ud.
         self.empujable: bool = True
@@ -49,7 +48,7 @@ class Empujable(Fisico):
                 return False
 
     @abstractmethod
-    def check_push(self, direccion) -> Elemento | True | False:
+    def check_push(self, direccion) -> (Elemento | bool):
         """
         Intenta mover la entidad una celda en `direccion`.
         Devuelve un Elemento si choca contra algo, True si tendria exito o False si no puede.

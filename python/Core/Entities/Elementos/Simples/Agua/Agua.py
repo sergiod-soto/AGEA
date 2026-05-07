@@ -19,6 +19,7 @@ from Core.Entities.Comportamiento.Salud.medicinal import Medicinal
 from Core.Entities.Comportamiento.Salud.nutritivo import Nutritivo
 from Core.Entities.Comportamiento.Salud.toxico import Toxico
 from Core.Entities.Comportamiento.Temporal.perecedero import Perecedero
+from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.elemento import Elemento
@@ -54,12 +55,21 @@ class Agua(Elemento_Simple, comportamientos):
         self,
         casilla: tuple[int, int],
         cantidad: int,
-        masa: float,
+        peso: float,
         volumen: float,
-        rgb_color: tuple[int, int, int],
-        recetas: dict[str, Crafteable],
+        recetas_de: dict[str, Crafteable],
         elemento_combinable: Elemento,
+        cantidad_minima_divisible: float,
+        dict_transformable: dict[Condicion, Elemento],
+        valor_hidratacion: float,
+        rgb_color: tuple[int, int, int],
+        valor_medicinal: float,
+        valor_toxico: float,
+        valor_nutritivo: float,
+        tiempo_maximo_perecedero: float,
+        condiciones_perecedero: list[tuple[list[Condicion], float]],
         cantidad_max_combinable: float = None,
+        tiempo_actual_perecedero: float = None,
     ):
         super().__init__(tipo=Agua, tamanho=1, casilla=casilla, capa=1)
         self.cantidad = cantidad
