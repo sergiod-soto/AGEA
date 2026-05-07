@@ -6,17 +6,19 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Plantable(Interaccion):
     """
+    Parametros:
+
+    - plantado: bool = False
+
     Metodos abstractos:
 
     - plantar(self, agujero: Elemento)
-
     - desplantar(self, por: Elemento)
     """
 
-    def __init__(self, plantado: bool = False, plantable: bool = True, **kwargs):
+    def __init__(self, plantado: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.plantado = plantado
-        self.plantable = plantable
 
     @abstractmethod
     def plantar(self, agujero: Elemento): ...

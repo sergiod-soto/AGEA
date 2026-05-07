@@ -8,6 +8,10 @@ class Inflamable(Fisico):
     Parametros:
 
     - temperatura_ignicion: float
+
+    Metodos abstractos:
+
+    -
     """
 
     def __init__(self, temperatura_ignicion: float, **kwargs):
@@ -15,7 +19,6 @@ class Inflamable(Fisico):
         self.temperatura_ignicion = (
             temperatura_ignicion  #   temperatura para comenzar a arder
         )
-        self.inflamable: bool = True
         self.ardiendo: bool = False
         self._tiempo_total_quemado = 0.0
         self._hora_encendido = None

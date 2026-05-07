@@ -8,6 +8,10 @@ class Nutritivo(Salud):
     Parametros:
 
     - valor_nutritivo: float
+    
+    Metodos abstractos:
+
+    -
     """
 
     def __init__(self, valor_nutritivo: float,**kwargs):

@@ -8,6 +8,10 @@ class Toxico(Salud):
     Parametros:
     
     - valor_toxico: float
+    
+    Metodos abstractos:
+
+    -
     """
 
     def __init__(self, valor_toxico: float,**kwargs):

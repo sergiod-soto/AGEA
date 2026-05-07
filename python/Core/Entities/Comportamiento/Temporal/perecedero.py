@@ -11,16 +11,13 @@ class Perecedero(Temporal):
     Parametros:
 
     - tiempo_maximo_perecedero: float
-
-    - condiciones: list[tuple[list[Condicion], float]]
-
+    - condiciones_perecedero: list[tuple[list[Condicion], float]]
     - tiempo_actual_perecedero: float = None
 
     Metodos abstractos:
 
-    - tick(self) -> None
-
-    - desaparecer(self) -> None
+    - tick() -> None
+    - desaparecer() -> None
     """
 
     def __init__(

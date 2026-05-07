@@ -9,15 +9,13 @@ class Caduco(Temporal):
     
     Parametros:
     
-    - duracion_max: int
-    
-    - duracion_restante: int = None
+    - duracion_max_caduco: int    
+    - duracion_restante_caduco: int = None
     
     Metodos abstractos:
     
-    - tick(self) -> None
-    
-    - desaparecer(self) -> None
+    - tick() -> None    
+    - desaparecer() -> None
     """
 
     def __init__(self, duracion_max_caduco: int, duracion_restante_caduco: int = None,**kwargs):

@@ -193,7 +193,6 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     def __init__(
         self,
         capa:int = 2,
-        id: str,
         adn,
         padres: Tuple[str, str] | None,
         tamanho: int,

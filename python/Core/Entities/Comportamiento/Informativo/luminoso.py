@@ -8,6 +8,10 @@ class Luminoso(Informativo):
     - distancia: float
 
     - area: int = 360
+    
+    Metodos abstractos:
+    
+    -
     """
 
     def __init__(self, distancia_luz: float, area_luz: int = 360,**kwargs):

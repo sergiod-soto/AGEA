@@ -10,6 +10,10 @@ class Hidratante(Salud):
     Parametros:
     
     - valor_hidratacion: float
+    
+    Metodos abstractos:
+    
+    -
     """
 
     def __init__(self, valor_hidratacion: float,**kwargs):

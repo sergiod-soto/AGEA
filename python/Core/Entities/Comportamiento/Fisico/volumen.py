@@ -6,6 +6,10 @@ class Volumen(Fisico):
     Parametros:
 
     - volumen: float
+    
+    Metodos abstractos:
+    
+    -
     """
 
     def __init__(self, volumen: float,**kwargs):

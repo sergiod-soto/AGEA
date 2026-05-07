@@ -14,6 +14,10 @@ class Combustible(Energetico):
     - ratio_emision: float,
     - energia_actual: float = None,
     - ratio_recarga: float = 0.0
+    
+    Metodos abstractos:
+    
+    -
     """
 
     def __init__(

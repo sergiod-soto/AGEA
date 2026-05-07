@@ -9,26 +9,30 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Crafteable(Interaccion):
     """
+    Parametros:
+
+    - receta_para: tuple[str, list[Elemento]]
+
     Metodos abstractos:
 
     - craftear(self, elementos: list[Elemento])
     """
 
-    def __init__(self, receta: tuple[str, list[Elemento]],**kwargs):
+    def __init__(self, receta_para: tuple[str, list[Elemento]], **kwargs):
         super().__init__(**kwargs)
-        self.nombre = receta[0]
-        self.receta = receta[1]
-        self.ingredientes = [e for e in self.receta if isinstance(e, Ingrediente)]
-        self.condiciones = [e for e in self.receta if isinstance(e, Condicion)]
-        self.acciones = [e for e in self.receta if isinstance(e, Accion)]
+        self.nombre = receta_para[0]
+        self.receta_para = receta_para[1]
+        self.ingredientes = [e for e in self.receta_para if isinstance(e, Ingrediente)]
+        self.condiciones = [e for e in self.receta_para if isinstance(e, Condicion)]
+        self.acciones = [e for e in self.receta_para if isinstance(e, Accion)]
         for ingrediente in self.ingredientes:
             ingrediente.incluir_en_receta((self.nombre, self))
 
-    def get_receta(self) -> list[Elemento]:
+    def get_receta_para(self) -> list[Elemento]:
         """
         Consulta que necesita para ser creado
         """
-        return self.receta
+        return self.receta_para
 
     def condiciones_cumplidas(self) -> bool:
         return all(c.evaluar() for c in self.condiciones)

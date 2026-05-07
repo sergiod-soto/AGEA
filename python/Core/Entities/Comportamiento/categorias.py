@@ -1,3 +1,6 @@
+from Core.Entities.Comportamiento.Energetico.combustible import Combustible
+from Core.Entities.Comportamiento.Energetico.termico import Termico
+from Core.Entities.Comportamiento.Social.social import Social
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
@@ -9,12 +12,21 @@ from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
 from Core.Entities.Comportamiento.Stats.stat import Stat
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
-Comportamiento.Fisico = Fisico
-Comportamiento.Temporal = Temporal
-Comportamiento.Energetico = Energetico
-Comportamiento.Informativo = Informativo
-Comportamiento.Interaccion = Interaccion
-Comportamiento.Material = Material
-Comportamiento.Salud = Salud
-Comportamiento.Stat = Stat
-Comportamiento.Temporal = Temporal
+
+
+Comportamiento.Energetico.Combustible = Combustible
+Comportamiento.Energetico.Termico = Termico
+
+class Categorias:
+    def __init__(self):
+        self.categoria.Energetico = Energetico
+        self.categoria.Fisico = Fisico
+        self.categoria.Informativo = Informativo
+        self.categoria.Interaccion = Interaccion
+        self.categoria.Material = Material
+        self.categoria.Salud = Salud
+        self.categoria.Social = Social
+        self.categoria.Stat = Stat
+        self.categoria.Temporal = Temporal
+        #
+        self.categoria

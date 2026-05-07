@@ -8,11 +8,15 @@ from Core.Entities.Elementos.elemento import Elemento
 class Equipable(Interaccion):
     """
     Elemento que puede ser equipado por un elemento que no necesariamente tiene por que ser contenedor
+    
+    Parametros:
+    
+    - provoca_equiparlo: dict[Elemento, Accion] = None
+    - equipado_por: Elemento = None
 
     Metodos abstractos:
 
     - equipar(self, por: Elemento) -> bool
-
     - desequipar(self, por: Elemento) -> Elemento
     """
 

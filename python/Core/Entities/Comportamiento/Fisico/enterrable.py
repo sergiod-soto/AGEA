@@ -4,17 +4,20 @@ from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 
 
 class Enterrable(Fisico):
-    '''
+    """
+    Parametros:
+
+    -
+
     Metodos abstractos:
-    
+
     - check_enterrable(self) -> bool
     - check_desenterrable(self) -> bool
     - enterrar(self)
     - desenterrar(self)
-    '''
-    
+    """
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self._enterrable: bool = True
@@ -35,3 +38,6 @@ class Enterrable(Fisico):
     @abstractmethod
     def desenterrar(self):
         pass
+
+
+Enterrable

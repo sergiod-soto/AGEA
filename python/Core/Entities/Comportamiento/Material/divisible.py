@@ -10,14 +10,14 @@ class Divisible(Material):
 
     Parametros:
 
-    - cantidad_minima: float
+    - cantidad_minima_divisible: float
 
     Metodos abstractos:
 
     - dividir(self, cantidad: float) -> Elemento | None
     """
 
-    def __init__(self, cantidad_minima_divisible: float,**kwargs):
+    def __init__(self, cantidad_minima_divisible: float, **kwargs):
         super().__init__(**kwargs)
         self.cantidad_minima_divisible = cantidad_minima_divisible
 

@@ -2,7 +2,15 @@ from Core.Entities.Comportamiento.Social.social import Social
 
 
 class Intercambiable(Social):
+    """
+    Parametros:
 
-    def __init__(self,**kwargs):
+    -
+
+    Metodos abstractos:
+
+    -
+    """
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.intercambiable: bool = True

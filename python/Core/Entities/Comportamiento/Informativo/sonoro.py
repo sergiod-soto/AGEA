@@ -7,27 +7,33 @@ from Core.Entities.Comportamiento.Informativo.informativo import Informativo
 
 class Sonoro(Informativo):
     """
-    Ejemplo de uso de clase:\n
+    Ejemplo de uso de clase:
+
     Las pisadas de un bot, no el bot en si
+
+    Parametros:
+
+    -
 
     Metodos abstractos:
 
-    - sonar(self, intensidad: float))\n
+    - sonar(self, intensidad: float))
 
-    ------------------------------------\n
+     ------------------------------------
+
     Ejemplo de implementacion:
 
-    def sonar(self):
-        timbre = Sonoro.generar_timbre(
-            fundamental=lambda: 2000 / (self.masa ** (1/3)),
-            n_armonicos=4,
-            decay=0.6,
-            inarmonicidad=0.0,
-        )
-        # hacer algo con el timbre...
+    def sonar(self):\n
+    ____timbre = Sonoro.generar_timbre(\n
+    ________fundamental=lambda: 2000 / (self.masa ** (1/3)),\n
+    ________n_armonicos=4,\n
+    ________decay=0.6,\n
+    ________inarmonicidad=0.0,\n
+    ____)\n
+    ____# hacer algo con el timbre...
     """
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     @staticmethod

@@ -13,16 +13,16 @@ class Transformable(Material):
 
     Parametros:
 
-    - dict: dict[Condicion, Elemento]
+    - dict_transformable: dict[Condicion, Elemento]
 
     Metodos abstractos:
 
-    - get_condiciones(self)
+    - get_condiciones_transformable(self)
     """
 
-    def __init__(self, dict: dict[Condicion, Elemento],**kwargs):
+    def __init__(self, dict_transformable: dict[Condicion, Elemento], **kwargs):
         super().__init__(**kwargs)
-        self.dict = dict
+        self.dict_transformable = dict_transformable
 
     @abstractmethod
-    def get_condiciones(self): ...
+    def get_condiciones_transformable(self): ...

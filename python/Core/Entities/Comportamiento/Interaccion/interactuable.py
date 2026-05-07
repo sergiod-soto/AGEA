@@ -6,12 +6,16 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Interactuable(Interaccion):
     """
+    Parametros:
+
+    -
+
     Metodos abstractos:
 
     - interaccion(self, por:Elemento)
     """
 
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     @abstractmethod

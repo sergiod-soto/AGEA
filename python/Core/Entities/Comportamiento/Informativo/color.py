@@ -7,7 +7,11 @@ class Color(Comportamiento):
 
     Parametros:
 
-    -  rgb: tuple[int, int, int]
+    -  rgb_color: tuple[int, int, int]
+    
+    Metodos abstractos:
+    
+    -
     """
 
     def __init__(self, rgb_color: tuple[int, int, int],**kwargs):

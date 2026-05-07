@@ -14,7 +14,7 @@ class Regenerable(Temporal):
 
     Metodos abstractos:
 
-    - tick(self)
+    - tick()
     """
 
     def __init__(self, tasas_regeneracion: list[tuple[Stat, float]], **kwargs):

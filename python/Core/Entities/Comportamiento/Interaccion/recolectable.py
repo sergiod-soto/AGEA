@@ -7,6 +7,10 @@ from Core.Entities.Elementos.elemento import Elemento
 class Recolectable(Interaccion):
     """
     Indica si puede ser recolectardo para obtener Elemento(s)
+    
+    Parametros:
+    
+    - contenido: dict[str, tuple[Elemento, float]] = None
 
     Metodos abstractos:
 

@@ -9,16 +9,13 @@ class Erosionable(Material):
     """
     Parametros:
 
-    - condiciones: list[tuple[list[Condicion], float]]
-
-    - durabilidad_max: float
-
-    - durabilidad_actual: float = None
+    - condiciones_erosion: list[tuple[list[Condicion], float]]
+    - durabilidad_max_erosion: float
+    - durabilidad_actual_erosion: float = None
 
     Metodos abstractos:
 
     - erosionar(self, cantidad: float)
-
     - _destruir(self, efecto: Accion)
     """
 
@@ -32,7 +29,9 @@ class Erosionable(Material):
         super().__init__(**kwargs)
         self.durabilidad_max_erosion = durabilidad_max_erosion
         self.condiciones_erosion = condiciones_erosion
-        self.durabilidad_actual_erosion = durabilidad_actual_erosion or durabilidad_max_erosion
+        self.durabilidad_actual_erosion = (
+            durabilidad_actual_erosion or durabilidad_max_erosion
+        )
 
     def tick(self) -> None:
         super().tick()

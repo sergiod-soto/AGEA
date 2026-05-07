@@ -10,7 +10,7 @@ class Rastreable(Informativo):
     """
     Al moverse deja rastros dependiendo de condiciones.
 
-    Los rastros tienen una intensidad (%) en funcion del terreno.
+    Los rastros tienen una intensidad (%: float) en funcion del terreno.
 
     El codigo del rastro depende de las caracteristicas del Elemento que las produjo
 

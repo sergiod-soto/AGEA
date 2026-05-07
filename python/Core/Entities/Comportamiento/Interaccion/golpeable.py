@@ -6,6 +6,10 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Golpeable(Material):
     """
+    Parametros:
+    
+    -
+    
     Metodos abstractos:
 
     - golpear(self, por: Elemento)

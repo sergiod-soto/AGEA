@@ -10,9 +10,8 @@ class Combinable(Material):
 
     Parametros:
 
-    - elemento: Elemento (el Elemento al cual se le quiere añadir lo original)
-
-    - cantidad_max: float = None
+    - elemento_combinable: Elemento (el Elemento al cual se le quiere añadir lo original)
+    - cantidad_max_combinable: float = None
 
     Metodos abstractos:
 

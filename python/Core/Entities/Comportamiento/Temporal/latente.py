@@ -13,12 +13,11 @@ class Latente(Temporal):
     Parametros:
 
     - condiciones: list[Condicion]
-
     - accion_latente: Accion
 
     Metodos abstractos:
 
-    - tick(self) -> None
+    - tick() -> None
     """
 
     def __init__(

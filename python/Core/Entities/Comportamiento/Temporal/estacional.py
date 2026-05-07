@@ -8,9 +8,13 @@ class Estacional(Temporal):
     Parametros:
 
     - acciones_por_estacion: dict[Estacion, list[Accion]]
+
+    Metodos abstractos:
+
+    -
     """
 
-    def __init__(self, acciones_por_estacion: dict[Estacion, list[Accion]],**kwargs):
+    def __init__(self, acciones_por_estacion: dict[Estacion, list[Accion]], **kwargs):
         super().__init__(**kwargs)
         self.acciones_por_estacion = acciones_por_estacion
 

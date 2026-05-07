@@ -8,6 +8,10 @@ class Consumible(Interaccion):
     """
     Todo lo que puede ser consumido por otro Elemento
 
+    Parametros:
+
+    -
+
     Metodos abstractos:
 
     - consumir(self, por: Elemento)
