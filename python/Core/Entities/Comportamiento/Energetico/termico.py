@@ -1,4 +1,5 @@
 from Core.Entities.Comportamiento.Energetico.energetico import Energetico
+from Core.Entities.Elementos.elemento import Elemento
 
 
 class Termico(Energetico):
@@ -11,9 +12,9 @@ class Termico(Energetico):
     - temperatura_propia: float
     - tasa_transferencia: float
     - radio_termico: float
-    
+
     Metodos abstractos:
-    
+
     -
     """
 
@@ -22,7 +23,7 @@ class Termico(Energetico):
         temperatura_propia: float,
         tasa_transferencia: float,
         radio_termico: float,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.temperatura_propia = temperatura_propia
@@ -36,7 +37,7 @@ class Termico(Energetico):
 
         list(temperatura, tasa)
         """
-
+        temp_propia_inicial = self.temperatura_propia
         delta = 0
         for neighbor_temp, neighbor_rate in elementos:
             U = (self.tasa_transferencia * neighbor_rate) / (
@@ -46,3 +47,9 @@ class Termico(Energetico):
             delta -= Q
 
         self.temperatura_propia += delta
+        
+        # emision del evento del cambio de temperatura
+        if abs(self.temperatura_propia - temp_propia_inicial) > 1e-2:
+            Elemento.mundo.bus.emitir(
+                f"temperatura_cambiada_{id(self)}", self.temperatura_propia
+            )
