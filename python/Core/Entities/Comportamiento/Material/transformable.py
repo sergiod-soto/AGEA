@@ -1,8 +1,8 @@
 from abc import abstractmethod
+from typing import Callable
 
 from Core.Entities.Comportamiento.Material.material import Material
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
-from Core.Entities.Elementos.elemento import Elemento
 
 
 class Transformable(Material):
@@ -11,18 +11,20 @@ class Transformable(Material):
 
     Puede ser reversible, como agua -> hielo -> agua
 
+    El Callable es la funcion que transforma al Elemento
+
     Parametros:
 
-    - dict_transformable: dict[Condicion, Elemento]
+    - dict_transformable: dict[Condicion, Callable]
 
     Metodos abstractos:
 
-    - get_condiciones_transformable(self)
+    -
     """
 
-    def __init__(self, dict_transformable: dict[Condicion, Elemento], **kwargs):
+    def __init__(self, dict_transformable: dict[Condicion, Callable], **kwargs):
         super().__init__(**kwargs)
         self.dict_transformable = dict_transformable
 
-    @abstractmethod
-    def get_condiciones_transformable(self): ...
+    def get_condiciones(self) -> list[Condicion]:
+        return list(self.dict_transformable.keys())

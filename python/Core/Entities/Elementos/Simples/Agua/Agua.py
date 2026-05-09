@@ -14,8 +14,8 @@ from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
-from Core.Entities.Elementos.Simples.Agua.diccionario_trans_agua import (
-    diccionario_trans_agua,
+from Core.Entities.Elementos.Simples.Agua.diccionario_transformable import (
+    diccionario_transformaciones,
 )
 
 comportamientos = Comportamiento.declarar_comportamientos(
@@ -61,7 +61,7 @@ class Agua(Elemento_Simple, comportamientos):
             # Divisible:
             cantidad_minima_divisible=1,
             # Transformable:
-            dict_transformable=diccionario_trans_agua,
+            dict_transformable=diccionario_transformaciones(self),
             # Hidratante:
             valor_hidratacion=valor_hidratacion,
             # Combinable:

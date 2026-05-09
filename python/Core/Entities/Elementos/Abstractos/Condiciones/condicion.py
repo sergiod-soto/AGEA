@@ -27,12 +27,18 @@ class Condicion(Elemento_Abstracto):
         self._evaluar = evaluar
         self.activa: bool = False
         if evento:
-            self._suscribir_evento(evento, self._on_evento)
+            Elemento.mundo.bus.suscribir(evento, self._on_evento)
 
     def _on_evento(self, *args, **kwargs) -> None:
         self.activa = self._evaluar()
         if self.activa:
             Elemento.mundo.bus.emitir(f"condicion_activa_{id(self)}")
+
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return self is other
 
     def evaluar(self, contexto: dict = None) -> bool:
         return self._evaluar(contexto) if contexto else self._evaluar()

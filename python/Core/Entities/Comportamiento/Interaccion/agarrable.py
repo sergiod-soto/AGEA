@@ -6,7 +6,7 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Agarrable(Interaccion):
     """
-    Forma en la que un Elemento puede ser desplazado por otro.
+    Forma en la que un Elemento puede ser desplazado por otro de forma directa, sin "empujar"
 
     Parametros:
 
@@ -19,7 +19,7 @@ class Agarrable(Interaccion):
     - soltar(self, por: Elemento)
     """
 
-    def __init__(self, agarrado_por: Elemento, **kwargs):
+    def __init__(self, agarrado_por: Elemento = None, **kwargs):
         super().__init__(**kwargs)
         self.agarrado_por = agarrado_por
 

@@ -2,8 +2,6 @@ from dataclasses import dataclass
 import inspect
 
 
-
-
 @dataclass(kw_only=True)
 class Comportamiento:
     """
@@ -150,15 +148,15 @@ class Comportamiento:
         }
 
     @staticmethod
-    def añadir(obj, comportamiento: type, **kwargs):
+    def anhadir(obj, comportamiento: type, **kwargs):
         if isinstance(obj, comportamiento):
             raise TypeError(
                 f"{obj.__class__.__name__} ya tiene {comportamiento.__name__}"
             )
-
         nueva_clase = type(obj.__class__.__name__, (obj.__class__, comportamiento), {})
         obj.__class__ = nueva_clase
 
+        # atributos del __init__
         for nombre, param in Comportamiento._params_propios(comportamiento).items():
             if hasattr(obj, nombre):
                 continue
@@ -171,6 +169,15 @@ class Comportamiento:
                     f"{comportamiento.__name__} requiere el atributo '{nombre}'"
                 )
             setattr(obj, nombre, valor)
+
+        # metodos abstractos
+        for nombre in getattr(comportamiento, "__abstractmethods__", set()):
+            if nombre in kwargs:
+                setattr(obj, nombre, kwargs[nombre].__get__(obj, obj.__class__))
+            else:
+                raise ValueError(
+                    f"{comportamiento.__name__} requiere el método '{nombre}'"
+                )
 
     @staticmethod
     def quitar(obj, comportamiento: type):
@@ -243,6 +250,3 @@ class Comportamiento:
     def declarar_comportamientos(*clases):
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
-
-
-
