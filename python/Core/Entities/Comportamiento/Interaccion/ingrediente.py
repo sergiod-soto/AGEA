@@ -6,7 +6,7 @@ from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 from Core.Entities.Elementos.elemento import Elemento
 
 if TYPE_CHECKING:
-    from Core.Entities.Comportamiento.Interaccion.receta import Receta
+    from Core.Entities.Comportamiento.Interaccion._receta import Receta
 
 class Ingrediente(Interaccion):
     def __init__(self, recetas_de: dict[str, Receta] = None, **kwargs):

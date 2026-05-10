@@ -1,7 +1,7 @@
 # crafteable.py — filtra y construye la Receta
 from abc import abstractmethod
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
-from Core.Entities.Comportamiento.Interaccion.receta import Receta
+from Core.Entities.Comportamiento.Interaccion._receta import Receta
 from Core.Entities.Elementos.elemento import Elemento
 
 

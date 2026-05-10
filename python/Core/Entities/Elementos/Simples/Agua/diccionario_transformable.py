@@ -1,29 +1,33 @@
-from functools import partial
-from typing import Callable
-
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
+from Core.Entities.Comportamiento.Fisico.peso import Peso
 from Core.Entities.Comportamiento.Interaccion.agarrable import Agarrable
+from Core.Entities.Comportamiento.Interaccion.consumible import Consumible
 from Core.Entities.Comportamiento.Interaccion.equipable import Equipable
 from Core.Entities.Comportamiento.Interaccion.golpeable import Golpeable
+from Core.Entities.Comportamiento.Material.gaseoso import Gaseoso
 from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Comportamiento.Material.solido import Solido
+from Core.Entities.Comportamiento.Material.tangible import Tangible
+from Core.Entities.Comportamiento.Salud.comestible import Comestible
+from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Simples.Agua import Agua
 from Core.Entities.Elementos.elemento import Elemento
 
 
-def _CHECK_CONDICION_AGUA_HIELO(agua: Agua) -> Condicion:
+def _CONDICION_TRANSFORMACION_AGUA_HIELO(agua: Agua) -> Condicion:
     return Condicion(
         evaluar_fn=lambda: agua.temperatura_propia <= 0.0,
-        eventos=["CONDICION_AGUA_HIELO"],
+        eventos=[f"temperatura_cambiada_{id(agua)}"],
     )
 
 
-def _FUNCION_CONDICION_AGUA_HIELO(agua: Agua) -> None:
+def _FUNCION_TRANSFORMACION_AGUA_HIELO(agua: Agua) -> None:
 
     #
     Comportamiento.quitar(agua, Liquido)
+    Comportamiento.quitar(agua, Consumible)
 
     #   Solido
     Comportamiento.anhadir(agua, Solido)
@@ -78,64 +82,93 @@ def _FUNCION_CONDICION_AGUA_HIELO(agua: Agua) -> None:
 ###################################################
 
 
-def _CHECK_CONDICION_HIELO_AGUA(agua: Agua):
+def _CONDICION_TRANSFORMACION_HIELO_AGUA(agua: Agua):
     return Condicion(
         evaluar_fn=lambda: agua.temperatura_propia > 0.0,
-        eventos=["CONDICION_HIELO_AGUA"],
+        eventos=[f"temperatura_cambiada_{id(agua)}"],
     )
 
 
-def _FUNCION_CONDICION_HIELO_AGUA(agua: Agua):
+def _FUNCION_TRANSFORMACION_HIELO_AGUA(agua: Agua):
+
     #
     Comportamiento.quitar(agua, Solido)
-    Comportamiento.quitar(agua, Empujable, ...)
+    Comportamiento.quitar(agua, Empujable)
     Comportamiento.quitar(agua, Agarrable)
     Comportamiento.quitar(agua, Golpeable)
     Comportamiento.quitar(agua, Equipable)
     #
-    Comportamiento.anhadir(agua, Solido)
+    #   Liquido
+    Comportamiento.anhadir(agua, Liquido)
+
+    # Consumible
+    def _consumir(por: Elemento): ...  #   TODO: definir _consumir de Consumible de agua
+
+    Comportamiento.anhadir(
+        agua,
+        Consumible,
+        consumir=_consumir,
+    )
 
 
 ###################################################
 
 
-def _CHECK_CONDICION_VAPOR_AGUA(agua: Agua):
-    Condicion(
-        evaluar_fn=lambda: agua.temperatura_propia < 100.0,
-        eventos=["CONDICION_VAPOR_AGUA:"],
-    )
-
-
-def _FUNCION_CONDICION_VAPOR_AGUA(agua: Agua):
-    #
-    Comportamiento.quitar(agua, Solido)
-    Comportamiento.quitar(agua, Empujable, ...)
-    Comportamiento.quitar(agua, Agarrable)
-    Comportamiento.quitar(agua, Golpeable)
-    Comportamiento.quitar(agua, Equipable)
-    #
-    Comportamiento.anhadir(agua, Solido)
-
-
-###################################################
-
-
-def _CHECK_CONDICION_AGUA_VAPOR(agua: Agua):
+def _CONDICION_TRANSFORMACION_AGUA_VAPOR(agua: Agua):
     return Condicion(
         evaluar_fn=lambda: agua.temperatura_propia >= 100.0,
-        eventos=["CONDICION_AGUA_VAPOR"],
+        eventos=[f"temperatura_cambiada_{id(agua)}"],
     )
 
 
-def _FUNCION_CONDICION_AGUA_VAPOR(agua: Agua):
+def _FUNCION_TRANSFORMACION_AGUA_VAPOR(agua: Agua):
     #
-    Comportamiento.quitar(agua, Solido)
-    Comportamiento.quitar(agua, Empujable, ...)
-    Comportamiento.quitar(agua, Agarrable)
-    Comportamiento.quitar(agua, Golpeable)
-    Comportamiento.quitar(agua, Equipable)
+    Comportamiento.quitar(agua, Liquido)
+    Comportamiento.quitar(agua, Comestible)
+    Comportamiento.quitar(agua, Peso)
+    Comportamiento.quitar(agua, Tangible)
+    Comportamiento.quitar(agua, Hidratante)
+
+    #   Gaseoso
+    Comportamiento.anhadir(agua, Gaseoso)
+
+
+###################################################
+
+
+def _CONDICION_TRANSFORMACION_VAPOR_AGUA(agua: Agua):
+    Condicion(
+        evaluar_fn=lambda: agua.temperatura_propia < 100.0,
+        eventos=[f"temperatura_cambiada_{id(agua)}"],
+    )
+
+
+def _FUNCION_TRANSFORMACION_VAPOR_AGUA(agua: Agua):
     #
-    Comportamiento.anhadir(agua, Solido)
+    Comportamiento.quitar(agua, Gaseoso)
+
+    #   Liquido
+    Comportamiento.anhadir(agua, Liquido)
+
+    #   Comestible
+    def _comer(por: Elemento): ...  # TODO: definir _comer de Comestible de agua
+
+    Comportamiento.anhadir(
+        agua,
+        Comestible,
+        comer=_comer,
+    )
+
+    #   Peso
+    _peso = 0.0  # TODO: definir _peso de Peso de agua
+    Comportamiento.anhadir(agua, Peso, peso=_peso)
+
+    #   Tangible
+    Comportamiento.anhadir(agua, Tangible)
+
+    #   Hidratante
+    _valor_hidratacion = 1  # TODO: definir _valor_hidratacion de Hidratante de agua
+    Comportamiento.anhadir(agua, Hidratante, valor_hidratacion=_valor_hidratacion)
 
 
 ###################################################
@@ -144,8 +177,16 @@ def _FUNCION_CONDICION_AGUA_VAPOR(agua: Agua):
 def diccionario_transformaciones(agua: Agua):
 
     return {
-        _CHECK_CONDICION_AGUA_HIELO(agua): _FUNCION_CONDICION_AGUA_HIELO(agua),
-        _CHECK_CONDICION_HIELO_AGUA(agua): _FUNCION_CONDICION_HIELO_AGUA(agua),
-        _CHECK_CONDICION_VAPOR_AGUA(agua): _FUNCION_CONDICION_VAPOR_AGUA(agua),
-        _CHECK_CONDICION_AGUA_VAPOR(agua): _FUNCION_CONDICION_AGUA_VAPOR(agua),
+        _CONDICION_TRANSFORMACION_AGUA_HIELO(agua): _FUNCION_TRANSFORMACION_AGUA_HIELO(
+            agua
+        ),
+        _CONDICION_TRANSFORMACION_HIELO_AGUA(agua): _FUNCION_TRANSFORMACION_HIELO_AGUA(
+            agua
+        ),
+        _CONDICION_TRANSFORMACION_VAPOR_AGUA(agua): _FUNCION_TRANSFORMACION_VAPOR_AGUA(
+            agua
+        ),
+        _CONDICION_TRANSFORMACION_AGUA_VAPOR(agua): _FUNCION_TRANSFORMACION_AGUA_VAPOR(
+            agua
+        ),
     }
