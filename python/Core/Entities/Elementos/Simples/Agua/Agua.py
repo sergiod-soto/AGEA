@@ -63,7 +63,7 @@ class Agua(Elemento_Simple, comportamientos):
             # Transformable:
             dict_transformable=diccionario_transformaciones(self),
             # Hidratante:
-            valor_hidratacion=valor_hidratacion,
+            valor_hidratacion=1.0,  # TODO: definir _valor_hidratacion de Hidratante de agua
             # Combinable:
             cantidad_max_combinable=cantidad_max_combinable,
         )
