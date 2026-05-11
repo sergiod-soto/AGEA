@@ -14,3 +14,5 @@ class Terreno(Elemento_Simple):
             capa,
             rotacion=0,
         )
+
+    # TODO: terminar de definir Terreno

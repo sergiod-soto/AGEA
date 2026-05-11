@@ -57,7 +57,7 @@ class Agua(Elemento_Simple, comportamientos):
             # Peso:
             peso=peso,
             # Ingrediente:
-            recetas_de=recetas_de,
+            recetas_con=recetas_con,
             # Divisible:
             cantidad_minima_divisible=1,
             # Transformable:

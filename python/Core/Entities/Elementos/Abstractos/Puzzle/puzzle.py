@@ -61,8 +61,8 @@ class Puzzle(ABC, Elemento_Abstracto):
 
     # _____________________________________________________________________________________________
 
-    def __init__(self, parametros: PuzzleParams):
-        super().__init__(tipo=Puzzle)
+    def __init__(self, parametros: PuzzleParams, **kwargs):
+        super().__init__(tipo=Puzzle, **kwargs)
         self.parametros = parametros
         self.maquinasEstados: dict[int, Puzzle.MaquinaEstados] = {}
         self._resuelto_por = bitarray(MAX_BOTS)

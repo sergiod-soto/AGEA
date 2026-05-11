@@ -13,8 +13,8 @@ class Elemento(Comportamiento):
 
     mundo: Mundo = None
 
-    def __init__(self, tipo: type, capa: int):
-        super().__init__()
+    def __init__(self, tipo: type, capa: int, **kwargs):
+        super().__init__(**kwargs)
 
         self.capa = capa
         self.tipo = tipo

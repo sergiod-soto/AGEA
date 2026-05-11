@@ -3,5 +3,5 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 
 class Premio(Elemento_Abstracto):
 
-    def __init__(self):
-        super().__init__(Premio)
+    def __init__(self, **kwargs):
+        super().__init__(Premio,**kwargs)

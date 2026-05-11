@@ -30,7 +30,7 @@ class Condicion(Elemento_Abstracto):
             Elemento.mundo.bus.suscribir(evento, self._on_evento)
 
     def _on_evento(self, *args, **kwargs) -> None:
-        self.activa = self._evaluar()
+        self.activa = self._evaluar(*args, **kwargs)
         if self.activa:
             Elemento.mundo.bus.emitir(f"condicion_activa_{id(self)}")
 
@@ -40,5 +40,5 @@ class Condicion(Elemento_Abstracto):
     def __eq__(self, other):
         return self is other
 
-    def evaluar(self, contexto: dict = None) -> bool:
-        return self._evaluar(contexto) if contexto else self._evaluar()
+    def evaluar(self, *args, **kwargs) -> bool:
+        return self._evaluar(*args, **kwargs)
