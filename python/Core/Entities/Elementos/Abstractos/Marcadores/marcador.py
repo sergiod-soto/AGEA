@@ -2,5 +2,5 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 
 
 class Marcador(Elemento_Abstracto):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(Marcador, **kwargs)

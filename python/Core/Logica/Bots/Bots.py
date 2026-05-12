@@ -24,6 +24,6 @@ def obtener_siguiente_apellido():
         return 0
 
 
-# TODO
+# TODO: implementar mutar_adn()
 def mutar_adn(bot):
-    pass
+    raise NotImplementedError("Core.Logica.Bots.bots.mutar_adn()")

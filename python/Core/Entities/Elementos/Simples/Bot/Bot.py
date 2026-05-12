@@ -143,7 +143,6 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     #
     #
     #
-    #   TODO
     # self.stats["vida"] = -1  # tamanho, metabolismo, longevidad
     # self.stats["energia"] = -1  # tamanho, grasa, movilidad
     # self.stats["curacion"]  # metabolismo, longevidad

@@ -28,7 +28,7 @@ def _extraer_datos_perfil_desde_json(json):
     return {"nombre": json["nombre"], "fecha": json["fecha"]}
 
 
-# TODO cambiar
+# TODO implementar cambiar_perfil_activo
 def cambiar_perfil_activo(perfil):
     if _comprobar_perfil(perfil):
         pass

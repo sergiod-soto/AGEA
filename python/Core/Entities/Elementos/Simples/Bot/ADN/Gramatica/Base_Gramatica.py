@@ -1,9 +1,6 @@
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.elementos import Nodo
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.librerias import _libreria
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.strings_pool import _stringsPool
-from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.Capacidades.capacidades import (
-    _capacidad,
-)
 from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.inyeccion import (
     _codigoInyectado,
     _importsHardCoded,
@@ -11,7 +8,7 @@ from Core.Entities.Elementos.Simples.Bot.ADN.Gramatica.inyeccion import (
 
 
 """
-    TODO: posible implementacion: _iterable
+TODO: posible implementacion: _iterable
 """
 
 

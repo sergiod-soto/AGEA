@@ -24,8 +24,14 @@ class Receta(Elemento_Abstracto):
     def __init__(
         self,
         nombre: str,
-        ingredientes: list,  # para evitar dependencia circular, ¡NO! decir que es de Ingrediente
+        #
+        # para evitar dependencia circular, ¡NO! decir que es de Ingrediente.
+        ingredientes: list,
+        #
+        # puede que alguna de las condiciones sea el trigger.
         condiciones: list[Condicion],
+        #
+        # accion que hace de trigger. puede no tener.
         accion: Accion,
         resultado: Callable,
         **kwargs,
@@ -37,16 +43,40 @@ class Receta(Elemento_Abstracto):
         self.accion = accion
         self.resultado = resultado
 
-    def _on_accion(self, elementos: list[Elemento]) -> None:
-        if self._ingredientes_presentes(elementos) and self._condiciones_cumplidas(
-            elementos
-        ):
-            self.resultado(elementos)
+    def _on_accion(self, objetivo: Elemento, elementos: list[Elemento]) -> None:
+        if self._ingredientes_presentes(
+            objetivo, elementos
+        ) and self._condiciones_cumplidas(elementos):
+            if self.resultado is None:
+                raise Exception(
+                    f"[''RESULTADO'' is None] en accion: {str(self.accion.nombre)} en objetivo tipo: {str(objetivo.tipo)}"
+                )
+            # Se ejecuta la funcion resultado
+            self.resultado(
+                self.registro_ingredientes_recetas[self.accion.nombre][id(objetivo)]
+            )
 
-    def _ingredientes_presentes(self, elementos: list[Elemento]) -> bool:
-        return all(
-            any(isinstance(e, tipo) for e in elementos) for tipo in self.ingredientes
-        )
+    def _ingredientes_presentes(self, objetivo, elementos: list[Elemento]) -> bool:
+        """
+        Compruebo la presencia de todos los ingredientes necesarios y
+        los guardo en el registro. Se guardan todos los que casan
+        con la receta, esten duplicados o no.
+        """
+
+        ingredientes_a_usar = []
+        for tipo in self.ingredientes:
+            for e in elementos:
+                if isinstance(e, tipo):
+                    ingredientes_a_usar.append(e)
+                    encontrado = True
+                    continue
+            if encontrado == False:
+                return False
+        self.registro_ingredientes_recetas[self.accion.nombre][
+            id(objetivo)
+        ] = ingredientes_a_usar
+
+        return True
 
     def _condiciones_cumplidas(self, elementos: list[Elemento]) -> bool:
         return all(c.evaluar(elementos) for c in self.condiciones)

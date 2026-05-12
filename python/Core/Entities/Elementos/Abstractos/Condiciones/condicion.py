@@ -5,6 +5,8 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Condicion(Elemento_Abstracto):
     """
+    Una Condicion puede ser trigger.
+
     Ejemplo de uso:
 
     Condicion(
@@ -16,23 +18,34 @@ class Condicion(Elemento_Abstracto):
     Parametros:
 
     - evaluar: Callable[..., bool]
+    - evento: str = None
 
     Metodos abstractos:
 
     -
     """
 
-    def __init__(self, evaluar: Callable[..., bool], evento: str = None):
-        super().__init__()
+    def __init__(
+        self,
+        evaluar: Callable[..., bool],
+        evento: str = None,
+        nombre: str = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
         self._evaluar = evaluar
         self.activa: bool = False
+        self.nombre = nombre
         if evento:
             Elemento.mundo.bus.suscribir(evento, self._on_evento)
 
     def _on_evento(self, *args, **kwargs) -> None:
+        if self.nombre is None:
+            raise Exception("Evento trigger sin nombre")
+
         self.activa = self._evaluar(*args, **kwargs)
         if self.activa:
-            Elemento.mundo.bus.emitir(f"condicion_activa_{id(self)}")
+            Elemento.mundo.bus.emitir(f"{self.nombre}{id(self)}")
 
     def __hash__(self):
         return id(self)

@@ -4,9 +4,13 @@
 # lista de recetas
 #
 
+from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
+from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
+from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Comidas.Ingredientes.harina import Harina
+from Core.Entities.Elementos.elemento import Elemento
 
 
 class Lista_Recetas:
@@ -15,55 +19,66 @@ class Lista_Recetas:
 
         class Comida:
 
-            #----------------------------------------------------------------------------
-            def result_MASA_PAN(): ...
+            # ----------------------------------------------------------------------------
+
+            def condicion1_funcion(agua: Agua):
+                agua.temperatura_propia > 1 and agua.temperatura_propia < 40
+
+            condicion1 = Condicion(
+                evaluar=condicion1_funcion,
+                evento=None,
+                nombre="agua_liquida",
+            )
+
+            def resultado_MASA_PAN(ingredientes: list[Ingrediente]): ...
+
             MASA_PAN = Receta(
                 nombre="MASA_PAN",
                 ingredientes=[Agua, Harina],
-                condiciones=[],
-                accion="mezclar",   # solo indica cual es el trigger
-                resultado=None,     # funcion que se ejecuta cuando la receta se lleva a cabo
+                condiciones=[condicion1],
+                accion=Mezclar,  # solo indica cual es el trigger
+                resultado=resultado_MASA_PAN,  # funcion que se ejecuta cuando la receta se lleva a cabo
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             EMBUTIDO_CRUDO = Receta(
                 nombre="EMBUTIDO_CRUDO",
                 ingredientes=[],
                 condiciones=[],
-                accion=None,
+                accion=Mezclar,
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             MANTEQUILLA = Receta(
                 nombre="MANTEQUILLA",
                 ingredientes=[],
                 condiciones=[],
-                accion=None,
+                accion=Mezclar,
                 resultado=None,
             )
-            
-            #----------------------------------------------------------------------------
+
+            # ----------------------------------------------------------------------------
             CALDO = Receta(
                 nombre="CALDO",
                 ingredientes=[],
                 condiciones=[],
-                accion=None,
+                accion=Mezclar,
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             GACHAS = Receta(
                 nombre="GACHAS",
                 ingredientes=[],
                 condiciones=[],
-                accion=None,
+                accion=Mezclar,
                 resultado=None,
             )
 
         class Salud:
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             CATAPLASMA = Receta(
                 nombre="CATAPLASMA",
                 ingredientes=[],
@@ -72,7 +87,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             UGUENTO = Receta(
                 nombre="UGUENTO",
                 ingredientes=[],
@@ -81,7 +96,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             JABON = Receta(
                 nombre="JABON",
                 ingredientes=[],
@@ -90,7 +105,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             VENDAJE_ESTERILIZADO = Receta(
                 nombre="VENDAJE_ESTERILIZADO",
                 ingredientes=[],
@@ -103,7 +118,7 @@ class Lista_Recetas:
 
         class Ingredientes:
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             POLVORA = Receta(
                 nombre="POLVORA",
                 ingredientes=[],
@@ -112,7 +127,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             HARINA = Receta(
                 nombre="HARINA",
                 ingredientes=[],
@@ -121,7 +136,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             LEVADURA = Receta(
                 nombre="LEVADURA",
                 ingredientes=[],
@@ -132,7 +147,7 @@ class Lista_Recetas:
 
         class Construccion:
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             CEMENTO = Receta(
                 nombre="CEMENTO",
                 ingredientes=[],
@@ -141,7 +156,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             HORMIGON = Receta(
                 nombre="HORMIGON",
                 ingredientes=[],
@@ -152,7 +167,7 @@ class Lista_Recetas:
 
         class Tintes:
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             # NEGRO
             TINTE_CARBON = Receta(
                 nombre="HORMIGON",
@@ -162,7 +177,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             # ROJO
             TINTE_SANGRE = Receta(
                 nombre="HORMIGON",
@@ -172,7 +187,7 @@ class Lista_Recetas:
                 resultado=None,
             )
 
-            #----------------------------------------------------------------------------
+            # ----------------------------------------------------------------------------
             # AZUL
             TINTE_LAPISLAZULI = Receta(
                 nombre="HORMIGON",
