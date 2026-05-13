@@ -28,6 +28,9 @@ class Receta(Elemento_Abstracto):
         # para evitar dependencia circular, ¡NO! decir que es de Ingrediente.
         ingredientes: list,
         #
+        # lugar donde tiene lugar la Receta
+        donde,
+        #
         # puede que alguna de las condiciones sea el trigger.
         condiciones: list[Condicion],
         #
@@ -43,7 +46,11 @@ class Receta(Elemento_Abstracto):
         self.accion = accion
         self.resultado = resultado
 
-    def _on_accion(self, objetivo: Elemento, elementos: list[Elemento]) -> None:
+    def _on_accion(
+        self,
+        objetivo: Elemento,  # el objetivo puede ser un recipiente, terreno, etc
+        elementos: list[Elemento],
+    ) -> None:
         if self._ingredientes_presentes(
             objetivo, elementos
         ) and self._condiciones_cumplidas(elementos):
@@ -53,10 +60,15 @@ class Receta(Elemento_Abstracto):
                 )
             # Se ejecuta la funcion resultado
             self.resultado(
-                self.registro_ingredientes_recetas[self.accion.nombre][id(objetivo)]
+                objetivo,
+                self.registro_ingredientes_recetas[self.accion.nombre][id(objetivo)],
             )
 
-    def _ingredientes_presentes(self, objetivo, elementos: list[Elemento]) -> bool:
+    def _ingredientes_presentes(
+        self,
+        objetivo: Elemento,
+        elementos: list[Elemento],
+    ) -> bool:
         """
         Compruebo la presencia de todos los ingredientes necesarios y
         los guardo en el registro. Se guardan todos los que casan

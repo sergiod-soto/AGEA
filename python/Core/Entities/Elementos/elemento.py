@@ -18,3 +18,5 @@ class Elemento(Comportamiento):
 
         self.capa = capa
         self.tipo = tipo
+
+    def eliminar(self): ...  # Completar Eliminar Elemento

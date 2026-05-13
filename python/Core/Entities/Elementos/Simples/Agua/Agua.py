@@ -11,6 +11,7 @@ from Core.Entities.Comportamiento.Material.transformable import Transformable
 from Core.Entities.Comportamiento.Material.transparente import Transparente
 from Core.Entities.Comportamiento.Salud.comestible import Comestible
 from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
+from Core.Entities.Elementos.Simples.Agua.recetas_con import recetas_con_agua
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
@@ -57,13 +58,15 @@ class Agua(Elemento_Simple, comportamientos):
             # Peso:
             peso=peso,
             # Ingrediente:
-            recetas_con=recetas_con,
+            recetas_con=recetas_con_agua(),
             # Divisible:
             cantidad_minima_divisible=1,
+            # Liquido
+            disuelto=None,
             # Transformable:
             dict_transformable=diccionario_transformaciones(self),
             # Hidratante:
             valor_hidratacion=1.0,  # TODO: definir _valor_hidratacion de Hidratante de agua
             # Combinable:
-            cantidad_max_combinable=cantidad_max_combinable,
+            cantidad_max_combinable=1000.0,
         )

@@ -7,8 +7,15 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Ingrediente(Interaccion):
+    """
+    Parametros:
 
+    - recetas_de: list[Receta]
 
+    Metodos abstractos:
+
+    -
+    """
 
     def __init__(self, recetas_de: list[Receta], **kwargs):
         super().__init__(**kwargs)

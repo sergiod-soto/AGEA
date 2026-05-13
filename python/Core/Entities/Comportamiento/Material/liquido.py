@@ -1,4 +1,5 @@
 from Core.Entities.Comportamiento.Material.material import Material
+from Core.Entities.Elementos.elemento import Elemento
 
 
 class Liquido(Material):
@@ -11,5 +12,7 @@ class Liquido(Material):
 
     -
     """
-    def __init__(self,**kwargs):
+
+    def __init__(self, disuelto: list[Elemento] = None, **kwargs):
         super().__init__(**kwargs)
+        self.disuelto = disuelto or []

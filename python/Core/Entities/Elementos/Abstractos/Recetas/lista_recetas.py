@@ -1,20 +1,21 @@
-#
-#
-#
-# lista de recetas
-#
-
-from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
+from Core.Entities.Comportamiento.Energetico.termico import Termico
+from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Comidas.Ingredientes.harina import Harina
+from Core.Entities.Elementos.Simples.Comidas.Ingredientes.ingrediente import Ingrediente
+from Core.Entities.Elementos.Simples.Comidas.Ingredientes.masa_pan import Masa_Pan
 from Core.Entities.Elementos.elemento import Elemento
+from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 
 
 class Lista_Recetas:
 
+    #
+    #   clases con Accion como trigger
+    #
     class Mezclar:
 
         class Comida:
@@ -22,7 +23,7 @@ class Lista_Recetas:
             # ----------------------------------------------------------------------------
 
             def condicion1_funcion(agua: Agua):
-                agua.temperatura_propia > 1 and agua.temperatura_propia < 40
+                agua.tiene_comportamiento(Liquido) and agua.temperatura_propia < 40
 
             condicion1 = Condicion(
                 evaluar=condicion1_funcion,
@@ -30,7 +31,15 @@ class Lista_Recetas:
                 nombre="agua_liquida",
             )
 
-            def resultado_MASA_PAN(ingredientes: list[Ingrediente]): ...
+            def resultado_MASA_PAN(
+                destino: Elemento,
+                ingredientes: list[
+                    Ingrediente
+                ],  # la lista de ingredientes CONCRETOS a usar
+            ):
+                masa_pan = Masa_Pan()
+                for ingrediente in ingredientes:
+                    ingrediente.eliminar()
 
             MASA_PAN = Receta(
                 nombre="MASA_PAN",
@@ -208,3 +217,8 @@ class Lista_Recetas:
     class Frotar: ...
 
     class Apretar: ...
+
+    #
+    #   clases con Condicion como trigger
+    #
+    # class Llover
