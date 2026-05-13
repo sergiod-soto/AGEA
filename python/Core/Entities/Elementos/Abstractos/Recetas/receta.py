@@ -28,9 +28,6 @@ class Receta(Elemento_Abstracto):
         # para evitar dependencia circular, ¡NO! decir que es de Ingrediente.
         ingredientes: list,
         #
-        # lugar donde tiene lugar la Receta
-        donde,
-        #
         # puede que alguna de las condiciones sea el trigger.
         condiciones: list[Condicion],
         #
@@ -77,6 +74,7 @@ class Receta(Elemento_Abstracto):
 
         ingredientes_a_usar = []
         for tipo in self.ingredientes:
+            encontrado = False
             for e in elementos:
                 if isinstance(e, tipo):
                     ingredientes_a_usar.append(e)
