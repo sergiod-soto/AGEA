@@ -3,7 +3,8 @@ from Conexion.salida_actualizacion import salida_actualizacion
 from Conexion.SalidasDatos.salida_dato import salida_dato
 from Conexion.SalidasDatos.salida_mapa import salida_mapa
 from Conexion.SalidasDatos.salida_perfil import salida_perfil
-from Utils.Sistema.Pause import pause
+from Utils.Sistema.pause import pause
+from Dev import consola_dev
 
 
 def formatear(texto: str) -> str:
@@ -24,15 +25,19 @@ def procesar_mensaje_salida(mensaje, shared_data):
     if mensaje["peticion"] == "actualizacion":
         return formatear(salida_actualizacion(shared_data)).encode()
 
-    if mensaje["peticion"] == "dato":
+    elif mensaje["peticion"] == "dato":
         return formatear(salida_dato(shared_data, mensaje)).encode()
 
-    if mensaje["peticion"] == "mapa":
+    elif mensaje["peticion"] == "mapa":
         return formatear(salida_mapa(shared_data, mensaje)).encode()
 
-    if mensaje["peticion"] == "perfil":
+    elif mensaje["peticion"] == "perfil":
         return formatear(salida_perfil(shared_data, mensaje)).encode()
 
-    if mensaje["peticion"] == "pausa":
+    elif mensaje["peticion"] == "consola_dev":
+        consola_dev.abrir_consola(shared_data["mundo"])
+        return "None"
+
+    elif mensaje["peticion"] == "pausa":
         pause(shared_data)
         return "None"

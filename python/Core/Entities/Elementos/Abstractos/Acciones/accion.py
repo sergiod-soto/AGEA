@@ -4,6 +4,15 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 
 
 class Accion(Elemento_Abstracto):
+    """
+    Parametros
+
+    - nombre: str
+
+    Metodos abstractos:
+
+    - ejecutar()
+    """
 
     def __init__(self, nombre: str, **kwargs):
         super().__init__(Accion, **kwargs)

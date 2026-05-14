@@ -112,6 +112,13 @@ stats_bots = [
     "y",
 ]
 
+def generarApellidos(ape1, ape2):
+    apellidos = []
+    for i in range(int(len(ape1) / 2)):
+        apellidos.append(ape1[i])
+        apellidos.append(ape2[i])
+    return apellidos
+
 
 class Bot(Elemento_Simple, comportamientos, stats, informacion):
 
@@ -191,21 +198,20 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
 
     def __init__(
         self,
-        capa:int = 2,
-        adn,
         padres: Tuple[str, str] | None,
         tamanho: int,
         casilla,
         rotacion: float,
+        capa: int = 2,
     ):
         super().__init__(
             Bot,
             tamanho,
-            casilla,  
+            casilla,
             capa,
             rotacion,
         )
-        
+
         if (padres is not None) and (len(padres) != 2):
             raise ValueError("padres debe ser una tupla con exactamente 2 Bots o None")
 
@@ -241,7 +247,6 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
                     "madre": padres["madre"],
                 }
 
-        self.adn = adn
 
         self.casilla = casilla
 

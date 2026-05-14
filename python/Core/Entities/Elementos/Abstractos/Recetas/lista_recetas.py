@@ -45,7 +45,7 @@ class Lista_Recetas:
                 nombre="MASA_PAN",
                 ingredientes=[Agua, Harina],
                 condiciones=[condicion1],
-                accion=Mezclar,  # solo indica cual es el trigger
+                accion=Mezclar,  # solo si el trigger es una Accion
                 resultado=resultado_MASA_PAN,  # funcion que se ejecuta cuando la receta se lleva a cabo
             )
 

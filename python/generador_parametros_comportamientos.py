@@ -47,6 +47,13 @@ from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 
 def get_parametros_init(comportamientos: list[Comportamiento]):
+    """
+    Se le pasa una lista de Comportamientos y retorna un string con todas las variables que el objeto
+    necesita para completar sus comportamientos heredados.
+
+    Primero aparecen los obligatorios y luego los que tienen valor default.
+    """
+
     partes = []
     partes_opcionales = []
     partes.append("\n")
@@ -197,6 +204,10 @@ def get_parametros_init(comportamientos: list[Comportamiento]):
 
 
 def get_parametros_superinit(comportamientos: list[Comportamiento]):
+    """
+    Como get_parametros_init(), pero para la herencia
+    """
+
     partes = []
     partes_opcionales = []
     partes.append("\n")
@@ -360,41 +371,3 @@ class Agua(Peso, Volumen, Temperatura):
             **kwargs #  <- Importante
         )
 """
-
-
-print(
-    "INIT:"
-    + get_parametros_init(
-        [
-            Peso,
-            Consumible,
-            Volumen,
-            Ingrediente,
-            Combinable,
-            Divisible,
-            Liquido,
-            Tangible,
-            Transformable,
-            Transparente,
-            Comestible,
-            Hidratante,
-        ]
-    )
-    + "SUPER:"
-    + get_parametros_superinit(
-        [
-            Peso,
-            Consumible,
-            Volumen,
-            Ingrediente,
-            Combinable,
-            Divisible,
-            Liquido,
-            Tangible,
-            Transformable,
-            Transparente,
-            Comestible,
-            Hidratante,
-        ]
-    )
-)

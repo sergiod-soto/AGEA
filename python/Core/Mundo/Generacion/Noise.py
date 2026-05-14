@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import math
 import random
-import Exceptions
+import exceptions
 import hashlib
 
 
@@ -83,7 +83,7 @@ class Noise:
         try:
             img = Image.open(path).convert("L")  # Escala de grises
         except Exception as e:
-            raise Exceptions.NoMaskFound(e)
+            raise exceptions.NoMaskFound(e)
 
         ancho, alto = img.size
         pix = np.array(img, dtype=np.float32) / 255.0

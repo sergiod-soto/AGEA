@@ -1,7 +1,6 @@
-from Core.Mundo.Generacion.Noise import Noise
-import Exceptions
+from Core.Mundo.Generacion.noise import Noise
+import exceptions
 from pathlib import Path
-
 
 """ 
 
@@ -45,7 +44,7 @@ class Generacion:
         def _load(self, ruta):
             try:
                 return self.noise_base.load(direccion + ruta)
-            except Exceptions.NoMaskFound as e:
+            except exceptions.NoMaskFound as e:
                 print(f"\033[31m\tNo encontrada mascara: [{direccion} {ruta}]\033[0m")
                 raise e
 
@@ -55,7 +54,7 @@ class Generacion:
             try:
                 ruta = "\\" + ruta
                 setattr(self, nombre, _load(self, ruta))
-            except Exceptions.NoMaskFound:
+            except exceptions.NoMaskFound:
                 todas_mascaras_cargadas = False
 
         if todas_mascaras_cargadas == False:

@@ -1,4 +1,4 @@
-from Core.Mundo import Datos
+from Core.Mundo import datos
 from Dev.Serie_Estados import Serie_Estados
 
 SE = Serie_Estados()
@@ -26,7 +26,7 @@ def set_estados():
             # movemos consultando Mundo.bots en el momento de ejecución; congelamos bot_id, x, y
             acciones.append(
                 lambda bot_id=bot_id, x=x, y=y: SE.Mover_Elemento(
-                    Datos.bots[bot_id], (x, y)
+                    datos.bots[bot_id], (x, y)
                 )
             )
 
