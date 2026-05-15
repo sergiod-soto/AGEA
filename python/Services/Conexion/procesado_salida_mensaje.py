@@ -1,8 +1,8 @@
 import json
-from Conexion.salida_actualizacion import salida_actualizacion
-from Conexion.SalidasDatos.salida_dato import salida_dato
-from Conexion.SalidasDatos.salida_mapa import salida_mapa
-from Conexion.SalidasDatos.salida_perfil import salida_perfil
+from Services.Conexion.salida_actualizacion import salida_actualizacion
+from Services.Conexion.SalidasDatos.salida_dato import salida_dato
+from Services.Conexion.SalidasDatos.salida_mapa import salida_mapa
+from Services.Conexion.SalidasDatos.salida_perfil import salida_perfil
 from Utils.Sistema.pause import pause
 from Dev import consola_dev
 

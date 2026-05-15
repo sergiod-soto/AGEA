@@ -1,5 +1,5 @@
 import json
-from Conexion.procesado_salida_mensaje import procesar_mensaje_salida
+from Services.Conexion.procesado_salida_mensaje import procesar_mensaje_salida
 
 
 def formatear(texto: str) -> str:

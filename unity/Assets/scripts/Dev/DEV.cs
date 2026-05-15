@@ -1,7 +1,6 @@
 using UnityEngine;
 
 [RequireComponent(typeof(ServidorFalsoPython))]
-[RequireComponent(typeof(Pruebas))]
 public class DEV : MonoBehaviour, IDEVManager
 {
     public void StartFakeServer()
@@ -11,6 +10,6 @@ public class DEV : MonoBehaviour, IDEVManager
     }
     public void Test()
     {
-        GetComponent<Pruebas>().Test();
+        
     }
 }

@@ -1,4 +1,4 @@
-from Services.Serializaciones.Bots import serializacion_completa_bot
+from Services.Serializaciones.bots import serializacion_completa_bot
 
 
 def salida_bot_full(shared_data, entrada):

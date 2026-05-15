@@ -14,8 +14,7 @@ from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 
 
-Comportamiento.Energetico.Combustible = Combustible
-Comportamiento.Energetico.Termico = Termico
+
 
 class Categorias:
     def __init__(self):
@@ -29,4 +28,4 @@ class Categorias:
         self.categoria.Stat = Stat
         self.categoria.Temporal = Temporal
         #
-        self.categoria
+        #self.categoria

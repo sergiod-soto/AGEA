@@ -2,7 +2,7 @@ from functools import partial
 
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Core.Mundo import Datos
+from Core.Mundo import datos
 
 
 class Serie_Estados:
@@ -85,7 +85,7 @@ class Serie_Estados:
 
         print("\t⚪ Serie_Estados.Crear_Bot")
         bot = Bot(id_bot, adn, stats, padres, casilla)
-        Datos.bots[id_bot] = bot
+        datos.bots[id_bot] = bot
         return bot
 
     def Crear_Bot_Basico(self, id_bot, adn):
@@ -122,7 +122,7 @@ class Serie_Estados:
         casilla = (0, 0)
 
         bot = Bot(id_bot, adn, stats, padres, 1, casilla, 0)
-        Datos.bots[id_bot] = bot
+        datos.bots[id_bot] = bot
         return bot
 
     def Set_Stats_Bot(self, bot: Bot, stats):
@@ -143,14 +143,14 @@ class Serie_Estados:
 
         #####################################################
         def test2():
-            Datos.bots["b0.test"].rotacion += 5
+            datos.bots["b0.test"].rotacion += 5
 
             acciones = []
             acciones.append(lambda: test3())
             self.add(acciones)
 
         def test3():
-            Datos.bots["b0.test"].rotacion += 5
+            datos.bots["b0.test"].rotacion += 5
 
             acciones = []
             acciones.append(lambda: test2())
@@ -159,29 +159,29 @@ class Serie_Estados:
         #####################################################
         def test4():
 
-            casilla = Datos.bots["b3.test"].casilla
+            casilla = datos.bots["b3.test"].casilla
 
             acciones = []
-            if Datos.bots["b3.test"].casilla[0] >= 50:
+            if datos.bots["b3.test"].casilla[0] >= 50:
                 acciones.append(lambda: test5())
             else:
-                Datos.bots["b3.test"].casilla = (casilla[0] + 10, casilla[1])
+                datos.bots["b3.test"].casilla = (casilla[0] + 10, casilla[1])
                 acciones.append(lambda: test4())
             self.add(acciones)
 
         def test5():
-            casilla = Datos.bots["b3.test"].casilla
+            casilla = datos.bots["b3.test"].casilla
 
             acciones = []
-            if Datos.bots["b3.test"].casilla[1] >= 50:
+            if datos.bots["b3.test"].casilla[1] >= 50:
                 acciones.append(lambda: test6())
             else:
-                Datos.bots["b3.test"].casilla = (casilla[0], casilla[1] + 10)
+                datos.bots["b3.test"].casilla = (casilla[0], casilla[1] + 10)
                 acciones.append(lambda: test5())
             self.add(acciones)
 
         def test6():
-            Datos.bots["b3.test"].casilla = (15, 15)
+            datos.bots["b3.test"].casilla = (15, 15)
 
             acciones = []
             acciones.append(lambda: test4())

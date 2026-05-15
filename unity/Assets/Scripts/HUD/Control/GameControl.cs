@@ -60,7 +60,7 @@ public class GameControl : MonoBehaviour
 
         // HUD Pantalla Perfiles  ////////////////////////////////////////////////////////////////////
         HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
-        HUDBase.transform.Find("HUD Nuevo Perfil").gameObject.SetActive(false);
+        HUDBase.transform.Find("HUD Crear Perfil").gameObject.SetActive(false);
     }
 
    

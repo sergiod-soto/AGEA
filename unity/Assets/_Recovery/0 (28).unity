@@ -376,7 +376,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 34192658}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Pausar, Assembly-CSharp
         m_MethodName: PausePython
         m_Mode: 1
@@ -709,9 +709,9 @@ GameObject:
   - component: {fileID: 34192657}
   - component: {fileID: 34192662}
   - component: {fileID: 34192660}
-  - component: {fileID: 34192658}
   - component: {fileID: 34192661}
   - component: {fileID: 34192663}
+  - component: {fileID: 34192664}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -734,18 +734,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 281615459}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &34192658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 34192656}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5495b72c0aad4ae49a0bca6e03c9b666, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &34192660
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -795,6 +783,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63f8fc575e1e3aa4ca77bd3c4df69261, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BotClicManager
+--- !u!114 &34192664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 34192656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bd21f41e6d8f2f4da53b97fc806981e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pausar
 --- !u!1 &50276945
 GameObject:
   m_ObjectHideFlags: 0
@@ -3484,6 +3484,7 @@ GameObject:
   - component: {fileID: 466010235}
   - component: {fileID: 466010234}
   - component: {fileID: 466010233}
+  - component: {fileID: 466010237}
   m_Layer: 0
   m_Name: Control
   m_TagString: Untagged
@@ -3567,6 +3568,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 050462624605e634486ab437ffedb186, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameControl
+--- !u!114 &466010237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 466010230}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e43758c8e6e6c741b4af244e83e2223, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NuevoPerfil
 --- !u!1 &469827554
 GameObject:
   m_ObjectHideFlags: 0
@@ -10332,7 +10345,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1605322198}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Pruebas, Assembly-CSharp
         m_MethodName: Test
         m_Mode: 1
@@ -11219,6 +11232,8 @@ GameObject:
   - component: {fileID: 1374683277}
   - component: {fileID: 1374683276}
   - component: {fileID: 1374683280}
+  - component: {fileID: 1374683282}
+  - component: {fileID: 1374683281}
   m_Layer: 0
   m_Name: Perfiles
   m_TagString: Untagged
@@ -11307,6 +11322,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57c7c4fdd75f1714d8745f9cbffeed7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CambiarNombre
+--- !u!114 &1374683281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1374683274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5dd313b2cb3d9b24c99aa45d5cfde221, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CargarPerfil
+--- !u!114 &1374683282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1374683274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9733e9e88a92c74089795d724a05bb4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CrearPerfil
 --- !u!1 &1391822823
 GameObject:
   m_ObjectHideFlags: 0
@@ -12761,7 +12800,6 @@ GameObject:
   - component: {fileID: 1605322195}
   - component: {fileID: 1605322196}
   - component: {fileID: 1605322197}
-  - component: {fileID: 1605322198}
   m_Layer: 0
   m_Name: Dev
   m_TagString: Untagged
@@ -12810,18 +12848,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ServidorFalso
   direccionIP: 127.0.0.2
   puerto: 5001
---- !u!114 &1605322198
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1605322194}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d7793cf95f8e4745b972bd1ae48267d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Pruebas
 --- !u!1 &1606711393
 GameObject:
   m_ObjectHideFlags: 0
