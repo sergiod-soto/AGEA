@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(ControlHUD))]
-public class NuevoPerfil : MonoBehaviour
+public class ControlMenuPerfiles : MonoBehaviour
 {
     GameObject HUDBase;
 

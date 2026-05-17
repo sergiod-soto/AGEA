@@ -4,7 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(Bot))]
 [RequireComponent(typeof(Options))]
 [RequireComponent(typeof(Perfil))]
-[RequireComponent(typeof(NuevoPerfil))]
+[RequireComponent(typeof(ControlMenu))]
 
 public class ControlHUD : MonoBehaviour, IControlHUDLogica
 {
@@ -100,6 +100,6 @@ public class ControlHUD : MonoBehaviour, IControlHUDLogica
 
     public void AbrirNuevoPerfil()
     {
-        GetComponent<NuevoPerfil>().AbrirNuevoPerfil();
+        GetComponent<ControlMenu>().AbrirNuevoPerfil();
     }
 }

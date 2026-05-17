@@ -56,20 +56,27 @@ public class SolicitarPerfiles : MonoBehaviour
             cargar.Find("Fecha Valor").GetComponent<TextMeshProUGUI>()
                 .text = ParsearFecha(perfil["fecha"]);
             cargar.Find("Tiempo Entrenamiento Valor").GetComponent<TextMeshProUGUI>()
-                .text = ParsearTiempo(perfil["tiempo"]);
+                .text = ParsearTiempo(perfil["tiempo_entrenamiento"]);
+            Debug.Log(perfil["tiempo_entrenamiento"]);
         }
     }
 
     string ParsearFecha(JToken fecha)
     {
-        return "2023-06-30";
+        return "2023-06-30 (fecha test)";
         //return fecha.ToString();
     }
 
-    string ParsearTiempo(JToken tiempo)
+    string ParsearTiempo(JToken token)
     {
-        return "00:00:00";
-        //return tiempo.ToString();
+        if (token == null || !int.TryParse(token.ToString(), out int segundosTotales))
+            return "Error";
+
+        int horas = segundosTotales / 3600;
+        int minutos = (segundosTotales % 3600) / 60;
+        int segundos = segundosTotales % 60;
+
+        return $"{horas:D2}:{minutos:D2}:{segundos:D2}";
     }
 
 }

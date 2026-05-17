@@ -59,11 +59,12 @@ public class GameControl : MonoBehaviour
         Botones.transform.Find("Exit").gameObject.SetActive(true);
 
         // HUD Pantalla Perfiles  ////////////////////////////////////////////////////////////////////
-        HUDBase.transform.Find("HUD Perfiles").gameObject.SetActive(false);
-        HUDBase.transform.Find("HUD Crear Perfil").gameObject.SetActive(false);
+        GameObject perfiles = HUDBase.transform.Find("HUD Perfiles").gameObject;
+        perfiles.SetActive(false);
+        perfiles.transform.Find("HUD Crear Perfil").gameObject.SetActive(false);
     }
 
-   
 
-   
+
+
 }
