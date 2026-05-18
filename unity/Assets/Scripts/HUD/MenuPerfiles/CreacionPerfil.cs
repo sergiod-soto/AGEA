@@ -1,15 +1,10 @@
 using UnityEngine;
 
-[RequireComponent(typeof(ControlHUD))]
 public class ControlMenu : MonoBehaviour
 {
     GameObject HUDBase;
 
 
-    void Awake()
-    {
-        HUDBase = GetComponent<ControlHUD>().HUDBase;
-    }
 
     /*
      * Se abre el menu de crear nuevo perfil
