@@ -44,10 +44,7 @@ public class ServiceLocator : MonoBehaviour
         services.Clear();
 
         // Encuentra TODOS los MonoBehaviour (activos e inactivos)
-        var allMono = FindObjectsByType<MonoBehaviour>(
-            FindObjectsInactive.Include,
-            FindObjectsSortMode.None
-        );
+        var allMono = FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include);
 
         foreach (var mb in allMono)
         {
@@ -84,8 +81,11 @@ public class ServiceLocator : MonoBehaviour
         if (services.TryGetValue(typeof(T), out var s))
             return s as T;
 
+        var caller = new System.Diagnostics.StackTrace().GetFrame(1)
+                         .GetMethod().DeclaringType?.Name ?? "Desconocido";
+
         throw new Exception(
-            $"ServiceLocator: No se encontró el servicio solicitado: {typeof(T).Name}"
+            $"[ServiceLocator] '{caller}' solicitó '{typeof(T).Name}' pero no está registrado."
         );
     }
 

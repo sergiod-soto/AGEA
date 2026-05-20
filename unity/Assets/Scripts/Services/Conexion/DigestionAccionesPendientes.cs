@@ -1,63 +1,60 @@
 using Newtonsoft.Json.Linq;
-using System;
-using System.Threading;
 using UnityEngine;
 
-/*
- *      Clase encargada de procesar los mensajes entrantes del servidor python
- */
-
+/// <summary>
+/// Procesa todos los mensajes entrantes de Python en cada frame.
+/// Enruta cada mensaje al servicio correspondiente según el campo "peticion".
+/// </summary>
 public class DigestionAccionesPendientes : MonoBehaviour, IProcesamientoEntradaConexion
 {
     IConexionMundo conexionMundo;
     IBotsLogica logicaBots;
-    IPerfilesLogica logicaPerfiles;
+    IPerfilService perfilService;
 
     void Awake()
     {
         conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
         logicaBots = ServiceLocator.Instance.Get<IBotsLogica>();
-        logicaPerfiles = ServiceLocator.Instance.Get<IPerfilesLogica>();
-    }
-
-    public void DigerirEntrada(JObject json)
-    {
-        if (json == null)
-        {
-            return;
-        }
-
-        // Tras parsear, digerir segun tipo de mensaje
-        switch (json["peticion"].ToString())
-        {
-            case "actualizacion":
-                logicaBots.ActualizarBots((JArray)json["bots"]);
-                break;
-            case "dato":
-                logicaBots.ActualizarHUDDatosBot((JObject)json["bot"]);
-                break;
-            case "perfil":
-                logicaPerfiles.SetPerfilesPantallaSeleccionPerfil((JArray)json["perfiles"]);
-                break;
-        }
+        perfilService = ServiceLocator.Instance.Get<IPerfilService>();
     }
 
     void Update()
     {
-        try
+        // Vaciamos toda la cola de una vez
+        while (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))
         {
-            if (conexionMundo.GetAccionesPendientes().TryDequeue(out JObject json))
-            {
-                DigerirEntrada(json);
-            }
-            else
-            {
-                Thread.Sleep(5); // evitar consumo de CPU
-            }
+            DigerirEntrada(json);
         }
-        catch (Exception ex)
+    }
+
+    public void DigerirEntrada(JObject json)
+    {
+        if (json == null) return;
+
+        var peticion = json["peticion"]?.ToString();
+        if (peticion == null)
         {
-            Debug.Log("Error en el dequeue de DigestionAccionesPendientes:\n" + ex.Message);
+            Debug.LogWarning("[Digestion] Mensaje recibido sin campo 'peticion':\n" + json);
+            return;
+        }
+
+        switch (peticion)
+        {
+            case "actualizacion":
+                logicaBots.ActualizarBots((JArray)json["bots"]);
+                break;
+
+            case "dato":
+                logicaBots.ActualizarHUDDatosBot((JObject)json["bot"]);
+                break;
+
+            case "perfil":
+                perfilService.ProcesarRespuesta(json);
+                break;
+
+            default:
+                Debug.LogWarning($"[Digestion] Tipo de petición desconocido: '{peticion}'");
+                break;
         }
     }
 }

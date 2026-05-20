@@ -30,7 +30,8 @@ public class ScreenManager : MonoBehaviour
         MenuPrincipal,
         MenuPerfiles,
         Preferences,
-        Ingame
+        Ingame,
+        Opciones
     }
 
     private PresenterBase _currentPresenter;

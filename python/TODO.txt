@@ -1,0 +1,2 @@
+- poder serializar los comportamientos de un Elemento
+- poder recuperar los estados de los comportamientos de un Elemento
