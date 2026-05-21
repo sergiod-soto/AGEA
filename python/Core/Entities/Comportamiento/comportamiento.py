@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from dataclasses import dataclass
 import inspect
 
@@ -5,7 +6,13 @@ import inspect
 @dataclass(kw_only=True)
 class Comportamiento:
     """
+    Metodos abstractos:
+
+    - serializar()
+    - deserializar()
+
     Lista de argumentos de cada comportamiento:
+
     - Empujable:
         - coste_empujar: float
         - empujable: bool
@@ -250,3 +257,27 @@ class Comportamiento:
     def declarar_comportamientos(*clases):
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
+
+    def serializar(self):
+        """
+        Serializa automaticamente los atributos de clase en un dict.
+
+        No necesariamente puede serializar todos los atributos, en algunos
+        casos es necesario trabajo extra personalizado. En ese caso,
+        hay que definir el metodo serializar() en la propia clase, llamando
+        primero a super().serializar() y añadiendole luego las entradas necesarias.
+        """
+
+        return dict(vars(self))
+
+    def deserializar(self, data: dict):
+        """
+        Da valores a los atributos de la clase automaticamente a partir de un dict.
+
+        Algunos valores no son deserializables automaticamente y deberan hacerse a mano.
+        En ese caso, la clase debe implementar este metodo, deserializando manualmente la variable
+        problematica en, por ejemplo, data y posteriormente llamando a super().deserializar(data)
+        """
+
+        for key, value in data.items():
+            setattr(self, key, value)

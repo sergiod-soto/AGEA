@@ -14,9 +14,9 @@ class Combustible(Energetico):
     - ratio_emision: float,
     - energia_actual: float = None,
     - ratio_recarga: float = 0.0
-    
+
     Metodos abstractos:
-    
+
     -
     """
 
@@ -55,4 +55,3 @@ class Combustible(Energetico):
         if self.energia_actual > self.energia_maxima:
             self.energia_actual = self.energia_maxima
 
-   
