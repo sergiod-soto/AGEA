@@ -1,3 +1,5 @@
+from abc import ABC
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Mundo.mundo import Mundo
 
@@ -19,4 +21,48 @@ class Elemento(Comportamiento):
         self.capa = capa
         self.tipo = tipo
 
-    def eliminar(self): ...  # Completar Eliminar Elemento
+    def _get_comportamientos(self) -> list[type]:
+        return [
+            c
+            for c in self.__class__.__mro__
+            if c not in (Elemento, ABC, object) and issubclass(c, Comportamiento)
+        ]
+
+    def _serializar_propios(self) -> dict:
+        atributos_comportamientos = set()
+        for c in self._get_comportamientos():
+            for k in c.__dict__:  # atributos definidos en la clase, no instancia
+                atributos_comportamientos.add(k)
+
+        return {
+            k: v
+            for k, v in vars(self).items()
+            if not k.startswith("_") and k not in atributos_comportamientos
+        }
+
+    def serializar(self) -> dict:
+        return {
+            **self._serializar_propios(),
+            "comportamientos": {
+                c.__name__: c.serializar(self) for c in self._get_comportamientos()
+            },
+        }
+
+    def deserializar(self, data: dict):
+        # Deserializa atributos propios del elemento
+        atributos_comportamientos = {
+            attr for c in self._get_comportamientos() for attr in c.atributos
+        }
+        for k, v in data.items():
+            if (
+                k not in ("__clase__", "comportamientos")
+                and k not in atributos_comportamientos
+            ):
+                setattr(self, k, v)
+
+        # Delega a cada comportamiento su deserialización
+        for c in self._get_comportamientos():
+            if c.__name__ in data["comportamientos"]:
+                c.deserializar(self, data["comportamientos"][c.__name__])
+
+    def eliminar(self): ...  # TODO: Completar Eliminar Elemento
