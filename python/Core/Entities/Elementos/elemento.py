@@ -65,4 +65,18 @@ class Elemento(Comportamiento):
             if c.__name__ in data["comportamientos"]:
                 c.deserializar(self, data["comportamientos"][c.__name__])
 
-    def eliminar(self): ...  # TODO: Completar Eliminar Elemento
+    def eliminar(self):
+        # Delega a cada comportamiento su limpieza
+        for c in self._get_comportamientos():
+            c.eliminar(self)
+
+        # Limpia atributos propios
+        atributos_comportamientos = {
+            attr for c in self._get_comportamientos() for attr in c.atributos
+        }
+        for k in list(vars(self).keys()):
+            if k not in atributos_comportamientos and not k.startswith("_"):
+                setattr(self, k, None)
+
+        # Avisa al mundo para que elimine la referencia
+        self._mundo.eliminar_elemento(self)

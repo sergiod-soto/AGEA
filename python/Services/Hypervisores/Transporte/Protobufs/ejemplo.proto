@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+service GestorService {
+    rpc SendAction(Action) returns (Ack);
+}
+
+message Action {
+    int32 bot_id = 1;
+    string action_type = 2;
+    int32 dx = 3;
+    int32 dy = 4;
+}
+
+message Ack {
+    bool ok = 1;
+}

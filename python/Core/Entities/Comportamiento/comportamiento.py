@@ -228,7 +228,7 @@ class Comportamiento:
 
     def categorias(self) -> list["Comportamiento"]:
         """
-        retorna las categorias con comportamientos presentes en la entidad
+        retorna las categorias que contienen comportamientos presentes en la entidad
         """
 
         categorias = Comportamiento.__subclasses__()
