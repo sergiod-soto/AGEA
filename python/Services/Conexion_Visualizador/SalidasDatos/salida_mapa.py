@@ -1,5 +1,5 @@
 import Utils.Sistema.codigos_errores as Codigos_Errores
-from Services.Conexion.SalidasDatos.salida_error import salida_error
+from Services.Conexion_Visualizador.SalidasDatos.salida_error import salida_error
 
 
 def salida_mapa(shared_data, entrada):

@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package gestor;
+
+import "common.proto";
+
+// ============================================================
+//  GestorService — expuesto por el Gestor.
+//
+//  Clientes:
+//    - El Mundo    → SpawnBot, KillBot, UpdateFitness,
+//                    BuildFitnessReport, BroadcastBudgets
+//    - Hypervisores → RegisterHypervisor, UpdateHypervisorLoad,
+//                    ForwardAction, ListHypervisors
+// ============================================================
+service GestorService {
+
+  // ----- Ciclo de vida de bots (llamado por el Mundo) -----
+
+  // El Mundo pide al Gestor que cree un bot en algún Hypervisor.
+  // El Gestor elige el HV con más capacidad libre y delega.
+  rpc SpawnBot (SpawnBotRequest) returns (common.BotInfo);
+
+  // El Mundo pide eliminar un bot.
+  rpc KillBot (BotIdRequest) returns (common.Ack);
+
+  // El Mundo informa del fitness de un bot tras evaluar su acción.
+  rpc UpdateFitness (UpdateFitnessRequest) returns (common.Ack);
+
+  // El Mundo solicita el ranking de fitness actual.
+  rpc BuildFitnessReport (FitnessReportRequest) returns (common.FitnessReport);
+
+  // El Mundo ordena resetear los presupuestos de puntos en todos los HVs.
+  // Se llama al inicio de cada ciclo evolutivo.
+  rpc BroadcastBudgets (BroadcastBudgetsRequest) returns (common.Ack);
+
+  // ----- Registro y control de Hypervisores -----
+
+  // Un Hypervisor se registra aquí al arrancar.
+  rpc RegisterHypervisor (RegisterHypervisorRequest) returns (common.Ack);
+
+  // Un Hypervisor informa de su carga actual (puede llamarse periódicamente).
+  rpc UpdateHypervisorLoad (UpdateLoadRequest) returns (common.Ack);
+
+  // Lista todos los Hypervisores conocidos (útil para el Mundo o para debug).
+  rpc ListHypervisors (ListHypervisorsRequest) returns (common.HypervisorList);
+
+  // ----- Reenvío de acciones al Mundo -----
+
+  // El Hypervisor sube aquí la acción de un bot una vez que ha pasado
+  // el control de puntos. El Gestor la reenvía al Mundo y devuelve el resultado.
+  rpc ForwardAction (ForwardActionRequest) returns (common.ActionResult);
+}
+
+// ============================================================
+//  Mensajes de entrada (Request)
+// ============================================================
+
+message SpawnBotRequest {
+  common.BotConfig config = 1;
+}
+
+message BotIdRequest {
+  string bot_id = 1;
+}
+
+message UpdateFitnessRequest {
+  string bot_id  = 1;
+  double fitness = 2;
+  int64  tick    = 3;
+}
+
+// Sin parámetros; devuelve el informe completo.
+message FitnessReportRequest {}
+
+message BroadcastBudgetsRequest {
+  int32 default_budget = 1;
+  // Presupuestos individuales que sobreescriben el default.
+  // Clave: bot_id, Valor: presupuesto especial.
+  repeated common.BudgetEntry overrides = 2;
+}
+
+message RegisterHypervisorRequest {
+  string hypervisor_id = 1;
+  string address       = 2;
+  int32  port          = 3;   // puerto del HypervisorService
+  int32  proxy_port    = 4;   // puerto del WorldProxyService (para los bots)
+  int32  capacity      = 5;
+}
+
+message UpdateLoadRequest {
+  string hypervisor_id = 1;
+  int32  current_load  = 2;
+}
+
+message ListHypervisorsRequest {}
+
+message ForwardActionRequest {
+  string bot_id        = 1;
+  string hypervisor_id = 2;
+  string action_type   = 3;   // nombre legible ("observe", "move", etc.)
+  bytes  payload       = 4;
+}

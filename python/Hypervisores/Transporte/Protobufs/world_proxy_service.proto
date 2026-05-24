@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package world_proxy;
+
+import "common.proto";
+
+// ============================================================
+//  WorldProxyService — expuesto por cada Hypervisor en su
+//  proxy_port. Los Bots se conectan aquí creyendo hablar
+//  directamente con el Mundo.
+//
+//  Cliente único: los Bots.
+//
+//  El bot identifica quién es mediante el metadata header gRPC:
+//    ("bot-id", "mi_bot_001")
+//  El Hypervisor lo extrae de context.invocation_metadata()
+//  en cada RPC antes de comprobar el presupuesto de puntos.
+//
+//  Costes de puntos (aplicados localmente en el Hypervisor):
+//    Observe   → 1 punto
+//    Move      → 2 puntos
+//    Rotate    → 2 puntos
+//    Interact  → 3 puntos
+//
+//  Si el bot no tiene puntos suficientes, el Hypervisor
+//  rechaza con ok=false y error="Sin puntos" sin hacer
+//  ninguna llamada de red al Gestor ni al Mundo.
+// ============================================================
+service WorldProxyService {
+
+  // Observa las entidades cercanas al bot.
+  // Coste: 1 punto.
+  // Devuelve un ActionResult cuyo payload contiene las entidades
+  // serializadas que el Mundo ve alrededor del bot.
+  rpc Observe (ObserveRequest) returns (common.ActionResult);
+
+  // Mueve el bot en la dirección indicada.
+  // Coste: 2 puntos.
+  rpc Move (MoveRequest) returns (common.ActionResult);
+
+  // Rota el bot hasta el ángulo indicado (radianes).
+  // Coste: 2 puntos.
+  rpc Rotate (RotateRequest) returns (common.ActionResult);
+
+  // Interacción genérica: atacar, recoger, comunicarse...
+  // Coste: 3 puntos.
+  // El tipo concreto de interacción va en InteractRequest.kind.
+  rpc Interact (InteractRequest) returns (common.ActionResult);
+
+  // Consulta el estado actual del propio bot (puntos restantes,
+  // posición, salud). Coste: 0 puntos (es una consulta local).
+  rpc GetStatus (GetStatusRequest) returns (BotStatusResponse);
+}
+
+// ============================================================
+//  Mensajes de entrada (Request)
+//  Nota: el bot_id NO va aquí — viaja en el header gRPC
+//  ("bot-id", "mi_bot_001") para no repetirlo en cada mensaje.
+// ============================================================
+
+// Sin parámetros: el Mundo sabe dónde está el bot por su id.
+// radio_override permite pedir un radio de visión distinto al default.
+message ObserveRequest {
+  float radio_override = 1;   // 0.0 = usar radio por defecto del Mundo
+}
+
+message MoveRequest {
+  float dx = 1;   // desplazamiento en X (unidades del mundo)
+  float dy = 2;   // desplazamiento en Y
+}
+
+message RotateRequest {
+  float angle = 1;   // ángulo objetivo en radianes (absoluto)
+}
+
+// Tipos de interacción disponibles
+enum InteractKind {
+  INTERACT_UNKNOWN    = 0;
+  INTERACT_ATTACK     = 1;   // ataca a target_id
+  INTERACT_PICKUP     = 2;   // recoge el item target_id
+  INTERACT_COMMUNICATE = 3;  // envía un mensaje a target_id
+}
+
+message InteractRequest {
+  InteractKind kind      = 1;
+  string       target_id = 2;   // entidad objetivo (bot, item…)
+  bytes        payload   = 3;   // datos extra según kind
+                                // (p.ej. el mensaje en COMMUNICATE)
+}
+
+message GetStatusRequest {}
+
+// ============================================================
+//  Mensajes de salida (Response)
+// ============================================================
+
+// La mayoría de RPCs devuelven common.ActionResult (opaco).
+// GetStatus devuelve este mensaje más rico y directamente legible.
+message BotStatusResponse {
+  string         bot_id      = 1;
+  common.Vector2 position    = 2;
+  float          rotation    = 3;
+  float          health      = 4;   // 0.0 – 1.0
+  int32          points_left = 5;   // puntos restantes en el ciclo
+  int64          world_tick  = 6;   // tick del mundo en este momento
+  bool           alive       = 7;
+}

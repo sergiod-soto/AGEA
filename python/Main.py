@@ -11,7 +11,7 @@ from Dev.Testing import FakeClient
 from Dev.Testing.Estados import set_estados
 import Utils.Sistema.funciones_csv as funciones_csv
 import Core.Mundo.datos as Datos
-import Services.Conexion.conexion as Conexion
+import Services.Conexion_Visualizador.conexion as Conexion
 
 from Dev.Serie_Estados import Serie_Estados
 
