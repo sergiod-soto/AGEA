@@ -47,6 +47,7 @@ PROTOS=(
   gestor_service.proto
   hypervisor_service.proto
   world_proxy_service.proto
+  log_service.proto
 )
 
 for PROTO in "${PROTOS[@]}"; do

@@ -3,28 +3,16 @@ syntax = "proto3";
 package common;
 
 // ============================================================
-//  Tipos de acción que un bot puede realizar.
-//  El Hypervisor los usa para calcular el coste en puntos.
-// ============================================================
-enum ActionType {
-  ACTION_UNKNOWN    = 0;
-  ACTION_OBSERVE    = 1;   // coste 1
-  ACTION_MOVE       = 2;   // coste 2
-  ACTION_ROTATE     = 3;   // coste 2 (mismo grupo que move)
-  ACTION_INTERACT   = 4;   // coste 3
-}
-
-// ============================================================
 //  Bot
 // ============================================================
 
 // Configuración que viaja al hacer spawn.
-// El campo 'genome' es opaco (bytes) para que el Mundo
-// pueda evolucionar la representación sin tocar los protos.
+// genome es un array de enteros: la gramática del Mundo
+// los consume uno a uno para generar el código Python del bot.
 message BotConfig {
-  string bot_id    = 1;
-  bytes  genome    = 2;   // genoma serializado (msgpack, json, etc.)
-  int32  budget    = 3;   // presupuesto inicial de puntos por ciclo
+  string         bot_id   = 1;
+  repeated int32 genome   = 2;  // array de enteros (GE)
+  int32          budget   = 3;  // presupuesto inicial de puntos por ciclo
   map<string, string> metadata = 4;  // atributos extra libres
 }
 
@@ -60,63 +48,50 @@ message BotList {
 }
 
 // ============================================================
+//  Posición en el grid
+// ============================================================
+
+// Coordenadas enteras en el grid 2D.
+// Sustituye a Vector2 (el mundo es discreto, no continuo).
+message GridPos {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// ============================================================
 //  Acciones
 // ============================================================
 
-// Lo que el bot envía al Hypervisor (y éste reenvía al Gestor).
-message ActionRequest {
-  string     bot_id      = 1;
-  ActionType action_type = 2;
-  bytes      payload     = 3;   // datos específicos de la acción (posición, target…)
-}
-
-// Lo que el Mundo devuelve tras procesar la acción.
+// Lo que el Mundo devuelve tras procesar cualquier acción.
+// El payload es opaco: el Mundo decide qué mete según action_name.
 message ActionResult {
-  bool   ok             = 1;
-  bytes  payload        = 2;   // entidades observadas, resultado del ataque, etc.
-  string error          = 3;
-  int64  world_tick     = 4;   // tick del mundo en el momento de la respuesta
+  bool   ok         = 1;
+  bytes  payload    = 2;   // resultado serializado (raycast hits, ACK, etc.)
+  string error      = 3;
+  int64  world_tick = 4;
 }
 
 // ============================================================
-//  Entidades del mundo (lo que un bot puede observar)
+//  Observación — resultado del raycast
 // ============================================================
 
 enum EntityType {
-  ENTITY_UNKNOWN   = 0;
-  ENTITY_BOT       = 1;
-  ENTITY_RESOURCE  = 2;
-  ENTITY_OBSTACLE  = 3;
-  ENTITY_PROJECTILE = 4;
+  ENTITY_UNKNOWN    = 0;
+  ENTITY_BOT        = 1;
+  ENTITY_RESOURCE   = 2;
+  ENTITY_OBSTACLE   = 3;
 }
 
-message Vector2 {
-  float x = 1;
-  float y = 2;
+// Un rayo del abanico de observación.
+message RayHit {
+  bool       hit      = 1;  // false → el rayo no impactó nada
+  EntityType type     = 2;
+  int32      distance = 3;  // distancia en casillas al impacto
 }
 
-message Entity {
-  string     entity_id  = 1;
-  EntityType type       = 2;
-  Vector2    position   = 3;
-  float      rotation   = 4;   // radianes
-  float      health     = 5;   // 0.0 – 1.0
-  map<string, string> attributes = 6;  // atributos extra libres
-}
-
-// ============================================================
-//  Fitness
-// ============================================================
-
-message FitnessEntry {
-  string bot_id   = 1;
-  double fitness  = 2;
-  int64  tick     = 3;
-}
-
-message FitnessReport {
-  repeated FitnessEntry entries = 1;  // ordenado desc por fitness
-  int64 generated_at_tick       = 2;
+// El payload de ActionResult para "observe" se deserializa como ObserveResult.
+message ObserveResult {
+  repeated RayHit rays = 1;
 }
 
 // ============================================================

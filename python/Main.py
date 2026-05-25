@@ -170,8 +170,7 @@ if __name__ == "__main__":
     # cola para comunicación de mensajes hacia el exportador
 
     # Arranca la conexion en un proceso aparte
-    p = multiprocessing.Process(target=Conexion.run_exporter, args=(shared_data,))
-    p.start()
+    proceso_exporter = Conexion.thread_exporter(shared_data)
 
     time.sleep(1)
 
@@ -179,12 +178,7 @@ if __name__ == "__main__":
         FakeClient.start_fake_client()
         FakeClient.run_demo()
 
-    generador = Generacion(
-        x=1500, y=1500, seeds={"base": 1, "desiertos_y_tundras": 2, "mar_y_selvas": 3}
-    )
-
-    signal.signal(signal.SIGTERM, handler)
-    signal.signal(signal.SIGINT, handler)
+    
 
     while running:
         # Bucle principal

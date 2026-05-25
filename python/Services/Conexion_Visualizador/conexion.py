@@ -1,8 +1,8 @@
 # ...existing code...
+import multiprocessing
 import select
 import socket
 import time
-import traceback
 from Services.Conexion_Visualizador.importer import receive_data
 import main
 
@@ -64,7 +64,9 @@ def run_exporter(shared_data):
                         )
                         break
                     except Exception as e:
-                        print(f"[CONEXION] Error inesperado en recepción: {e}, entrada:\n{recibido}")
+                        print(
+                            f"[CONEXION] Error inesperado en recepción: {e}, entrada:\n{recibido}"
+                        )
                         time.sleep(1)
                         break
 
@@ -73,3 +75,10 @@ def run_exporter(shared_data):
 
             # aquí se cierra la conexión aceptada y volvemos a esperar otra
             print("[CONEXION] Cliente desconectado. Esperando nueva conexión...")
+
+
+def thread_exporter(shared_data):
+    p = multiprocessing.Process(target=run_exporter, args=(shared_data,))
+    p.start()
+
+    return p

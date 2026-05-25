@@ -1,6 +1,15 @@
 from Core.Mundo.Bus_Eventos.bus import BusEventos
 
+"""
+implementacion de logs de los hypervisores:
+
+from core.log_server import LogServer
+
+log_server = LogServer(host="[::]:50060", log_dir="logs/")
+log_server.start()   # configura logs/mundo.log y arranca el servidor
+"""
+
 
 class Mundo:
-    def __init__(self): 
+    def __init__(self):
         self.bus = BusEventos()

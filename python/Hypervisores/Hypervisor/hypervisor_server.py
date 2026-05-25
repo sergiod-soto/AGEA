@@ -41,6 +41,8 @@ from Hypervisores.Hypervisor.hypervisor import Hypervisor
 from Hypervisores.Hypervisor.hypervisor_servicer import HypervisorServicer
 from Hypervisores.Hypervisor.world_proxy_servicer import WorldProxyServicer
 
+from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -56,9 +58,9 @@ logger = logging.getLogger("hypervisor_server")
 # ---------------------------------------------------------------------------
 _GRPC_OPTIONS = [
     ("grpc.max_receive_message_length", 256 * 1024 * 1024),
-    ("grpc.max_send_message_length",    256 * 1024 * 1024),
-    ("grpc.keepalive_time_ms",          20_000),
-    ("grpc.keepalive_timeout_ms",       10_000),
+    ("grpc.max_send_message_length", 256 * 1024 * 1024),
+    ("grpc.keepalive_time_ms", 20_000),
+    ("grpc.keepalive_timeout_ms", 10_000),
     ("grpc.keepalive_permit_without_calls", 1),
 ]
 
@@ -67,13 +69,14 @@ _GRPC_OPTIONS = [
 # Construcción
 # ---------------------------------------------------------------------------
 
+
 def build_servers(
-    hv_id:        str = "hv_01",
-    my_address:   str = "localhost",
-    my_port:      int = 50052,
+    hv_id: str = "hv_01",
+    my_address: str = "localhost",
+    my_port: int = 50052,
     my_proxy_port: int = 50053,
-    capacity:     int = 32,
-    workers:      int = 10,
+    capacity: int = 32,
+    workers: int = 10,
     gestor_address: str = "localhost:50051",
 ) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorClient]:
     """
@@ -123,14 +126,22 @@ def build_servers(
 # Arranque principal
 # ---------------------------------------------------------------------------
 
+
 def serve():
-    hv_id         = os.environ.get("HV_ID",          "hv_01")
-    my_address    = os.environ.get("HV_ADDRESS",      "localhost")
-    my_port       = int(os.environ.get("HV_PORT",       "50052"))
+
+    setup_remote_logging(
+        mundo_address="10.0.0.1:50060",  # IP local del Mundo
+        component="gestor",
+        local_log_path="logs/gestor_local.log",
+    )
+
+    hv_id = os.environ.get("HV_ID", "hv_01")
+    my_address = os.environ.get("HV_ADDRESS", "localhost")
+    my_port = int(os.environ.get("HV_PORT", "50052"))
     my_proxy_port = int(os.environ.get("HV_PROXY_PORT", "50053"))
-    capacity      = int(os.environ.get("HV_CAPACITY",   "32"))
-    workers       = int(os.environ.get("HV_WORKERS",    "10"))
-    gestor_addr   = os.environ.get("GESTOR_ADDRESS",  "localhost:50051")
+    capacity = int(os.environ.get("HV_CAPACITY", "32"))
+    workers = int(os.environ.get("HV_WORKERS", "10"))
+    gestor_addr = os.environ.get("GESTOR_ADDRESS", "localhost:50051")
 
     management_server, proxy_server, hv, gestor_client = build_servers(
         hv_id=hv_id,
@@ -160,6 +171,7 @@ def serve():
 
     # Heartbeat periódico: reportamos carga cada 30 s
     import threading
+
     def _heartbeat():
         while True:
             time.sleep(30)
@@ -184,7 +196,7 @@ def serve():
         logger.info("Hypervisor %s apagado.", hv_id)
         sys.exit(0)
 
-    signal.signal(signal.SIGINT,  _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
     try:
@@ -207,12 +219,15 @@ def _register_with_retries(hv: Hypervisor, retries: int = 10, delay: float = 2.0
                 return
             logger.warning(
                 "Registro rechazado por el Gestor (intento %d/%d). Reintentando...",
-                attempt, retries,
+                attempt,
+                retries,
             )
         except Exception as exc:
             logger.warning(
                 "No se pudo contactar con el Gestor (intento %d/%d): %s",
-                attempt, retries, exc,
+                attempt,
+                retries,
+                exc,
             )
         time.sleep(delay)
 

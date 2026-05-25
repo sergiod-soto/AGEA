@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package logs;
+
+// ============================================================
+//  LogService — expuesto por el Mundo (nodo local).
+//
+//  Clientes: Gestor, Hypervisores (ambos en AWS).
+//
+//  Cada componente remoto envía sus registros de log aquí.
+//  El Mundo los escribe en disco organizados por componente.
+//
+//  El envío es fire-and-forget: si falla la red, el componente
+//  sigue funcionando y el log se pierde (aceptable; los logs
+//  críticos también se escriben localmente en AWS como respaldo).
+// ============================================================
+service LogService {
+
+  // Envía un único registro de log. Usado para logs urgentes.
+  rpc SendLog (LogRecord) returns (LogAck);
+
+  // Envía un lote de registros. Usado por el handler en background.
+  // Más eficiente que SendLog para logs de alta frecuencia.
+  rpc SendBatch (LogBatch) returns (LogAck);
+}
+
+// ============================================================
+//  Mensajes
+// ============================================================
+
+enum LogLevel {
+  DEBUG    = 0;
+  INFO     = 1;
+  WARNING  = 2;
+  ERROR    = 3;
+  CRITICAL = 4;
+}
+
+message LogRecord {
+  string   component  = 1;  // "gestor" | "hv_01" | "hv_02" ...
+  LogLevel level      = 2;
+  string   logger     = 3;  // nombre del logger Python (e.g. "hypervisor.spawn")
+  string   message    = 4;
+  int64    timestamp  = 5;  // epoch ms
+  string   exc_info   = 6;  // traceback si aplica (vacío si no)
+}
+
+message LogBatch {
+  repeated LogRecord records = 1;
+}
+
+message LogAck {
+  bool ok = 1;
+}

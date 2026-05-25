@@ -25,6 +25,8 @@ from Hypervisores.Transporte.Proto_Generated import gestor_service_pb2_grpc
 from Hypervisores.Gestor.gestor import Gestor
 from Hypervisores.Gestor.gestor_servicer import GestorServicer
 
+from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -39,6 +41,7 @@ logger = logging.getLogger("gestor_server")
 # ---------------------------------------------------------------------------
 # Construcción del servidor
 # ---------------------------------------------------------------------------
+
 
 def build_server(
     host: str = "[::]:50051",
@@ -81,11 +84,11 @@ def build_server(
         options=[
             # Máximo 256 MB por mensaje (útil si el genoma es grande)
             ("grpc.max_receive_message_length", 256 * 1024 * 1024),
-            ("grpc.max_send_message_length",    256 * 1024 * 1024),
+            ("grpc.max_send_message_length", 256 * 1024 * 1024),
             # Keepalive: detecta hypervisores caídos
-            ("grpc.keepalive_time_ms",              20_000),
-            ("grpc.keepalive_timeout_ms",           10_000),
-            ("grpc.keepalive_permit_without_calls",       1),
+            ("grpc.keepalive_time_ms", 20_000),
+            ("grpc.keepalive_timeout_ms", 10_000),
+            ("grpc.keepalive_permit_without_calls", 1),
         ],
     )
 
@@ -99,8 +102,16 @@ def build_server(
 # Arranque principal
 # ---------------------------------------------------------------------------
 
+
 def serve():
-    host    = os.environ.get("GESTOR_HOST", "[::]:50051")
+
+    setup_remote_logging(
+        mundo_address="10.0.0.1:50060",  # IP local del Mundo
+        component="gestor",
+        local_log_path="logs/gestor_local.log",
+    )
+
+    host = os.environ.get("GESTOR_HOST", "[::]:50051")
     workers = int(os.environ.get("GESTOR_WORKERS", "10"))
 
     # En producción, aquí se importa y construye el MundoClient real.
@@ -112,8 +123,10 @@ def serve():
     # Se importa aquí (no en el módulo) para evitar imports circulares.
     try:
         from Hypervisores.Transporte.hypervisor_client import HypervisorClient
+
         def hypervisor_client_factory(address: str, port: int) -> HypervisorClient:
             return HypervisorClient(address, port)
+
     except ImportError:
         logger.warning(
             "HypervisorClient no disponible todavía; "
@@ -139,11 +152,11 @@ def serve():
             return
         stop_event["fired"] = True
         logger.info("Señal %d recibida — apagando Gestor...", signum)
-        server.stop(grace=5)          # 5 s de gracia para RPCs en vuelo
+        server.stop(grace=5)  # 5 s de gracia para RPCs en vuelo
         logger.info("Gestor apagado.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT,  _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
     # Bucle de espera

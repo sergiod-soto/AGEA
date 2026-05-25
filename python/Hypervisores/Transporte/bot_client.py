@@ -3,52 +3,40 @@ bot_client.py — Cliente gRPC del WorldProxyService.
 
 Carpeta: Hypervisores/Transporte/bot_client.py
 
-Usado por los Bots para interactuar con el Mundo.
-El bot no sabe que hay un Hypervisor en medio: solo conoce
-la dirección proxy que recibió al hacer spawn.
+El bot lo instancia con la dirección proxy recibida al hacer spawn.
+El bot_id se inyecta automáticamente en el header de cada llamada.
 
-El bot_id se inyecta automáticamente en el header gRPC de
-cada llamada. El Hypervisor lo extrae para controlar puntos.
+Para añadir soporte a una acción nueva:
+  1. Añadir la acción en core/acciones.py  ← obligatorio
+  2. Añadir un método de conveniencia aquí ← opcional pero recomendado
+
+El método act() genérico siempre funciona para cualquier acción,
+aunque no tenga método de conveniencia.
 
 Uso básico
 ----------
     from Hypervisores.Transporte.bot_client import BotClient
 
-    # proxy_address viene de BotInfo.proxy_address tras el spawn
     client = BotClient(bot_id="bot_001", proxy_address="localhost:50053")
 
-    # Observar entidades cercanas
-    result = client.observe()
-    if result.ok:
-        print(result.payload)   # bytes con entidades serializadas
+    # Método genérico (siempre disponible)
+    result = client.act("observe", payload=...)
 
-    # Moverse
-    result = client.move(dx=1.0, dy=0.0)
-
-    # Rotar
-    result = client.rotate(angle=1.57)   # ~90 grados
-
-    # Interactuar
-    result = client.interact_attack(target_id="bot_002")
-    result = client.interact_pickup(target_id="item_007")
-    result = client.interact_communicate(target_id="bot_003", message=b"hola")
-
-    # Consultar estado propio (0 puntos)
+    # Métodos de conveniencia
+    hits   = client.observe(center_angle=0.0, fov=1.57, num_rays=5)
+    result = client.move(dx=1, dy=0)
+    result = client.reproduce()
     status = client.get_status()
-    print(status.points_left)
 
-    # Cerrar al terminar
     client.close()
-
-    # O con context manager
-    with BotClient("bot_001", "localhost:50053") as client:
-        result = client.observe()
 """
 
 from __future__ import annotations
 
+import json
 import logging
-from dataclasses import dataclass, field
+import struct
+from dataclasses import dataclass
 from typing import Optional
 
 import grpc
@@ -66,13 +54,30 @@ logger = logging.getLogger(__name__)
 # Tipos de retorno
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ActionResult:
-    """Resultado de una acción enviada al Mundo."""
-    ok:         bool
-    payload:    bytes = b""
-    error:      str   = ""
-    world_tick: int   = 0
+    ok: bool
+    payload: bytes = b""
+    error: str = ""
+    world_tick: int = 0
+
+    def __bool__(self):
+        return self.ok
+
+
+@dataclass
+class RayHit:
+    hit: bool
+    type: int  # common_pb2.EntityType
+    distance: int  # casillas
+
+
+@dataclass
+class ObserveResult:
+    rays: list[RayHit]
+    ok: bool = True
+    error: str = ""
 
     def __bool__(self):
         return self.ok
@@ -80,38 +85,33 @@ class ActionResult:
 
 @dataclass
 class BotStatus:
-    """Estado propio del bot devuelto por get_status()."""
-    bot_id:     str
-    x:          float
-    y:          float
-    rotation:   float
-    health:     float
+    bot_id: str
+    x: int
+    y: int
+    rotation: float
+    health: float
     points_left: int
     world_tick: int
-    alive:      bool
+    alive: bool
 
 
 # ---------------------------------------------------------------------------
 # Cliente
 # ---------------------------------------------------------------------------
 
+
 class BotClient:
     """
     Cliente gRPC del WorldProxyService.
 
-    El bot lo instancia una vez al arrancar con la dirección proxy
-    que recibió del Gestor al hacer spawn.
-
     Parámetros
     ----------
     bot_id : str
-        Identificador único del bot. Se inyecta en cada llamada gRPC
-        como header ("bot-id", bot_id).
+        ID único del bot. Se inyecta en cada llamada como header gRPC.
     proxy_address : str
         "host:puerto" del WorldProxyService del Hypervisor asignado.
-        Ejemplo: "192.168.1.10:50053"
     timeout : float
-        Timeout por defecto para cada RPC en segundos (default 10 s).
+        Timeout por defecto en segundos (default 10 s).
     """
 
     def __init__(
@@ -120,30 +120,24 @@ class BotClient:
         proxy_address: str,
         timeout: float = 10.0,
     ):
-        self.bot_id        = bot_id
+        self.bot_id = bot_id
         self._proxy_address = proxy_address
-        self._timeout       = timeout
-
-        # El metadata se construye una sola vez y se reutiliza en cada llamada
+        self._timeout = timeout
         self._metadata = [("bot-id", bot_id)]
 
         self._channel = grpc.insecure_channel(
             proxy_address,
             options=[
                 ("grpc.max_receive_message_length", 256 * 1024 * 1024),
-                ("grpc.max_send_message_length",    256 * 1024 * 1024),
-                ("grpc.keepalive_time_ms",          20_000),
-                ("grpc.keepalive_timeout_ms",       10_000),
+                ("grpc.max_send_message_length", 256 * 1024 * 1024),
+                ("grpc.keepalive_time_ms", 20_000),
+                ("grpc.keepalive_timeout_ms", 10_000),
             ],
         )
         self._stub = world_proxy_service_pb2_grpc.WorldProxyServiceStub(self._channel)
-
-        logger.info(
-            "BotClient %r conectado a proxy %s", bot_id, proxy_address
-        )
+        logger.info("BotClient %r → %s", bot_id, proxy_address)
 
     def close(self):
-        """Cierra el canal. Llamar al terminar el bot."""
         self._channel.close()
 
     def __enter__(self):
@@ -153,51 +147,48 @@ class BotClient:
         self.close()
 
     # ------------------------------------------------------------------
-    # Helpers internos
+    # Helpers
     # ------------------------------------------------------------------
 
     def _t(self, timeout: Optional[float]) -> float:
         return timeout if timeout is not None else self._timeout
 
-    def _handle_error(self, method: str, exc: grpc.RpcError) -> ActionResult:
-        code    = exc.code()
-        details = exc.details()
-
-        if code == grpc.StatusCode.PERMISSION_DENIED or \
-           code == grpc.StatusCode.UNAUTHENTICATED:
+    def _handle_rpc_error(self, method: str, exc: grpc.RpcError) -> ActionResult:
+        code = exc.code()
+        details = exc.details() or str(exc)
+        if code in (grpc.StatusCode.UNAUTHENTICATED, grpc.StatusCode.PERMISSION_DENIED):
             logger.error("%s: error de autenticación — %s", method, details)
-
-        elif code == grpc.StatusCode.RESOURCE_EXHAUSTED or \
-             "Puntos insuficientes" in (details or ""):
-            # El Hypervisor rechazó por falta de puntos; no es un error grave
+        elif "Puntos insuficientes" in details:
             logger.debug("%s: sin puntos — %s", method, details)
-
         else:
-            logger.error("%s falló: código=%s detalle=%s", method, code, details)
-
-        return ActionResult(ok=False, error=details or str(exc))
+            logger.error("%s falló: %s — %s", method, code, details)
+        return ActionResult(ok=False, error=details)
 
     # ------------------------------------------------------------------
-    # Acciones principales
+    # Método genérico — siempre disponible para cualquier acción
     # ------------------------------------------------------------------
 
-    def observe(
+    def act(
         self,
-        radio_override: float = 0.0,
+        action_name: str,
+        payload: bytes = b"",
         timeout: float | None = None,
     ) -> ActionResult:
         """
-        Observa las entidades cercanas al bot.
-        Coste: 1 punto.
+        Envía cualquier acción al Mundo a través del Hypervisor.
 
-        radio_override: radio de visión personalizado (0.0 = usar el del Mundo).
-        El payload del resultado contiene las entidades serializadas.
+        action_name debe coincidir con una clave de core/acciones.py.
+        payload es el contenido específico de la acción (bytes opacos).
+
+        Usar los métodos de conveniencia (observe, move...) cuando existan;
+        usar este método directamente para acciones sin método propio.
         """
-        request = world_proxy_service_pb2.ObserveRequest(
-            radio_override=radio_override
+        request = world_proxy_service_pb2.ActRequest(
+            action_name=action_name,
+            payload=payload,
         )
         try:
-            pb = self._stub.Observe(
+            pb = self._stub.Act(
                 request,
                 metadata=self._metadata,
                 timeout=self._t(timeout),
@@ -209,29 +200,59 @@ class BotClient:
                 world_tick=pb.world_tick,
             )
         except grpc.RpcError as exc:
-            return self._handle_error("Observe", exc)
+            return self._handle_rpc_error(f"Act({action_name})", exc)
+
+    # ------------------------------------------------------------------
+    # Métodos de conveniencia — uno por acción conocida
+    # ------------------------------------------------------------------
+
+    def observe(
+        self,
+        center_angle: float,
+        fov: float,
+        num_rays: int,
+        timeout: float | None = None,
+    ) -> ObserveResult:
+        """
+        Raycast en abanico.
+        Coste: ver core/acciones.py → "observe".
+
+        center_angle : ángulo central del abanico (radianes)
+        fov          : apertura total del abanico (radianes)
+        num_rays     : número de rayos
+
+        Devuelve ObserveResult con la lista de RayHit deserializada.
+        """
+        payload = struct.pack("<ffi", center_angle, fov, num_rays)
+        result = self.act("observe", payload, timeout)
+
+        if not result.ok:
+            return ObserveResult(rays=[], ok=False, error=result.error)
+
+        # Deserializar payload → ObserveResult protobuf
+        try:
+            pb = common_pb2.ObserveResult()
+            pb.ParseFromString(result.payload)
+            rays = [
+                RayHit(hit=r.hit, type=r.type, distance=r.distance) for r in pb.rays
+            ]
+            return ObserveResult(rays=rays, ok=True)
+        except Exception as exc:
+            logger.error("Error deserializando ObserveResult: %s", exc)
+            return ObserveResult(rays=[], ok=False, error=str(exc))
 
     def move(
         self,
-        dx: float,
-        dy: float,
+        dx: int,
+        dy: int,
         timeout: float | None = None,
     ) -> ActionResult:
         """
-        Mueve el bot (dx, dy) en coordenadas del mundo.
-        Coste: 2 puntos.
+        Mover el bot dx casillas en X y dy en Y.
+        Coste: ver core/acciones.py → "move".
         """
-        request = world_proxy_service_pb2.MoveRequest(dx=dx, dy=dy)
-        try:
-            pb = self._stub.Move(
-                request,
-                metadata=self._metadata,
-                timeout=self._t(timeout),
-            )
-            return ActionResult(ok=pb.ok, payload=pb.payload,
-                                error=pb.error, world_tick=pb.world_tick)
-        except grpc.RpcError as exc:
-            return self._handle_error("Move", exc)
+        payload = struct.pack("<ii", dx, dy)
+        return self.act("move", payload, timeout)
 
     def rotate(
         self,
@@ -239,102 +260,70 @@ class BotClient:
         timeout: float | None = None,
     ) -> ActionResult:
         """
-        Rota el bot al ángulo indicado (radianes, absoluto).
-        Coste: 2 puntos.
+        Rotar el bot al ángulo indicado (radianes, absoluto).
+        Coste: ver core/acciones.py → "rotate".
         """
-        request = world_proxy_service_pb2.RotateRequest(angle=angle)
-        try:
-            pb = self._stub.Rotate(
-                request,
-                metadata=self._metadata,
-                timeout=self._t(timeout),
-            )
-            return ActionResult(ok=pb.ok, payload=pb.payload,
-                                error=pb.error, world_tick=pb.world_tick)
-        except grpc.RpcError as exc:
-            return self._handle_error("Rotate", exc)
+        payload = struct.pack("<f", angle)
+        return self.act("rotate", payload, timeout)
 
-    # ------------------------------------------------------------------
-    # Interacciones (wrappers sobre Interact para mayor legibilidad)
-    # ------------------------------------------------------------------
-
-    def interact_attack(
+    def interact(
         self,
+        kind: str,
         target_id: str,
+        data: bytes = b"",
         timeout: float | None = None,
     ) -> ActionResult:
-        """Ataca a la entidad target_id. Coste: 3 puntos."""
-        return self._interact(
-            kind=world_proxy_service_pb2.INTERACT_ATTACK,
-            target_id=target_id,
-            payload=b"",
-            timeout=timeout,
-        )
+        """
+        Interacción genérica con una entidad.
+        Coste: ver core/acciones.py → "interact".
 
-    def interact_pickup(
-        self,
-        target_id: str,
-        timeout: float | None = None,
-    ) -> ActionResult:
-        """Recoge el item target_id. Coste: 3 puntos."""
-        return self._interact(
-            kind=world_proxy_service_pb2.INTERACT_PICKUP,
-            target_id=target_id,
-            payload=b"",
-            timeout=timeout,
-        )
+        kind      : "attack" | "pickup" | "communicate"
+        target_id : ID de la entidad objetivo
+        data      : bytes extra (p.ej. mensaje en communicate)
+        """
+        payload = json.dumps(
+            {
+                "kind": kind,
+                "target_id": target_id,
+                "data": data.hex(),
+            }
+        ).encode()
+        return self.act("interact", payload, timeout)
 
-    def interact_communicate(
+    def broadcast(
         self,
-        target_id: str,
         message: bytes,
+        radius: int,
         timeout: float | None = None,
     ) -> ActionResult:
         """
-        Envía un mensaje (bytes) a target_id.
-        Coste: 3 puntos.
-        El contenido de message es libre — el bot y el receptor
-        acuerdan el formato fuera del proto.
+        Emitir un mensaje a todos los bots en radio X casillas.
+        Coste: ver core/acciones.py → "broadcast".
+        El Mundo limita el tamaño del mensaje por ciclo.
         """
-        return self._interact(
-            kind=world_proxy_service_pb2.INTERACT_COMMUNICATE,
-            target_id=target_id,
-            payload=message,
-            timeout=timeout,
-        )
+        payload = struct.pack("<i", radius) + message
+        return self.act("broadcast", payload, timeout)
 
-    def _interact(
+    def reproduce(
         self,
-        kind: int,
-        target_id: str,
-        payload: bytes,
-        timeout: float | None,
+        timeout: float | None = None,
     ) -> ActionResult:
-        """Método interno común para todas las interacciones."""
-        request = world_proxy_service_pb2.InteractRequest(
-            kind=kind,
-            target_id=target_id,
-            payload=payload,
-        )
-        try:
-            pb = self._stub.Interact(
-                request,
-                metadata=self._metadata,
-                timeout=self._t(timeout),
-            )
-            return ActionResult(ok=pb.ok, payload=pb.payload,
-                                error=pb.error, world_tick=pb.world_tick)
-        except grpc.RpcError as exc:
-            return self._handle_error("Interact", exc)
+        """
+        Solicitar reproducción asexual al Mundo.
+        Coste: ver core/acciones.py → "reproduce".
+        El Mundo decide si aprueba la solicitud según sus condiciones internas.
+        El payload del resultado indicará el bot_id del hijo si se aprueba.
+        """
+        return self.act("reproduce", b"", timeout)
 
     # ------------------------------------------------------------------
-    # Estado propio (0 puntos)
+    # Estado propio (0 puntos, consulta local al Hypervisor)
     # ------------------------------------------------------------------
 
     def get_status(self, timeout: float | None = None) -> Optional[BotStatus]:
         """
-        Consulta el estado actual del bot (puntos, posición, salud).
-        Coste: 0 puntos. No sube al Gestor.
+        Consulta el estado del bot (puntos restantes, vivo/muerto).
+        Coste: 0 puntos. No sube al Gestor ni al Mundo.
 
         Devuelve None si hay error de red o el bot no existe en el HV.
         """
@@ -357,9 +346,6 @@ class BotClient:
             )
         except grpc.RpcError as exc:
             if exc.code() == grpc.StatusCode.NOT_FOUND:
-                logger.warning(
-                    "get_status: bot %r no encontrado en el HV.", self.bot_id
-                )
                 return None
-            self._handle_error("GetStatus", exc)
+            self._handle_rpc_error("GetStatus", exc)
             return None
