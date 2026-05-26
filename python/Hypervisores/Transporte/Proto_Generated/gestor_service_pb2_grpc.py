@@ -31,9 +31,9 @@ class GestorServiceStub(object):
     GestorService — expuesto por el Gestor.
 
     Clientes:
-    - El Mundo    → SpawnBot, KillBot, UpdateFitness,
-    BuildFitnessReport, BroadcastBudgets
-    - Hypervisores → RegisterHypervisor, UpdateHypervisorLoad,
+    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    BroadcastBudgets, SaveState, LoadState
+    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
     ForwardAction, ListHypervisors
     ============================================================
     """
@@ -54,19 +54,24 @@ class GestorServiceStub(object):
                 request_serializer=gestor__service__pb2.BotIdRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
-        self.UpdateFitness = channel.unary_unary(
-                '/gestor.GestorService/UpdateFitness',
-                request_serializer=gestor__service__pb2.UpdateFitnessRequest.SerializeToString,
+        self.NotifyBotDeath = channel.unary_unary(
+                '/gestor.GestorService/NotifyBotDeath',
+                request_serializer=gestor__service__pb2.BotDeathNotification.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
-        self.BuildFitnessReport = channel.unary_unary(
-                '/gestor.GestorService/BuildFitnessReport',
-                request_serializer=gestor__service__pb2.FitnessReportRequest.SerializeToString,
-                response_deserializer=common__pb2.FitnessReport.FromString,
                 _registered_method=True)
         self.BroadcastBudgets = channel.unary_unary(
                 '/gestor.GestorService/BroadcastBudgets',
                 request_serializer=gestor__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.SaveState = channel.unary_unary(
+                '/gestor.GestorService/SaveState',
+                request_serializer=gestor__service__pb2.SaveStateRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.LoadState = channel.unary_unary(
+                '/gestor.GestorService/LoadState',
+                request_serializer=gestor__service__pb2.LoadStateRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.RegisterHypervisor = channel.unary_unary(
@@ -96,9 +101,9 @@ class GestorServiceServicer(object):
     GestorService — expuesto por el Gestor.
 
     Clientes:
-    - El Mundo    → SpawnBot, KillBot, UpdateFitness,
-    BuildFitnessReport, BroadcastBudgets
-    - Hypervisores → RegisterHypervisor, UpdateHypervisorLoad,
+    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    BroadcastBudgets, SaveState, LoadState
+    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
     ForwardAction, ListHypervisors
     ============================================================
     """
@@ -107,7 +112,6 @@ class GestorServiceServicer(object):
         """----- Ciclo de vida de bots (llamado por el Mundo) -----
 
         El Mundo pide al Gestor que cree un bot en algún Hypervisor.
-        El Gestor elige el HV con más capacidad libre y delega.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -120,23 +124,32 @@ class GestorServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def UpdateFitness(self, request, context):
-        """El Mundo informa del fitness de un bot tras evaluar su acción.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def BuildFitnessReport(self, request, context):
-        """El Mundo solicita el ranking de fitness actual.
+    def NotifyBotDeath(self, request, context):
+        """El Mundo notifica que un bot ha muerto → el Gestor limpia registros.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def BroadcastBudgets(self, request, context):
-        """El Mundo ordena resetear los presupuestos de puntos en todos los HVs.
-        Se llama al inicio de cada ciclo evolutivo.
+        """El Mundo ordena resetear los presupuestos en todos los HVs.
+        Se llama al inicio de cada ciclo.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SaveState(self, request, context):
+        """----- Persistencia -----
+
+        El Mundo pide guardar el estado completo de la simulación.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def LoadState(self, request, context):
+        """El Mundo pide restaurar un estado guardado.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -152,14 +165,14 @@ class GestorServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def UpdateHypervisorLoad(self, request, context):
-        """Un Hypervisor informa de su carga actual (puede llamarse periódicamente).
+        """Un Hypervisor informa de su carga actual.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListHypervisors(self, request, context):
-        """Lista todos los Hypervisores conocidos (útil para el Mundo o para debug).
+        """Lista todos los Hypervisores conocidos.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -168,8 +181,8 @@ class GestorServiceServicer(object):
     def ForwardAction(self, request, context):
         """----- Reenvío de acciones al Mundo -----
 
-        El Hypervisor sube aquí la acción de un bot una vez que ha pasado
-        el control de puntos. El Gestor la reenvía al Mundo y devuelve el resultado.
+        El Hypervisor sube la acción de un bot (ya validada en puntos).
+        El Gestor la reenvía al Mundo y devuelve el resultado.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -188,19 +201,24 @@ def add_GestorServiceServicer_to_server(servicer, server):
                     request_deserializer=gestor__service__pb2.BotIdRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
-            'UpdateFitness': grpc.unary_unary_rpc_method_handler(
-                    servicer.UpdateFitness,
-                    request_deserializer=gestor__service__pb2.UpdateFitnessRequest.FromString,
+            'NotifyBotDeath': grpc.unary_unary_rpc_method_handler(
+                    servicer.NotifyBotDeath,
+                    request_deserializer=gestor__service__pb2.BotDeathNotification.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
-            ),
-            'BuildFitnessReport': grpc.unary_unary_rpc_method_handler(
-                    servicer.BuildFitnessReport,
-                    request_deserializer=gestor__service__pb2.FitnessReportRequest.FromString,
-                    response_serializer=common__pb2.FitnessReport.SerializeToString,
             ),
             'BroadcastBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.BroadcastBudgets,
                     request_deserializer=gestor__service__pb2.BroadcastBudgetsRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'SaveState': grpc.unary_unary_rpc_method_handler(
+                    servicer.SaveState,
+                    request_deserializer=gestor__service__pb2.SaveStateRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'LoadState': grpc.unary_unary_rpc_method_handler(
+                    servicer.LoadState,
+                    request_deserializer=gestor__service__pb2.LoadStateRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'RegisterHypervisor': grpc.unary_unary_rpc_method_handler(
@@ -236,9 +254,9 @@ class GestorService(object):
     GestorService — expuesto por el Gestor.
 
     Clientes:
-    - El Mundo    → SpawnBot, KillBot, UpdateFitness,
-    BuildFitnessReport, BroadcastBudgets
-    - Hypervisores → RegisterHypervisor, UpdateHypervisorLoad,
+    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    BroadcastBudgets, SaveState, LoadState
+    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
     ForwardAction, ListHypervisors
     ============================================================
     """
@@ -298,7 +316,7 @@ class GestorService(object):
             _registered_method=True)
 
     @staticmethod
-    def UpdateFitness(request,
+    def NotifyBotDeath(request,
             target,
             options=(),
             channel_credentials=None,
@@ -311,36 +329,9 @@ class GestorService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/gestor.GestorService/UpdateFitness',
-            gestor__service__pb2.UpdateFitnessRequest.SerializeToString,
+            '/gestor.GestorService/NotifyBotDeath',
+            gestor__service__pb2.BotDeathNotification.SerializeToString,
             common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def BuildFitnessReport(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor.GestorService/BuildFitnessReport',
-            gestor__service__pb2.FitnessReportRequest.SerializeToString,
-            common__pb2.FitnessReport.FromString,
             options,
             channel_credentials,
             insecure,
@@ -367,6 +358,60 @@ class GestorService(object):
             target,
             '/gestor.GestorService/BroadcastBudgets',
             gestor__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SaveState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorService/SaveState',
+            gestor__service__pb2.SaveStateRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def LoadState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorService/LoadState',
+            gestor__service__pb2.LoadStateRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,

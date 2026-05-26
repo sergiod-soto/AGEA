@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # compile_protos.sh
 #
-# Compila todos los .proto a módulos Python y los guarda en una
-# carpeta separada (Proto_Generated), limpia de fuentes .proto.
+# Compila todos los .proto a módulos Python y los guarda en
+# Proto_Generated/. Funciona en Linux, macOS y Windows (Git Bash).
 #
 # Estructura resultante:
 #   Hypervisores/Transporte/
@@ -17,7 +17,9 @@
 #       ├── hypervisor_service_pb2.py
 #       ├── hypervisor_service_pb2_grpc.py
 #       ├── world_proxy_service_pb2.py
-#       └── world_proxy_service_pb2_grpc.py
+#       ├── world_proxy_service_pb2_grpc.py
+#       ├── log_service_pb2.py
+#       └── log_service_pb2_grpc.py
 #
 # Dependencias:
 #   pip install grpcio grpcio-tools
@@ -35,8 +37,8 @@ PROTO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Carpeta de salida: hermana de Protobufs, dentro de Transporte
 OUT_DIR="$(cd "$PROTO_DIR/.." && pwd)/Proto_Generated"
 
-echo "==> Fuentes .proto:    $PROTO_DIR"
-echo "==> Salida generada:   $OUT_DIR"
+echo "==> Fuentes .proto:  $PROTO_DIR"
+echo "==> Salida generada: $OUT_DIR"
 
 # Crear la carpeta de salida si no existe
 mkdir -p "$OUT_DIR"
@@ -50,6 +52,9 @@ PROTOS=(
   log_service.proto
 )
 
+# ---------------------------------------------------------------------------
+# Compilación
+# ---------------------------------------------------------------------------
 for PROTO in "${PROTOS[@]}"; do
   if [[ ! -f "$PROTO_DIR/$PROTO" ]]; then
     echo "  [WARN] No encontrado: $PROTO — saltando."
@@ -64,21 +69,35 @@ for PROTO in "${PROTOS[@]}"; do
     "$PROTO_DIR/$PROTO"
 done
 
-# Corregir imports absolutos → relativos en los *_pb2_grpc.py generados.
-# grpc_tools genera: import common_pb2 as common__pb2
-# Necesitamos:       from . import common_pb2 as common__pb2
-echo "==> Corrigiendo imports relativos en *_pb2_grpc.py ..."
-for GRPC_FILE in "$OUT_DIR"/*_pb2_grpc.py; do
-  [[ -f "$GRPC_FILE" ]] || continue
-  if [[ "$(uname)" == "Darwin" ]]; then
-    sed -i '' 's/^import \(.*_pb2\)/from . import \1/' "$GRPC_FILE"
-  else
-    sed -i 's/^import \(.*_pb2\)/from . import \1/' "$GRPC_FILE"
-  fi
-  echo "  Corregido: $(basename "$GRPC_FILE")"
-done
+# ---------------------------------------------------------------------------
+# Corrección de imports absolutos → relativos
+#
+# grpc_tools genera:   import common_pb2 as common__pb2
+# Necesitamos:         from . import common_pb2 as common__pb2
+#
+# Se usa Python en lugar de sed para compatibilidad total con Windows
+# (Git Bash, PowerShell, etc.)
+# ---------------------------------------------------------------------------
+python - <<PYEOF
+import pathlib
+import re
 
+out_dir = pathlib.Path("$OUT_DIR")
+pattern = re.compile(r"^import (\w+_pb2)", re.MULTILINE)
+
+for grpc_file in sorted(out_dir.glob("*_pb2_grpc.py")):
+    original = grpc_file.read_text(encoding="utf-8")
+    fixed    = pattern.sub(r"from . import \1", original)
+    if fixed != original:
+        grpc_file.write_text(fixed, encoding="utf-8")
+        print(f"  Corregido: {grpc_file.name}")
+    else:
+        print(f"  Sin cambios: {grpc_file.name}")
+PYEOF
+
+# ---------------------------------------------------------------------------
 # __init__.py para que Proto_Generated sea un paquete Python importable
+# ---------------------------------------------------------------------------
 INIT="$OUT_DIR/__init__.py"
 if [[ ! -f "$INIT" ]]; then
   touch "$INIT"

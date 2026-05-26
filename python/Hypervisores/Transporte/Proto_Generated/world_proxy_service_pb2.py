@@ -22,30 +22,22 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-import common_pb2 as common__pb2
+from . import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19world_proxy_service.proto\x12\x0bworld_proxy\x1a\x0c\x63ommon.proto\"(\n\x0eObserveRequest\x12\x16\n\x0eradio_override\x18\x01 \x01(\x02\"%\n\x0bMoveRequest\x12\n\n\x02\x64x\x18\x01 \x01(\x02\x12\n\n\x02\x64y\x18\x02 \x01(\x02\"\x1e\n\rRotateRequest\x12\r\n\x05\x61ngle\x18\x01 \x01(\x02\"^\n\x0fInteractRequest\x12\'\n\x04kind\x18\x01 \x01(\x0e\x32\x19.world_proxy.InteractKind\x12\x11\n\ttarget_id\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"\x12\n\x10GetStatusRequest\"\xa0\x01\n\x11\x42otStatusResponse\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12!\n\x08position\x18\x02 \x01(\x0b\x32\x0f.common.Vector2\x12\x10\n\x08rotation\x18\x03 \x01(\x02\x12\x0e\n\x06health\x18\x04 \x01(\x02\x12\x13\n\x0bpoints_left\x18\x05 \x01(\x05\x12\x12\n\nworld_tick\x18\x06 \x01(\x03\x12\r\n\x05\x61live\x18\x07 \x01(\x08*h\n\x0cInteractKind\x12\x14\n\x10INTERACT_UNKNOWN\x10\x00\x12\x13\n\x0fINTERACT_ATTACK\x10\x01\x12\x13\n\x0fINTERACT_PICKUP\x10\x02\x12\x18\n\x14INTERACT_COMMUNICATE\x10\x03\x32\xd1\x02\n\x11WorldProxyService\x12<\n\x07Observe\x12\x1b.world_proxy.ObserveRequest\x1a\x14.common.ActionResult\x12\x36\n\x04Move\x12\x18.world_proxy.MoveRequest\x1a\x14.common.ActionResult\x12:\n\x06Rotate\x12\x1a.world_proxy.RotateRequest\x1a\x14.common.ActionResult\x12>\n\x08Interact\x12\x1c.world_proxy.InteractRequest\x1a\x14.common.ActionResult\x12J\n\tGetStatus\x12\x1d.world_proxy.GetStatusRequest\x1a\x1e.world_proxy.BotStatusResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19world_proxy_service.proto\x12\x0bworld_proxy\x1a\x0c\x63ommon.proto\"2\n\nActRequest\x12\x13\n\x0b\x61\x63tion_name\x18\x01 \x01(\t\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\x12\n\x10GetStatusRequest\"\xa0\x01\n\x11\x42otStatusResponse\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12!\n\x08position\x18\x02 \x01(\x0b\x32\x0f.common.GridPos\x12\x10\n\x08rotation\x18\x03 \x01(\x02\x12\x0e\n\x06health\x18\x04 \x01(\x02\x12\x13\n\x0bpoints_left\x18\x05 \x01(\x05\x12\x12\n\nworld_tick\x18\x06 \x01(\x03\x12\r\n\x05\x61live\x18\x07 \x01(\x08\x32\x95\x01\n\x11WorldProxyService\x12\x34\n\x03\x41\x63t\x12\x17.world_proxy.ActRequest\x1a\x14.common.ActionResult\x12J\n\tGetStatus\x12\x1d.world_proxy.GetStatusRequest\x1a\x1e.world_proxy.BotStatusResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'world_proxy_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_INTERACTKIND']._serialized_start=448
-  _globals['_INTERACTKIND']._serialized_end=552
-  _globals['_OBSERVEREQUEST']._serialized_start=56
-  _globals['_OBSERVEREQUEST']._serialized_end=96
-  _globals['_MOVEREQUEST']._serialized_start=98
-  _globals['_MOVEREQUEST']._serialized_end=135
-  _globals['_ROTATEREQUEST']._serialized_start=137
-  _globals['_ROTATEREQUEST']._serialized_end=167
-  _globals['_INTERACTREQUEST']._serialized_start=169
-  _globals['_INTERACTREQUEST']._serialized_end=263
-  _globals['_GETSTATUSREQUEST']._serialized_start=265
-  _globals['_GETSTATUSREQUEST']._serialized_end=283
-  _globals['_BOTSTATUSRESPONSE']._serialized_start=286
-  _globals['_BOTSTATUSRESPONSE']._serialized_end=446
-  _globals['_WORLDPROXYSERVICE']._serialized_start=555
-  _globals['_WORLDPROXYSERVICE']._serialized_end=892
+  _globals['_ACTREQUEST']._serialized_start=56
+  _globals['_ACTREQUEST']._serialized_end=106
+  _globals['_GETSTATUSREQUEST']._serialized_start=108
+  _globals['_GETSTATUSREQUEST']._serialized_end=126
+  _globals['_BOTSTATUSRESPONSE']._serialized_start=129
+  _globals['_BOTSTATUSRESPONSE']._serialized_end=289
+  _globals['_WORLDPROXYSERVICE']._serialized_start=292
+  _globals['_WORLDPROXYSERVICE']._serialized_end=441
 # @@protoc_insertion_point(module_scope)

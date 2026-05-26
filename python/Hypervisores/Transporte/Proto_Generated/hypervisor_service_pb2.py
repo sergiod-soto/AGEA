@@ -22,7 +22,7 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-import common_pb2 as common__pb2
+from . import common_pb2 as common__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x18hypervisor_service.proto\x12\nhypervisor\x1a\x0c\x63ommon.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"\x11\n\x0fListBotsRequest\"f\n\x13ResetBudgetsRequest\x12\x0f\n\x07\x62ot_ids\x18\x01 \x03(\t\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x02 \x01(\x05\x12&\n\toverrides\x18\x03 \x03(\x0b\x32\x13.common.BudgetEntry\"7\n\x15SetPointBudgetRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0e\n\x06points\x18\x02 \x01(\x05\x32\xb1\x03\n\x11HypervisorService\x12\x38\n\x08SpawnBot\x12\x1b.hypervisor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12\x30\n\x07KillBot\x12\x18.hypervisor.BotIdRequest\x1a\x0b.common.Ack\x12\x39\n\x0bGetBotStats\x12\x18.hypervisor.BotIdRequest\x1a\x10.common.BotStats\x12\x38\n\x08ListBots\x12\x1b.hypervisor.ListBotsRequest\x1a\x0f.common.BotList\x12<\n\x0cResetBudgets\x12\x1f.hypervisor.ResetBudgetsRequest\x1a\x0b.common.Ack\x12@\n\x0eSetPointBudget\x12!.hypervisor.SetPointBudgetRequest\x1a\x0b.common.Ack\x12;\n\x0cGetBotStatus\x12\x18.hypervisor.BotIdRequest\x1a\x11.common.BotStatusb\x06proto3')

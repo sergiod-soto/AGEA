@@ -8,47 +8,51 @@ import "common.proto";
 //  GestorService — expuesto por el Gestor.
 //
 //  Clientes:
-//    - El Mundo    → SpawnBot, KillBot, UpdateFitness,
-//                    BuildFitnessReport, BroadcastBudgets
-//    - Hypervisores → RegisterHypervisor, UpdateHypervisorLoad,
-//                    ForwardAction, ListHypervisors
+//    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+//                       BroadcastBudgets, SaveState, LoadState
+//    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
+//                       ForwardAction, ListHypervisors
 // ============================================================
 service GestorService {
 
   // ----- Ciclo de vida de bots (llamado por el Mundo) -----
 
   // El Mundo pide al Gestor que cree un bot en algún Hypervisor.
-  // El Gestor elige el HV con más capacidad libre y delega.
   rpc SpawnBot (SpawnBotRequest) returns (common.BotInfo);
 
   // El Mundo pide eliminar un bot.
   rpc KillBot (BotIdRequest) returns (common.Ack);
 
-  // El Mundo informa del fitness de un bot tras evaluar su acción.
-  rpc UpdateFitness (UpdateFitnessRequest) returns (common.Ack);
+  // El Mundo notifica que un bot ha muerto → el Gestor limpia registros.
+  rpc NotifyBotDeath (BotDeathNotification) returns (common.Ack);
 
-  // El Mundo solicita el ranking de fitness actual.
-  rpc BuildFitnessReport (FitnessReportRequest) returns (common.FitnessReport);
-
-  // El Mundo ordena resetear los presupuestos de puntos en todos los HVs.
-  // Se llama al inicio de cada ciclo evolutivo.
+  // El Mundo ordena resetear los presupuestos en todos los HVs.
+  // Se llama al inicio de cada ciclo.
   rpc BroadcastBudgets (BroadcastBudgetsRequest) returns (common.Ack);
+
+  // ----- Persistencia -----
+
+  // El Mundo pide guardar el estado completo de la simulación.
+  rpc SaveState (SaveStateRequest) returns (common.Ack);
+
+  // El Mundo pide restaurar un estado guardado.
+  rpc LoadState (LoadStateRequest) returns (common.Ack);
 
   // ----- Registro y control de Hypervisores -----
 
   // Un Hypervisor se registra aquí al arrancar.
   rpc RegisterHypervisor (RegisterHypervisorRequest) returns (common.Ack);
 
-  // Un Hypervisor informa de su carga actual (puede llamarse periódicamente).
+  // Un Hypervisor informa de su carga actual.
   rpc UpdateHypervisorLoad (UpdateLoadRequest) returns (common.Ack);
 
-  // Lista todos los Hypervisores conocidos (útil para el Mundo o para debug).
+  // Lista todos los Hypervisores conocidos.
   rpc ListHypervisors (ListHypervisorsRequest) returns (common.HypervisorList);
 
   // ----- Reenvío de acciones al Mundo -----
 
-  // El Hypervisor sube aquí la acción de un bot una vez que ha pasado
-  // el control de puntos. El Gestor la reenvía al Mundo y devuelve el resultado.
+  // El Hypervisor sube la acción de un bot (ya validada en puntos).
+  // El Gestor la reenvía al Mundo y devuelve el resultado.
   rpc ForwardAction (ForwardActionRequest) returns (common.ActionResult);
 }
 
@@ -64,27 +68,30 @@ message BotIdRequest {
   string bot_id = 1;
 }
 
-message UpdateFitnessRequest {
-  string bot_id  = 1;
-  double fitness = 2;
-  int64  tick    = 3;
+message BotDeathNotification {
+  string bot_id = 1;
+  string cause  = 2;   // "combat" | "starvation"
+  int64  tick   = 3;
 }
-
-// Sin parámetros; devuelve el informe completo.
-message FitnessReportRequest {}
 
 message BroadcastBudgetsRequest {
   int32 default_budget = 1;
-  // Presupuestos individuales que sobreescriben el default.
-  // Clave: bot_id, Valor: presupuesto especial.
   repeated common.BudgetEntry overrides = 2;
+}
+
+message SaveStateRequest {
+  string path = 1;   // ruta donde guardar (relativa a la raíz)
+}
+
+message LoadStateRequest {
+  string path = 1;   // ruta desde donde cargar
 }
 
 message RegisterHypervisorRequest {
   string hypervisor_id = 1;
   string address       = 2;
-  int32  port          = 3;   // puerto del HypervisorService
-  int32  proxy_port    = 4;   // puerto del WorldProxyService (para los bots)
+  int32  port          = 3;
+  int32  proxy_port    = 4;
   int32  capacity      = 5;
 }
 
@@ -98,6 +105,6 @@ message ListHypervisorsRequest {}
 message ForwardActionRequest {
   string bot_id        = 1;
   string hypervisor_id = 2;
-  string action_type   = 3;   // nombre legible ("observe", "move", etc.)
+  string action_type   = 3;
   bytes  payload       = 4;
 }

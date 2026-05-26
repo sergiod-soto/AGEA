@@ -160,7 +160,7 @@ class HypervisorClient:
         """
         cfg = common_pb2.BotConfig(
             bot_id=bot_config.get("bot_id", ""),
-            genome=bot_config.get("genome", b""),
+            codigo_gz=bot_config.get("codigo_gz", b""),
             budget=int(bot_config.get("budget", 100)),
             metadata=bot_config.get("metadata", {}),
         )

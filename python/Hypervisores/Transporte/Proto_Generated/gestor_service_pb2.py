@@ -22,10 +22,10 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-import common_pb2 as common__pb2
+from . import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14gestor_service.proto\x12\x06gestor\x1a\x0c\x63ommon.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"E\n\x14UpdateFitnessRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0f\n\x07\x66itness\x18\x02 \x01(\x01\x12\x0c\n\x04tick\x18\x03 \x01(\x03\"\x16\n\x14\x46itnessReportRequest\"Y\n\x17\x42roadcastBudgetsRequest\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x01 \x01(\x05\x12&\n\toverrides\x18\x02 \x03(\x0b\x32\x13.common.BudgetEntry\"w\n\x19RegisterHypervisorRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\"@\n\x11UpdateLoadRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63urrent_load\x18\x02 \x01(\x05\"\x18\n\x16ListHypervisorsRequest\"c\n\x14\x46orwardActionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x03 \x01(\t\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\x32\xd2\x04\n\rGestorService\x12\x34\n\x08SpawnBot\x12\x17.gestor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12,\n\x07KillBot\x12\x14.gestor.BotIdRequest\x1a\x0b.common.Ack\x12:\n\rUpdateFitness\x12\x1c.gestor.UpdateFitnessRequest\x1a\x0b.common.Ack\x12I\n\x12\x42uildFitnessReport\x12\x1c.gestor.FitnessReportRequest\x1a\x15.common.FitnessReport\x12@\n\x10\x42roadcastBudgets\x12\x1f.gestor.BroadcastBudgetsRequest\x1a\x0b.common.Ack\x12\x44\n\x12RegisterHypervisor\x12!.gestor.RegisterHypervisorRequest\x1a\x0b.common.Ack\x12>\n\x14UpdateHypervisorLoad\x12\x19.gestor.UpdateLoadRequest\x1a\x0b.common.Ack\x12I\n\x0fListHypervisors\x12\x1e.gestor.ListHypervisorsRequest\x1a\x16.common.HypervisorList\x12\x43\n\rForwardAction\x12\x1c.gestor.ForwardActionRequest\x1a\x14.common.ActionResultb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14gestor_service.proto\x12\x06gestor\x1a\x0c\x63ommon.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"C\n\x14\x42otDeathNotification\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\x12\x0c\n\x04tick\x18\x03 \x01(\x03\"Y\n\x17\x42roadcastBudgetsRequest\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x01 \x01(\x05\x12&\n\toverrides\x18\x02 \x03(\x0b\x32\x13.common.BudgetEntry\" \n\x10SaveStateRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\" \n\x10LoadStateRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"w\n\x19RegisterHypervisorRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\"@\n\x11UpdateLoadRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63urrent_load\x18\x02 \x01(\x05\"\x18\n\x16ListHypervisorsRequest\"c\n\x14\x46orwardActionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x03 \x01(\t\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\x32\xf0\x04\n\rGestorService\x12\x34\n\x08SpawnBot\x12\x17.gestor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12,\n\x07KillBot\x12\x14.gestor.BotIdRequest\x1a\x0b.common.Ack\x12;\n\x0eNotifyBotDeath\x12\x1c.gestor.BotDeathNotification\x1a\x0b.common.Ack\x12@\n\x10\x42roadcastBudgets\x12\x1f.gestor.BroadcastBudgetsRequest\x1a\x0b.common.Ack\x12\x32\n\tSaveState\x12\x18.gestor.SaveStateRequest\x1a\x0b.common.Ack\x12\x32\n\tLoadState\x12\x18.gestor.LoadStateRequest\x1a\x0b.common.Ack\x12\x44\n\x12RegisterHypervisor\x12!.gestor.RegisterHypervisorRequest\x1a\x0b.common.Ack\x12>\n\x14UpdateHypervisorLoad\x12\x19.gestor.UpdateLoadRequest\x1a\x0b.common.Ack\x12I\n\x0fListHypervisors\x12\x1e.gestor.ListHypervisorsRequest\x1a\x16.common.HypervisorList\x12\x43\n\rForwardAction\x12\x1c.gestor.ForwardActionRequest\x1a\x14.common.ActionResultb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,20 +36,22 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SPAWNBOTREQUEST']._serialized_end=98
   _globals['_BOTIDREQUEST']._serialized_start=100
   _globals['_BOTIDREQUEST']._serialized_end=130
-  _globals['_UPDATEFITNESSREQUEST']._serialized_start=132
-  _globals['_UPDATEFITNESSREQUEST']._serialized_end=201
-  _globals['_FITNESSREPORTREQUEST']._serialized_start=203
-  _globals['_FITNESSREPORTREQUEST']._serialized_end=225
-  _globals['_BROADCASTBUDGETSREQUEST']._serialized_start=227
-  _globals['_BROADCASTBUDGETSREQUEST']._serialized_end=316
-  _globals['_REGISTERHYPERVISORREQUEST']._serialized_start=318
-  _globals['_REGISTERHYPERVISORREQUEST']._serialized_end=437
-  _globals['_UPDATELOADREQUEST']._serialized_start=439
-  _globals['_UPDATELOADREQUEST']._serialized_end=503
-  _globals['_LISTHYPERVISORSREQUEST']._serialized_start=505
-  _globals['_LISTHYPERVISORSREQUEST']._serialized_end=529
-  _globals['_FORWARDACTIONREQUEST']._serialized_start=531
-  _globals['_FORWARDACTIONREQUEST']._serialized_end=630
-  _globals['_GESTORSERVICE']._serialized_start=633
-  _globals['_GESTORSERVICE']._serialized_end=1227
+  _globals['_BOTDEATHNOTIFICATION']._serialized_start=132
+  _globals['_BOTDEATHNOTIFICATION']._serialized_end=199
+  _globals['_BROADCASTBUDGETSREQUEST']._serialized_start=201
+  _globals['_BROADCASTBUDGETSREQUEST']._serialized_end=290
+  _globals['_SAVESTATEREQUEST']._serialized_start=292
+  _globals['_SAVESTATEREQUEST']._serialized_end=324
+  _globals['_LOADSTATEREQUEST']._serialized_start=326
+  _globals['_LOADSTATEREQUEST']._serialized_end=358
+  _globals['_REGISTERHYPERVISORREQUEST']._serialized_start=360
+  _globals['_REGISTERHYPERVISORREQUEST']._serialized_end=479
+  _globals['_UPDATELOADREQUEST']._serialized_start=481
+  _globals['_UPDATELOADREQUEST']._serialized_end=545
+  _globals['_LISTHYPERVISORSREQUEST']._serialized_start=547
+  _globals['_LISTHYPERVISORSREQUEST']._serialized_end=571
+  _globals['_FORWARDACTIONREQUEST']._serialized_start=573
+  _globals['_FORWARDACTIONREQUEST']._serialized_end=672
+  _globals['_GESTORSERVICE']._serialized_start=675
+  _globals['_GESTORSERVICE']._serialized_end=1299
 # @@protoc_insertion_point(module_scope)

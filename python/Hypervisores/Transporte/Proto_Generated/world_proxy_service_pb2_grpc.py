@@ -34,20 +34,22 @@ class WorldProxyServiceStub(object):
 
     Cliente único: los Bots.
 
-    El bot identifica quién es mediante el metadata header gRPC:
-    ("bot-id", "mi_bot_001")
-    El Hypervisor lo extrae de context.invocation_metadata()
-    en cada RPC antes de comprobar el presupuesto de puntos.
+    El bot se identifica con el header gRPC:
+    ("bot-id", "bot_001")
 
-    Costes de puntos (aplicados localmente en el Hypervisor):
-    Observe   → 1 punto
-    Move      → 2 puntos
-    Rotate    → 2 puntos
-    Interact  → 3 puntos
+    Las acciones disponibles y sus costes se definen en:
+    core/acciones.py
+    No hay que tocar este proto para añadir nuevas acciones.
 
-    Si el bot no tiene puntos suficientes, el Hypervisor
-    rechaza con ok=false y error="Sin puntos" sin hacer
-    ninguna llamada de red al Gestor ni al Mundo.
+    Único RPC de acción: Act
+    action_name: nombre de la acción (debe existir en core/acciones.py)
+    payload:     datos específicos de la acción (bytes opacos)
+
+    El Hypervisor:
+    1. Extrae bot-id del header.
+    2. Consulta core/acciones.py para obtener el coste.
+    3. Descuenta puntos localmente.
+    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
     """
 
@@ -57,24 +59,9 @@ class WorldProxyServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Observe = channel.unary_unary(
-                '/world_proxy.WorldProxyService/Observe',
-                request_serializer=world__proxy__service__pb2.ObserveRequest.SerializeToString,
-                response_deserializer=common__pb2.ActionResult.FromString,
-                _registered_method=True)
-        self.Move = channel.unary_unary(
-                '/world_proxy.WorldProxyService/Move',
-                request_serializer=world__proxy__service__pb2.MoveRequest.SerializeToString,
-                response_deserializer=common__pb2.ActionResult.FromString,
-                _registered_method=True)
-        self.Rotate = channel.unary_unary(
-                '/world_proxy.WorldProxyService/Rotate',
-                request_serializer=world__proxy__service__pb2.RotateRequest.SerializeToString,
-                response_deserializer=common__pb2.ActionResult.FromString,
-                _registered_method=True)
-        self.Interact = channel.unary_unary(
-                '/world_proxy.WorldProxyService/Interact',
-                request_serializer=world__proxy__service__pb2.InteractRequest.SerializeToString,
+        self.Act = channel.unary_unary(
+                '/world_proxy.WorldProxyService/Act',
+                request_serializer=world__proxy__service__pb2.ActRequest.SerializeToString,
                 response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
         self.GetStatus = channel.unary_unary(
@@ -92,61 +79,35 @@ class WorldProxyServiceServicer(object):
 
     Cliente único: los Bots.
 
-    El bot identifica quién es mediante el metadata header gRPC:
-    ("bot-id", "mi_bot_001")
-    El Hypervisor lo extrae de context.invocation_metadata()
-    en cada RPC antes de comprobar el presupuesto de puntos.
+    El bot se identifica con el header gRPC:
+    ("bot-id", "bot_001")
 
-    Costes de puntos (aplicados localmente en el Hypervisor):
-    Observe   → 1 punto
-    Move      → 2 puntos
-    Rotate    → 2 puntos
-    Interact  → 3 puntos
+    Las acciones disponibles y sus costes se definen en:
+    core/acciones.py
+    No hay que tocar este proto para añadir nuevas acciones.
 
-    Si el bot no tiene puntos suficientes, el Hypervisor
-    rechaza con ok=false y error="Sin puntos" sin hacer
-    ninguna llamada de red al Gestor ni al Mundo.
+    Único RPC de acción: Act
+    action_name: nombre de la acción (debe existir en core/acciones.py)
+    payload:     datos específicos de la acción (bytes opacos)
+
+    El Hypervisor:
+    1. Extrae bot-id del header.
+    2. Consulta core/acciones.py para obtener el coste.
+    3. Descuenta puntos localmente.
+    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
     """
 
-    def Observe(self, request, context):
-        """Observa las entidades cercanas al bot.
-        Coste: 1 punto.
-        Devuelve un ActionResult cuyo payload contiene las entidades
-        serializadas que el Mundo ve alrededor del bot.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def Move(self, request, context):
-        """Mueve el bot en la dirección indicada.
-        Coste: 2 puntos.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def Rotate(self, request, context):
-        """Rota el bot hasta el ángulo indicado (radianes).
-        Coste: 2 puntos.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def Interact(self, request, context):
-        """Interacción genérica: atacar, recoger, comunicarse...
-        Coste: 3 puntos.
-        El tipo concreto de interacción va en InteractRequest.kind.
+    def Act(self, request, context):
+        """Acción genérica. Cubre cualquier acción definida en core/acciones.py.
+        El Hypervisor valida los puntos; el Mundo interpreta el payload.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetStatus(self, request, context):
-        """Consulta el estado actual del propio bot (puntos restantes,
-        posición, salud). Coste: 0 puntos (es una consulta local).
+        """Estado propio del bot. Coste: 0 puntos. Respuesta local del Hypervisor.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -155,24 +116,9 @@ class WorldProxyServiceServicer(object):
 
 def add_WorldProxyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Observe': grpc.unary_unary_rpc_method_handler(
-                    servicer.Observe,
-                    request_deserializer=world__proxy__service__pb2.ObserveRequest.FromString,
-                    response_serializer=common__pb2.ActionResult.SerializeToString,
-            ),
-            'Move': grpc.unary_unary_rpc_method_handler(
-                    servicer.Move,
-                    request_deserializer=world__proxy__service__pb2.MoveRequest.FromString,
-                    response_serializer=common__pb2.ActionResult.SerializeToString,
-            ),
-            'Rotate': grpc.unary_unary_rpc_method_handler(
-                    servicer.Rotate,
-                    request_deserializer=world__proxy__service__pb2.RotateRequest.FromString,
-                    response_serializer=common__pb2.ActionResult.SerializeToString,
-            ),
-            'Interact': grpc.unary_unary_rpc_method_handler(
-                    servicer.Interact,
-                    request_deserializer=world__proxy__service__pb2.InteractRequest.FromString,
+            'Act': grpc.unary_unary_rpc_method_handler(
+                    servicer.Act,
+                    request_deserializer=world__proxy__service__pb2.ActRequest.FromString,
                     response_serializer=common__pb2.ActionResult.SerializeToString,
             ),
             'GetStatus': grpc.unary_unary_rpc_method_handler(
@@ -196,25 +142,27 @@ class WorldProxyService(object):
 
     Cliente único: los Bots.
 
-    El bot identifica quién es mediante el metadata header gRPC:
-    ("bot-id", "mi_bot_001")
-    El Hypervisor lo extrae de context.invocation_metadata()
-    en cada RPC antes de comprobar el presupuesto de puntos.
+    El bot se identifica con el header gRPC:
+    ("bot-id", "bot_001")
 
-    Costes de puntos (aplicados localmente en el Hypervisor):
-    Observe   → 1 punto
-    Move      → 2 puntos
-    Rotate    → 2 puntos
-    Interact  → 3 puntos
+    Las acciones disponibles y sus costes se definen en:
+    core/acciones.py
+    No hay que tocar este proto para añadir nuevas acciones.
 
-    Si el bot no tiene puntos suficientes, el Hypervisor
-    rechaza con ok=false y error="Sin puntos" sin hacer
-    ninguna llamada de red al Gestor ni al Mundo.
+    Único RPC de acción: Act
+    action_name: nombre de la acción (debe existir en core/acciones.py)
+    payload:     datos específicos de la acción (bytes opacos)
+
+    El Hypervisor:
+    1. Extrae bot-id del header.
+    2. Consulta core/acciones.py para obtener el coste.
+    3. Descuenta puntos localmente.
+    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
     """
 
     @staticmethod
-    def Observe(request,
+    def Act(request,
             target,
             options=(),
             channel_credentials=None,
@@ -227,89 +175,8 @@ class WorldProxyService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/world_proxy.WorldProxyService/Observe',
-            world__proxy__service__pb2.ObserveRequest.SerializeToString,
-            common__pb2.ActionResult.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Move(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/world_proxy.WorldProxyService/Move',
-            world__proxy__service__pb2.MoveRequest.SerializeToString,
-            common__pb2.ActionResult.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Rotate(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/world_proxy.WorldProxyService/Rotate',
-            world__proxy__service__pb2.RotateRequest.SerializeToString,
-            common__pb2.ActionResult.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Interact(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/world_proxy.WorldProxyService/Interact',
-            world__proxy__service__pb2.InteractRequest.SerializeToString,
+            '/world_proxy.WorldProxyService/Act',
+            world__proxy__service__pb2.ActRequest.SerializeToString,
             common__pb2.ActionResult.FromString,
             options,
             channel_credentials,

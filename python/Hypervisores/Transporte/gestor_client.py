@@ -16,7 +16,7 @@ Uso básico
 
     client = GestorClient("localhost:50051")
 
-    # El Mundo spawned un bot
+    # El Mundo spawnea un bot
     info = client.spawn_bot(bot_id="bot_001", genome=b"...", budget=100)
     print(info.proxy_address)   # → "192.168.1.10:50053"
 
@@ -176,7 +176,7 @@ class GestorClient:
     def spawn_bot(
         self,
         bot_id: str,
-        genome: bytes = b"",
+        codigo_gz: bytes = b"",
         budget: int = 100,
         metadata: dict[str, str] | None = None,
         timeout: float | None = None,
@@ -184,13 +184,15 @@ class GestorClient:
         """
         Pide al Gestor que cree un bot en el Hypervisor más libre.
 
+        codigo_gz: código Python compilado y comprimido con gzip.
+                   El Mundo lo genera antes de llamar a este método.
         Devuelve BotInfo con proxy_address (host:puerto) al que el bot
         debe conectarse para hablar con el Mundo.
         """
         request = gestor_service_pb2.SpawnBotRequest(
             config=common_pb2.BotConfig(
                 bot_id=bot_id,
-                genome=genome,
+                codigo_gz=codigo_gz,
                 budget=budget,
                 metadata=metadata or {},
             )

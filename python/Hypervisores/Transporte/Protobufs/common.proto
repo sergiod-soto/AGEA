@@ -7,13 +7,14 @@ package common;
 // ============================================================
 
 // Configuración que viaja al hacer spawn.
-// genome es un array de enteros: la gramática del Mundo
-// los consume uno a uno para generar el código Python del bot.
+// El Mundo compila el genoma antes de llamar a spawn_bot y manda
+// el código Python resultante comprimido con gzip.
+// El genoma (.bin) lo gestiona exclusivamente el Mundo; nunca viaja por red.
 message BotConfig {
-  string         bot_id   = 1;
-  repeated int32 genome   = 2;  // array de enteros (GE)
-  int32          budget   = 3;  // presupuesto inicial de puntos por ciclo
-  map<string, string> metadata = 4;  // atributos extra libres
+  string bot_id    = 1;
+  int32  budget    = 2;  // presupuesto inicial de puntos por ciclo
+  bytes  codigo_gz = 3;  // gzip del código Python compilado
+  map<string, string> metadata = 4;  // linaje, generación, etc.
 }
 
 // Respuesta al spawn: dónde debe conectarse el bot.
