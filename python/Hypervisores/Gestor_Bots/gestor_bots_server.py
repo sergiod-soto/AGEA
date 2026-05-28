@@ -22,9 +22,9 @@ from concurrent import futures
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import gestor_service_pb2_grpc
-from Hypervisores.Gestor.gestor import Gestor
-from Hypervisores.Gestor.gestor_servicer import GestorServicer
+from Hypervisores.Transporte.Proto_Generated import gestor_bots_service_pb2_grpc
+from Hypervisores.Gestor_Bots.gestor_bots import Gestor_Bots
+from Hypervisores.Gestor_Bots.gestor_bots_servicer import GestorBotsServicer
 
 from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
 
@@ -50,7 +50,7 @@ def build_server(
     mundo_client=None,
     hypervisor_client_factory=None,
     bots_por_hypervisor: int = 100,
-) -> tuple[grpc.Server, Gestor]:
+) -> tuple[grpc.Server, Gestor_Bots]:
     """
     Construye y devuelve (servidor_grpc, gestor).
 
@@ -75,10 +75,12 @@ def build_server(
         de control de capacidad: determina cuántos bots puede alojar cada HV.
     """
     # 1. Lógica pura
-    gestor = Gestor(mundo_client=mundo_client, bots_por_hypervisor=bots_por_hypervisor)
+    gestor = Gestor_Bots(
+        mundo_client=mundo_client, bots_por_hypervisor=bots_por_hypervisor
+    )
 
     # 2. Servicer gRPC (traduce protobuf ↔ Gestor)
-    servicer = GestorServicer(
+    servicer = GestorBotsServicer(
         gestor=gestor,
         hypervisor_client_factory=hypervisor_client_factory,
     )
@@ -95,7 +97,9 @@ def build_server(
         ],
     )
 
-    gestor_service_pb2_grpc.add_GestorServiceServicer_to_server(servicer, server)
+    gestor_bots_service_pb2_grpc.add_GestorBotsServiceServicer_to_server(
+        servicer, server
+    )
     server.add_insecure_port(host)
 
     logger.info(
@@ -116,12 +120,12 @@ def serve():
 
     setup_remote_logging(
         mundo_address="10.0.0.1:50060",
-        component="gestor",
-        local_log_path="logs/gestor_local.log",
+        component="gestor_bots",
+        local_log_path="logs/gestor_bots_local.log",
     )
 
-    host = os.environ.get("GESTOR_HOST", "[::]:50051")
-    workers = int(os.environ.get("GESTOR_WORKERS", "10"))
+    host = os.environ.get("GESTOR_BOTS_HOST", "[::]:50051")
+    workers = int(os.environ.get("GESTOR_BOTS_WORKERS", "10"))
     bots_por_hv = int(os.environ.get("BOTS_POR_HYPERVISOR", "100"))
 
     logger.info(
@@ -155,7 +159,7 @@ def serve():
     )
 
     server.start()
-    logger.info("Gestor escuchando en %s  (%d workers)", host, workers)
+    logger.info("Gestor_Bots escuchando en %s  (%d workers)", host, workers)
 
     stop_event = {"fired": False}
 
@@ -163,9 +167,9 @@ def serve():
         if stop_event["fired"]:
             return
         stop_event["fired"] = True
-        logger.info("Señal %d recibida — apagando Gestor...", signum)
+        logger.info("Señal %d recibida — apagando Gestor_Bots...", signum)
         server.stop(grace=5)
-        logger.info("Gestor apagado.")
+        logger.info("Gestor_Bots apagado.")
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _shutdown)

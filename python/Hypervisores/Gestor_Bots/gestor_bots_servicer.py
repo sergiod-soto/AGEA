@@ -15,15 +15,15 @@ import grpc
 
 from Hypervisores.Transporte.Proto_Generated import (
     common_pb2,
-    gestor_service_pb2,
-    gestor_service_pb2_grpc,
+    gestor_bots_service_pb2,
+    gestor_bots_service_pb2_grpc,
 )
-from Hypervisores.Gestor.gestor import Gestor
+from Hypervisores.Gestor_Bots.gestor_bots import Gestor_Bots
 
 logger = logging.getLogger(__name__)
 
 
-class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
+class GestorServicer(gestor_bots_service_pb2_grpc.GestorBotsServiceServicer):
     """
     Servicer gRPC del Gestor.
 
@@ -36,7 +36,7 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
         Se llama al registrar un nuevo Hypervisor para guardar el canal de vuelta.
     """
 
-    def __init__(self, gestor: Gestor, hypervisor_client_factory=None):
+    def __init__(self, gestor: Gestor_Bots, hypervisor_client_factory=None):
         self._gestor = gestor
         self._hv_client_factory = hypervisor_client_factory
 
@@ -119,34 +119,7 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
             return self._ack(False, str(exc))
         return self._ack()
 
-    def UpdateFitness(self, request, context):
-        try:
-            self._gestor.update_fitness(request.bot_id, request.fitness, request.tick)
-        except Exception as exc:
-            logger.exception("Error en UpdateFitness")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(exc))
-            return self._ack(False, str(exc))
-        return self._ack()
-
-    def BuildFitnessReport(self, request, context):
-        try:
-            report = self._gestor.build_fitness_report()
-        except Exception as exc:
-            logger.exception("Error en BuildFitnessReport")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(exc))
-            return common_pb2.FitnessReport()
-
-        entries = [
-            common_pb2.FitnessEntry(
-                bot_id=e.bot_id,
-                fitness=e.fitness,
-                tick=e.tick,
-            )
-            for e in report.entries
-        ]
-        return common_pb2.FitnessReport(entries=entries)
+    
 
     def BroadcastBudgets(self, request, context):
         """

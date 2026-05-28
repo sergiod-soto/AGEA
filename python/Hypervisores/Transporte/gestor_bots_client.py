@@ -12,9 +12,9 @@ y gestión de errores gRPC.
 
 Uso básico
 ----------
-    from Hypervisores.Transporte.gestor_client import GestorClient
+    from Hypervisores.Transporte.gestor_bots_client import GestorClient
 
-    client = GestorClient("localhost:50051")
+    client = GestorBotsClient("localhost:50051")
 
     # El Mundo spawnea un bot
     info = client.spawn_bot(bot_id="bot_001", genome=b"...", budget=100)
@@ -36,8 +36,8 @@ import grpc
 
 from Hypervisores.Transporte.Proto_Generated import (
     common_pb2,
-    gestor_service_pb2,
-    gestor_service_pb2_grpc,
+    gestor_bots_service_pb2,
+    gestor_bots_service_pb2_grpc,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,48 +47,31 @@ logger = logging.getLogger(__name__)
 # Tipos de retorno simples (espejo de los de gestor.py, sin importarlo)
 # ---------------------------------------------------------------------------
 
+
 class BotInfo:
     __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
 
     def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
-        self.bot_id         = bot_id
-        self.hypervisor_id  = hypervisor_id
-        self.proxy_address  = proxy_address
-        self.ok             = ok
-        self.error          = error
+        self.bot_id = bot_id
+        self.hypervisor_id = hypervisor_id
+        self.proxy_address = proxy_address
+        self.ok = ok
+        self.error = error
 
     def __repr__(self):
-        return (f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, "
-                f"proxy={self.proxy_address!r}, error={self.error!r})")
-
-
-class FitnessEntry:
-    __slots__ = ("bot_id", "fitness", "tick")
-
-    def __init__(self, bot_id, fitness, tick):
-        self.bot_id  = bot_id
-        self.fitness = fitness
-        self.tick    = tick
-
-
-class FitnessReport:
-    __slots__ = ("entries",)
-
-    def __init__(self, entries):
-        self.entries = entries   # list[FitnessEntry], ordenado desc
-
-    def __repr__(self):
-        top = self.entries[:3] if self.entries else []
-        return f"FitnessReport(top3={[(e.bot_id, e.fitness) for e in top]})"
+        return (
+            f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, "
+            f"proxy={self.proxy_address!r}, error={self.error!r})"
+        )
 
 
 class ActionResult:
     __slots__ = ("ok", "payload", "error", "world_tick")
 
     def __init__(self, ok, payload, error, world_tick=0):
-        self.ok         = ok
-        self.payload    = payload
-        self.error      = error
+        self.ok = ok
+        self.payload = payload
+        self.error = error
         self.world_tick = world_tick
 
     def __repr__(self):
@@ -96,23 +79,32 @@ class ActionResult:
 
 
 class HypervisorInfo:
-    __slots__ = ("hypervisor_id", "address", "port", "proxy_port",
-                 "capacity", "current_load", "online")
+    __slots__ = (
+        "hypervisor_id",
+        "address",
+        "port",
+        "proxy_port",
+        "capacity",
+        "current_load",
+        "online",
+    )
 
-    def __init__(self, hypervisor_id, address, port, proxy_port,
-                 capacity, current_load, online):
+    def __init__(
+        self, hypervisor_id, address, port, proxy_port, capacity, current_load, online
+    ):
         self.hypervisor_id = hypervisor_id
-        self.address       = address
-        self.port          = port
-        self.proxy_port    = proxy_port
-        self.capacity      = capacity
-        self.current_load  = current_load
-        self.online        = online
+        self.address = address
+        self.port = port
+        self.proxy_port = proxy_port
+        self.capacity = capacity
+        self.current_load = current_load
+        self.online = online
 
 
 # ---------------------------------------------------------------------------
 # Cliente
 # ---------------------------------------------------------------------------
+
 
 class GestorClient:
     """
@@ -136,12 +128,12 @@ class GestorClient:
             address,
             options=[
                 ("grpc.max_receive_message_length", 256 * 1024 * 1024),
-                ("grpc.max_send_message_length",    256 * 1024 * 1024),
-                ("grpc.keepalive_time_ms",          20_000),
-                ("grpc.keepalive_timeout_ms",       10_000),
+                ("grpc.max_send_message_length", 256 * 1024 * 1024),
+                ("grpc.keepalive_time_ms", 20_000),
+                ("grpc.keepalive_timeout_ms", 10_000),
             ],
         )
-        self._stub = gestor_service_pb2_grpc.GestorServiceStub(self._channel)
+        self._stub = gestor_bots_service_pb2_grpc.GestorServiceStub(self._channel)
         logger.info("GestorClient conectado a %s", address)
 
     def close(self):
@@ -166,7 +158,9 @@ class GestorClient:
     def _handle_grpc_error(method_name: str, exc: grpc.RpcError):
         logger.error(
             "%s falló: código=%s detalle=%s",
-            method_name, exc.code(), exc.details(),
+            method_name,
+            exc.code(),
+            exc.details(),
         )
 
     # ------------------------------------------------------------------
@@ -189,7 +183,7 @@ class GestorClient:
         Devuelve BotInfo con proxy_address (host:puerto) al que el bot
         debe conectarse para hablar con el Mundo.
         """
-        request = gestor_service_pb2.SpawnBotRequest(
+        request = gestor_bots_service_pb2.SpawnBotRequest(
             config=common_pb2.BotConfig(
                 bot_id=bot_id,
                 codigo_gz=codigo_gz,
@@ -199,8 +193,9 @@ class GestorClient:
         )
         try:
             pb = self._stub.SpawnBot(request, timeout=self._t(timeout))
-            return BotInfo(pb.bot_id, pb.hypervisor_id,
-                           pb.proxy_address, pb.ok, pb.error)
+            return BotInfo(
+                pb.bot_id, pb.hypervisor_id, pb.proxy_address, pb.ok, pb.error
+            )
         except grpc.RpcError as exc:
             self._handle_grpc_error("SpawnBot", exc)
             return BotInfo(bot_id, "", "", ok=False, error=str(exc))
@@ -209,7 +204,7 @@ class GestorClient:
         """
         Elimina un bot. Devuelve True si el Gestor confirmó el kill.
         """
-        request = gestor_service_pb2.BotIdRequest(bot_id=bot_id)
+        request = gestor_bots_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
             pb = self._stub.KillBot(request, timeout=self._t(timeout))
             return pb.ok
@@ -225,7 +220,7 @@ class GestorClient:
         timeout: float | None = None,
     ) -> bool:
         """El Mundo informa del fitness de un bot tras evaluar su acción."""
-        request = gestor_service_pb2.UpdateFitnessRequest(
+        request = gestor_bots_service_pb2.UpdateFitnessRequest(
             bot_id=bot_id, fitness=fitness, tick=tick
         )
         try:
@@ -234,20 +229,6 @@ class GestorClient:
         except grpc.RpcError as exc:
             self._handle_grpc_error("UpdateFitness", exc)
             return False
-
-    def build_fitness_report(self, timeout: float | None = None) -> FitnessReport:
-        """Solicita el ranking completo de fitness al Gestor."""
-        request = gestor_service_pb2.FitnessReportRequest()
-        try:
-            pb = self._stub.BuildFitnessReport(request, timeout=self._t(timeout))
-            entries = [
-                FitnessEntry(e.bot_id, e.fitness, e.tick)
-                for e in pb.entries
-            ]
-            return FitnessReport(entries)
-        except grpc.RpcError as exc:
-            self._handle_grpc_error("BuildFitnessReport", exc)
-            return FitnessReport([])
 
     def broadcast_budgets(
         self,
@@ -265,7 +246,7 @@ class GestorClient:
             common_pb2.BudgetEntry(bot_id=bid, budget=pts)
             for bid, pts in (overrides or {}).items()
         ]
-        request = gestor_service_pb2.BroadcastBudgetsRequest(
+        request = gestor_bots_service_pb2.BroadcastBudgetsRequest(
             default_budget=default_budget,
             overrides=budget_entries,
         )
@@ -293,7 +274,7 @@ class GestorClient:
         Un Hypervisor se anuncia al Gestor al arrancar.
         Devuelve True si el registro fue aceptado.
         """
-        request = gestor_service_pb2.RegisterHypervisorRequest(
+        request = gestor_bots_service_pb2.RegisterHypervisorRequest(
             hypervisor_id=hypervisor_id,
             address=address,
             port=port,
@@ -304,7 +285,8 @@ class GestorClient:
             pb = self._stub.RegisterHypervisor(request, timeout=self._t(timeout))
             if pb.ok:
                 logger.info(
-                    "Hypervisor %s registrado correctamente en el Gestor.", hypervisor_id
+                    "Hypervisor %s registrado correctamente en el Gestor.",
+                    hypervisor_id,
                 )
             else:
                 logger.warning("Registro de %s rechazado: %s", hypervisor_id, pb.error)
@@ -320,7 +302,7 @@ class GestorClient:
         timeout: float | None = None,
     ) -> bool:
         """El Hypervisor informa de cuántos bots tiene activos ahora."""
-        request = gestor_service_pb2.UpdateLoadRequest(
+        request = gestor_bots_service_pb2.UpdateLoadRequest(
             hypervisor_id=hypervisor_id,
             current_load=current_load,
         )
@@ -333,13 +315,18 @@ class GestorClient:
 
     def list_hypervisors(self, timeout: float | None = None) -> list[HypervisorInfo]:
         """Devuelve la lista de todos los Hypervisores conocidos por el Gestor."""
-        request = gestor_service_pb2.ListHypervisorsRequest()
+        request = gestor_bots_service_pb2.ListHypervisorsRequest()
         try:
             pb = self._stub.ListHypervisors(request, timeout=self._t(timeout))
             return [
                 HypervisorInfo(
-                    hv.hypervisor_id, hv.address, hv.port, hv.proxy_port,
-                    hv.capacity, hv.current_load, hv.online,
+                    hv.hypervisor_id,
+                    hv.address,
+                    hv.port,
+                    hv.proxy_port,
+                    hv.capacity,
+                    hv.current_load,
+                    hv.online,
                 )
                 for hv in pb.hypervisors
             ]
@@ -366,7 +353,7 @@ class GestorClient:
         action_type: "observe" | "move" | "rotate" | "interact"
         payload: bytes opacos que el Mundo interpreta según action_type
         """
-        request = gestor_service_pb2.ForwardActionRequest(
+        request = gestor_bots_service_pb2.ForwardActionRequest(
             bot_id=bot_id,
             hypervisor_id=hypervisor_id,
             action_type=action_type,

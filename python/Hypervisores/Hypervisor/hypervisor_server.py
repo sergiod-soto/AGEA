@@ -36,7 +36,7 @@ from Hypervisores.Transporte.Proto_Generated import (
     hypervisor_service_pb2_grpc,
     world_proxy_service_pb2_grpc,
 )
-from Hypervisores.Transporte.gestor_client import GestorClient
+from Hypervisores.Transporte.gestor_bots_client import GestorClient
 from Hypervisores.Hypervisor.hypervisor import Hypervisor
 from Hypervisores.Hypervisor.hypervisor_servicer import HypervisorServicer
 from Hypervisores.Hypervisor.world_proxy_servicer import WorldProxyServicer

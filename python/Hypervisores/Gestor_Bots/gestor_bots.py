@@ -27,11 +27,14 @@ logger = logging.getLogger(__name__)
 # Tipos de retorno internos (simples dataclasses, sin protobuf)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BotInfo:
     bot_id: str
     hypervisor_id: str
-    proxy_address: str   # dirección host:puerto del Hypervisor al que debe conectarse el bot
+    proxy_address: (
+        str  # dirección host:puerto del Hypervisor al que debe conectarse el bot
+    )
     ok: bool = True
     error: str = ""
 
@@ -51,7 +54,7 @@ class BotList:
 
 @dataclass
 class FitnessReport:
-    entries: list[BotStats]   # todos los bots ordenados por fitness desc
+    entries: list[BotStats]  # todos los bots ordenados por fitness desc
 
 
 @dataclass
@@ -59,9 +62,9 @@ class HypervisorInfo:
     hypervisor_id: str
     address: str
     port: int
-    proxy_port: int          # puerto que escucha world_proxy (bots se conectan aquí)
-    capacity: int            # slots declarados por el HV (informativo)
-    current_load: int = 0    # bots activos ahora mismo
+    proxy_port: int  # puerto que escucha world_proxy (bots se conectan aquí)
+    capacity: int  # slots declarados por el HV (informativo)
+    current_load: int = 0  # bots activos ahora mismo
     online: bool = True
 
 
@@ -73,7 +76,7 @@ class HypervisorList:
 @dataclass
 class ActionResult:
     ok: bool
-    payload: bytes = b""     # protobuf serializado que devuelve el Mundo
+    payload: bytes = b""  # protobuf serializado que devuelve el Mundo
     error: str = ""
 
 
@@ -81,7 +84,8 @@ class ActionResult:
 # Gestor
 # ---------------------------------------------------------------------------
 
-class Gestor:
+
+class Gestor_Bots:
     """
     Hub central del sistema evolutivo.
 
@@ -170,12 +174,16 @@ class Gestor:
             logger.warning(
                 "Hypervisor %s declara capacity=%d pero bots_por_hypervisor=%d; "
                 "se usará bots_por_hypervisor como límite efectivo.",
-                hypervisor_id, capacity, self.bots_por_hypervisor,
+                hypervisor_id,
+                capacity,
+                self.bots_por_hypervisor,
             )
 
         with self._lock:
             if hypervisor_id in self._hypervisors:
-                logger.warning("Hypervisor %s ya registrado; actualizando.", hypervisor_id)
+                logger.warning(
+                    "Hypervisor %s ya registrado; actualizando.", hypervisor_id
+                )
 
             self._hypervisors[hypervisor_id] = HypervisorInfo(
                 hypervisor_id=hypervisor_id,
@@ -186,7 +194,12 @@ class Gestor:
             )
             logger.info(
                 "Hypervisor registrado: %s en %s:%d (proxy:%d, cap_declarada:%d, límite_efectivo:%d)",
-                hypervisor_id, address, port, proxy_port, capacity, self.bots_por_hypervisor,
+                hypervisor_id,
+                address,
+                port,
+                proxy_port,
+                capacity,
+                self.bots_por_hypervisor,
             )
 
     def set_hypervisor_client(self, hypervisor_id: str, client) -> None:
@@ -227,14 +240,24 @@ class Gestor:
         """
         bot_id = bot_config.get("bot_id", "")
         if not bot_id:
-            return BotInfo(bot_id="", hypervisor_id="", proxy_address="", ok=False,
-                           error="bot_id vacío")
+            return BotInfo(
+                bot_id="",
+                hypervisor_id="",
+                proxy_address="",
+                ok=False,
+                error="bot_id vacío",
+            )
 
         with self._lock:
             hv = self._select_hypervisor()
             if hv is None:
-                return BotInfo(bot_id=bot_id, hypervisor_id="", proxy_address="",
-                               ok=False, error="Sin Hypervisores disponibles")
+                return BotInfo(
+                    bot_id=bot_id,
+                    hypervisor_id="",
+                    proxy_address="",
+                    ok=False,
+                    error="Sin Hypervisores disponibles",
+                )
 
             # Reservamos el slot optimistamente; el HV puede rechazarlo si está lleno
             hv.current_load += 1
@@ -254,18 +277,28 @@ class Gestor:
             with self._lock:
                 hv.current_load -= 1
                 del self._bots[bot_id]
-            return BotInfo(bot_id=bot_id, hypervisor_id="", proxy_address="",
-                           ok=False, error=f"Sin cliente para {hv.hypervisor_id}")
+            return BotInfo(
+                bot_id=bot_id,
+                hypervisor_id="",
+                proxy_address="",
+                ok=False,
+                error=f"Sin cliente para {hv.hypervisor_id}",
+            )
 
         try:
-            result = client.spawn_bot(bot_config)   # devuelve BotInfo
+            result = client.spawn_bot(bot_config)  # devuelve BotInfo
         except Exception as exc:
             logger.error("Error spawn_bot en HV %s: %s", hv.hypervisor_id, exc)
             with self._lock:
                 hv.current_load -= 1
                 del self._bots[bot_id]
-            return BotInfo(bot_id=bot_id, hypervisor_id="", proxy_address="",
-                           ok=False, error=str(exc))
+            return BotInfo(
+                bot_id=bot_id,
+                hypervisor_id="",
+                proxy_address="",
+                ok=False,
+                error=str(exc),
+            )
 
         logger.info("Bot %s spawneado en HV %s", bot_id, hv.hypervisor_id)
         return BotInfo(
@@ -299,27 +332,6 @@ class Gestor:
                 hv.current_load -= 1
 
         logger.info("Bot %s eliminado.", bot_id)
-
-    # ------------------------------------------------------------------
-    # Fitness
-    # ------------------------------------------------------------------
-
-    def update_fitness(self, bot_id: str, fitness: float, tick: int) -> None:
-        """El Mundo nos informa del fitness de un bot tras evaluar su acción."""
-        with self._lock:
-            stats = self._bots.get(bot_id)
-            if stats is None:
-                # El bot puede haber muerto justo antes; ignoramos silenciosamente
-                return
-            stats.fitness = fitness
-            stats.tick = tick
-
-    def build_fitness_report(self) -> FitnessReport:
-        """Devuelve todos los bots ordenados por fitness descendente."""
-        with self._lock:
-            sorted_bots = sorted(self._bots.values(),
-                                 key=lambda b: b.fitness, reverse=True)
-            return FitnessReport(entries=list(sorted_bots))
 
     # ------------------------------------------------------------------
     # Acciones → Mundo
@@ -375,14 +387,19 @@ class Gestor:
                 continue
 
             # Bots de este HV
-            bot_ids = [b.bot_id for b in bots_snapshot.values()
-                       if b.hypervisor_id == hv.hypervisor_id]
+            bot_ids = [
+                b.bot_id
+                for b in bots_snapshot.values()
+                if b.hypervisor_id == hv.hypervisor_id
+            ]
             if not bot_ids:
                 continue
 
             client = self._hypervisor_clients.get(hv.hypervisor_id)
             if client is None:
-                logger.warning("broadcast_budgets: sin cliente para %s", hv.hypervisor_id)
+                logger.warning(
+                    "broadcast_budgets: sin cliente para %s", hv.hypervisor_id
+                )
                 continue
 
             # Construimos el mapa de presupuesto individual para este HV
@@ -390,7 +407,9 @@ class Gestor:
 
             try:
                 client.reset_budgets(bot_ids, budget_map)
-                logger.debug("Presupuestos enviados a HV %s: %s", hv.hypervisor_id, budget_map)
+                logger.debug(
+                    "Presupuestos enviados a HV %s: %s", hv.hypervisor_id, budget_map
+                )
             except Exception as exc:
                 logger.error("Error reset_budgets en HV %s: %s", hv.hypervisor_id, exc)
 
@@ -408,10 +427,13 @@ class Gestor:
         Debe llamarse con self._lock ya adquirido.
         """
         candidates = [
-            hv for hv in self._hypervisors.values()
+            hv
+            for hv in self._hypervisors.values()
             if hv.online and hv.current_load < self.bots_por_hypervisor
         ]
         if not candidates:
             return None
         # Mayor capacidad libre según el límite central
-        return max(candidates, key=lambda hv: self.bots_por_hypervisor - hv.current_load)
+        return max(
+            candidates, key=lambda hv: self.bots_por_hypervisor - hv.current_load
+        )

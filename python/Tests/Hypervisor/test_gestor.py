@@ -20,7 +20,7 @@ import threading
 import unittest
 from unittest.mock import MagicMock, patch
 
-from Hypervisores.Gestor.gestor import BotInfo, BotStats, Gestor
+from Hypervisores.Gestor_Bots.gestor_bots import BotInfo, BotStats, Gestor
 
 
 # ---------------------------------------------------------------------------
