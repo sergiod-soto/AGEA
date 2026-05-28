@@ -5,9 +5,10 @@ Uso:
     python -m Hypervisores.Gestor.gestor_server
 
 Variables de entorno (todas opcionales, tienen default):
-    GESTOR_HOST      dirección en la que escucha    (default: "[::]:50051")
-    GESTOR_WORKERS   hilos del ThreadPoolExecutor   (default: 10)
-    LOG_LEVEL        nivel de logging               (default: INFO)
+    GESTOR_HOST            dirección en la que escucha    (default: "[::]:50051")
+    GESTOR_WORKERS         hilos del ThreadPoolExecutor   (default: 10)
+    BOTS_POR_HYPERVISOR    bots máximos por HV            (default: 100)
+    LOG_LEVEL              nivel de logging               (default: INFO)
 """
 
 from __future__ import annotations
@@ -48,6 +49,7 @@ def build_server(
     workers: int = 10,
     mundo_client=None,
     hypervisor_client_factory=None,
+    bots_por_hypervisor: int = 100,
 ) -> tuple[grpc.Server, Gestor]:
     """
     Construye y devuelve (servidor_grpc, gestor).
@@ -68,9 +70,12 @@ def build_server(
     hypervisor_client_factory : callable opcional
         (address: str, port: int) → HypervisorClient.
         Si None, el Gestor no podrá llamar a los Hypervisores de vuelta.
+    bots_por_hypervisor : int
+        Propagado directamente al constructor de Gestor. Es el único punto
+        de control de capacidad: determina cuántos bots puede alojar cada HV.
     """
     # 1. Lógica pura
-    gestor = Gestor(mundo_client=mundo_client)
+    gestor = Gestor(mundo_client=mundo_client, bots_por_hypervisor=bots_por_hypervisor)
 
     # 2. Servicer gRPC (traduce protobuf ↔ Gestor)
     servicer = GestorServicer(
@@ -82,10 +87,8 @@ def build_server(
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=workers),
         options=[
-            # Máximo 256 MB por mensaje (útil si el genoma es grande)
             ("grpc.max_receive_message_length", 256 * 1024 * 1024),
             ("grpc.max_send_message_length", 256 * 1024 * 1024),
-            # Keepalive: detecta hypervisores caídos
             ("grpc.keepalive_time_ms", 20_000),
             ("grpc.keepalive_timeout_ms", 10_000),
             ("grpc.keepalive_permit_without_calls", 1),
@@ -95,6 +98,12 @@ def build_server(
     gestor_service_pb2_grpc.add_GestorServiceServicer_to_server(servicer, server)
     server.add_insecure_port(host)
 
+    logger.info(
+        "Servidor Gestor construido — host=%s workers=%d bots_por_hv=%d",
+        host,
+        workers,
+        bots_por_hypervisor,
+    )
     return server, gestor
 
 
@@ -106,21 +115,24 @@ def build_server(
 def serve():
 
     setup_remote_logging(
-        mundo_address="10.0.0.1:50060",  # IP local del Mundo
+        mundo_address="10.0.0.1:50060",
         component="gestor",
         local_log_path="logs/gestor_local.log",
     )
 
     host = os.environ.get("GESTOR_HOST", "[::]:50051")
     workers = int(os.environ.get("GESTOR_WORKERS", "10"))
+    bots_por_hv = int(os.environ.get("BOTS_POR_HYPERVISOR", "100"))
 
-    # En producción, aquí se importa y construye el MundoClient real.
-    # Por ahora lo dejamos None; el Gestor funciona sin él
-    # (forward_action devuelve un stub vacío).
+    logger.info(
+        "Configuración — host=%s workers=%d bots_por_hypervisor=%d",
+        host,
+        workers,
+        bots_por_hv,
+    )
+
     mundo_client = None
 
-    # Factory para crear clientes hacia los Hypervisores.
-    # Se importa aquí (no en el módulo) para evitar imports circulares.
     try:
         from Hypervisores.Transporte.hypervisor_client import HypervisorClient
 
@@ -139,12 +151,12 @@ def serve():
         workers=workers,
         mundo_client=mundo_client,
         hypervisor_client_factory=hypervisor_client_factory,
+        bots_por_hypervisor=bots_por_hv,
     )
 
     server.start()
     logger.info("Gestor escuchando en %s  (%d workers)", host, workers)
 
-    # Apagado limpio con Ctrl+C o SIGTERM
     stop_event = {"fired": False}
 
     def _shutdown(signum, frame):
@@ -152,14 +164,13 @@ def serve():
             return
         stop_event["fired"] = True
         logger.info("Señal %d recibida — apagando Gestor...", signum)
-        server.stop(grace=5)  # 5 s de gracia para RPCs en vuelo
+        server.stop(grace=5)
         logger.info("Gestor apagado.")
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
-    # Bucle de espera
     try:
         while True:
             time.sleep(3600)

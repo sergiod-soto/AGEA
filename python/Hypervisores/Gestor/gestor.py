@@ -15,6 +15,7 @@ Responsabilidades:
 from __future__ import annotations
 
 import logging
+import math
 import threading
 from dataclasses import dataclass, field
 from typing import Optional
@@ -59,7 +60,7 @@ class HypervisorInfo:
     address: str
     port: int
     proxy_port: int          # puerto que escucha world_proxy (bots se conectan aquí)
-    capacity: int            # slots totales
+    capacity: int            # slots declarados por el HV (informativo)
     current_load: int = 0    # bots activos ahora mismo
     online: bool = True
 
@@ -89,9 +90,22 @@ class Gestor:
     mundo_client : objeto con método forward_action(bot_id, action_type, payload) → ActionResult
         Puede ser None durante las pruebas; en producción es una instancia de
         MundoClient (que se escribirá en otro fichero).
+
+    bots_por_hypervisor : int
+        Único punto de control de capacidad. Determina cuántos bots puede
+        alojar cada Hypervisor según el Gestor, independientemente de lo que
+        el HV declare en su campo capacity. Si un HV declara un valor distinto
+        se emite un warning pero el límite efectivo siempre es este parámetro.
     """
 
-    def __init__(self, mundo_client=None):
+    def __init__(self, mundo_client=None, bots_por_hypervisor: int = 100):
+        if bots_por_hypervisor <= 0:
+            raise ValueError(
+                f"bots_por_hypervisor debe ser > 0, recibido: {bots_por_hypervisor}"
+            )
+
+        self.bots_por_hypervisor = bots_por_hypervisor
+
         self._lock = threading.Lock()
 
         # hypervisor_id → HypervisorInfo
@@ -104,10 +118,34 @@ class Gestor:
         # bot_id → BotStats
         self._bots: dict[str, BotStats] = {}
 
+        # Contador incremental para next_bot_id(); protegido por _lock
+        self._bot_counter: int = 0
+
         # Cliente hacia el Mundo real (inyectado; puede ser None en tests)
         self.mundo_client = mundo_client
 
-        logger.info("Gestor inicializado.")
+        logger.info(
+            "Gestor inicializado (bots_por_hypervisor=%d).", bots_por_hypervisor
+        )
+
+    # ------------------------------------------------------------------
+    # Capacidad
+    # ------------------------------------------------------------------
+
+    def hvs_necesarios(self, total_bots: int) -> int:
+        """Calcula cuántos Hypervisores hacen falta para alojar total_bots."""
+        return math.ceil(total_bots / self.bots_por_hypervisor)
+
+    def capacidad_total(self) -> int:
+        """Slots totales disponibles según los HVs registrados y bots_por_hypervisor."""
+        with self._lock:
+            return len(self._hypervisors) * self.bots_por_hypervisor
+
+    def next_bot_id(self) -> str:
+        """Genera el siguiente ID de bot incremental y thread-safe (bot_0001, bot_0002…)."""
+        with self._lock:
+            self._bot_counter += 1
+            return f"bot_{self._bot_counter:04d}"
 
     # ------------------------------------------------------------------
     # Registro de Hypervisores
@@ -124,7 +162,17 @@ class Gestor:
         """
         Llamado por un Hypervisor cuando arranca.
         Almacena sus metadatos para poder asignarle bots y llamarle más tarde.
+
+        Si capacity difiere de bots_por_hypervisor se emite un warning: el límite
+        efectivo siempre es bots_por_hypervisor, no el valor declarado por el HV.
         """
+        if capacity != self.bots_por_hypervisor:
+            logger.warning(
+                "Hypervisor %s declara capacity=%d pero bots_por_hypervisor=%d; "
+                "se usará bots_por_hypervisor como límite efectivo.",
+                hypervisor_id, capacity, self.bots_por_hypervisor,
+            )
+
         with self._lock:
             if hypervisor_id in self._hypervisors:
                 logger.warning("Hypervisor %s ya registrado; actualizando.", hypervisor_id)
@@ -137,8 +185,8 @@ class Gestor:
                 capacity=capacity,
             )
             logger.info(
-                "Hypervisor registrado: %s en %s:%d (proxy:%d, cap:%d)",
-                hypervisor_id, address, port, proxy_port, capacity,
+                "Hypervisor registrado: %s en %s:%d (proxy:%d, cap_declarada:%d, límite_efectivo:%d)",
+                hypervisor_id, address, port, proxy_port, capacity, self.bots_por_hypervisor,
             )
 
     def set_hypervisor_client(self, hypervisor_id: str, client) -> None:
@@ -353,13 +401,17 @@ class Gestor:
     def _select_hypervisor(self) -> Optional[HypervisorInfo]:
         """
         Devuelve el Hypervisor online con más slots libres.
+
+        El límite efectivo es self.bots_por_hypervisor (no hv.capacity,
+        que es meramente informativo).
+
         Debe llamarse con self._lock ya adquirido.
         """
         candidates = [
             hv for hv in self._hypervisors.values()
-            if hv.online and hv.current_load < hv.capacity
+            if hv.online and hv.current_load < self.bots_por_hypervisor
         ]
         if not candidates:
             return None
-        # Mayor capacidad libre = capacity - current_load
-        return max(candidates, key=lambda hv: hv.capacity - hv.current_load)
+        # Mayor capacidad libre según el límite central
+        return max(candidates, key=lambda hv: self.bots_por_hypervisor - hv.current_load)

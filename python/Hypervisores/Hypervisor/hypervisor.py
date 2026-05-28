@@ -15,10 +15,12 @@ Responsabilidades:
 
 from __future__ import annotations
 
+import gzip
 import logging
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -28,12 +30,11 @@ logger = logging.getLogger(__name__)
 # Costes de acción (igual que world_proxy_servicer los necesitará)
 # ---------------------------------------------------------------------------
 
-ACTION_COSTS: dict[str, int] = {
-    "observe": 1,
-    "move": 2,
-    "rotate": 2,
-    "interact": 3,
-}
+from Core.Mundo.api_acciones import get_coste as _get_coste
+
+# ACTION_COSTS se mantiene por compatibilidad con código existente,
+# pero la fuente de verdad es core/acciones.py
+ACTION_COSTS: dict[str, int] = {}  # se rellena lazy en try_spend_points
 
 DEFAULT_BUDGET = 100  # puntos por ciclo si el Gestor no especifica otro
 
@@ -89,7 +90,7 @@ class Entity:
     """Entidad del mundo deserializada (espejo de common.proto Entity)."""
 
     entity_id: str
-    type: str  # "bot" | "resource" | "obstacle" | "projectile"
+    type: str  # "bot" | "piedra" | "comida" | "terreno" | ...
     x: float
     y: float
     rotation: float
@@ -194,11 +195,12 @@ class Hypervisor:
 
     def spawn_bot(self, config: dict) -> BotInfo:
         """
-        Crea el registro local de un bot.
+        Crea el registro local de un bot y escribe su código en disco.
 
         config espera:
-          - "bot_id"  : str
-          - "budget"  : int  (opcional, default DEFAULT_BUDGET)
+          - "bot_id"    : str
+          - "codigo_gz" : bytes  gzip del código Python compilado
+          - "budget"    : int    (opcional, default DEFAULT_BUDGET)
         """
         bot_id = config.get("bot_id", "")
         if not bot_id:
@@ -209,10 +211,28 @@ class Hypervisor:
                 error="bot_id vacío",
             )
 
+        codigo_gz = config.get("codigo_gz", b"")
         budget = int(config.get("budget", DEFAULT_BUDGET))
+
+        # Descomprimir y escribir el código en disco antes de registrar el bot.
+        # El proceso bot leerá este fichero al arrancar.
+        codigo_path = self._codigo_path(bot_id)
+        try:
+            codigo_path.parent.mkdir(parents=True, exist_ok=True)
+            codigo = gzip.decompress(codigo_gz)
+            codigo_path.write_bytes(codigo)
+        except Exception as exc:
+            logger.error("Error escribiendo código de bot %s: %s", bot_id, exc)
+            return BotInfo(
+                bot_id=bot_id,
+                hypervisor_id=self.hypervisor_id,
+                ok=False,
+                error=f"Error descomprimiendo código: {exc}",
+            )
 
         with self._lock:
             if len(self._bots) >= self.capacity:
+                codigo_path.unlink(missing_ok=True)
                 return BotInfo(
                     bot_id=bot_id,
                     hypervisor_id=self.hypervisor_id,
@@ -229,16 +249,30 @@ class Hypervisor:
                 max_budget=budget,
             )
 
-        logger.info("Bot %s spawneado (budget=%d).", bot_id, budget)
+        logger.info(
+            "Bot %s spawneado (budget=%d, código: %s).", bot_id, budget, codigo_path
+        )
         return BotInfo(bot_id=bot_id, hypervisor_id=self.hypervisor_id, ok=True)
 
+    def _codigo_path(self, bot_id: str) -> Path:
+        """Ruta del fichero .py del bot en disco."""
+        return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"
+
     def kill_bot(self, bot_id: str) -> None:
-        """Elimina el registro local de un bot."""
+        """Elimina el registro local de un bot y su fichero de código."""
         with self._lock:
             if bot_id not in self._bots:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)
                 return
             del self._bots[bot_id]
+
+        # Limpiar el fichero de código del disco
+        codigo_path = self._codigo_path(bot_id)
+        try:
+            codigo_path.unlink(missing_ok=True)
+        except Exception as exc:
+            logger.warning("No se pudo eliminar código de %s: %s", bot_id, exc)
+
         logger.info("Bot %s eliminado.", bot_id)
 
     def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
@@ -424,7 +458,7 @@ class Hypervisor:
             return []
 
         try:
-            from Hypervisores.Transporte.Protobufs import common_pb2
+            from Hypervisores.Transporte.Proto_Generated import common_pb2
 
             # Intentamos parsear como repeated Entity dentro de un wrapper.
             # Usamos BotList como contenedor temporal: en la práctica el Mundo

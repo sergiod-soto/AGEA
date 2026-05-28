@@ -69,10 +69,10 @@ class HypervisorServicer(hypervisor_service_pb2_grpc.HypervisorServiceServicer):
         """
         cfg = request.config
         bot_config = {
-            "bot_id":   cfg.bot_id,
-            "genome":   cfg.genome,
-            "budget":   cfg.budget,
-            "metadata": dict(cfg.metadata),
+            "bot_id":    cfg.bot_id,
+            "codigo_gz": cfg.codigo_gz,
+            "budget":    cfg.budget,
+            "metadata":  dict(cfg.metadata),
         }
 
         logger.info("SpawnBot recibido del Gestor: bot_id=%s", cfg.bot_id)

@@ -90,10 +90,10 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
         """
         cfg = request.config
         bot_config = {
-            "bot_id":    cfg.bot_id,
+            "bot_id": cfg.bot_id,
             "codigo_gz": cfg.codigo_gz,
-            "budget":    cfg.budget,
-            "metadata":  dict(cfg.metadata),
+            "budget": cfg.budget,
+            "metadata": dict(cfg.metadata),
         }
 
         logger.info("SpawnBot solicitado: bot_id=%s", cfg.bot_id)
@@ -175,8 +175,11 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
         """
         logger.info(
             "RegisterHypervisor: %s en %s:%d (proxy:%d, cap:%d)",
-            request.hypervisor_id, request.address,
-            request.port, request.proxy_port, request.capacity,
+            request.hypervisor_id,
+            request.address,
+            request.port,
+            request.proxy_port,
+            request.capacity,
         )
         try:
             self._gestor.register_hypervisor(
@@ -206,7 +209,9 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
 
     def UpdateHypervisorLoad(self, request, context):
         try:
-            self._gestor.update_hypervisor_load(request.hypervisor_id, request.current_load)
+            self._gestor.update_hypervisor_load(
+                request.hypervisor_id, request.current_load
+            )
         except Exception as exc:
             logger.exception("Error en UpdateHypervisorLoad")
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -238,7 +243,9 @@ class GestorServicer(gestor_service_pb2_grpc.GestorServiceServicer):
         """
         logger.debug(
             "ForwardAction: bot=%s hv=%s tipo=%s",
-            request.bot_id, request.hypervisor_id, request.action_type,
+            request.bot_id,
+            request.hypervisor_id,
+            request.action_type,
         )
         try:
             result = self._gestor.forward_action_to_mundo(
