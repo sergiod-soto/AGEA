@@ -15,6 +15,8 @@ Responsabilidades:
 
 from __future__ import annotations
 
+import os
+
 import gzip
 import logging
 import threading
@@ -480,17 +482,51 @@ class Hypervisor:
             return []
 
     # ------------------------------------------------------------------
-    # estadisticas de carga del sistema:
+    # estadisticas de carga del sistema LOCAL:
     #  - capacidad de CPU,
     #  - memoria,
     #  - nº de bots
+    #  - source (local/AWS)
     # ------------------------------------------------------------------
+
     def get_system_load(self) -> dict:
-        mem = psutil.virtual_memory()
-        return {
-            "cpu_percent": psutil.cpu_percent(interval=0.5),  # % uso CPU
-            "mem_percent": mem.percent,  # % RAM usada
-            "mem_used_mb": round(mem.used / 1024 / 1024),
-            "mem_total_mb": round(mem.total / 1024 / 1024),
-            "bot_count": len(self._bots),  # tu variable
-        }
+
+        def _is_aws() -> bool:
+            # AWS inyecta esta variable en todos los containers de ECS/Batch
+            return "AWS_BATCH_JOB_ID" in os.environ
+
+        def _get_local_system_load() -> dict:
+            mem = psutil.virtual_memory()
+            return {
+                "cpu_percent": psutil.cpu_percent(interval=None),  # % uso CPU
+                "mem_percent": mem.percent,  # % RAM usada
+                "mem_used_mb": round(mem.used / 1024 / 1024),
+                "mem_total_mb": round(mem.total / 1024 / 1024),
+                "bot_count": len(self._bots),
+                "source": "local",
+            }
+
+        def _get_aws_system_load() -> dict:
+            try:
+                quota, period = open("/sys/fs/cgroup/cpu.max").read().split()
+                cpu = (
+                    100.0
+                    if quota == "max"
+                    else round(int(quota) / int(period) * 100, 1)
+                )
+            except Exception:
+                cpu = psutil.cpu_percent(interval=None)  # fallback si no hay cgroups
+
+            mem = psutil.virtual_memory()
+            return {
+                "cpu_percent": cpu,
+                "mem_percent": mem.percent,
+                "mem_used_mb": round(mem.used / 1024 / 1024),
+                "mem_total_mb": round(mem.total / 1024 / 1024),
+                "bot_count": len(self._bots),
+                "source": "aws",
+            }
+
+        if _is_aws():
+            return _get_aws_system_load()
+        return _get_local_system_load()
