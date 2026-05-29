@@ -46,7 +46,6 @@ from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
 from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
 from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Core.Entities.Elementos.Simples.Bot.controlador import obtener_siguiente_apellido
 from Exceptions.exceptions import *
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
@@ -71,6 +70,8 @@ comportamientos = Comportamiento.declarar_comportamientos(
 )
 
 stats = Comportamiento.declarar_comportamientos(
+    #
+    # _Complejos_____________________________________________________
     Agresividad,
     Armadura,
     Grasa,
@@ -80,10 +81,12 @@ stats = Comportamiento.declarar_comportamientos(
     Tamanho,
     Temperatura_Optima,
     #
+    # _Temporales____________________________________________________
     Focus,
     Hambre,
     Herida,
     #
+    # _Simples_______________________________________________________
     Ataque,
     Defensa,
     Deteccion,
@@ -97,20 +100,11 @@ stats = Comportamiento.declarar_comportamientos(
     Vida,
 )
 
-informacion = Comportamiento.declarar_comportamientos(ID, Apellidos, Posicion)
+informacion = Comportamiento.declarar_comportamientos(
+    ID,
+    Apellidos,
+)
 
-
-stats_bots = [
-    "adn",
-    "padre",
-    "madre",
-    "apellido0",
-    "apellido1",
-    "apellido2",
-    "apellido3",
-    "x",
-    "y",
-]
 
 def generarApellidos(ape1, ape2):
     apellidos = []
@@ -247,7 +241,6 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
                     "madre": padres["madre"],
                 }
 
-
         self.casilla = casilla
 
         #
@@ -259,8 +252,8 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
         except NumAtributosIncorrecto:
             print("ERROR CON LOS STATS")
 
-    def inicializar_apellido(self):
-        return obtener_siguiente_apellido()
+    # def inicializar_apellido(self):
+    #     return obtener_siguiente_apellido()
 
     def set_casilla(self, new_casilla: Tuple[int, int]):
         self.stats = new_casilla

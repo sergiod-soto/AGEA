@@ -6,8 +6,9 @@ from Core.Entities.Elementos.Simples.Bot.ADN.empaquetador import (
     ADNAgotadoError,
     ADNSobranteError,
 )
-'''
-    # ejemplo de uso:
+
+"""
+    # Ejemplo de uso:
 
     # compilacion normal
     with Genoma.desde_fichero("adn.bin", chunk_size=4096) as genoma:
@@ -18,8 +19,7 @@ from Core.Entities.Elementos.Simples.Bot.ADN.empaquetador import (
 
     # consulta de rango sin afectar la compilacion
     adn_trozo = genoma.leer_rango(0, 99)
-'''
-
+"""
 
 
 class Genoma:
@@ -203,21 +203,30 @@ class Nodo:
             return "".join(partes)
 
     class Import:
+        """
+        Uso:
 
-        def __init__(self, libreria: str, paquetes: list):
-            self.libreria = libreria
-            self.paquetes = paquetes
+        Import(None, [y1, y2]) -> "import y1, y2"
+        Import(x, [y1, y2]) -> "from x import y1, y2"
+
+
+
+        """
+
+        def __init__(self, _from: str, _import: list):
+            self._from = _from
+            self._import = _import
 
         def _agregar(self, libreria: str, paquetes: list, librerias_usadas: dict):
             for paquete in paquetes:
                 librerias_usadas[libreria].add(paquete)
 
         def compilar(self, genoma: Genoma, padre: "Nodo" = None):
-            if self.libreria is None and self.paquetes is None:
+            if self._from is None and self._import is None:
                 return genoma.contexto.get_imports()
 
             self._agregar(
-                self.libreria, self.paquetes, genoma.contexto.librerias_usadas
+                self._from, self._import, genoma.contexto.librerias_usadas
             )
             return ""
 

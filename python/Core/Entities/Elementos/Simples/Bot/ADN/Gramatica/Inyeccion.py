@@ -6,7 +6,7 @@ def _importsHardCoded():
         "_importsBasicos",
         [
             #
-            # Tipos y estructuras
+            # _Tipos y estructuras________________________________________
             Nodo.Import("functools", ["reduce"]),
             Nodo.Import(
                 "collections",
@@ -17,11 +17,11 @@ def _importsHardCoded():
             ),
             "\n",
             #
-            # Strings y texto
+            # _Strings y texto____________________________________________
             Nodo.Import(None, ["string"]),
             "\n",
             #
-            # Sistema básico
+            # _Sistema básico_____________________________________________
             Nodo.Import(None, ["os"]),
             Nodo.Import(None, ["sys"]),
             Nodo.Import(None, ["math"]),
@@ -30,33 +30,33 @@ def _importsHardCoded():
             Nodo.Import(None, ["json"]),
             "\n",
             #
-            # Utilidades de código
+            # _Utilidades de código_______________________________________
             Nodo.Import(
                 "typing", ["List", "Dict", "Tuple", "Optional", "Any", "Union"]
             ),
             "\n",
             #
-            # Estructuras adicionales
+            # _Estructuras adicionales____________________________________
             Nodo.Import("functools", ["wraps", "partial", "lru_cache"]),
             "\n",
             #
-            # Números
+            # _Números____________________________________________________
             Nodo.Import(None, ["statistics"]),
             "\n",
             #
-            # Control del programa
+            # _Control del programa_______________________________________
             Nodo.Import(None, ["warnings"]),
             Nodo.Import("abc", ["ABC", "abstractmethod"]),
             "\n",
             #
-            # Inspección básica
+            # _Inspección básica__________________________________________
             Nodo.Import(None, ["inspect"]),
             Nodo.Import("enum", ["Enum", "auto"]),
             #
             #
-            #######################################################
+            # ____________________________________________________________
             Nodo.Import(None, None),
-            #######################################################
+            # ____________________________________________________________
             #
             #
         ],
@@ -64,11 +64,16 @@ def _importsHardCoded():
 
 
 def _codigoInyectado():
-    '''
-        Codigo escrito 100% a mano. 
-        No puede depender de nada contenido en Base_Gramatica.py
-        
-        Se ejecuta despues de _importsHardCoded y antes de _funciones
-    '''
-    
-    return Nodo("_codigoInyectado", [""])
+    """
+    Codigo escrito 100% a mano.
+    No puede depender de nada contenido en Base_Gramatica.py
+
+    Se ejecuta despues de _importsHardCoded y antes de _funciones
+    """
+
+    return Nodo(
+        "_codigoInyectado",
+        [
+            "",
+        ],
+    )
