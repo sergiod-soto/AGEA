@@ -2,9 +2,9 @@
 import time
 import threading
 from unittest.mock import MagicMock
-from Hypervisores.Hypervisor.hypervisor import Hypervisor
-from Hypervisores.Hypervisor.hypervisor_server import build_servers
-from Hypervisores.Transporte.hypervisor_client import HypervisorClient
+from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor_server import build_servers
+from Gestores.Transporte.hypervisor_client import HypervisorClient
 
 
 def test_servidor_completo():

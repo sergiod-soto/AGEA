@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from enum import Enum
 import random
 from typing import Callable
 
@@ -55,3 +56,17 @@ class Sonoro(Informativo):
 
     @abstractmethod
     def sonar(self, intensidad: float): ...
+
+    class libreria_sonidos:
+        '''
+        clase para la ordenacion de la biblioteca
+        de sonidos
+        '''
+        
+        class Piedra:
+            golpear = ...
+
+        class Agua: ...
+
+        piedra = Piedra
+        agua = Agua

@@ -16,12 +16,12 @@ import logging
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated import (
     common_pb2,
     hypervisor_service_pb2,
     hypervisor_service_pb2_grpc,
 )
-from Hypervisores.Hypervisor.hypervisor import Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 
 logger = logging.getLogger(__name__)
 

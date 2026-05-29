@@ -27,7 +27,7 @@ from pathlib import Path
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import log_service_pb2_grpc
+from Gestores.Transporte.Proto_Generated import log_service_pb2_grpc
 from log_servicer import LogServicer
 
 

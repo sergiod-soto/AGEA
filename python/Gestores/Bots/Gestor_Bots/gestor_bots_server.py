@@ -22,11 +22,11 @@ from concurrent import futures
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import gestor_bots_service_pb2_grpc
-from Hypervisores.Gestor_Bots.gestor_bots import Gestor_Bots
-from Hypervisores.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
+from Gestores.Transporte.Proto_Generated import gestor_bots_service_pb2_grpc
+from Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
+from Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
 
-from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
+from Gestores.Transporte.remote_log_handler import setup_remote_logging
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -138,7 +138,7 @@ def serve():
     mundo_client = None
 
     try:
-        from Hypervisores.Transporte.hypervisor_client import HypervisorClient
+        from Gestores.Transporte.hypervisor_client import HypervisorClient
 
         def hypervisor_client_factory(address: str, port: int) -> HypervisorClient:
             return HypervisorClient(address, port)

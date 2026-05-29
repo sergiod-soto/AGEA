@@ -462,7 +462,7 @@ class Hypervisor:
             return []
 
         try:
-            from Hypervisores.Transporte.Proto_Generated import common_pb2
+            from Gestores.Transporte.Proto_Generated import common_pb2
 
             # Intentamos parsear como repeated Entity dentro de un wrapper.
             # Usamos BotList como contenedor temporal: en la práctica el Mundo
@@ -530,3 +530,59 @@ class Hypervisor:
         if _is_aws():
             return _get_aws_system_load()
         return _get_local_system_load()
+
+    # ------------------------------------------------------------------
+    #
+    # ------------------------------------------------------------------
+    def guardar_estado(self):
+        """
+        self.hypervisor_id = hypervisor_id
+        self.gestor_client = gestor_client
+        self.capacity = capacity
+        self._my_address = my_address
+        self._my_port = my_port
+        self._my_proxy_port = my_proxy_port
+
+        self._lock = threading.Lock()
+
+        # bot_id → BotRecord
+        self._bots: dict[str, BotRecord] = {}
+
+        logger.info(
+            "Hypervisor %s inicializado (cap=%d, proxy=%s:%d)",
+            hypervisor_id,
+            capacity,
+            my_address,
+            my_proxy_port,
+        )
+
+        """
+        ...
+
+    # ------------------------------------------------------------------
+    #
+    # ------------------------------------------------------------------
+    def cargar_estado(self):
+        """
+        self.hypervisor_id = hypervisor_id
+        self.gestor_client = gestor_client
+        self.capacity = capacity
+        self._my_address = my_address
+        self._my_port = my_port
+        self._my_proxy_port = my_proxy_port
+
+        self._lock = threading.Lock()
+
+        # bot_id → BotRecord
+        self._bots: dict[str, BotRecord] = {}
+
+        logger.info(
+            "Hypervisor %s inicializado (cap=%d, proxy=%s:%d)",
+            hypervisor_id,
+            capacity,
+            my_address,
+            my_proxy_port,
+        )
+
+        """
+        ...

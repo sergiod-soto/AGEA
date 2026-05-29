@@ -36,8 +36,8 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
-from Hypervisores.Transporte.log_client import LogClient
-from Hypervisores.Transporte.Proto_Generated import log_service_pb2
+from Gestores.Transporte.log_client import LogClient
+from Gestores.Transporte.Proto_Generated import log_service_pb2
 
 # Tamaño máximo de la cola en memoria
 _QUEUE_MAX = 2000

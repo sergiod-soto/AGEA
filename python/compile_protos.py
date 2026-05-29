@@ -16,8 +16,8 @@ import sys
 # Rutas
 # ---------------------------------------------------------------------------
 ROOT      = pathlib.Path(__file__).parent
-PROTO_DIR = ROOT / "Hypervisores" / "Transporte" / "Protobufs"
-OUT_DIR   = ROOT / "Hypervisores" / "Transporte" / "Proto_Generated"
+PROTO_DIR = ROOT / "Gestores" / "Transporte" / "Protobufs"
+OUT_DIR   = ROOT / "Gestores" / "Transporte" / "Proto_Generated"
 
 PROTOS = [
     "common.proto",

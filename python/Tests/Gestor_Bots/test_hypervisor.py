@@ -1,6 +1,6 @@
 # tests/test_hypervisor.py
 from unittest.mock import MagicMock
-from Hypervisores.Hypervisor.hypervisor import Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 
 
 def make_hv():

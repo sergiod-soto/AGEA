@@ -1,8 +1,8 @@
 # tests/test_hypervisor_servicer.py
 from unittest.mock import MagicMock
-from Hypervisores.Hypervisor.hypervisor import Hypervisor
-from Hypervisores.Hypervisor.hypervisor_servicer import HypervisorServicer
-from Hypervisores.Transporte.Proto_Generated import (
+from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
+from Gestores.Transporte.Proto_Generated import (
     hypervisor_service_pb2, common_pb2
 )
 

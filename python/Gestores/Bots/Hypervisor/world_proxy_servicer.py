@@ -23,12 +23,12 @@ import logging
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated import (
     common_pb2,
     world_proxy_service_pb2,
     world_proxy_service_pb2_grpc,
 )
-from Hypervisores.Hypervisor.hypervisor import ACTION_COSTS, Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor import ACTION_COSTS, Hypervisor
 
 logger = logging.getLogger(__name__)
 

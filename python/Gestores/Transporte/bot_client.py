@@ -41,7 +41,7 @@ from typing import Optional
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated import (
     common_pb2,
     world_proxy_service_pb2,
     world_proxy_service_pb2_grpc,

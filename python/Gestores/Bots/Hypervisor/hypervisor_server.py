@@ -32,16 +32,16 @@ from concurrent import futures
 
 import grpc
 
-from Hypervisores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated import (
     hypervisor_service_pb2_grpc,
     world_proxy_service_pb2_grpc,
 )
-from Hypervisores.Transporte.gestor_bots_client import GestorClient
-from Hypervisores.Hypervisor.hypervisor import Hypervisor
-from Hypervisores.Hypervisor.hypervisor_servicer import HypervisorServicer
-from Hypervisores.Hypervisor.world_proxy_servicer import WorldProxyServicer
+from Gestores.Transporte.gestor_bots_client import GestorClient
+from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
+from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
+from Gestores.Bots.Hypervisor.world_proxy_servicer import WorldProxyServicer
 
-from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
+from Gestores.Transporte.remote_log_handler import setup_remote_logging
 
 # ---------------------------------------------------------------------------
 # Logging
