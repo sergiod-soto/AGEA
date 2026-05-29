@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Tuple
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
 from Core.Entities.Comportamiento.Fisico.flotable import Flotable
@@ -28,7 +28,6 @@ from Core.Entities.Comportamiento.Stats.Complejos.temperatura_optima import (
 )
 from Core.Entities.Comportamiento.Stats.Informacion.apellidos import Apellidos
 from Core.Entities.Comportamiento.Stats.Informacion.id import ID
-from Core.Entities.Comportamiento.Stats.Informacion.posicion import Posicion
 from Core.Entities.Comportamiento.Stats.Modificadores.focus import Focus
 from Core.Entities.Comportamiento.Stats.Modificadores.hambre import Hambre
 from Core.Entities.Comportamiento.Stats.Modificadores.herida import Herida
@@ -54,11 +53,7 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Volumen,
     Solido,
     Tangible,
-    Comestible,
-    Hidratante,
     Color,
-    Toxico,
-    Nutritivo,
     Termico,
     Empujable,
     Flotable,
