@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from . import common_pb2 as common__pb2
-from . import gestor_service_pb2 as gestor__service__pb2
+from . import gestor_bots_service_pb2 as gestor__bots__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in gestor_service_pb2_grpc.py depends on'
+        + ' but the generated code in gestor_bots_service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -46,52 +46,52 @@ class GestorServiceStub(object):
         """
         self.SpawnBot = channel.unary_unary(
                 '/gestor.GestorService/SpawnBot',
-                request_serializer=gestor__service__pb2.SpawnBotRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.SpawnBotRequest.SerializeToString,
                 response_deserializer=common__pb2.BotInfo.FromString,
                 _registered_method=True)
         self.KillBot = channel.unary_unary(
                 '/gestor.GestorService/KillBot',
-                request_serializer=gestor__service__pb2.BotIdRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.BotIdRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.NotifyBotDeath = channel.unary_unary(
                 '/gestor.GestorService/NotifyBotDeath',
-                request_serializer=gestor__service__pb2.BotDeathNotification.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.BroadcastBudgets = channel.unary_unary(
                 '/gestor.GestorService/BroadcastBudgets',
-                request_serializer=gestor__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.SaveState = channel.unary_unary(
                 '/gestor.GestorService/SaveState',
-                request_serializer=gestor__service__pb2.SaveStateRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.SaveStateRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.LoadState = channel.unary_unary(
                 '/gestor.GestorService/LoadState',
-                request_serializer=gestor__service__pb2.LoadStateRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.LoadStateRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.RegisterHypervisor = channel.unary_unary(
                 '/gestor.GestorService/RegisterHypervisor',
-                request_serializer=gestor__service__pb2.RegisterHypervisorRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.RegisterHypervisorRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.UpdateHypervisorLoad = channel.unary_unary(
                 '/gestor.GestorService/UpdateHypervisorLoad',
-                request_serializer=gestor__service__pb2.UpdateLoadRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.UpdateLoadRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.ListHypervisors = channel.unary_unary(
                 '/gestor.GestorService/ListHypervisors',
-                request_serializer=gestor__service__pb2.ListHypervisorsRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.ListHypervisorsRequest.SerializeToString,
                 response_deserializer=common__pb2.HypervisorList.FromString,
                 _registered_method=True)
         self.ForwardAction = channel.unary_unary(
                 '/gestor.GestorService/ForwardAction',
-                request_serializer=gestor__service__pb2.ForwardActionRequest.SerializeToString,
+                request_serializer=gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
                 response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
 
@@ -193,52 +193,52 @@ def add_GestorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SpawnBot': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnBot,
-                    request_deserializer=gestor__service__pb2.SpawnBotRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.SpawnBotRequest.FromString,
                     response_serializer=common__pb2.BotInfo.SerializeToString,
             ),
             'KillBot': grpc.unary_unary_rpc_method_handler(
                     servicer.KillBot,
-                    request_deserializer=gestor__service__pb2.BotIdRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.BotIdRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'NotifyBotDeath': grpc.unary_unary_rpc_method_handler(
                     servicer.NotifyBotDeath,
-                    request_deserializer=gestor__service__pb2.BotDeathNotification.FromString,
+                    request_deserializer=gestor__bots__service__pb2.BotDeathNotification.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'BroadcastBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.BroadcastBudgets,
-                    request_deserializer=gestor__service__pb2.BroadcastBudgetsRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.BroadcastBudgetsRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'SaveState': grpc.unary_unary_rpc_method_handler(
                     servicer.SaveState,
-                    request_deserializer=gestor__service__pb2.SaveStateRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.SaveStateRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'LoadState': grpc.unary_unary_rpc_method_handler(
                     servicer.LoadState,
-                    request_deserializer=gestor__service__pb2.LoadStateRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.LoadStateRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'RegisterHypervisor': grpc.unary_unary_rpc_method_handler(
                     servicer.RegisterHypervisor,
-                    request_deserializer=gestor__service__pb2.RegisterHypervisorRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.RegisterHypervisorRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'UpdateHypervisorLoad': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateHypervisorLoad,
-                    request_deserializer=gestor__service__pb2.UpdateLoadRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.UpdateLoadRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'ListHypervisors': grpc.unary_unary_rpc_method_handler(
                     servicer.ListHypervisors,
-                    request_deserializer=gestor__service__pb2.ListHypervisorsRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.ListHypervisorsRequest.FromString,
                     response_serializer=common__pb2.HypervisorList.SerializeToString,
             ),
             'ForwardAction': grpc.unary_unary_rpc_method_handler(
                     servicer.ForwardAction,
-                    request_deserializer=gestor__service__pb2.ForwardActionRequest.FromString,
+                    request_deserializer=gestor__bots__service__pb2.ForwardActionRequest.FromString,
                     response_serializer=common__pb2.ActionResult.SerializeToString,
             ),
     }
@@ -276,7 +276,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/SpawnBot',
-            gestor__service__pb2.SpawnBotRequest.SerializeToString,
+            gestor__bots__service__pb2.SpawnBotRequest.SerializeToString,
             common__pb2.BotInfo.FromString,
             options,
             channel_credentials,
@@ -303,7 +303,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/KillBot',
-            gestor__service__pb2.BotIdRequest.SerializeToString,
+            gestor__bots__service__pb2.BotIdRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -330,7 +330,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/NotifyBotDeath',
-            gestor__service__pb2.BotDeathNotification.SerializeToString,
+            gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -357,7 +357,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/BroadcastBudgets',
-            gestor__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+            gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -384,7 +384,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/SaveState',
-            gestor__service__pb2.SaveStateRequest.SerializeToString,
+            gestor__bots__service__pb2.SaveStateRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -411,7 +411,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/LoadState',
-            gestor__service__pb2.LoadStateRequest.SerializeToString,
+            gestor__bots__service__pb2.LoadStateRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -438,7 +438,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/RegisterHypervisor',
-            gestor__service__pb2.RegisterHypervisorRequest.SerializeToString,
+            gestor__bots__service__pb2.RegisterHypervisorRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -465,7 +465,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/UpdateHypervisorLoad',
-            gestor__service__pb2.UpdateLoadRequest.SerializeToString,
+            gestor__bots__service__pb2.UpdateLoadRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -492,7 +492,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/ListHypervisors',
-            gestor__service__pb2.ListHypervisorsRequest.SerializeToString,
+            gestor__bots__service__pb2.ListHypervisorsRequest.SerializeToString,
             common__pb2.HypervisorList.FromString,
             options,
             channel_credentials,
@@ -519,7 +519,7 @@ class GestorService(object):
             request,
             target,
             '/gestor.GestorService/ForwardAction',
-            gestor__service__pb2.ForwardActionRequest.SerializeToString,
+            gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
             common__pb2.ActionResult.FromString,
             options,
             channel_credentials,

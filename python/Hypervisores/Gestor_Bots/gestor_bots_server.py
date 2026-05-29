@@ -24,7 +24,7 @@ import grpc
 
 from Hypervisores.Transporte.Proto_Generated import gestor_bots_service_pb2_grpc
 from Hypervisores.Gestor_Bots.gestor_bots import Gestor_Bots
-from Hypervisores.Gestor_Bots.gestor_bots_servicer import GestorBotsServicer
+from Hypervisores.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
 
 from Hypervisores.Transporte.remote_log_handler import setup_remote_logging
 
@@ -80,7 +80,7 @@ def build_server(
     )
 
     # 2. Servicer gRPC (traduce protobuf ↔ Gestor)
-    servicer = GestorBotsServicer(
+    servicer = Gestor_Bots_Servicer(
         gestor=gestor,
         hypervisor_client_factory=hypervisor_client_factory,
     )

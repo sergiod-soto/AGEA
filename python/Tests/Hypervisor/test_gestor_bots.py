@@ -20,19 +20,19 @@ import threading
 import unittest
 from unittest.mock import MagicMock, patch
 
-from Hypervisores.Gestor_Bots.gestor_bots import BotInfo, BotStats, Gestor
+from Hypervisores.Gestor_Bots.gestor_bots import BotInfo, BotStats, Gestor_Bots
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _gestor(bots_por_hv: int = 10) -> Gestor:
-    """Crea un Gestor sin mundo_client (modo test)."""
-    return Gestor(bots_por_hypervisor=bots_por_hv)
+def _gestor(bots_por_hv: int = 10) -> Gestor_Bots:
+    """Crea un Gestor_Bots sin mundo_client (modo test)."""
+    return Gestor_Bots(bots_por_hypervisor=bots_por_hv)
 
 
-def _registrar(g: Gestor, hv_id: str, capacity: int | None = None) -> None:
+def _registrar(g: Gestor_Bots, hv_id: str, capacity: int | None = None) -> None:
     """Registra un HV con capacity == bots_por_hypervisor por defecto."""
     g.register_hypervisor(
         hypervisor_id=hv_id,
@@ -50,7 +50,7 @@ def _registrar(g: Gestor, hv_id: str, capacity: int | None = None) -> None:
 class TestGestorConstructor(unittest.TestCase):
 
     def test_default_bots_por_hv(self):
-        g = Gestor()
+        g = Gestor_Bots()
         self.assertEqual(g.bots_por_hypervisor, 100)
 
     def test_custom_bots_por_hv(self):
@@ -65,16 +65,16 @@ class TestGestorConstructor(unittest.TestCase):
     def test_mundo_client_sigue_siendo_inyectable(self):
         """Asegura retrocompatibilidad: mundo_client no se eliminó."""
         mc = MagicMock()
-        g = Gestor(mundo_client=mc, bots_por_hypervisor=10)
+        g = Gestor_Bots(mundo_client=mc, bots_por_hypervisor=10)
         self.assertIs(g.mundo_client, mc)
 
     def test_cero_lanza_error(self):
         with self.assertRaises((ValueError, AssertionError)):
-            Gestor(bots_por_hypervisor=0)
+            Gestor_Bots(bots_por_hypervisor=0)
 
     def test_negativo_lanza_error(self):
         with self.assertRaises((ValueError, AssertionError)):
-            Gestor(bots_por_hypervisor=-5)
+            Gestor_Bots(bots_por_hypervisor=-5)
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ class TestRegistroHypervisor(unittest.TestCase):
         self.assertEqual(hvs[0].hypervisor_id, "hv_01")
 
     def test_capacity_mismatch_emite_warning(self):
-        with self.assertLogs("Hypervisores.Gestor.gestor", level="WARNING") as cm:
+        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="WARNING") as cm:
             _registrar(self.g, "hv_01", capacity=999)
         self.assertTrue(
             any("capacity" in m.lower() or "bots_por_hypervisor" in m.lower()
@@ -184,7 +184,7 @@ class TestRegistroHypervisor(unittest.TestCase):
         )
 
     def test_capacity_correcta_no_emite_warning_de_mismatch(self):
-        with self.assertLogs("Hypervisores.Gestor.gestor", level="DEBUG") as cm:
+        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="DEBUG") as cm:
             _registrar(self.g, "hv_01", capacity=100)
         mismatch_warnings = [
             m for m in cm.output
@@ -194,7 +194,7 @@ class TestRegistroHypervisor(unittest.TestCase):
 
     def test_registro_duplicado_emite_warning(self):
         _registrar(self.g, "hv_01")
-        with self.assertLogs("Hypervisores.Gestor.gestor", level="WARNING") as cm:
+        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="WARNING") as cm:
             _registrar(self.g, "hv_01")  # duplicado
         self.assertTrue(any("ya registrado" in m for m in cm.output))
 
@@ -209,7 +209,7 @@ class TestSelectHypervisor(unittest.TestCase):
     inyectando clientes mock para que el spawn llegue hasta el HV.
     """
 
-    def _gestor_con_cliente_mock(self, bots_por_hv: int, hv_id: str) -> Gestor:
+    def _gestor_con_cliente_mock(self, bots_por_hv: int, hv_id: str) -> Gestor_Bots:
         g = _gestor(bots_por_hv=bots_por_hv)
         _registrar(g, hv_id)
         mock_client = MagicMock()
@@ -307,9 +307,9 @@ class TestEnvPropagacion(unittest.TestCase):
         gestor = Gestor(bots_por_hypervisor=bots_por_hv)
     """
 
-    def _crear_gestor_desde_env(self) -> Gestor:
+    def _crear_gestor_desde_env(self) -> Gestor_Bots:
         bots_por_hv = int(os.environ.get("BOTS_POR_HYPERVISOR", "100"))
-        return Gestor(bots_por_hypervisor=bots_por_hv)
+        return Gestor_Bots(bots_por_hypervisor=bots_por_hv)
 
     def test_default_sin_variable(self):
         env = {k: v for k, v in os.environ.items() if k != "BOTS_POR_HYPERVISOR"}

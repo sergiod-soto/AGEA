@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import math
 import random
-import exceptions
+import Exceptions.exceptions as exceptions
 import hashlib
 
 

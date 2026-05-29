@@ -21,7 +21,7 @@ OUT_DIR   = ROOT / "Hypervisores" / "Transporte" / "Proto_Generated"
 
 PROTOS = [
     "common.proto",
-    "gestor_service.proto",
+    "gestor_bots_service.proto",
     "hypervisor_service.proto",
     "world_proxy_service.proto",
     "log_service.proto",

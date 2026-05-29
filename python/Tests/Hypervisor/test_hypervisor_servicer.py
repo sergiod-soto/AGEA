@@ -16,7 +16,6 @@ def test_spawn_bot_rpc():
     request = hypervisor_service_pb2.SpawnBotRequest(
         config=common_pb2.BotConfig(
             bot_id="bot_001",
-            genome=[1, 2, 3],
             budget=100,
         )
     )

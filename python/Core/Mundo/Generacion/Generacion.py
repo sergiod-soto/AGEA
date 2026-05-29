@@ -1,5 +1,5 @@
 from Core.Mundo.Generacion.noise import Noise
-import exceptions
+import Exceptions.exceptions as exceptions
 from pathlib import Path
 
 """ 

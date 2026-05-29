@@ -23,7 +23,7 @@ from Hypervisores.Gestor_Bots.gestor_bots import Gestor_Bots
 logger = logging.getLogger(__name__)
 
 
-class GestorServicer(gestor_bots_service_pb2_grpc.GestorBotsServiceServicer):
+class Gestor_Bots_Servicer(gestor_bots_service_pb2_grpc.GestorBotsServiceServicer):
     """
     Servicer gRPC del Gestor.
 

@@ -47,7 +47,7 @@ from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
 from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Elementos.Simples.Bot.controlador import obtener_siguiente_apellido
-from exceptions import *
+from Exceptions.exceptions import *
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 comportamientos = Comportamiento.declarar_comportamientos(
