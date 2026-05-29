@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import psutil
+
 logger = logging.getLogger(__name__)
 
 
@@ -476,3 +478,19 @@ class Hypervisor:
         except Exception as exc:
             logger.error("Error deserializando entidades: %s", exc)
             return []
+
+    # ------------------------------------------------------------------
+    # estadisticas de carga del sistema:
+    #  - capacidad de CPU,
+    #  - memoria,
+    #  - nº de bots
+    # ------------------------------------------------------------------
+    def get_system_load(self) -> dict:
+        mem = psutil.virtual_memory()
+        return {
+            "cpu_percent": psutil.cpu_percent(interval=0.5),  # % uso CPU
+            "mem_percent": mem.percent,  # % RAM usada
+            "mem_used_mb": round(mem.used / 1024 / 1024),
+            "mem_total_mb": round(mem.total / 1024 / 1024),
+            "bot_count": len(self._bots),  # tu variable
+        }
