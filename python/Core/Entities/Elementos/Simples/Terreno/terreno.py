@@ -16,3 +16,18 @@ class Terreno(Elemento_Simple):
         )
 
     # TODO: terminar de definir Terreno
+    
+    '''
+    TIPOS DE TERRENO:
+    
+    - cesped
+    - grava
+    - piedra
+    - tierra seca
+    - tierra mojada
+    - charco
+    - barro
+    - arena
+    - hielo
+    '''
+    

@@ -1,2 +1,5 @@
 - gestion con AWS
-- 
+- visualizacion por capas:
+    - normal
+    - sonido (solo a x1)
+    - temperatura

@@ -8,13 +8,9 @@ from Core.Entities.Comportamiento.Informativo.informativo import Informativo
 
 class Sonoro(Informativo):
     """
-    Ejemplo de uso de clase:
-
-    Las pisadas de un bot, no el bot en si
-
     Parametros:
 
-    -
+    - sonidos
 
     Metodos abstractos:
 
@@ -24,17 +20,18 @@ class Sonoro(Informativo):
 
     Ejemplo de implementacion:
 
-    def sonar(self):\n
-    ____timbre = Sonoro.generar_timbre(\n
-    ________fundamental=lambda: 2000 / (self.masa ** (1/3)),\n
-    ________n_armonicos=4,\n
-    ________decay=0.6,\n
-    ________inarmonicidad=0.0,\n
-    ____)\n
-    ____# hacer algo con el timbre...
+    def sonar(self):
+    - timbre = Sonoro.generar_timbre(
+        - fundamental=lambda: 2000 / (self.masa ** (1/3)),
+        - n_armonicos=4,
+        - decay=0.6,
+        - inarmonicidad=0.0,
+    - )
+    - hacer algo con el timbre...
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, sonidos: list[tuple[str, list[tuple[float, float]]]], **kwargs):
+        self.sonidos = sonidos
         super().__init__(**kwargs)
 
     @staticmethod
@@ -55,18 +52,29 @@ class Sonoro(Informativo):
         ]
 
     @abstractmethod
-    def sonar(self, intensidad: float): ...
+    def sonar(self, intensidad: float, sonido): ...
 
-    class libreria_sonidos:
-        '''
-        clase para la ordenacion de la biblioteca
-        de sonidos
-        '''
-        
-        class Piedra:
-            golpear = ...
 
-        class Agua: ...
+class Libreria_Sonidos:
+    """
+    clase biblioteca para ordenar los sonidos
+    """
 
-        piedra = Piedra
-        agua = Agua
+    class Piedra:
+        def Golpear(masa):
+            return Sonoro.generar_timbre(
+                fundamental=lambda: 2000 / (masa ** (1 / 3)),
+                n_armonicos=4,
+                decay=0.6,
+                inarmonicidad=0.0,
+            )
+
+        def Rodar(masa):
+            return Sonoro.generar_timbre(
+                fundamental=lambda: 2000 / (masa ** (1 / 3)),
+                n_armonicos=4,
+                decay=0.6,
+                inarmonicidad=0.0,
+            )
+
+    class Agua: ...

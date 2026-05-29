@@ -95,7 +95,7 @@ def get_parametros_init(comportamientos: list[Comportamiento]):
                 "\n#Rastreable:\ncondiciones_rastro: list[tuple[list[Condicion], float]] = None, "
             )
         elif c is Sonoro:
-            partes.append("")
+            partes.append("\n#Sonoro:\nsonidos: dict[str, list[tuple[float, float]]]")
         #
         elif c is Agarrable:
             partes.append("\n#Agarrable:\nagarrado_por: Elemento, ")
@@ -251,7 +251,7 @@ def get_parametros_superinit(comportamientos: list[Comportamiento]):
                 "\n#Rastreable:\ncondiciones_rastro = condiciones_rastro,"
             )
         elif c is Sonoro:
-            partes.append("")
+            partes.append("\n#Sonoro:\nsonidos = sonidos,")
         #
         elif c is Agarrable:
             partes.append("\n#Agarrable:\nagarrado_por = agarrado_por,")
@@ -371,3 +371,9 @@ class Agua(Peso, Volumen, Temperatura):
             **kwargs #  <- Importante
         )
 """
+comportamientos = []
+print("init:")
+print(get_parametros_init(comportamientos))
+print()
+print("superinit:")
+print(get_parametros_superinit(comportamientos))
