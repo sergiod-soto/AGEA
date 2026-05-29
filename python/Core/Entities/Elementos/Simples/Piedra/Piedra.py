@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Callable
 
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
@@ -20,6 +21,7 @@ from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Elementos.elemento import Elemento
+from Exceptions.Bot.comportamientos_exceptions import Peso_Zero
 
 #
 # las piedras son elementos que pueden ser movidas a cambio de energia, no
@@ -49,19 +51,12 @@ comportamientos = Comportamiento.declarar_comportamientos(
 
 class Piedra(Elemento_Simple, comportamientos):
 
-    class Biblioteca_Sonidos:
-        class Opciones(Enum):
-            Golpear = "golpear"
-            Empujar = "empujar"
-
-        def golpear(masa): ...
-        def empujar(masa): ...
-
     def __init__(
         self,
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
+        #
         # Peso:
         peso: float,
         # Enterrable:
@@ -91,13 +86,12 @@ class Piedra(Elemento_Simple, comportamientos):
         rotacion: int = 0,
         fuerza_sector_activo=False,
         fuerza_vecinos_activos=False,
+        **kwargs
     ):
-        # declaracion de sonidos
-        self.sonidos = {
-            "golpear": self.Biblioteca_Sonidos.golpear(peso),
-            "empujar": self.Biblioteca_Sonidos.empujar(peso),
-        }
-
+        # comprobaciones:
+        if peso == 0:
+            raise Peso_Zero()
+        
         super().__init__(
             tipo=Piedra,
             tamanho=tamanho,
@@ -126,12 +120,34 @@ class Piedra(Elemento_Simple, comportamientos):
             # Erosionable:
             condiciones_erosion=condiciones_erosion,
             durabilidad_max_erosion=durabilidad_max_erosion,
-            # Sonoro:
-            sonidos=self.sonidos,
             # Destruible:
             durabilidad_actual=durabilidad_actual,
             # Erosionable:
             durabilidad_actual_erosion=durabilidad_actual_erosion,
+            # Sonoro:
+            sonidos={
+                "GOLPEAR": [
+                    Sonoro.generar_timbre(
+                        fundamental=lambda: 950.0 / (peso ** (1 / 3)),
+                        n_armonicos=80,
+                        decay=0.45,
+                        inarmonicidad=0.08,
+                    ),
+                    Sonoro.generar_timbre(
+                        fundamental=lambda: 380.0 / (peso ** (1 / 3)),
+                        n_armonicos=12,
+                        decay=0.60,
+                        inarmonicidad=0.12,
+                    ),
+                ],
+                "EMPUJAR": [
+                    Sonoro.generar_timbre(
+                        fundamental=lambda: 2000 / (peso ** (1 / 3)),
+                        n_armonicos=4,
+                        decay=0.6,
+                        inarmonicidad=0.0,
+                    )
+                ],
+            },
+            **kwargs,
         )
-
-

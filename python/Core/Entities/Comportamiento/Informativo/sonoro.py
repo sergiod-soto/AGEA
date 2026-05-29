@@ -10,14 +10,13 @@ class Sonoro(Informativo):
     """
     Parametros:
 
-    - sonidos
+    - sonidos: dict[str, list[Callable[[], float]]]
 
     Metodos abstractos:
 
     - sonar(self, intensidad: float))
 
-     ------------------------------------
-
+    ------------------------------------
     Ejemplo de implementacion:
 
     def sonar(self):
@@ -27,10 +26,10 @@ class Sonoro(Informativo):
         - decay=0.6,
         - inarmonicidad=0.0,
     - )
-    - hacer algo con el timbre...
+    - #hacer algo con el timbre (...)
     """
 
-    def __init__(self, sonidos: list[tuple[str, list[tuple[float, float]]]], **kwargs):
+    def __init__(self, sonidos: dict[str, list[Callable[[], float]]], **kwargs):
         self.sonidos = sonidos
         super().__init__(**kwargs)
 
@@ -52,29 +51,9 @@ class Sonoro(Informativo):
         ]
 
     @abstractmethod
-    def sonar(self, intensidad: float, sonido): ...
-
-
-class Libreria_Sonidos:
-    """
-    clase biblioteca para ordenar los sonidos
-    """
-
-    class Piedra:
-        def Golpear(masa):
-            return Sonoro.generar_timbre(
-                fundamental=lambda: 2000 / (masa ** (1 / 3)),
-                n_armonicos=4,
-                decay=0.6,
-                inarmonicidad=0.0,
-            )
-
-        def Rodar(masa):
-            return Sonoro.generar_timbre(
-                fundamental=lambda: 2000 / (masa ** (1 / 3)),
-                n_armonicos=4,
-                decay=0.6,
-                inarmonicidad=0.0,
-            )
-
-    class Agua: ...
+    def sonar(self, intensidad: float, sonido):
+        """
+        Se encarga de hacer sonar en el mundo un sonido
+        previamente elegido con una determinada intensidad.
+        """
+        ...

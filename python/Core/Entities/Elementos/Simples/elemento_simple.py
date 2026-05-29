@@ -12,12 +12,14 @@ class Elemento_Simple(Elemento):
         rotacion: int = 0,
         fuerza_sector_activo: bool = False,
         fuerza_vecinos_activos: bool = False,
+        **kwargs,
     ):
         super().__init__(
             tipo=tipo,
             capa=capa,
             fuerza_sector_activo=fuerza_sector_activo,
             fuerza_vecinos_activos=fuerza_vecinos_activos,
+            **kwargs,
         )
         self.tamanho = tamanho
         self.casilla = casilla

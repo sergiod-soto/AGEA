@@ -7,7 +7,7 @@ from Core.Entities.Elementos.Abstractos.Puzzle.premio import Premio
 MAX_BOTS: int = 1_000_000
 
 
-class Puzzle(ABC, Elemento_Abstracto):
+class Puzzle(Elemento_Abstracto, ABC):
 
     class Estado:
         def __init__(self, opciones: list[Callable]):
@@ -22,7 +22,12 @@ class Puzzle(ABC, Elemento_Abstracto):
             estados: list["Puzzle.Estado"],
             estado_inicial: "Puzzle.Estado" = None,
             bot_id: int = None,  #   obtiene el id del bot que lo usa si el puzzle es personal
+            **kwargs,
         ):
+            super().__init__(
+                tipo=Puzzle,
+                **kwargs,
+            )
             self.estados = estados
             self.estado_inicial = estado_inicial or estados[0]
             self.estado_actual = self.estado_inicial

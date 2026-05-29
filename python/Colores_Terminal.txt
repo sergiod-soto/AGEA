@@ -1,0 +1,11 @@
+print("\033[31mEsta línea es roja\033[0m")
+
+Color	    Código
+Negro	    30
+Rojo	    31
+Verde	    32
+Amarillo	33
+Azul	    34
+Magenta	    35
+Cian	    36
+Blanco	    37
