@@ -1,4 +1,6 @@
 from enum import Enum
+import math
+import random
 from typing import Callable
 
 from Core.Entities.Comportamiento.Energetico.termico import Termico
@@ -19,6 +21,7 @@ from Core.Entities.Comportamiento.Material.tangible import Tangible
 from Core.Entities.Comportamiento.Social.intercambiable import Intercambiable
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
+from Core.Entities.Elementos.Abstractos.Informacion.sonido import SonidoBase
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Elementos.elemento import Elemento
 from Exceptions.Bot.comportamientos_exceptions import Peso_Zero
@@ -91,7 +94,33 @@ class Piedra(Elemento_Simple, comportamientos):
         # comprobaciones:
         if peso == 0:
             raise Peso_Zero()
-        
+
+        # _______________________________________
+        #   creacion de libreria de sonidos
+        # _______________________________________
+        #
+        # sonido golpear 1
+        fundamental = 3654.63 / (peso ** (1 / 2))  # Hz — más masa → más grave
+        n_armonicos = 3
+        decay = 0.55 + 0.1 * math.log(peso + 1)
+        inarmonicidad = 0.0756
+        duracion = 0.13
+        vol = min(1.0, 0.6 + 0.1 * math.log(peso + 1))
+
+        base = SonidoBase.generar_frecuencia(
+            duracion,
+            fundamental,
+            n_armonicos,
+            decay,
+            inarmonicidad,
+        )
+
+        sonido_golpear_1 = (
+            base.con_vol(vol)
+            .con_envolvente(ataque=0.020, sustain=0.050, release=0.800)
+            .build()
+        )
+
         super().__init__(
             tipo=Piedra,
             tamanho=tamanho,
@@ -126,28 +155,8 @@ class Piedra(Elemento_Simple, comportamientos):
             durabilidad_actual_erosion=durabilidad_actual_erosion,
             # Sonoro:
             sonidos={
-                "GOLPEAR": [
-                    Sonoro.generar_timbre(
-                        fundamental=lambda: 950.0 / (peso ** (1 / 3)),
-                        n_armonicos=80,
-                        decay=0.45,
-                        inarmonicidad=0.08,
-                    ),
-                    Sonoro.generar_timbre(
-                        fundamental=lambda: 380.0 / (peso ** (1 / 3)),
-                        n_armonicos=12,
-                        decay=0.60,
-                        inarmonicidad=0.12,
-                    ),
-                ],
-                "EMPUJAR": [
-                    Sonoro.generar_timbre(
-                        fundamental=lambda: 2000 / (peso ** (1 / 3)),
-                        n_armonicos=4,
-                        decay=0.6,
-                        inarmonicidad=0.0,
-                    )
-                ],
+                "GOLPEAR": [sonido_golpear_1],
+                "EMPUJAR": [],
             },
             **kwargs,
         )
