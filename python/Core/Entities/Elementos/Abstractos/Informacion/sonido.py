@@ -22,7 +22,6 @@ Reproducción:
 """
 
 from __future__ import annotations
-import random
 
 import numpy as np
 from dataclasses import dataclass
@@ -82,6 +81,29 @@ class SonidoBase(Elemento_Abstracto):
 
         super().__init__(SonidoBase, **kwargs)
 
+    def __repr__(self) -> str:
+        lineas = [
+            f"SonidoBase(",
+            f"  duracion      = {self.duracion:.3f} s",
+            f"  vol           = {self._vol:.4f}",
+        ]
+
+        if self._ataque is not None:
+            lineas.append(
+                f"  envolvente    = ataque={self._ataque:.3f}  "
+                f"sustain={self._sustain:.3f}  release={self._release:.3f}"
+            )
+        else:
+            lineas.append(f"  envolvente    = ninguna")
+
+        lineas.append(f"  armonicos     = {len(self._armonicos)}")
+        for a in self._armonicos:
+            audible = "✓" if FREQ_MIN <= a.freq <= FREQ_MAX else "✗ inaudible"
+            lineas.append(f"    {a.freq:>10.2f} Hz  amp={a.amp:.4f}  {audible}")
+
+        lineas.append(")")
+        return "\n".join(lineas)
+
     def agregar(self, freq: float, amp: float) -> "SonidoBase":
         self._armonicos.append(Armonico(freq, amp))
         return self
@@ -91,20 +113,22 @@ class SonidoBase(Elemento_Abstracto):
         return self
 
     @staticmethod
+    def fusionar(*bases: "SonidoBase") -> "Sonido":
+        sonidos = [b.build() for b in bases]
+        resultado = sonidos[0]
+        for s in sonidos[1:]:
+            resultado = resultado.fusionar(s)
+        return resultado
+
+    @staticmethod
     def generar_frecuencia(
         duracion: float,
         fundamental: float,
-        n_armonicos: float,
-        decay: float,
-        inarmonicidad: float,
+        amplitudes: list[float],
     ) -> "SonidoBase":
         base = SonidoBase(duracion=duracion)
-
-        for i in range(n_armonicos):
-            freq = (
-                fundamental * (i + 1) * (1 + inarmonicidad * i * random.gauss(0, 0.05))
-            )
-            amp = decay**i
+        for i, amp in enumerate(amplitudes):
+            freq = fundamental * (i + 1)
             base.agregar(freq, amp)
         return base
 
@@ -162,8 +186,6 @@ class SonidoBase(Elemento_Abstracto):
             vol=self._vol,
             _señal_raw=señal,
         )
-        
-    
 
 
 # ---------------------------------------------------------------------------

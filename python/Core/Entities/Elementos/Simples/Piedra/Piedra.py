@@ -99,27 +99,32 @@ class Piedra(Elemento_Simple, comportamientos):
         #   creacion de libreria de sonidos
         # _______________________________________
         #
-        # sonido golpear 1
-        fundamental = 3654.63 / (peso ** (1 / 2))  # Hz — más masa → más grave
-        n_armonicos = 3
-        decay = 0.55 + 0.1 * math.log(peso + 1)
-        inarmonicidad = 0.0756
-        duracion = 0.13
-        vol = min(1.0, 0.6 + 0.1 * math.log(peso + 1))
 
-        base = SonidoBase.generar_frecuencia(
+        # sonido golpear 1
+
+        # base1
+        duracion = 0.13
+        fundamental = 3654.63 / (peso ** (1 / 3))  # Hz — más masa → más grave
+        amplitudes = [0.9998, 0.1629, 0.1576, 0.0205, 0.0441]
+
+        base1 = SonidoBase.generar_frecuencia(
             duracion,
             fundamental,
-            n_armonicos,
-            decay,
-            inarmonicidad,
+            amplitudes,
         )
 
-        sonido_golpear_1 = (
-            base.con_vol(vol)
-            .con_envolvente(ataque=0.020, sustain=0.050, release=0.800)
-            .build()
+        # base2
+        duracion = 0.13
+        fundamental = 3106.64 / (peso ** (1 / 3))  # Hz — más masa → más grave
+        amplitudes = [0.9999, 0.2466, 0.1005, 0.2396, 0.0207, 0.0090]
+
+        base2 = SonidoBase.generar_frecuencia(
+            duracion,
+            fundamental,
+            amplitudes,
         )
+
+        sonido_golpear_1 = SonidoBase.fusionar(base1, base2)
 
         super().__init__(
             tipo=Piedra,
