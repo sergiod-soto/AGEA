@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package world_proxy;
 
-import "common.proto";
+import "Bots/common.proto";
 
 // ============================================================
 //  WorldProxyService — expuesto por cada Hypervisor en su

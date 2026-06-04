@@ -1,6 +1,11 @@
-from Core.Mundo.Bus_Eventos.bus import BusEventos
+from Gestores.Mundo.Bus_Eventos.bus import BusEventos
 
 """
+Este Mundo es El Mundo. 
+Es el mapa que es dividido en chunks.
+Gestiona como nodo central.
+
+_________________________________________________
 implementacion de logs de los hypervisores:
 
 from core.log_server import LogServer

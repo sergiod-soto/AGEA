@@ -10,6 +10,7 @@ Estructura de cada entrada:
   "nombre_accion": {
       "coste":      int,   # puntos que consume por llamada
       "descripcion": str,  # texto libre para documentación
+      "funcion": Callable  # la funcion a ejecutar
   }
 
 Reglas de nomenclatura:
@@ -18,57 +19,99 @@ Reglas de nomenclatura:
     y el que el Mundo recibe en ForwardActionRequest.action_type.
 """
 
-ACCIONES: dict[str, dict] = {
+#
+# ------------------------------------------------------------------
+# - DEFINICION DE FUNCIONES ----------------------------------------
+# ------------------------------------------------------------------
+#
 
+
+# ------------------------------------------------------------------
+# Percepción
+# ------------------------------------------------------------------
+from enum import Enum
+
+
+def a(): ...
+
+
+# ------------------------------------------------------------------
+# Movimiento
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+# Interacción con entidades
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+# Comunicación
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+# Reproducción
+# ------------------------------------------------------------------
+#
+#
+class ACCIONES_ENUM(Enum):
+    observe = "observe"
+    move = "move"
+
+
+ACCIONES: dict[str, dict] = {
     # ------------------------------------------------------------------
     # Percepción
     # ------------------------------------------------------------------
     "observe": {
-        "coste":       1,
+        "coste": 1,
         "descripcion": "Raycast en abanico. Payload: center_angle(f) + fov(f) + num_rays(i).",
+        "funcion": a,
     },
-
     # ------------------------------------------------------------------
     # Movimiento
     # ------------------------------------------------------------------
     "move": {
-        "coste":       2,
+        "coste": 2,
         "descripcion": "Mover el bot. Payload: dx(f) + dy(f) en casillas.",
+        "funcion": a,
     },
     "rotate": {
-        "coste":       2,
+        "coste": 2,
         "descripcion": "Rotar el bot. Payload: angle(f) en radianes (absoluto).",
+        "funcion": a,
     },
-
     # ------------------------------------------------------------------
     # Interacción con entidades
     # ------------------------------------------------------------------
     "interact": {
-        "coste":       3,
+        "coste": 3,
         "descripcion": "Interacción genérica (atacar, recoger...). Payload: JSON con kind+target_id+data.",
+        "funcion": a,
     },
-
     # ------------------------------------------------------------------
     # Comunicación
     # ------------------------------------------------------------------
     "broadcast": {
-        "coste":       2,
+        "coste": 2,
         "descripcion": "Emitir mensaje a bots cercanos. Payload: radius(i) + message(bytes).",
+        "funcion": a,
     },
-
     # ------------------------------------------------------------------
     # Reproducción
     # ------------------------------------------------------------------
     "reproduce": {
-        "coste":       5,
+        "coste": 5,
         "descripcion": "Solicitar reproducción asexual. El Mundo decide si se aprueba.",
+        "funcion": a,
     },
-
 }
 
 # ---------------------------------------------------------------------------
 # Helpers — usados por hypervisor.py y cualquier otro módulo que los necesite
 # ---------------------------------------------------------------------------
+
 
 def get_coste(action_name: str) -> int:
     """

@@ -28,7 +28,7 @@ from pathlib import Path
 import grpc
 
 from Gestores.Transporte.Proto_Generated import log_service_pb2_grpc
-from log_servicer import LogServicer
+from Gestores.Mundo.log_servicer import LogServicer
 
 
 class LogServer:

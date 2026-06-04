@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import log_service_pb2 as log__service__pb2
+from Gestores.Transporte.Proto_Generated.Otros import log_service_pb2 as Otros_dot_log__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in log_service_pb2_grpc.py depends on'
+        + ' but the generated code in Otros/log_service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -48,13 +48,13 @@ class LogServiceStub(object):
         """
         self.SendLog = channel.unary_unary(
                 '/logs.LogService/SendLog',
-                request_serializer=log__service__pb2.LogRecord.SerializeToString,
-                response_deserializer=log__service__pb2.LogAck.FromString,
+                request_serializer=Otros_dot_log__service__pb2.LogRecord.SerializeToString,
+                response_deserializer=Otros_dot_log__service__pb2.LogAck.FromString,
                 _registered_method=True)
         self.SendBatch = channel.unary_unary(
                 '/logs.LogService/SendBatch',
-                request_serializer=log__service__pb2.LogBatch.SerializeToString,
-                response_deserializer=log__service__pb2.LogAck.FromString,
+                request_serializer=Otros_dot_log__service__pb2.LogBatch.SerializeToString,
+                response_deserializer=Otros_dot_log__service__pb2.LogAck.FromString,
                 _registered_method=True)
 
 
@@ -93,13 +93,13 @@ def add_LogServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SendLog': grpc.unary_unary_rpc_method_handler(
                     servicer.SendLog,
-                    request_deserializer=log__service__pb2.LogRecord.FromString,
-                    response_serializer=log__service__pb2.LogAck.SerializeToString,
+                    request_deserializer=Otros_dot_log__service__pb2.LogRecord.FromString,
+                    response_serializer=Otros_dot_log__service__pb2.LogAck.SerializeToString,
             ),
             'SendBatch': grpc.unary_unary_rpc_method_handler(
                     servicer.SendBatch,
-                    request_deserializer=log__service__pb2.LogBatch.FromString,
-                    response_serializer=log__service__pb2.LogAck.SerializeToString,
+                    request_deserializer=Otros_dot_log__service__pb2.LogBatch.FromString,
+                    response_serializer=Otros_dot_log__service__pb2.LogAck.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -139,8 +139,8 @@ class LogService(object):
             request,
             target,
             '/logs.LogService/SendLog',
-            log__service__pb2.LogRecord.SerializeToString,
-            log__service__pb2.LogAck.FromString,
+            Otros_dot_log__service__pb2.LogRecord.SerializeToString,
+            Otros_dot_log__service__pb2.LogAck.FromString,
             options,
             channel_credentials,
             insecure,
@@ -166,8 +166,8 @@ class LogService(object):
             request,
             target,
             '/logs.LogService/SendBatch',
-            log__service__pb2.LogBatch.SerializeToString,
-            log__service__pb2.LogAck.FromString,
+            Otros_dot_log__service__pb2.LogBatch.SerializeToString,
+            Otros_dot_log__service__pb2.LogAck.FromString,
             options,
             channel_credentials,
             insecure,

@@ -1,0 +1,218 @@
+syntax = "proto3";
+
+package sector;
+
+// ─────────────────────────────────────────────
+//  Tipos compartidos
+// ─────────────────────────────────────────────
+
+// Posición absoluta en el grid global
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// Celda del grid: posición + elemento serializado
+message Cell {
+  Position pos      = 1;
+  bytes    element  = 2;   // elemento serializado (JSON/pickle, decidir en impl.)
+}
+
+// Representación compacta de un bot para migración y estado
+message BotSnapshot {
+  string   bot_id   = 1;
+  Position pos      = 2;
+  bytes    state    = 3;   // estado interno del bot serializado
+  int32    budget   = 4;   // puntos de presupuesto restantes en este tick
+}
+
+// Evento de sonido cross-border
+message SoundEvent {
+  Position origin      = 1;   // posición absoluta del emisor
+  int32    intensity   = 2;   // intensidad ya calculada para este sector
+  bytes    payload     = 3;   // datos adicionales del sonido (opcional)
+}
+
+// ─────────────────────────────────────────────
+//  Modos de sector
+// ─────────────────────────────────────────────
+
+enum SectorMode {
+  INACTIVO = 0;
+  DORMIDO  = 1;
+  ACTIVO   = 2;
+}
+
+// ─────────────────────────────────────────────
+//  SetSectorMode
+// ─────────────────────────────────────────────
+
+message SetSectorModeRequest {
+  SectorMode mode = 1;
+}
+
+message SetSectorModeResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ─────────────────────────────────────────────
+//  LoadState  (Gestor_Mundo → Sector)
+//  Carga el estado gold completo de la región del sector.
+//  Usado en arranque o tras recuperación de spot caído.
+// ─────────────────────────────────────────────
+
+message LoadStateRequest {
+  repeated Cell        cells = 1;   // celdas de la región propia del sector
+  repeated BotSnapshot bots  = 2;   // bots que residen en este sector
+}
+
+message LoadStateResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ─────────────────────────────────────────────
+//  GetState  (Gestor_Mundo → Sector)
+//  Solicita el estado completo para actualizar el estado gold.
+// ─────────────────────────────────────────────
+
+message GetStateRequest {}
+
+message GetStateResponse {
+  bool             ok    = 1;
+  string           error = 2;
+  repeated Cell        cells = 3;
+  repeated BotSnapshot bots  = 4;
+}
+
+// ─────────────────────────────────────────────
+//  SetGhostZone  (FASE 0)
+//  Entrega las celdas fantasma del borde de sectores vecinos.
+//  Anchura = MAX_VISION_DISTANCE celdas.
+// ─────────────────────────────────────────────
+
+message SetGhostZoneRequest {
+  int64        tick_id     = 1;
+  repeated Cell ghost_cells = 2;
+}
+
+message SetGhostZoneResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ─────────────────────────────────────────────
+//  SetSounds  (FASE 0)
+//  Entrega los eventos de sonido cross-border para este tick.
+// ─────────────────────────────────────────────
+
+message SetSoundsRequest {
+  int64              tick_id = 1;
+  repeated SoundEvent sounds = 2;
+}
+
+message SetSoundsResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ─────────────────────────────────────────────
+//  AddMigratingBot  (FASE 0)
+//  Transfiere un bot que ha cruzado el borde desde otro sector.
+// ─────────────────────────────────────────────
+
+message AddMigratingBotRequest {
+  int64       tick_id = 1;
+  BotSnapshot bot     = 2;
+}
+
+message AddMigratingBotResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ─────────────────────────────────────────────
+//  StartTick  (FASE 1)
+//  Ordena al sector que ejecute la computación del tick.
+//  Solo aplicable a sectores ACTIVOS; DORMIDOS responden ok sin computar.
+// ─────────────────────────────────────────────
+
+message StartTickRequest {
+  int64 tick_id         = 1;
+  int32 timeout_ms      = 2;   // presupuesto de tiempo máximo
+}
+
+message StartTickResponse {
+  bool   ok             = 1;
+  string error          = 2;
+  bool   timed_out      = 3;   // sector no terminó a tiempo
+}
+
+// ─────────────────────────────────────────────
+//  GetDelta  (FASE 2)
+//  Recoge el delta producido por el tick: cambios de celdas,
+//  bots que migran fuera y bots que han muerto.
+// ─────────────────────────────────────────────
+
+message MigratingBot {
+  BotSnapshot bot            = 1;
+  Position    target_pos     = 2;   // posición destino (puede estar fuera de la región)
+}
+
+message GetDeltaRequest {
+  int64 tick_id = 1;
+}
+
+message GetDeltaResponse {
+  bool   ok                      = 1;
+  string error                   = 2;
+  int64  tick_id                 = 3;
+
+  repeated Cell         changed_cells    = 4;   // solo celdas que cambiaron
+  repeated MigratingBot outgoing_bots    = 5;   // bots que salen del sector
+  repeated string       dead_bot_ids     = 6;   // bots que murieron este tick
+  repeated SoundEvent   emitted_sounds   = 7;   // sonidos generados (para otros sectores)
+}
+
+// ─────────────────────────────────────────────
+//  SaveSnapshot  (guardado profundo coordinado)
+//  Gestor_Mundo ordena al sector que persista su estado
+//  con el snapshot_id compartido del sistema.
+//  Solo se llama durante una pausa forzosa (freeze).
+// ─────────────────────────────────────────────
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;   // id compartido: mismo valor en mundo + sectores + bots
+}
+
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;   // eco del id guardado, para verificación
+}
+
+// ─────────────────────────────────────────────
+//  SectorService
+// ─────────────────────────────────────────────
+
+service SectorService {
+  // Ciclo de vida
+  rpc SetSectorMode    (SetSectorModeRequest)    returns (SetSectorModeResponse);
+  rpc LoadState        (LoadStateRequest)        returns (LoadStateResponse);
+  rpc GetState         (GetStateRequest)         returns (GetStateResponse);
+
+  // FASE 0 — preparación del tick
+  rpc SetGhostZone     (SetGhostZoneRequest)     returns (SetGhostZoneResponse);
+  rpc SetSounds        (SetSoundsRequest)        returns (SetSoundsResponse);
+  rpc AddMigratingBot  (AddMigratingBotRequest)  returns (AddMigratingBotResponse);
+
+  // FASE 1 — computación
+  rpc StartTick        (StartTickRequest)        returns (StartTickResponse);
+
+  // FASE 2 — consolidación
+  rpc GetDelta         (GetDeltaRequest)         returns (GetDeltaResponse);
+
+  // Guardado profundo coordinado
+  rpc SaveSnapshot     (SaveSnapshotRequest)     returns (SaveSnapshotResponse);
+}

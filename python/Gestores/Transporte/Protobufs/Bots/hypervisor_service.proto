@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package hypervisor;
 
-import "common.proto";
+import "Bots/common.proto";
 
 // ============================================================
 //  HypervisorService — expuesto por cada Hypervisor.

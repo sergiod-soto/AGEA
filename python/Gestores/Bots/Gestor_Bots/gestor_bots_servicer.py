@@ -13,7 +13,7 @@ import logging
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     gestor_bots_service_pb2,
     gestor_bots_service_pb2_grpc,
@@ -118,8 +118,6 @@ class Gestor_Bots_Servicer(gestor_bots_service_pb2_grpc.GestorBotsServiceService
             context.set_details(str(exc))
             return self._ack(False, str(exc))
         return self._ack()
-
-    
 
     def BroadcastBudgets(self, request, context):
         """

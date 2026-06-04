@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from . import common_pb2 as common__pb2
-from . import hypervisor_service_pb2 as hypervisor__service__pb2
+from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
+from Gestores.Transporte.Proto_Generated.Bots import hypervisor_service_pb2 as Bots_dot_hypervisor__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in hypervisor_service_pb2_grpc.py depends on'
+        + ' but the generated code in Bots/hypervisor_service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -49,38 +49,38 @@ class HypervisorServiceStub(object):
         """
         self.SpawnBot = channel.unary_unary(
                 '/hypervisor.HypervisorService/SpawnBot',
-                request_serializer=hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
-                response_deserializer=common__pb2.BotInfo.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.BotInfo.FromString,
                 _registered_method=True)
         self.KillBot = channel.unary_unary(
                 '/hypervisor.HypervisorService/KillBot',
-                request_serializer=hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
                 _registered_method=True)
         self.GetBotStats = channel.unary_unary(
                 '/hypervisor.HypervisorService/GetBotStats',
-                request_serializer=hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=common__pb2.BotStats.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.BotStats.FromString,
                 _registered_method=True)
         self.ListBots = channel.unary_unary(
                 '/hypervisor.HypervisorService/ListBots',
-                request_serializer=hypervisor__service__pb2.ListBotsRequest.SerializeToString,
-                response_deserializer=common__pb2.BotList.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.ListBotsRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.BotList.FromString,
                 _registered_method=True)
         self.ResetBudgets = channel.unary_unary(
                 '/hypervisor.HypervisorService/ResetBudgets',
-                request_serializer=hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
                 _registered_method=True)
         self.SetPointBudget = channel.unary_unary(
                 '/hypervisor.HypervisorService/SetPointBudget',
-                request_serializer=hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
                 _registered_method=True)
         self.GetBotStatus = channel.unary_unary(
                 '/hypervisor.HypervisorService/GetBotStatus',
-                request_serializer=hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=common__pb2.BotStatus.FromString,
+                request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.BotStatus.FromString,
                 _registered_method=True)
 
 
@@ -163,38 +163,38 @@ def add_HypervisorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SpawnBot': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnBot,
-                    request_deserializer=hypervisor__service__pb2.SpawnBotRequest.FromString,
-                    response_serializer=common__pb2.BotInfo.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.SpawnBotRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.BotInfo.SerializeToString,
             ),
             'KillBot': grpc.unary_unary_rpc_method_handler(
                     servicer.KillBot,
-                    request_deserializer=hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
             ),
             'GetBotStats': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBotStats,
-                    request_deserializer=hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=common__pb2.BotStats.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.BotStats.SerializeToString,
             ),
             'ListBots': grpc.unary_unary_rpc_method_handler(
                     servicer.ListBots,
-                    request_deserializer=hypervisor__service__pb2.ListBotsRequest.FromString,
-                    response_serializer=common__pb2.BotList.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.ListBotsRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.BotList.SerializeToString,
             ),
             'ResetBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.ResetBudgets,
-                    request_deserializer=hypervisor__service__pb2.ResetBudgetsRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
             ),
             'SetPointBudget': grpc.unary_unary_rpc_method_handler(
                     servicer.SetPointBudget,
-                    request_deserializer=hypervisor__service__pb2.SetPointBudgetRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
             ),
             'GetBotStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBotStatus,
-                    request_deserializer=hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=common__pb2.BotStatus.SerializeToString,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.BotStatus.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -234,8 +234,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/SpawnBot',
-            hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
-            common__pb2.BotInfo.FromString,
+            Bots_dot_hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
+            Bots_dot_common__pb2.BotInfo.FromString,
             options,
             channel_credentials,
             insecure,
@@ -261,8 +261,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/KillBot',
-            hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            common__pb2.Ack.FromString,
+            Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+            Bots_dot_common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -288,8 +288,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/GetBotStats',
-            hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            common__pb2.BotStats.FromString,
+            Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+            Bots_dot_common__pb2.BotStats.FromString,
             options,
             channel_credentials,
             insecure,
@@ -315,8 +315,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/ListBots',
-            hypervisor__service__pb2.ListBotsRequest.SerializeToString,
-            common__pb2.BotList.FromString,
+            Bots_dot_hypervisor__service__pb2.ListBotsRequest.SerializeToString,
+            Bots_dot_common__pb2.BotList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -342,8 +342,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/ResetBudgets',
-            hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
-            common__pb2.Ack.FromString,
+            Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
+            Bots_dot_common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -369,8 +369,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/SetPointBudget',
-            hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
-            common__pb2.Ack.FromString,
+            Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
+            Bots_dot_common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -396,8 +396,8 @@ class HypervisorService(object):
             request,
             target,
             '/hypervisor.HypervisorService/GetBotStatus',
-            hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            common__pb2.BotStatus.FromString,
+            Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
+            Bots_dot_common__pb2.BotStatus.FromString,
             options,
             channel_credentials,
             insecure,

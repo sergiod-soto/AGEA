@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from . import common_pb2 as common__pb2
-from . import world_proxy_service_pb2 as world__proxy__service__pb2
+from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
+from Gestores.Transporte.Proto_Generated.Bots import world_proxy_service_pb2 as Bots_dot_world__proxy__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in world_proxy_service_pb2_grpc.py depends on'
+        + ' but the generated code in Bots/world_proxy_service_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -61,13 +61,13 @@ class WorldProxyServiceStub(object):
         """
         self.Act = channel.unary_unary(
                 '/world_proxy.WorldProxyService/Act',
-                request_serializer=world__proxy__service__pb2.ActRequest.SerializeToString,
-                response_deserializer=common__pb2.ActionResult.FromString,
+                request_serializer=Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
+                response_deserializer=Bots_dot_common__pb2.ActionResult.FromString,
                 _registered_method=True)
         self.GetStatus = channel.unary_unary(
                 '/world_proxy.WorldProxyService/GetStatus',
-                request_serializer=world__proxy__service__pb2.GetStatusRequest.SerializeToString,
-                response_deserializer=world__proxy__service__pb2.BotStatusResponse.FromString,
+                request_serializer=Bots_dot_world__proxy__service__pb2.GetStatusRequest.SerializeToString,
+                response_deserializer=Bots_dot_world__proxy__service__pb2.BotStatusResponse.FromString,
                 _registered_method=True)
 
 
@@ -118,13 +118,13 @@ def add_WorldProxyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Act': grpc.unary_unary_rpc_method_handler(
                     servicer.Act,
-                    request_deserializer=world__proxy__service__pb2.ActRequest.FromString,
-                    response_serializer=common__pb2.ActionResult.SerializeToString,
+                    request_deserializer=Bots_dot_world__proxy__service__pb2.ActRequest.FromString,
+                    response_serializer=Bots_dot_common__pb2.ActionResult.SerializeToString,
             ),
             'GetStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetStatus,
-                    request_deserializer=world__proxy__service__pb2.GetStatusRequest.FromString,
-                    response_serializer=world__proxy__service__pb2.BotStatusResponse.SerializeToString,
+                    request_deserializer=Bots_dot_world__proxy__service__pb2.GetStatusRequest.FromString,
+                    response_serializer=Bots_dot_world__proxy__service__pb2.BotStatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -176,8 +176,8 @@ class WorldProxyService(object):
             request,
             target,
             '/world_proxy.WorldProxyService/Act',
-            world__proxy__service__pb2.ActRequest.SerializeToString,
-            common__pb2.ActionResult.FromString,
+            Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
+            Bots_dot_common__pb2.ActionResult.FromString,
             options,
             channel_credentials,
             insecure,
@@ -203,8 +203,8 @@ class WorldProxyService(object):
             request,
             target,
             '/world_proxy.WorldProxyService/GetStatus',
-            world__proxy__service__pb2.GetStatusRequest.SerializeToString,
-            world__proxy__service__pb2.BotStatusResponse.FromString,
+            Bots_dot_world__proxy__service__pb2.GetStatusRequest.SerializeToString,
+            Bots_dot_world__proxy__service__pb2.BotStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

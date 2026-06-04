@@ -1,8 +1,8 @@
 """
-gestor.py — Lógica pura del Gestor de Hypervisores.
+gestor_bots.py — Lógica pura del Gestor de Hypervisores.
 
 No contiene nada de gRPC. Recibe y devuelve tipos Python.
-El gestor_servicer.py traduce entre protobuf ↔ estos métodos.
+El gestor_bots_servicer.py traduce entre protobuf ↔ estos métodos.
 
 Responsabilidades:
   - Registro y seguimiento de Hypervisores (id, dirección, carga).
@@ -10,6 +10,7 @@ Responsabilidades:
   - Balanceo de carga al hacer spawn_bot.
   - Reenvío de acciones al Mundo (a través del mundo_client inyectado).
   - Difusión de presupuestos a todos los Hypervisores.
+  - Resolución de qué acciones delega cada HV (una vez al registrarse).
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Tipos de retorno internos (simples dataclasses, sin protobuf)
+# Tipos de retorno internos
 # ---------------------------------------------------------------------------
 
 
@@ -32,9 +33,7 @@ logger = logging.getLogger(__name__)
 class BotInfo:
     bot_id: str
     hypervisor_id: str
-    proxy_address: (
-        str  # dirección host:puerto del Hypervisor al que debe conectarse el bot
-    )
+    proxy_address: str
     ok: bool = True
     error: str = ""
 
@@ -54,7 +53,7 @@ class BotList:
 
 @dataclass
 class FitnessReport:
-    entries: list[BotStats]  # todos los bots ordenados por fitness desc
+    entries: list[BotStats]
 
 
 @dataclass
@@ -62,9 +61,9 @@ class HypervisorInfo:
     hypervisor_id: str
     address: str
     port: int
-    proxy_port: int  # puerto que escucha world_proxy (bots se conectan aquí)
-    capacity: int  # slots declarados por el HV (informativo)
-    current_load: int = 0  # bots activos ahora mismo
+    proxy_port: int
+    capacity: int
+    current_load: int = 0
     online: bool = True
 
 
@@ -76,12 +75,12 @@ class HypervisorList:
 @dataclass
 class ActionResult:
     ok: bool
-    payload: bytes = b""  # protobuf serializado que devuelve el Mundo
+    payload: bytes = b""
     error: str = ""
 
 
 # ---------------------------------------------------------------------------
-# Gestor
+# Gestor_Bots
 # ---------------------------------------------------------------------------
 
 
@@ -89,17 +88,11 @@ class Gestor_Bots:
     """
     Hub central del sistema evolutivo.
 
-    Parámetros de construcción
-    --------------------------
-    mundo_client : objeto con método forward_action(bot_id, action_type, payload) → ActionResult
-        Puede ser None durante las pruebas; en producción es una instancia de
-        MundoClient (que se escribirá en otro fichero).
-
+    Parámetros
+    ----------
+    mundo_client : objeto con método forward_action(bot_id, action_type, payload)
     bots_por_hypervisor : int
-        Único punto de control de capacidad. Determina cuántos bots puede
-        alojar cada Hypervisor según el Gestor, independientemente de lo que
-        el HV declare en su campo capacity. Si un HV declara un valor distinto
-        se emite un warning pero el límite efectivo siempre es este parámetro.
+        Único punto de control de capacidad por HV.
     """
 
     def __init__(self, mundo_client=None, bots_por_hypervisor: int = 100):
@@ -109,44 +102,76 @@ class Gestor_Bots:
             )
 
         self.bots_por_hypervisor = bots_por_hypervisor
-
         self._lock = threading.Lock()
-
-        # hypervisor_id → HypervisorInfo
         self._hypervisors: dict[str, HypervisorInfo] = {}
-
-        # hypervisor_id → cliente gRPC hacia ese hypervisor
-        # Se puebla externamente (desde gestor_servicer) cuando un HV se registra.
         self._hypervisor_clients: dict[str, object] = {}
-
-        # bot_id → BotStats
         self._bots: dict[str, BotStats] = {}
-
-        # Contador incremental para next_bot_id(); protegido por _lock
         self._bot_counter: int = 0
-
-        # Cliente hacia el Mundo real (inyectado; puede ser None en tests)
         self.mundo_client = mundo_client
 
+        # Cache de nombres delegados — se calcula una vez en el primer uso
+        self._delegated_names_cache: list[str] | None = None
+
         logger.info(
-            "Gestor inicializado (bots_por_hypervisor=%d).", bots_por_hypervisor
+            "Gestor_Bots inicializado (bots_por_hypervisor=%d).", bots_por_hypervisor
         )
+
+    # ------------------------------------------------------------------
+    # Acciones delegadas a HVs
+    # ------------------------------------------------------------------
+
+    def get_delegated_action_names(self) -> list[str]:
+        """
+        Devuelve los nombres de las acciones que los Hypervisores deben
+        interceptar y ejecutar localmente en lugar de reenviar al Mundo.
+
+        Lee acciones_delegadas.py (registro estático) y resuelve los nombres
+        consultando ACCIONES en api_acciones.py.
+
+        El resultado se cachea: el fichero no cambia en tiempo de ejecución.
+        Se llama una vez por HV en el momento de su registro.
+        """
+        if self._delegated_names_cache is not None:
+            return self._delegated_names_cache
+
+        try:
+            from Gestores.Bots.Gestor_Bots.acciones_delegadas import ACCIONES_DELEGADAS
+            from Gestores.Mundo.api_acciones import ACCIONES
+
+            # Mapa inverso: callable → nombre de acción
+            funcion_to_name = {v["funcion"]: k for k, v in ACCIONES.items()}
+
+            nombres = [
+                funcion_to_name[fn]
+                for fn in ACCIONES_DELEGADAS
+                if fn in funcion_to_name
+            ]
+
+            logger.info("Acciones delegadas a HVs: %s", nombres)
+            self._delegated_names_cache = nombres
+
+        except Exception as exc:
+            logger.error(
+                "Error resolviendo acciones delegadas: %s. "
+                "Los HVs no interceptarán ninguna acción.",
+                exc,
+            )
+            self._delegated_names_cache = []
+
+        return self._delegated_names_cache
 
     # ------------------------------------------------------------------
     # Capacidad
     # ------------------------------------------------------------------
 
     def hvs_necesarios(self, total_bots: int) -> int:
-        """Calcula cuántos Hypervisores hacen falta para alojar total_bots."""
         return math.ceil(total_bots / self.bots_por_hypervisor)
 
     def capacidad_total(self) -> int:
-        """Slots totales disponibles según los HVs registrados y bots_por_hypervisor."""
         with self._lock:
             return len(self._hypervisors) * self.bots_por_hypervisor
 
     def next_bot_id(self) -> str:
-        """Genera el siguiente ID de bot incremental y thread-safe (bot_0001, bot_0002…)."""
         with self._lock:
             self._bot_counter += 1
             return f"bot_{self._bot_counter:04d}"
@@ -163,16 +188,9 @@ class Gestor_Bots:
         proxy_port: int,
         capacity: int,
     ) -> None:
-        """
-        Llamado por un Hypervisor cuando arranca.
-        Almacena sus metadatos para poder asignarle bots y llamarle más tarde.
-
-        Si capacity difiere de bots_por_hypervisor se emite un warning: el límite
-        efectivo siempre es bots_por_hypervisor, no el valor declarado por el HV.
-        """
         if capacity != self.bots_por_hypervisor:
             logger.warning(
-                "Hypervisor %s declara capacity=%d pero bots_por_hypervisor=%d; "
+                "HV %s declara capacity=%d pero bots_por_hypervisor=%d; "
                 "se usará bots_por_hypervisor como límite efectivo.",
                 hypervisor_id,
                 capacity,
@@ -193,32 +211,25 @@ class Gestor_Bots:
                 capacity=capacity,
             )
             logger.info(
-                "Hypervisor registrado: %s en %s:%d (proxy:%d, cap_declarada:%d, límite_efectivo:%d)",
+                "Hypervisor registrado: %s en %s:%d (proxy:%d, cap:%d)",
                 hypervisor_id,
                 address,
                 port,
                 proxy_port,
                 capacity,
-                self.bots_por_hypervisor,
             )
 
     def set_hypervisor_client(self, hypervisor_id: str, client) -> None:
-        """
-        Guarda el cliente gRPC hacia un Hypervisor.
-        Lo llama el gestor_servicer justo después de register_hypervisor.
-        """
         with self._lock:
             self._hypervisor_clients[hypervisor_id] = client
 
     def update_hypervisor_load(self, hypervisor_id: str, current_load: int) -> None:
-        """El Hypervisor nos informa de cuántos bots tiene ahora mismo."""
         with self._lock:
             hv = self._hypervisors.get(hypervisor_id)
             if hv is None:
                 logger.warning("update_load de HV desconocido: %s", hypervisor_id)
                 return
             hv.current_load = current_load
-            logger.debug("HV %s carga actualizada a %d.", hypervisor_id, current_load)
 
     def list_hypervisors(self) -> HypervisorList:
         with self._lock:
@@ -229,15 +240,6 @@ class Gestor_Bots:
     # ------------------------------------------------------------------
 
     def spawn_bot(self, bot_config: dict) -> BotInfo:
-        """
-        Asigna un bot al Hypervisor con más capacidad libre y le ordena crearlo.
-
-        bot_config espera al menos:
-          - "bot_id": str  (identificador único del bot)
-          - cualquier otro campo de configuración genética
-
-        Devuelve BotInfo con la dirección proxy a la que el bot debe conectarse.
-        """
         bot_id = bot_config.get("bot_id", "")
         if not bot_id:
             return BotInfo(
@@ -258,11 +260,7 @@ class Gestor_Bots:
                     ok=False,
                     error="Sin Hypervisores disponibles",
                 )
-
-            # Reservamos el slot optimistamente; el HV puede rechazarlo si está lleno
             hv.current_load += 1
-
-            # Registramos el bot localmente
             self._bots[bot_id] = BotStats(
                 bot_id=bot_id,
                 fitness=0.0,
@@ -270,7 +268,6 @@ class Gestor_Bots:
                 hypervisor_id=hv.hypervisor_id,
             )
 
-        # Llamamos al Hypervisor para que haga el spawn real
         client = self._hypervisor_clients.get(hv.hypervisor_id)
         if client is None:
             logger.error("No hay cliente para HV %s", hv.hypervisor_id)
@@ -286,7 +283,7 @@ class Gestor_Bots:
             )
 
         try:
-            result = client.spawn_bot(bot_config)  # devuelve BotInfo
+            result = client.spawn_bot(bot_config)
         except Exception as exc:
             logger.error("Error spawn_bot en HV %s: %s", hv.hypervisor_id, exc)
             with self._lock:
@@ -300,7 +297,6 @@ class Gestor_Bots:
                 error=str(exc),
             )
 
-        logger.info("Bot %s spawneado en HV %s", bot_id, hv.hypervisor_id)
         return BotInfo(
             bot_id=bot_id,
             hypervisor_id=hv.hypervisor_id,
@@ -310,7 +306,6 @@ class Gestor_Bots:
         )
 
     def kill_bot(self, bot_id: str) -> None:
-        """Mata un bot en su Hypervisor y lo elimina del registro."""
         with self._lock:
             stats = self._bots.get(bot_id)
             if stats is None:
@@ -331,7 +326,24 @@ class Gestor_Bots:
             if hv and hv.current_load > 0:
                 hv.current_load -= 1
 
-        logger.info("Bot %s eliminado.", bot_id)
+    # ------------------------------------------------------------------
+    # Fitness
+    # ------------------------------------------------------------------
+
+    def update_fitness(self, bot_id: str, fitness: float, tick: int) -> None:
+        with self._lock:
+            stats = self._bots.get(bot_id)
+            if stats is None:
+                return
+            stats.fitness = fitness
+            stats.tick = tick
+
+    def build_fitness_report(self) -> FitnessReport:
+        with self._lock:
+            sorted_bots = sorted(
+                self._bots.values(), key=lambda b: b.fitness, reverse=True
+            )
+            return FitnessReport(entries=list(sorted_bots))
 
     # ------------------------------------------------------------------
     # Acciones → Mundo
@@ -344,19 +356,12 @@ class Gestor_Bots:
         action_type: str,
         payload: bytes,
     ) -> ActionResult:
-        """
-        El Hypervisor sube aquí las acciones de un bot para que el Gestor
-        las reenvíe al Mundo real.
-
-        Si mundo_client es None (tests), devuelve un ActionResult vacío con ok=True.
-        """
         if self.mundo_client is None:
             logger.debug("forward_action: sin mundo_client, devolviendo stub.")
             return ActionResult(ok=True, payload=b"")
 
         try:
-            result = self.mundo_client.forward_action(bot_id, action_type, payload)
-            return result
+            return self.mundo_client.forward_action(bot_id, action_type, payload)
         except Exception as exc:
             logger.error("Error forwarding action al Mundo: %s", exc)
             return ActionResult(ok=False, error=str(exc))
@@ -370,12 +375,6 @@ class Gestor_Bots:
         default_budget: int,
         overrides: dict[str, int] | None = None,
     ) -> None:
-        """
-        Llama a reset_budgets en todos los Hypervisores online.
-
-        overrides: {bot_id: presupuesto_especial}
-        Si un bot no está en overrides, recibe default_budget.
-        """
         overrides = overrides or {}
 
         with self._lock:
@@ -385,8 +384,6 @@ class Gestor_Bots:
         for hv in hvs:
             if not hv.online:
                 continue
-
-            # Bots de este HV
             bot_ids = [
                 b.bot_id
                 for b in bots_snapshot.values()
@@ -394,22 +391,15 @@ class Gestor_Bots:
             ]
             if not bot_ids:
                 continue
-
             client = self._hypervisor_clients.get(hv.hypervisor_id)
             if client is None:
                 logger.warning(
                     "broadcast_budgets: sin cliente para %s", hv.hypervisor_id
                 )
                 continue
-
-            # Construimos el mapa de presupuesto individual para este HV
             budget_map = {bid: overrides.get(bid, default_budget) for bid in bot_ids}
-
             try:
                 client.reset_budgets(bot_ids, budget_map)
-                logger.debug(
-                    "Presupuestos enviados a HV %s: %s", hv.hypervisor_id, budget_map
-                )
             except Exception as exc:
                 logger.error("Error reset_budgets en HV %s: %s", hv.hypervisor_id, exc)
 
@@ -418,14 +408,7 @@ class Gestor_Bots:
     # ------------------------------------------------------------------
 
     def _select_hypervisor(self) -> Optional[HypervisorInfo]:
-        """
-        Devuelve el Hypervisor online con más slots libres.
-
-        El límite efectivo es self.bots_por_hypervisor (no hv.capacity,
-        que es meramente informativo).
-
-        Debe llamarse con self._lock ya adquirido.
-        """
+        """Debe llamarse con self._lock adquirido."""
         candidates = [
             hv
             for hv in self._hypervisors.values()
@@ -433,7 +416,6 @@ class Gestor_Bots:
         ]
         if not candidates:
             return None
-        # Mayor capacidad libre según el límite central
         return max(
             candidates, key=lambda hv: self.bots_por_hypervisor - hv.current_load
         )

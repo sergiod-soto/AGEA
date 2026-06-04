@@ -87,4 +87,4 @@ class Elemento(Comportamiento):
                 setattr(self, k, None)
 
         # Avisa al mundo para que elimine la referencia
-        self._mundo.eliminar_elemento(self)
+        Mundo.eliminar_elemento(self)
