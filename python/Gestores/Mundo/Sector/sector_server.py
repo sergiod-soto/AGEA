@@ -22,7 +22,7 @@ import signal
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated.Mundo import (
+from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as pb_grpc,
 )
 from Gestores.Mundo.Sector.sector import Sector

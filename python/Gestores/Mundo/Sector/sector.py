@@ -478,3 +478,5 @@ class _ContextoVision:
 
     def en_region_propia(self, x: int, y: int) -> bool:
         return self.x0 <= x < self.x1 and self.y0 <= y < self.y1
+
+
