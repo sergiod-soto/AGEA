@@ -10,7 +10,7 @@ Carpeta: Gestores/Mundo/Sector/
 import asyncio
 import logging
 
-from Gestores.Transporte.Proto_Generated.Mundo import (
+from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2 as pb,
     sector_service_pb2_grpc as pb_grpc,
 )

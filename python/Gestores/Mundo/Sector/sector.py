@@ -45,7 +45,10 @@ MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50))
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
-# Región propia del sector en coordenadas absolutas del grid
+# Constantes de región a nivel de módulo — válidas solo para el proceso
+# de sector single-instancia (sector_server.py).
+# En tests multi-sector del mismo proceso usar las propiedades de instancia
+# _x0, _y0, _x1, _y1 en lugar de estas constantes.
 REGION_X0 = SECTOR_COL * SECTOR_SIZE
 REGION_Y0 = SECTOR_ROW * SECTOR_SIZE
 REGION_X1 = REGION_X0 + SECTOR_SIZE
@@ -65,9 +68,6 @@ class SectorMode(Enum):
 
 # ─────────────────────────────────────────────
 #  CeldaStore
-#  Capa de desacoplamiento para serialización/deserialización de elementos.
-#  Reimplementar esta clase para cambiar la estrategia de almacenamiento
-#  sin tocar Sector.
 # ─────────────────────────────────────────────
 
 
@@ -106,7 +106,7 @@ class CeldaStore:
               Por ahora guarda el proto en crudo para no perder datos.
         """
         key = (cell.pos.x, cell.pos.y)
-        self._celdas[key] = cell  # placeholder — sustituir por objeto deserializado
+        self._celdas[key] = cell
 
     def to_proto_cells(self, proto_cell_class, proto_position_class) -> list:
         """
@@ -115,7 +115,6 @@ class CeldaStore:
         """
         result = []
         for (x, y), elemento in self._celdas.items():
-            # Si el elemento ya es un proto crudo (placeholder), usarlo directamente
             if hasattr(elemento, "SerializeToString"):
                 result.append(elemento)
             else:
@@ -146,8 +145,8 @@ class TickDelta:
     tick_id: int
     changed_cells: list = field(default_factory=list)  # Cell proto
     outgoing_bots: list = field(default_factory=list)  # MigratingBot proto
-    dead_bot_ids: list = field(default_factory=list)  # str
-    emitted_sounds: list = field(default_factory=list)  # SoundEvent proto
+    dead_bot_ids: list = field(default_factory=list)   # str
+    emitted_sounds: list = field(default_factory=list) # SoundEvent proto
 
 
 # ─────────────────────────────────────────────
@@ -158,15 +157,20 @@ class TickDelta:
 class Sector:
 
     def __init__(self):
-        self._col = SECTOR_COL
-        self._row = SECTOR_ROW
+        # Siempre leer del entorno vivo para que los tests puedan
+        # sobreescribir las variables antes de crear la instancia.
+        # Fallback a los valores por defecto hardcodeados, no a las
+        # constantes de módulo (que se fijan en el primer import).
+        self._col = int(os.getenv("SECTOR_COL", "0"))
+        self._row = int(os.getenv("SECTOR_ROW", "0"))
+        self._size = int(os.getenv("SECTOR_SIZE", "100"))
+
         self._mode = SectorMode.INACTIVO
 
         # Celdas propias del sector
         self._celdas = CeldaStore()
 
         # Ghost zone: celdas de sectores vecinos dentro de MAX_VISION_DISTANCE
-        # Solo lectura durante el tick — nunca se modifican aquí
         self._ghost: dict[tuple[int, int], Any] = {}
 
         # Sonidos cross-border recibidos para el tick actual
@@ -179,9 +183,29 @@ class Sector:
         self._current_tick_id: int = -1
 
         # Bots presentes en este sector: bot_id → BotSnapshot proto
-        # El sector no ejecuta la lógica del bot (eso es del HV),
-        # pero sí conoce su posición para detectar migraciones.
         self._bots: dict[str, Any] = {}
+
+    # ─────────────────────────────────────────
+    #  Propiedades de región (FIX principal)
+    #  Derivadas de _col, _row, _size en lugar
+    #  de las constantes globales de módulo.
+    # ─────────────────────────────────────────
+
+    @property
+    def _x0(self) -> int:
+        return self._col * self._size
+
+    @property
+    def _y0(self) -> int:
+        return self._row * self._size
+
+    @property
+    def _x1(self) -> int:
+        return self._x0 + self._size
+
+    @property
+    def _y1(self) -> int:
+        return self._y0 + self._size
 
     # ─────────────────────────────────────────
     #  Ciclo de vida
@@ -275,27 +299,18 @@ class Sector:
         """
         Ejecuta la computación completa del tick.
         Solo llamado si el sector está en modo ACTIVO.
-
-        Devuelve un TickDelta con todos los cambios producidos.
         """
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
 
         if self._mode != SectorMode.ACTIVO:
-            # Sector DORMIDO: no computa, devuelve delta vacío
             self._last_delta = delta
             return delta
 
-        # 1. Procesar sonidos recibidos
         self._procesar_sonidos(delta)
-
-        # 2. Tick de cada elemento activo en las celdas
         self._tick_elementos(delta)
-
-        # 3. Detectar migraciones de bots
         self._detectar_migraciones(delta)
 
-        # 4. Limpiar estado temporal del tick
         self._sounds_pendientes = []
 
         self._last_delta = delta
@@ -304,30 +319,24 @@ class Sector:
     def _procesar_sonidos(self, delta: TickDelta) -> None:
         """
         Aplica los efectos de los sonidos cross-border recibidos.
-        Cada elemento que reacciona al sonido actualiza su estado.
         TODO: implementar cuando la API de sonido esté definida.
         """
         for sound in self._sounds_pendientes:
-            # TODO: distribuir el sonido a los elementos del sector
-            #       que estén dentro del radio y reaccionen a él.
             pass
 
     def _tick_elementos(self, delta: TickDelta) -> None:
         """
         Llama al tick de cada elemento activo en las celdas propias.
-        Los elementos con fuerza_sector_activo=True computan cada tick.
-        Los elementos estáticos no computan.
-
-        El contexto de visión incluye celdas propias + ghost zone.
         TODO: implementar cuando los elementos tengan tick() definido.
         """
+        # FIX: usar propiedades de instancia en lugar de constantes globales
         contexto_vision = _ContextoVision(
             celdas_propias=self._celdas,
             ghost=self._ghost,
-            x0=REGION_X0,
-            y0=REGION_Y0,
-            x1=REGION_X1,
-            y1=REGION_Y1,
+            x0=self._x0,
+            y0=self._y0,
+            x1=self._x1,
+            y1=self._y1,
         )
 
         for (x, y), elemento in list(self._celdas.items()):
@@ -335,27 +344,26 @@ class Sector:
                 continue
             if not elemento.fuerza_sector_activo:
                 continue
-
             # TODO: resultado = elemento.tick(contexto_vision)
-            #       aplicar resultado a delta.changed_cells
-            #       detectar muertes → delta.dead_bot_ids
-            #       detectar sonidos emitidos → delta.emitted_sounds
 
     def _detectar_migraciones(self, delta: TickDelta) -> None:
+        
         """
         Comprueba qué bots han salido de la región del sector
-        y los añade a delta.outgoing_bots para que Gestor_Mundo
-        los transfiera al sector destino.
+        y los añade a delta.outgoing_bots.
         """
         from Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
             MigratingBot,
             Position,
         )
 
+        # FIX: usar propiedades de instancia en lugar de constantes globales
+        x0, y0, x1, y1 = self._x0, self._y0, self._x1, self._y1
+
         bots_fuera = []
         for bot_id, bot in self._bots.items():
             x, y = bot.pos.x, bot.pos.y
-            if not (REGION_X0 <= x < REGION_X1 and REGION_Y0 <= y < REGION_Y1):
+            if not (x0 <= x < x1 and y0 <= y < y1):
                 delta.outgoing_bots.append(
                     MigratingBot(
                         bot=bot,
@@ -400,8 +408,6 @@ class Sector:
 
         cells_raw = []
         for (x, y), elemento in self._celdas.items():
-            # TODO: elemento.to_proto().SerializeToString().hex()
-            #       cuando el registry esté disponible.
             cells_raw.append({"x": x, "y": y, "element": ""})
 
         bots_raw = []
@@ -420,13 +426,6 @@ class Sector:
 
         key = f"{S3_PREFIX}/sector_{self._col}_{self._row}/{snapshot_id}.json"
 
-        # TODO: sustituir por llamada real a aioboto3
-        # async with aioboto3.Session().client("s3") as s3:
-        #     await s3.put_object(
-        #         Bucket = S3_BUCKET,
-        #         Key    = key,
-        #         Body   = json.dumps(data).encode(),
-        #     )
         logger.info(
             "TODO: snapshot sector (%d,%d) → s3://%s/%s (snapshot_id=%s)",
             self._col,
@@ -453,8 +452,6 @@ class Sector:
 
 # ─────────────────────────────────────────────
 #  ContextoVision
-#  Interfaz de solo lectura que el tick de un elemento
-#  usa para observar su entorno (celdas propias + ghost zone).
 # ─────────────────────────────────────────────
 
 
@@ -468,15 +465,9 @@ class _ContextoVision:
     y1: int
 
     def get_celda(self, x: int, y: int) -> Optional[Any]:
-        """
-        Devuelve el elemento en (x, y).
-        Busca primero en celdas propias, luego en ghost zone.
-        """
         if self.x0 <= x < self.x1 and self.y0 <= y < self.y1:
             return self.celdas_propias.get(x, y)
         return self.ghost.get((x, y))
 
     def en_region_propia(self, x: int, y: int) -> bool:
         return self.x0 <= x < self.x1 and self.y0 <= y < self.y1
-
-
