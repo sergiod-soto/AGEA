@@ -148,6 +148,17 @@ class GestorMundo:
         # Lock para operaciones sobre estado gold
         self._gold_lock: asyncio.Lock = asyncio.Lock()
 
+    # ─────────────────────────────────────────────────────────────
+    #  Deteccion si hay cambios en el delta
+    # ─────────────────────────────────────────────────────────────
+    def _delta_tiene_actividad(self, delta) -> bool:
+        """
+        Determina si un delta de sector contiene actividad real.
+        Usado por el anti-thrashing para decidir si resetear ticks_sin_actividad.
+        Centraliza el criterio — añadir aquí nuevos tipos de actividad cuando aparezcan.
+        """
+        return bool(delta.changed_cells or delta.outgoing_bots or delta.emitted_sounds)
+
     # ─────────────────────────────────────────────
     #  Arranque
     # ─────────────────────────────────────────────
@@ -419,7 +430,8 @@ class GestorMundo:
                     self._distribuir_sonido(sound)
 
                 # Actualizar contador anti-thrashing
-                sector.ticks_sin_actividad = 0
+                if self._delta_tiene_actividad(resultado):
+                    sector.ticks_sin_actividad = 0
 
             # Resolver migraciones
             await self._resolver_migraciones(bots_migrando)

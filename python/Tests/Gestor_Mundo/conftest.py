@@ -12,7 +12,7 @@ Qué proporciona:
   - sector_server_factory  : levanta un SectorServicer real en puerto aleatorio.
   - mundo_con_sectores     : GestorMundo cableado con N sectores reales y el
                              fake Gestor_Bots. Listo para llamar _run_tick().
-  - mundo_2x2              : grid 2x2 (4 sectores, SECTOR_SIZE=10). Caso
+  - mundo_2x2              : grid 2×2 (4 sectores, SECTOR_SIZE=10). Caso
                              estándar para la mayoría de tests E2E.
 
 Colocar este fichero en: Tests/Gestor_Mundo/conftest.py
@@ -176,7 +176,7 @@ async def _start_sector_server(col: int, row: int) -> tuple[int, grpc.aio.Server
 
 
 @pytest.fixture
-def mundo_con_sectores():
+async def mundo_con_sectores():
     """
     Factory async. Gestiona internamente la lista de servidores
     para que el test solo tenga que llamar a la función.
@@ -270,16 +270,11 @@ def mundo_con_sectores():
 
     yield _factory
 
-    # Teardown: parar todos los servidores y cerrar canales
-    import asyncio
-
-    async def _teardown():
-        for ch in _channels:
-            await ch.close()
-        for srv in _servers:
-            await srv.stop(grace=0)
-
-    asyncio.get_event_loop().run_until_complete(_teardown())
+    # Teardown async — correcto en Python 3.11 con pytest-asyncio
+    for ch in _channels:
+        await ch.close()
+    for srv in _servers:
+        await srv.stop(grace=0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
