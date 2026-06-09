@@ -135,6 +135,7 @@ class Comportamiento:
     """
 
     def __init__(self, **kwargs):
+        self.comportamiento_activo = True
         super().__init__(**kwargs)
 
     @staticmethod
@@ -156,6 +157,10 @@ class Comportamiento:
 
     @staticmethod
     def anhadir(obj, comportamiento: type, **kwargs):
+        """
+        añadir comportamiento a un Elemento
+        """
+
         if isinstance(obj, comportamiento):
             raise TypeError(
                 f"{obj.__class__.__name__} ya tiene {comportamiento.__name__}"
@@ -188,6 +193,10 @@ class Comportamiento:
 
     @staticmethod
     def quitar(obj, comportamiento: type):
+        """
+        Eliminar Comportamiento de un Elemento
+        """
+
         if not isinstance(obj, comportamiento):
             raise TypeError(
                 f"{obj.__class__.__name__} no tiene {comportamiento.__name__}"
@@ -209,7 +218,9 @@ class Comportamiento:
         obj.__class__ = type(obj.__class__.__name__, bases_sin, {})
 
     def comportamientos(self) -> list["Comportamiento"]:
-        """Retorna todos los comportamientos de la entidad"""
+        """
+        Retorna todos los comportamientos de la entidad
+        """
 
         return [
             c
@@ -218,7 +229,9 @@ class Comportamiento:
         ]
 
     def comportamientos_de(self, categoria) -> list["Comportamiento"]:
-        """Retorna que comportamientos se han heredado de cierta categoria"""
+        """
+        Retorna que comportamientos se han heredado de cierta categoria
+        """
 
         return [
             c
@@ -228,14 +241,16 @@ class Comportamiento:
 
     def categorias(self) -> list["Comportamiento"]:
         """
-        retorna las categorias que contienen comportamientos presentes en la entidad
+        Retorna las categorias que contienen comportamientos presentes en la entidad
         """
 
         categorias = Comportamiento.__subclasses__()
         return [c for c in type(self).__mro__ if c in categorias]
 
     def tiene_comportamiento(self, comportamiento) -> bool:
-        """Pregunta si el elemento tiene X comportamiento"""
+        """
+        Pregunta si el elemento tiene X comportamiento
+        """
         return isinstance(self, comportamiento)
 
     # --- Representación ---
@@ -245,7 +260,9 @@ class Comportamiento:
 
     # --- Serialización  ---
     def a_dict(self) -> dict:
-        """Exporta el estado del objeto como diccionario"""
+        """
+        Exporta el estado del Comportamiento como diccionario
+        """
         return {k: v for k, v in self.__dict__.items()}
 
     @classmethod

@@ -2,6 +2,15 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Elemento_Simple(Elemento):
+    """
+    - tipo,
+    - tamanho: int,
+    - casilla: tuple[int, int],
+    - capa: int,
+    - rotacion: int = 0,
+    - fuerza_sector_activo: bool = False,
+    - fuerza_vecinos_activos: bool = False,
+    """
 
     def __init__(
         self,
