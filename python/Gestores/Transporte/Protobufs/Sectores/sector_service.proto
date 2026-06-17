@@ -57,6 +57,35 @@ message SetSectorModeResponse {
 }
 
 // ─────────────────────────────────────────────
+// Get info
+// ─────────────────────────────────────────────
+
+message GetElementAttributesRequest {
+  repeated string element_ids = 1;
+}
+
+message ElementAttributes {
+  string element_id = 1;
+  repeated string comportamientos = 2;
+  map<string, Valor> atributos = 3;
+}
+
+message Valor {
+    oneof valor {
+        int64 entero = 1;
+        double decimal = 2;
+        bool booleano = 3;
+        string texto = 4;
+    }
+}
+
+message GetElementAttributesResponse {
+  bool   ok = 1;
+  string error = 2;
+  repeated ElementAttributes elementos = 3;
+}
+
+// ─────────────────────────────────────────────
 //  LoadState  (Gestor_Mundo → Sector)
 //  Carga el estado gold completo de la región del sector.
 //  Usado en arranque o tras recuperación de spot caído.

@@ -28,6 +28,6 @@ from Gestores.Mundo.api_acciones import ACCIONES, ACCIONES_ENUM
 # fuente de verdad de todas las acciones del sistema.
 
 ACCIONES_DELEGADAS: list = [
-    ACCIONES[ACCIONES_ENUM.observe.value]["funcion"],
-    # ...
+    ACCIONES[ACCIONES_ENUM.mirar.value]["funcion"],
+    
 ]

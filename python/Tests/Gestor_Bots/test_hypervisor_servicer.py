@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock
 from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Bots import (
     hypervisor_service_pb2, common_pb2
 )
 

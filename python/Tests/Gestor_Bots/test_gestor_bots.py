@@ -175,7 +175,7 @@ class TestRegistroHypervisor(unittest.TestCase):
         self.assertEqual(hvs[0].hypervisor_id, "hv_01")
 
     def test_capacity_mismatch_emite_warning(self):
-        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="WARNING") as cm:
+        with self.assertLogs("Gestores.Bots.Gestor_Bots.gestor_bots", level="WARNING") as cm:
             _registrar(self.g, "hv_01", capacity=999)
         self.assertTrue(
             any("capacity" in m.lower() or "bots_por_hypervisor" in m.lower()
@@ -184,7 +184,7 @@ class TestRegistroHypervisor(unittest.TestCase):
         )
 
     def test_capacity_correcta_no_emite_warning_de_mismatch(self):
-        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="DEBUG") as cm:
+        with self.assertLogs("Gestores.Bots.Gestor_Bots.gestor_bots", level="DEBUG") as cm:
             _registrar(self.g, "hv_01", capacity=100)
         mismatch_warnings = [
             m for m in cm.output
@@ -194,7 +194,7 @@ class TestRegistroHypervisor(unittest.TestCase):
 
     def test_registro_duplicado_emite_warning(self):
         _registrar(self.g, "hv_01")
-        with self.assertLogs("Hypervisores.Gestor_Bots.gestor_bots", level="WARNING") as cm:
+        with self.assertLogs("Gestores.Bots.Gestor_Bots.gestor_bots", level="WARNING") as cm:
             _registrar(self.g, "hv_01")  # duplicado
         self.assertTrue(any("ya registrado" in m for m in cm.output))
 

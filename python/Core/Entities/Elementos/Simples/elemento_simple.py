@@ -7,7 +7,7 @@ class Elemento_Simple(Elemento):
     - tamanho: int,
     - casilla: tuple[int, int],
     - capa: int,
-    - rotacion: int = 0,
+    - rotacion: float = 0,
     - fuerza_sector_activo: bool = False,
     - fuerza_vecinos_activos: bool = False,
     """
@@ -18,7 +18,7 @@ class Elemento_Simple(Elemento):
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
-        rotacion: int = 0,
+        rotacion: float = 0,
         fuerza_sector_activo: bool = False,
         fuerza_vecinos_activos: bool = False,
         **kwargs,

@@ -1,0 +1,73 @@
+estoy haciendo un proyecto de IA. me baso en bots con ANN. tengo un genoma (lista de numeros enteros) que al generar un bot, a traves de una gramatica 
+generadora, creo scripts gramaticalmente correctos (se permite que sean sintacticamente incorrectos, se toma como un "aborto"). estos scripts incluyen 
+la ANN y mas codigo, por lo que la ia se toma como el script completo, no la ANN sola. para entrenar los bots (los scripts anteriormente mencionados) 
+estoy creando un sandbox. es un mundo 2d discreto con elementos. los elementos pueden ser simples como agua, piedra, bot, etc; complejos como mar, 
+montaña, etc; o abstractos, como puzzles, ciclo lunar, estaciones, etc. todos los elementos heredan comportamientos. los comportamientos otorgan atributos, 
+funciones y/o etiquetas. los comportamientos pueden agregarse o eliminarse dinamicamente. la arquitectura del proyecto es la siguiente: mi ordenador local 
+es el nodo principal. en spots aws tengo un gestor_bots, que esta comunicado con local y gestiona los hypervisores; hypervisores que gestionan bots y hacen 
+de api para los bots, de forma que estos al hacer peticiones al HV, creen que lo piden al mundo local directamente; tengo tambien un gestor_mundo que 
+comunica con local y con sectores, y sectores que son fragmentos del mundo. cuando un elemento necesita informacion del mundo, pregunta al gestor y este 
+se encarga de preguntar al sector correspondiente, aparte de otras funciones como apagar sectores sin elementos activos, etc.
+el proyecto esta jerarquizado de la siguiente manera:
+python (raiz) -> y dentro:
+Core, Exceptions, Gestores, Logs, Multimedia, Services, Test, Utils, pytest.ini, compile_protos.py
+Core: Entities, HyperNEAT, Logica, Mundo, Perfiles
+Entities: Comportamiento, Elementos
+Comportamiento: Energetico, Fisico, Informativo, Interaccion, Material, Salud, Social, Stats, Temporal
+Energetico: combustible.py, termico.py
+Fisico: empujable.py, enterrable.py, flotable.py, humedo.py, inflamable.py, peso.py, volumen.py
+Informativo: color.py, luminoso.py, rastreable.py, sonoro.py
+Interaccion: agarrable.py, consumible.py, contenedor.py, crafteable.py, destruible.py, equipable.py, golpeable.py, ingrediente.py, interactuable.py, 
+plantable.py, recolectable.py
+Material: combinable.py, divisible.py, erosionable.py, gaseoso.py, liquido.py, tangible.py, transformable.py
+Salud: comestible.py, hidratante.py, medicinal.py, nutritivo.py, regenerable.py, toxico.py
+Social: intercambiable.py
+Stats: Complejos, Simples, Modificadores, Informacion
+Complejos: agresividad.py, armadura.py, grasa.py, longevidad.py, movilidad.py, percepcion.py, tamanho.py, temperatura_optima.py
+Simples: ataque.py, defensa.py, deteccion.py, edad_adulta.py, edad.py, energia.py, regulacion_temperatura.py, salud.py, sigilo.py, temperatura.py, 
+velocidad.py, vida.py
+Modificadores: focus.py, hambre.py, herida.py
+Informacion: apellidos.py, id.py
+Temporal: caduco.py, estacional.py, latente.py, perecedero.py
+Elementos: Abstractos, Compuestos, Simples
+(la informacion de las carpetas contenidas en "Elementos" se completara en un futuro)
+Abstractos: Acciones, Condiciones, Informacion, Marcadores, Puzzle, Recetas 
+Compuestos: Mar, Rio
+Simples: Agua, Arbol, Bot, Cadaver, Comidas, Etereo, Piedra, Recipiente, Terreno
+HyperNEAT: TO-DO
+Logica: TO-DO
+Mundo: Biomas
+Perfiles: logica_perfiles.py
+Exceptions: (excepciones personalizadas)
+Gestores: Bots, Mundo, Transporte
+Bots: Gestor_Bots, Hypervisor
+Gestor_Bots: acciones_delegadas.py, gestor_bots_server.py, gestor_bots_services.py, gestor_bots.py
+Hypervisor: hypervisor_server.py, hypervisor_servicer.py, hypervisor.py, world_proxy_services.py
+Mundo: Bus_Eventos, Gestor_Mundo, Sector, api_acciones.py, log_server.py, log_servicer.py
+Bus_Eventos: bus.py
+Gestor_Mundo: gestor_mundo_server.py, gestor_mundo_servicer.py, gestor_mundo.py
+Sector: sector_server.py, sector_servicer.py, sector.py
+Transporte: Proto_Generated, Protobufs, bot_client.py, gestor_bots_client.py, gestor_mundo_client.py, hypervisor_client.py, log_client.py, remote_log_handler.py
+Proto_Generated: (los scripts resultado de compilar los protos)
+Protobufs: Bots, Otros, Sectores
+Bots: common.proto, gestor_bots_service.proto, hypervisor_service.proto, world_proxy_service.proto
+Otros: log_service.proto
+Sectores: gestor_mundo_service.proto, sector_service.proto
+Logs: Bots, Mundo, Scripts
+Bots: Gestor, Hypervisor
+Multimedia: (varios .png y .mp3)
+Services: Conexion_Visualizador, Mascaras, Perfiles, Serializaciones
+Conexion_Visualizador: Salidas_Datos, conexion.py, importer.py, procesado_salida_mensaje.py, salida_actualizacion.py
+Salidas_Datos: salida_bot.py, salida_dato.py, salida_error.py, salida_mapa.py, salida_pause.py, salida_perfil.py
+Mascaras: (irrelevante)
+Perfiles: (irrelevante)
+Serializaciones: actualizacion.py, bots.py
+Test: Gestor_Bots, Gestor_Mundo, Vision
+Gestor_Bots: test_gestor_bots.py, test_hypervisor_integration.py, test_hypervisor_servicer.py, test_hypervisor.py
+Gestor_Mundo: AWS, E2E, Integration, Unit, conftest.py
+AWS: (vacio)
+E2E: test_gestor_mundo_e2e.py
+Integration: test_sector_servicer_integration.py
+Unit: test_sector_unit.py
+Vision: test_color.py
+Utils: (irrelevante)

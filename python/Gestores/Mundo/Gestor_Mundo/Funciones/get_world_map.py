@@ -1,0 +1,33 @@
+# Gestores/Mundo/Gestor_Mundo/funciones/get_world_map.py
+from Gestores.Transporte.Proto_Generated.Sectores import gestor_mundo_service_pb2 as pb
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SectorMode, SECTOR_SIZE
+
+NAME = "GetWorldMap"
+IS_STREAMING = True
+
+async def handle(gestor: GestorMundo, request, context):
+    BATCH = 1000
+    async with gestor._gold_lock:
+        gold_snapshot = dict(gestor._gold_cells)
+        sectores = dict(gestor._sectores)
+
+    if request.only_active_sectors:
+        celdas_validas = set()
+        for (col, row), info in sectores.items():
+            if info.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO):
+                x0, y0 = col * SECTOR_SIZE, row * SECTOR_SIZE
+                x1, y1 = x0 + SECTOR_SIZE, y0 + SECTOR_SIZE
+                for x, y in gold_snapshot:
+                    if x0 <= x < x1 and y0 <= y < y1:
+                        celdas_validas.add((x, y))
+    else:
+        celdas_validas = set(gold_snapshot.keys())
+
+    batch = []
+    for x, y in celdas_validas:
+        batch.append(pb.Cell(pos=pb.Position(x=x, y=y), element=gold_snapshot[(x, y)]))
+        if len(batch) >= BATCH:
+            yield pb.GetWorldMapResponse(cells=batch)
+            batch = []
+    if batch:
+        yield pb.GetWorldMapResponse(cells=batch)

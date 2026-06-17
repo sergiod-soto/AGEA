@@ -200,6 +200,24 @@ message DeleteElementResponse {
 }
 
 // ─────────────────────────────────────────────
+//  ForwardAction
+//  GestorBots reenvía una acción de bot al Mundo.
+// ─────────────────────────────────────────────
+
+message ForwardActionRequest {
+  string bot_id      = 1;
+  string action_type = 2;
+  bytes  payload     = 3;
+}
+
+message ForwardActionResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;
+  int64  tick_id = 4;
+}
+
+// ─────────────────────────────────────────────
 //  GestorMundoService
 // ─────────────────────────────────────────────
 
@@ -224,4 +242,7 @@ service GestorMundoService {
   rpc ModifyElement      (ModifyElementRequest)      returns (ModifyElementResponse);
   rpc CreateElement      (CreateElementRequest)      returns (CreateElementResponse);
   rpc DeleteElement      (DeleteElementRequest)      returns (DeleteElementResponse);
+
+  // Acciones de bots (enviadas por GestorBots)
+  rpc ForwardAction     (ForwardActionRequest)       returns (ForwardActionResponse);
 }

@@ -15,7 +15,7 @@ import Services.Conexion_Visualizador.conexion as Conexion
 
 from Dev.Serie_Estados import Serie_Estados
 
-from Core.Perfiles.logica import obtener_datos_perfiles
+from Core.Perfiles.logica_perfiles import obtener_datos_perfiles
 
 ##################################################################
 ##################################################################

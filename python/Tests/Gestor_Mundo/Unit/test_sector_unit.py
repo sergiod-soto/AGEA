@@ -46,12 +46,17 @@ from Gestores.Mundo.Sector.sector import (
     CeldaStore,
     TickDelta,
     _ContextoVision,
-    REGION_X0,
-    REGION_Y0,
-    REGION_X1,
-    REGION_Y1,
     SECTOR_SIZE,
 )
+
+# Calcular localmente — independiente del orden de import del módulo
+_COL = int(os.environ["SECTOR_COL"])
+_ROW = int(os.environ["SECTOR_ROW"])
+_SIZE = int(os.environ["SECTOR_SIZE"])
+REGION_X0 = _COL * _SIZE
+REGION_Y0 = _ROW * _SIZE
+REGION_X1 = REGION_X0 + _SIZE
+REGION_Y1 = REGION_Y0 + _SIZE
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,

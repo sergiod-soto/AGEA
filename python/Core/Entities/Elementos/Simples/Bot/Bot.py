@@ -12,10 +12,6 @@ from Core.Entities.Comportamiento.Interaccion.golpeable import Golpeable
 from Core.Entities.Comportamiento.Interaccion.interactuable import Interactuable
 from Core.Entities.Comportamiento.Material.solido import Solido
 from Core.Entities.Comportamiento.Material.tangible import Tangible
-from Core.Entities.Comportamiento.Salud.comestible import Comestible
-from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
-from Core.Entities.Comportamiento.Salud.nutritivo import Nutritivo
-from Core.Entities.Comportamiento.Salud.toxico import Toxico
 from Core.Entities.Comportamiento.Stats.Complejos.agresividad import Agresividad
 from Core.Entities.Comportamiento.Stats.Complejos.armadura import Armadura
 from Core.Entities.Comportamiento.Stats.Complejos.grasa import Grasa

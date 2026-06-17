@@ -28,7 +28,7 @@ from typing import Optional
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     hypervisor_service_pb2,
     hypervisor_service_pb2_grpc,

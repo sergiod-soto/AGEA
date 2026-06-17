@@ -298,3 +298,6 @@ class Comportamiento:
 
         for key, value in data.items():
             setattr(self, key, value)
+
+
+

@@ -32,6 +32,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
+from numpy import int64
+
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────
@@ -75,14 +77,16 @@ class CeldaStore:
     """
     Almacén de celdas en memoria como objetos Python deserializados.
 
-    Internamente: dict[(x, y), Elemento]
+    Internamente: dict[(x, y), dict[int64, Elemento]]
+    (Se accede con posicion → ID)
+
 
     La serialización proto ↔ objeto se delega al registry de elementos
     (a implementar en un script separado cuando el registry esté disponible).
     """
 
     def __init__(self):
-        self._celdas: dict[tuple[int, int], Any] = {}
+        self._celdas: dict[tuple[int, int], dict[int64, Any]] = {}
 
     def get(self, x: int, y: int) -> Optional[Any]:
         return self._celdas.get((x, y))
@@ -145,8 +149,8 @@ class TickDelta:
     tick_id: int
     changed_cells: list = field(default_factory=list)  # Cell proto
     outgoing_bots: list = field(default_factory=list)  # MigratingBot proto
-    dead_bot_ids: list = field(default_factory=list)   # str
-    emitted_sounds: list = field(default_factory=list) # SoundEvent proto
+    dead_bot_ids: list = field(default_factory=list)  # str
+    emitted_sounds: list = field(default_factory=list)  # SoundEvent proto
 
 
 # ─────────────────────────────────────────────
@@ -347,7 +351,6 @@ class Sector:
             # TODO: resultado = elemento.tick(contexto_vision)
 
     def _detectar_migraciones(self, delta: TickDelta) -> None:
-        
         """
         Comprueba qué bots han salido de la región del sector
         y los añade a delta.outgoing_bots.

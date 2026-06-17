@@ -21,7 +21,7 @@ import logging
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     world_proxy_service_pb2,
     world_proxy_service_pb2_grpc,
@@ -29,6 +29,8 @@ from Gestores.Transporte.Proto_Generated import (
 from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 
 logger = logging.getLogger(__name__)
+
+_ACTION_COSTS: dict[str, int] | None = None
 
 
 def _get_action_costs() -> dict[str, int]:
@@ -43,9 +45,6 @@ def _get_action_costs() -> dict[str, int]:
     except Exception as exc:
         logger.error("No se pudo cargar ACCIONES para costes: %s", exc)
         return {}
-
-
-_ACTION_COSTS: dict[str, int] | None = None
 
 
 def _costs() -> dict[str, int]:
@@ -158,19 +157,7 @@ class WorldProxyServicer(world_proxy_service_pb2_grpc.WorldProxyServiceServicer)
     # RPCs
     # ------------------------------------------------------------------
 
-    def Observe(self, request, context):
-        import struct
-
-        payload = struct.pack("<f", request.radio_override)
-        return self._spend_and_forward(context, "observe", payload)
-
-    def Move(self, request, context):
-        import struct
-
-        payload = struct.pack("<ff", request.dx, request.dy)
-        return self._spend_and_forward(context, "move", payload)
-
-    def Rotate(self, request, context):
+    def Rotar(self, request, context):
         import struct
 
         payload = struct.pack("<f", request.angle)

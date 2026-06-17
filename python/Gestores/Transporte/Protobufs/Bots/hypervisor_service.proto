@@ -77,6 +77,8 @@ message ResetBudgetsRequest {
   repeated common.BudgetEntry overrides = 3;
 }
 
+
+
 message SetPointBudgetRequest {
   string bot_id = 1;
   int32  points = 2;

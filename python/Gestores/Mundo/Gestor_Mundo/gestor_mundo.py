@@ -28,11 +28,17 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import grpc
+from numpy import int64
+
+import math
+from typing import Optional
 
 # Imports generados por protoc — ajustar paths según Proto_Generated
+from Core.Entities.Elementos.elemento import Elemento
+from Gestores.Mundo.api_acciones import ACCIONES
 from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2 as sector_pb,
     sector_service_pb2_grpc as sector_grpc,
@@ -64,12 +70,20 @@ DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
 SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
 GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
 
+
 COLS = math.ceil(GRID_WIDTH / SECTOR_SIZE)
 ROWS = math.ceil(GRID_HEIGHT / SECTOR_SIZE)
 
 # ─────────────────────────────────────────────────────────────
 #  Tipos internos
 # ─────────────────────────────────────────────────────────────
+
+
+@dataclass
+class ActionResult:
+    ok: bool
+    payload: bytes = b""
+    error: str = ""
 
 
 class SystemState(Enum):
@@ -123,12 +137,18 @@ class GestorMundo:
         # Sectores indexados por (col, row)
         self._sectores: dict[tuple[int, int], SectorInfo] = {}
 
-        # Estado gold de celdas: dict[tuple[x,y], bytes] (elemento serializado)
+        # Estado gold de celdas: dict[tuple[x,y], list[int64]] (posicion, lista de id_elemento)
         # Solo celdas no vacías. Cargado desde snapshot o construido al inicio.
-        self._gold_cells: dict[tuple[int, int], bytes] = {}
+        self._gold_cells: dict[tuple[int, int], list[int64]] = {}
+
+        # id → elemento (incluye bots)
+        self._elements: dict[int64, Elemento]
+
+        # bot_id → posición (fuente de verdad exclusiva)
+        self._bot_positions: dict[int64, tuple[int, int]]
 
         # Control de tick
-        self._tick_id: int = 0
+        self._tick_id: int64 = 0
         self._snapshot_id: str = ""
 
         # Control de sistema
@@ -141,12 +161,17 @@ class GestorMundo:
         self._bots_stub = None
 
         # Elementos globales
-        self._elementos_globales: list[ElementoGlobal] = [
+        self._elementos_globales: dict[int64, ElementoGlobal] = {
             # Añadir más elementos globales aquí
-        ]
+        }
 
         # Lock para operaciones sobre estado gold
         self._gold_lock: asyncio.Lock = asyncio.Lock()
+
+        self._bot_positions: dict[str, tuple[int, int]] = {}
+        self._elements: dict[int, Any] = {}
+        self._active_events: dict[str, Any] = {}
+        self._speed_factor: float = 1.0
 
     # ─────────────────────────────────────────────────────────────
     #  Deteccion si hay cambios en el delta
@@ -290,6 +315,8 @@ class GestorMundo:
             for s in self._sectores.values()
             if s.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO)
         ]
+
+        self._pending_sounds: dict[tuple[int, int], list] = {}
 
         tareas = []
         for sector in activos_y_dormidos:
@@ -768,6 +795,52 @@ class GestorMundo:
     # ─────────────────────────────────────────────
     #  Helpers de geometría
     # ─────────────────────────────────────────────
+
+    def get_celda(self, x: int, y: int) -> Optional[bytes]:
+        """
+        Devuelve el contenido serializado de la celda (x, y), o None si está vacía.
+        Abstrae el sistema de sectores — el caller no necesita saber en qué sector está.
+        """
+        return self._gold_cells.get((x, y))
+
+    async def handle_action(
+        self, bot_id: str, action_type: str, payload: bytes
+    ) -> ActionResult:
+        from Gestores.Mundo.api_acciones import ACCIONES, AccionContext, ActionResult
+
+        entrada = ACCIONES.get(action_type)
+        if entrada is None:
+            logger.warning(
+                "handle_action: acción desconocida '%s' (bot %s)", action_type, bot_id
+            )
+            return ActionResult(ok=False, error=f"Acción desconocida: {action_type}")
+
+        fn = entrada.get("funcion_mundo")
+        if fn is None:
+            logger.warning(
+                "handle_action: acción '%s' no tiene funcion_mundo (bot %s)",
+                action_type,
+                bot_id,
+            )
+            return ActionResult(
+                ok=False, error=f"Acción '{action_type}' no ejecutable por el Mundo."
+            )
+
+        ctx = AccionContext(
+            bot_id=bot_id,
+            payload=payload,
+            gold_cells=self._gold_cells,
+            elements=self._elements,
+            bot_positions=self._bot_positions,
+        )
+
+        try:
+            return await fn(ctx)
+        except Exception as exc:
+            logger.error(
+                "Error en handle_action '%s' para bot %s: %s", action_type, bot_id, exc
+            )
+            return ActionResult(ok=False, error=str(exc))
 
     def _sector_para_posicion(self, x: int, y: int) -> Optional[SectorInfo]:
         col = x // SECTOR_SIZE

@@ -19,7 +19,7 @@ from typing import Optional
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Otros import (
     log_service_pb2,
     log_service_pb2_grpc,
 )

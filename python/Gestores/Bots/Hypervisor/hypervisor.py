@@ -1,13 +1,5 @@
 """
 hypervisor.py — Lógica pura del Hypervisor.
-
-Cambios respecto a la versión anterior:
-  - HVContext: contexto que se pasa a las funciones delegadas.
-  - set_delegated_actions(): construye la tabla de interceptación
-    a partir de la lista de nombres recibida del Gestor al registrarse.
-  - execute_delegated(): ejecuta una acción delegada localmente.
-  - register_with_gestor(): consume RegistroHVResult y llama a
-    set_delegated_actions() en el mismo paso.
 """
 
 from __future__ import annotations
@@ -15,17 +7,18 @@ from __future__ import annotations
 import gzip
 import logging
 import os
+import subprocess
 import threading
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 import psutil
 
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+
 logger = logging.getLogger(__name__)
 
-ACTION_COSTS: dict[str, int] = {}
 DEFAULT_BUDGET = 100
 
 
@@ -40,89 +33,12 @@ class BotRecord:
     budget: int
     max_budget: int
     alive: bool = True
-    spawned_at: float = field(default_factory=time.time)
-    last_action: float = 0.0
 
 
 @dataclass
-class BotInfo:
-    bot_id: str
-    hypervisor_id: str
-    ok: bool = True
-    error: str = ""
-
-
-@dataclass
-class BotStats:
-    bot_id: str
-    hypervisor_id: str
-    points_left: int
-    alive: bool
-    uptime_s: float
-
-
-@dataclass
-class BotStatus:
-    bot_id: str
-    alive: bool
-    budget: int
-
-
-@dataclass
-class BotList:
-    bots: list[BotStats]
-
-
-@dataclass
-class Entity:
-    entity_id: str
-    type: str
-    x: float
-    y: float
-    rotation: float
-    health: float
-    attributes: dict[str, str] = field(default_factory=dict)
-
-
-@dataclass
-class ActionResult:
-    """Resultado de una acción, delegada o reenviada al Mundo."""
-
+class SpawnResult:
     ok: bool
-    payload: bytes = b""
     error: str = ""
-
-
-# ---------------------------------------------------------------------------
-# Contexto para funciones delegadas
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class HVContext:
-    """
-    Contexto que el Hypervisor pasa a cada función delegada al ejecutarla.
-
-    Contiene todo lo que la función puede necesitar sin exponer el HV entero.
-    A medida que el sistema crezca (sectores, etc.) se añaden campos aquí;
-    las firmas de las funciones delegadas no cambian.
-
-    Campos actuales
-    ---------------
-    bot_id     : identificador del bot que realiza la acción.
-    bot_record : estado local del bot (budget, alive, etc.).
-    payload    : bytes del request tal como los envió el bot.
-
-    Campos futuros (TODO)
-    ---------------------
-    sector_client : cliente gRPC al sector donde reside el bot.
-                    Se añadirá cuando exista comunicación HV↔Sector.
-    """
-
-    bot_id: str
-    bot_record: BotRecord
-    payload: bytes
-    # sector_client: SectorClient | None = None  # TODO: sectores
 
 
 # ---------------------------------------------------------------------------
@@ -162,8 +78,9 @@ class Hypervisor:
 
         self._lock = threading.Lock()
         self._bots: dict[str, BotRecord] = {}
+        self._procesos: dict[str, subprocess.Popen] = {}
 
-        # Tabla de interceptación: action_name → callable(HVContext) → ActionResult
+        # Tabla de interceptación: action_name → callable → ActionResult
         # Se construye una única vez en set_delegated_actions().
         self._delegated: dict[str, callable] = {}
 
@@ -183,11 +100,6 @@ class Hypervisor:
         """
         Construye la tabla de interceptación a partir de los nombres
         recibidos del Gestor en el momento del registro.
-
-        Para cada nombre busca la función correspondiente en api_acciones.py
-        (misma fuente de verdad que usa el Gestor para resolver la lista).
-        Nombres no reconocidos localmente se ignoran con un warning.
-
         Se llama una única vez desde register_with_gestor().
         """
         if not action_names:
@@ -198,8 +110,8 @@ class Hypervisor:
             from Gestores.Mundo.api_acciones import ACCIONES
         except ImportError as exc:
             logger.error(
-                "No se pudo importar api_acciones para resolver acciones "
-                "delegadas: %s. El HV no interceptará ninguna acción.",
+                "No se pudo importar acciones: %s. "
+                "El HV no interceptará ninguna acción.",
                 exc,
             )
             return
@@ -233,37 +145,21 @@ class Hypervisor:
         return action_name in self._delegated
 
     def execute_delegated(
-        self,
-        bot_id: str,
-        action_name: str,
-        payload: bytes,
+        self, bot_id: str, action_name: str, payload: bytes
     ) -> ActionResult:
-        """
-        Ejecuta una acción delegada localmente.
-
-        Construye un HVContext con el estado actual del bot y llama
-        a la función registrada en la tabla de interceptación.
-
-        El world_proxy_servicer llama a este método DESPUÉS de haber
-        descontado los puntos con try_spend_points(), igual que haría
-        antes de llamar a forward_to_gestor().
-
-        Devuelve ActionResult. Si la función lanza una excepción,
-        devuelve ActionResult(ok=False) sin propagar.
-        """
         fn = self._delegated.get(action_name)
         if fn is None:
             return ActionResult(
-                ok=False,
-                error=f"Acción '{action_name}' no está delegada en este HV.",
+                ok=False, error=f"Acción '{action_name}' no está delegada en este HV."
             )
 
         with self._lock:
-            rec = self._bots.get(bot_id)
-            if rec is None:
+            if bot_id not in self._bots:
                 return ActionResult(ok=False, error=f"Bot {bot_id!r} no encontrado.")
 
-        ctx = HVContext(bot_id=bot_id, bot_record=rec, payload=payload)
+        from Gestores.Mundo.api_acciones import AccionContext
+
+        ctx = AccionContext(bot_id=bot_id, payload=payload)
 
         try:
             return fn(ctx)
@@ -282,9 +178,8 @@ class Hypervisor:
 
     def register_with_gestor(self) -> bool:
         """
-        Llama a RegisterHypervisor en el Gestor y, si tiene éxito,
-        construye la tabla de interceptación con la lista recibida.
-
+        Llama a RegisterHypervisor en el Gestor y construye
+        la tabla de interceptación con la lista recibida.
         Devuelve True si el Gestor aceptó el registro.
         """
         result = self.gestor_client.register_hypervisor(
@@ -318,49 +213,54 @@ class Hypervisor:
     # Ciclo de vida de bots
     # ------------------------------------------------------------------
 
-    def spawn_bot(self, config: dict) -> BotInfo:
+    def spawn_bot(self, config: dict) -> SpawnResult:
         bot_id = config.get("bot_id", "")
         codigo_gz = config.get("codigo_gz", b"")
         budget = int(config.get("budget", DEFAULT_BUDGET))
 
         if not bot_id:
-            return BotInfo(
-                bot_id="",
-                hypervisor_id=self.hypervisor_id,
-                ok=False,
-                error="bot_id vacío",
-            )
+            return SpawnResult(ok=False, error="bot_id vacío")
 
+        # Comprobar capacidad antes de escribir en disco
+        with self._lock:
+            if len(self._bots) >= self.capacity:
+                return SpawnResult(ok=False, error="Hypervisor a plena capacidad")
+            if bot_id in self._bots:
+                logger.warning("spawn_bot: bot %s ya existe; sobreescribiendo.", bot_id)
+
+        # Escribir código en disco fuera del lock
         codigo_path = self._codigo_path(bot_id)
         try:
             codigo_path.parent.mkdir(parents=True, exist_ok=True)
             codigo_path.write_bytes(gzip.decompress(codigo_gz))
         except Exception as exc:
             logger.error("Error escribiendo código de bot %s: %s", bot_id, exc)
-            return BotInfo(
-                bot_id=bot_id,
-                hypervisor_id=self.hypervisor_id,
-                ok=False,
-                error=f"Error descomprimiendo código: {exc}",
-            )
+            return SpawnResult(ok=False, error=f"Error descomprimiendo código: {exc}")
 
+        # Lanzar proceso fuera del lock
+        try:
+            proceso = subprocess.Popen(
+                ["python", str(codigo_path)],
+                env={
+                    **os.environ,
+                    "BOT_ID": bot_id,
+                    "HV_PROXY_ADDRESS": f"{self._my_address}:{self._my_proxy_port}",
+                },
+            )
+        except Exception as exc:
+            codigo_path.unlink(missing_ok=True)
+            logger.error("Error lanzando proceso bot %s: %s", bot_id, exc)
+            return SpawnResult(ok=False, error=f"Error lanzando proceso: {exc}")
+
+        # Solo adquirir lock para actualizar estado
         with self._lock:
-            if len(self._bots) >= self.capacity:
-                codigo_path.unlink(missing_ok=True)
-                return BotInfo(
-                    bot_id=bot_id,
-                    hypervisor_id=self.hypervisor_id,
-                    ok=False,
-                    error="Hypervisor a plena capacidad",
-                )
-            if bot_id in self._bots:
-                logger.warning("spawn_bot: bot %s ya existe; sobreescribiendo.", bot_id)
             self._bots[bot_id] = BotRecord(
                 bot_id=bot_id, budget=budget, max_budget=budget
             )
+            self._procesos[bot_id] = proceso
 
         logger.info("Bot %s spawneado (budget=%d).", bot_id, budget)
-        return BotInfo(bot_id=bot_id, hypervisor_id=self.hypervisor_id, ok=True)
+        return SpawnResult(ok=True)
 
     def _codigo_path(self, bot_id: str) -> Path:
         return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"
@@ -371,47 +271,20 @@ class Hypervisor:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)
                 return
             del self._bots[bot_id]
+            proceso = self._procesos.pop(bot_id, None)
+
+        if proceso is not None:
+            try:
+                proceso.terminate()
+            except Exception as exc:
+                logger.warning("No se pudo terminar proceso de %s: %s", bot_id, exc)
+
         try:
             self._codigo_path(bot_id).unlink(missing_ok=True)
         except Exception as exc:
             logger.warning("No se pudo eliminar código de %s: %s", bot_id, exc)
+
         logger.info("Bot %s eliminado.", bot_id)
-
-    def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
-        with self._lock:
-            rec = self._bots.get(bot_id)
-            if rec is None:
-                return None
-            return BotStats(
-                bot_id=bot_id,
-                hypervisor_id=self.hypervisor_id,
-                points_left=rec.budget,
-                alive=rec.alive,
-                uptime_s=time.time() - rec.spawned_at,
-            )
-
-    def get_bot_status(self, bot_id: str) -> Optional[BotStatus]:
-        with self._lock:
-            rec = self._bots.get(bot_id)
-            if rec is None:
-                return None
-            return BotStatus(bot_id=bot_id, alive=rec.alive, budget=rec.budget)
-
-    def list_bots(self) -> BotList:
-        with self._lock:
-            now = time.time()
-            return BotList(
-                bots=[
-                    BotStats(
-                        bot_id=rec.bot_id,
-                        hypervisor_id=self.hypervisor_id,
-                        points_left=rec.budget,
-                        alive=rec.alive,
-                        uptime_s=now - rec.spawned_at,
-                    )
-                    for rec in self._bots.values()
-                ]
-            )
 
     # ------------------------------------------------------------------
     # Control de presupuesto
@@ -434,7 +307,6 @@ class Hypervisor:
                 )
                 return False, rec.budget
             rec.budget -= cost
-            rec.last_action = time.time()
             logger.debug(
                 "Bot %s gastó %d pt(s). Restantes: %d.", bot_id, cost, rec.budget
             )
@@ -454,8 +326,7 @@ class Hypervisor:
                 rec = self._bots.get(bot_id)
                 if rec is None:
                     continue
-                new_pts = new_budgets.get(bot_id, rec.max_budget)
-                rec.budget = rec.max_budget = new_pts
+                rec.budget = rec.max_budget = new_budgets.get(bot_id, rec.max_budget)
         logger.info(
             "Budgets reseteados para %d bot(s) en HV %s.",
             len(bot_ids),
@@ -473,19 +344,6 @@ class Hypervisor:
             action_type=action_type,
             payload=payload,
         )
-
-    def deserialize_entities(self, action_result) -> list[Entity]:
-        if not action_result or not action_result.payload:
-            return []
-        try:
-            logger.debug(
-                "deserialize_entities: payload de %d bytes (stub).",
-                len(action_result.payload),
-            )
-            return []
-        except Exception as exc:
-            logger.error("Error deserializando entidades: %s", exc)
-            return []
 
     # ------------------------------------------------------------------
     # Métricas de sistema

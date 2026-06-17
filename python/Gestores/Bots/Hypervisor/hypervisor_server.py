@@ -32,11 +32,11 @@ from concurrent import futures
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Bots import (
     hypervisor_service_pb2_grpc,
     world_proxy_service_pb2_grpc,
 )
-from Gestores.Transporte.gestor_bots_client import GestorClient
+from Gestores.Transporte.gestor_bots_client import GestorBotsClient
 from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
 from Gestores.Bots.Hypervisor.world_proxy_servicer import WorldProxyServicer
@@ -78,7 +78,7 @@ def build_servers(
     capacity: int = 32,
     workers: int = 10,
     gestor_address: str = "localhost:50051",
-) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorClient]:
+) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorBotsClient]:
     """
     Construye y devuelve:
         (servidor_gestion, servidor_proxy, hypervisor, gestor_client)
@@ -87,7 +87,7 @@ def build_servers(
     Separar construcción de arranque permite tests de integración sin procesos.
     """
     # 1. Cliente hacia el Gestor
-    gestor_client = GestorClient(gestor_address)
+    gestor_client = GestorBotsClient(gestor_address)
 
     # 2. Lógica pura
     hv = Hypervisor(

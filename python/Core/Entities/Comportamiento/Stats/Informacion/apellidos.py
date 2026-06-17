@@ -5,7 +5,7 @@ class Apellidos(Informacion):
     def __init__(self, apellidos: list,**kwargs):
         super().__init__("apellidos", apellidos,**kwargs)
 
-    def generarApellidos(ape1, ape2):
+    def generar_apellidos(ape1, ape2):
         """
         Genera los apellidos del bot a partir de los del padre y la madre
         """
@@ -14,4 +14,4 @@ class Apellidos(Informacion):
         for i in range(int(len(ape1) / 2)):
             apellidos.append(ape1[i])
             apellidos.append(ape2[i])
-        return apellidos
+        return apellidos    
