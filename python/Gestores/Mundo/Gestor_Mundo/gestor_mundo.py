@@ -31,14 +31,12 @@ from pathlib import Path
 from typing import Any, Optional
 
 import grpc
-from numpy import int64
+from numpy import uint64
 
-import math
 from typing import Optional
 
 # Imports generados por protoc — ajustar paths según Proto_Generated
 from Core.Entities.Elementos.elemento import Elemento
-from Gestores.Mundo.api_acciones import ACCIONES
 from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2 as sector_pb,
     sector_service_pb2_grpc as sector_grpc,
@@ -79,13 +77,6 @@ ROWS = math.ceil(GRID_HEIGHT / SECTOR_SIZE)
 # ─────────────────────────────────────────────────────────────
 
 
-@dataclass
-class ActionResult:
-    ok: bool
-    payload: bytes = b""
-    error: str = ""
-
-
 class SystemState(Enum):
     RUNNING = auto()
     PAUSING = auto()  # pausa en progreso — esperando ACKs
@@ -104,6 +95,20 @@ class SectorInfo:
     channel: Optional[grpc.aio.Channel] = field(default=None, repr=False)
     stub: Optional[object] = field(default=None, repr=False)
     ticks_sin_actividad: int = 0  # para anti-thrashing
+
+
+@dataclass
+class ActionResult:
+    __slots__ = ("ok", "payload", "error", "world_tick")
+
+    def __init__(self, ok, payload, error, world_tick=0):
+        self.ok = ok
+        self.payload = payload
+        self.error = error
+        self.world_tick = world_tick
+
+    def __repr__(self):
+        return f"ActionResult(ok={self.ok}, error={self.error!r})"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -139,16 +144,16 @@ class GestorMundo:
 
         # Estado gold de celdas: dict[tuple[x,y], list[int64]] (posicion, lista de id_elemento)
         # Solo celdas no vacías. Cargado desde snapshot o construido al inicio.
-        self._gold_cells: dict[tuple[int, int], list[int64]] = {}
+        self._gold_cells: dict[tuple[int, int], list[uint64]] = {}
 
         # id → elemento (incluye bots)
-        self._elements: dict[int64, Elemento]
+        self._elements: dict[uint64, Elemento] = {}
 
         # bot_id → posición (fuente de verdad exclusiva)
-        self._bot_positions: dict[int64, tuple[int, int]]
+        self._bot_positions: dict[str, tuple[int, int]] = {}
 
         # Control de tick
-        self._tick_id: int64 = 0
+        self._tick_id: uint64 = 0
         self._snapshot_id: str = ""
 
         # Control de sistema
@@ -161,17 +166,19 @@ class GestorMundo:
         self._bots_stub = None
 
         # Elementos globales
-        self._elementos_globales: dict[int64, ElementoGlobal] = {
+        self._elementos_globales: dict[uint64, ElementoGlobal] = {
             # Añadir más elementos globales aquí
         }
 
         # Lock para operaciones sobre estado gold
         self._gold_lock: asyncio.Lock = asyncio.Lock()
 
-        self._bot_positions: dict[str, tuple[int, int]] = {}
-        self._elements: dict[int, Any] = {}
         self._active_events: dict[str, Any] = {}
         self._speed_factor: float = 1.0
+        
+        # sonidos
+        self._pending_sounds = {}
+
 
     # ─────────────────────────────────────────────────────────────
     #  Deteccion si hay cambios en el delta
@@ -241,7 +248,7 @@ class GestorMundo:
         # Restaurar elementos globales
         # TODO: hacer el registro de clases dinámico cuando haya más elementos
         eg_data = data.get("elementos_globales", {})
-        for elem in self._elementos_globales:
+        for elem in self._elementos_globales.values():
             name = elem.__class__.__name__
             if name in eg_data:
                 elem.__dict__.update(elem.from_snapshot(eg_data[name]).__dict__)
@@ -685,7 +692,7 @@ class GestorMundo:
                 },
                 "elementos_globales": {
                     elem.__class__.__name__: elem.to_snapshot()
-                    for elem in self._elementos_globales
+                    for elem in self._elementos_globales.values()
                 },
             }
 
@@ -700,47 +707,45 @@ class GestorMundo:
         """
         logger.info("Guardado profundo iniciado (tick %d)", self._tick_id)
         await self.freeze()
-
-        snapshot_id = f"{self._tick_id:010d}_deep"
-        self._snapshot_id = snapshot_id
-
-        # Snapshot del mundo
-        await self._save_snapshot()
-
-        # Ordenar a Gestor_Bots que guarde con este snapshot_id
         try:
-            await self._bots_stub.SaveSnapshot(
-                bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
-            )
-        except grpc.aio.AioRpcError as e:
-            logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
+            snapshot_id = f"{self._tick_id:010d}_deep"
+            self._snapshot_id = snapshot_id
+            await self._save_snapshot()
+            try:
+                await self._bots_stub.SaveSnapshot(
+                    bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
+                )
+            except grpc.aio.AioRpcError as e:
+                logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
 
-        # Ordenar a cada sector que guarde con este snapshot_id
-        tareas_sectores = []
-        for info in self._sectores.values():
-            if info.stub is not None:
-                tareas_sectores.append(
-                    info.stub.SaveSnapshot(
-                        sector_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
+            tareas_sectores = []
+            for info in self._sectores.values():
+                if info.stub is not None:
+                    tareas_sectores.append(
+                        info.stub.SaveSnapshot(
+                            sector_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
+                        )
                     )
-                )
-        resultados = await asyncio.gather(*tareas_sectores, return_exceptions=True)
-        for info, res in zip(self._sectores.values(), resultados):
-            if isinstance(res, Exception):
-                logger.error(
-                    "SaveSnapshot falló en sector (%d,%d): %s", info.col, info.row, res
-                )
-            elif not res.ok:
-                logger.warning(
-                    "SaveSnapshot error en sector (%d,%d): %s",
-                    info.col,
-                    info.row,
-                    res.error,
-                )
+            resultados = await asyncio.gather(*tareas_sectores, return_exceptions=True)
+            for info, res in zip(self._sectores.values(), resultados):
+                if isinstance(res, Exception):
+                    logger.error(
+                        "SaveSnapshot falló en sector (%d,%d): %s",
+                        info.col,
+                        info.row,
+                        res,
+                    )
+                elif not res.ok:
+                    logger.warning(
+                        "SaveSnapshot error en sector (%d,%d): %s",
+                        info.col,
+                        info.row,
+                        res.error,
+                    )
 
-        logger.info("Guardado profundo completado. snapshot_id=%s", snapshot_id)
-
-        await self.resume()
+            logger.info("Guardado profundo completado. snapshot_id=%s", snapshot_id)
+        finally:
+            await self.resume()
 
     def _latest_snapshot_path(self) -> Optional[Path]:
         """Devuelve el path del snapshot más reciente en SNAPSHOT_DIR."""
@@ -804,9 +809,9 @@ class GestorMundo:
         return self._gold_cells.get((x, y))
 
     async def handle_action(
-        self, bot_id: str, action_type: str, payload: bytes
+        self, bot_id: uint64, action_type: str, payload: bytes
     ) -> ActionResult:
-        from Gestores.Mundo.api_acciones import ACCIONES, AccionContext, ActionResult
+        from Gestores.Mundo.api_acciones import ACCIONES, AccionContext
 
         entrada = ACCIONES.get(action_type)
         if entrada is None:
@@ -915,11 +920,12 @@ class GestorMundo:
 
     @staticmethod
     def _sector_address(col: int, row: int) -> str:
-        """
-        Devuelve la dirección gRPC de un sector dado su col/row.
-        En producción se leerá de un registro (consul, env, etc.).
-        TODO: conectar con SpotSupervisor / registro de servicios.
-        """
+        # En producción: SECTOR_ADDR_C{col}_R{row} = "host:port"
+        # En local: se calcula por fórmula desde SECTOR_BASE_PORT
+        env_key = f"SECTOR_ADDR_C{col}_R{row}"
+        addr = os.getenv(env_key)
+        if addr:
+            return addr
         base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
         host = os.getenv("SECTOR_HOST", "localhost")
         port = base_port + col * ROWS + row

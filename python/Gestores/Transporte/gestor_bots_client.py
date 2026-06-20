@@ -18,6 +18,7 @@ from typing import Optional
 
 import grpc
 
+from Gestores.Mundo.action_result import ActionResult
 from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     gestor_bots_service_pb2,
@@ -31,15 +32,16 @@ logger = logging.getLogger(__name__)
 # Tipos de retorno
 # ---------------------------------------------------------------------------
 
+
 class BotInfo:
     __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
 
     def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
-        self.bot_id        = bot_id
+        self.bot_id = bot_id
         self.hypervisor_id = hypervisor_id
         self.proxy_address = proxy_address
-        self.ok            = ok
-        self.error         = error
+        self.ok = ok
+        self.error = error
 
     def __repr__(self):
         return (
@@ -48,34 +50,27 @@ class BotInfo:
         )
 
 
-class ActionResult:
-    __slots__ = ("ok", "payload", "error", "world_tick")
-
-    def __init__(self, ok, payload, error, world_tick=0):
-        self.ok         = ok
-        self.payload    = payload
-        self.error      = error
-        self.world_tick = world_tick
-
-    def __repr__(self):
-        return f"ActionResult(ok={self.ok}, error={self.error!r})"
-
-
 class HypervisorInfo:
     __slots__ = (
-        "hypervisor_id", "address", "port", "proxy_port",
-        "capacity", "current_load", "online",
+        "hypervisor_id",
+        "address",
+        "port",
+        "proxy_port",
+        "capacity",
+        "current_load",
+        "online",
     )
 
-    def __init__(self, hypervisor_id, address, port, proxy_port,
-                 capacity, current_load, online):
+    def __init__(
+        self, hypervisor_id, address, port, proxy_port, capacity, current_load, online
+    ):
         self.hypervisor_id = hypervisor_id
-        self.address       = address
-        self.port          = port
-        self.proxy_port    = proxy_port
-        self.capacity      = capacity
-        self.current_load  = current_load
-        self.online        = online
+        self.address = address
+        self.port = port
+        self.proxy_port = proxy_port
+        self.capacity = capacity
+        self.current_load = current_load
+        self.online = online
 
 
 @dataclass
@@ -88,14 +83,16 @@ class RegistroHVResult:
     delegated_actions : nombres de las acciones que este HV debe
                         interceptar localmente (lista vacía si ok=False).
     """
-    ok:                bool
-    error:             str       = ""
+
+    ok: bool
+    error: str = ""
     delegated_actions: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
 # Cliente
 # ---------------------------------------------------------------------------
+
 
 class GestorBotsClient:
     """
@@ -114,9 +111,9 @@ class GestorBotsClient:
             address,
             options=[
                 ("grpc.max_receive_message_length", 256 * 1024 * 1024),
-                ("grpc.max_send_message_length",    256 * 1024 * 1024),
-                ("grpc.keepalive_time_ms",          20_000),
-                ("grpc.keepalive_timeout_ms",       10_000),
+                ("grpc.max_send_message_length", 256 * 1024 * 1024),
+                ("grpc.keepalive_time_ms", 20_000),
+                ("grpc.keepalive_timeout_ms", 10_000),
             ],
         )
         self._stub = gestor_bots_service_pb2_grpc.GestorBotsServiceStub(self._channel)
@@ -142,7 +139,9 @@ class GestorBotsClient:
     def _handle_grpc_error(method_name: str, exc: grpc.RpcError):
         logger.error(
             "%s falló: código=%s detalle=%s",
-            method_name, exc.code(), exc.details(),
+            method_name,
+            exc.code(),
+            exc.details(),
         )
 
     # ------------------------------------------------------------------
@@ -151,11 +150,11 @@ class GestorBotsClient:
 
     def spawn_bot(
         self,
-        bot_id:   str,
+        bot_id: str,
         codigo_gz: bytes = b"",
-        budget:   int   = 100,
+        budget: int = 100,
         metadata: dict[str, str] | None = None,
-        timeout:  float | None = None,
+        timeout: float | None = None,
     ) -> BotInfo:
         request = gestor_bots_service_pb2.SpawnBotRequest(
             config=common_pb2.BotConfig(
@@ -167,7 +166,9 @@ class GestorBotsClient:
         )
         try:
             pb = self._stub.SpawnBot(request, timeout=self._t(timeout))
-            return BotInfo(pb.bot_id, pb.hypervisor_id, pb.proxy_address, pb.ok, pb.error)
+            return BotInfo(
+                pb.bot_id, pb.hypervisor_id, pb.proxy_address, pb.ok, pb.error
+            )
         except grpc.RpcError as exc:
             self._handle_grpc_error("SpawnBot", exc)
             return BotInfo(bot_id, "", "", ok=False, error=str(exc))
@@ -183,9 +184,9 @@ class GestorBotsClient:
 
     def update_fitness(
         self,
-        bot_id:  str,
+        bot_id: str,
         fitness: float,
-        tick:    int,
+        tick: int,
         timeout: float | None = None,
     ) -> bool:
         request = gestor_bots_service_pb2.UpdateFitnessRequest(
@@ -202,7 +203,7 @@ class GestorBotsClient:
         self,
         default_budget: int,
         overrides: dict[str, int] | None = None,
-        timeout:   float | None = None,
+        timeout: float | None = None,
     ) -> bool:
         budget_entries = [
             common_pb2.BudgetEntry(bot_id=bid, budget=pts)
@@ -226,11 +227,11 @@ class GestorBotsClient:
     def register_hypervisor(
         self,
         hypervisor_id: str,
-        address:       str,
-        port:          int,
-        proxy_port:    int,
-        capacity:      int,
-        timeout:       float | None = None,
+        address: str,
+        port: int,
+        proxy_port: int,
+        capacity: int,
+        timeout: float | None = None,
     ) -> RegistroHVResult:
         """
         El Hypervisor se anuncia al Gestor al arrancar.
@@ -255,7 +256,8 @@ class GestorBotsClient:
             if pb.ok:
                 logger.info(
                     "HV %s registrado. Acciones delegadas: %s",
-                    hypervisor_id, list(pb.delegated_actions),
+                    hypervisor_id,
+                    list(pb.delegated_actions),
                 )
             else:
                 logger.warning("Registro de %s rechazado: %s", hypervisor_id, pb.error)
@@ -271,8 +273,8 @@ class GestorBotsClient:
     def update_hypervisor_load(
         self,
         hypervisor_id: str,
-        current_load:  int,
-        timeout:       float | None = None,
+        current_load: int,
+        timeout: float | None = None,
     ) -> bool:
         request = gestor_bots_service_pb2.UpdateLoadRequest(
             hypervisor_id=hypervisor_id,
@@ -291,8 +293,13 @@ class GestorBotsClient:
             pb = self._stub.ListHypervisors(request, timeout=self._t(timeout))
             return [
                 HypervisorInfo(
-                    hv.hypervisor_id, hv.address, hv.port, hv.proxy_port,
-                    hv.capacity, hv.current_load, hv.online,
+                    hv.hypervisor_id,
+                    hv.address,
+                    hv.port,
+                    hv.proxy_port,
+                    hv.capacity,
+                    hv.current_load,
+                    hv.online,
                 )
                 for hv in pb.hypervisors
             ]
@@ -306,11 +313,11 @@ class GestorBotsClient:
 
     def forward_action(
         self,
-        bot_id:       str,
+        bot_id: str,
         hypervisor_id: str,
-        action_type:  str,
-        payload:      bytes = b"",
-        timeout:      float | None = None,
+        action_type: str,
+        payload: bytes = b"",
+        timeout: float | None = None,
     ) -> ActionResult:
         request = gestor_bots_service_pb2.ForwardActionRequest(
             bot_id=bot_id,

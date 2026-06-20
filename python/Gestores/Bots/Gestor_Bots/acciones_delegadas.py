@@ -19,7 +19,7 @@ Para quitarla: elimínala de la lista. Sin más cambios.
 
 from __future__ import annotations
 
-from Gestores.Mundo.api_acciones import ACCIONES, ACCIONES_ENUM
+from Gestores.Mundo.api_acciones import ACCIONES
 
 # ---------------------------------------------------------------------------
 # Lista de callables delegadas al HV
@@ -28,6 +28,5 @@ from Gestores.Mundo.api_acciones import ACCIONES, ACCIONES_ENUM
 # fuente de verdad de todas las acciones del sistema.
 
 ACCIONES_DELEGADAS: list = [
-    ACCIONES[ACCIONES_ENUM.mirar.value]["funcion"],
-    
+    ACCIONES["mirar"]["funcion"],
 ]

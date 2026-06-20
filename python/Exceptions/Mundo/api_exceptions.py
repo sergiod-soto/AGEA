@@ -1,5 +1,4 @@
-class acciones_error(Exception):
+class accion_vacia_error(Exception):
     def __init__(self, funcion):
-        print(
-            f"\033[31mUna accion ({funcion}) no puede ser 'funcion_hv' y 'funcion_mundo' simultaneamente\033[0m"
-        )
+        msg = f"\033[31mUna accion ({funcion}) no puede estar vacia de funciones\033[0m"
+        super().__init__(msg)

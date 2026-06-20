@@ -7,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "StartTick"
 
+
 async def handle(sector: Sector, request, context) -> pb.StartTickResponse:
     try:
         loop = asyncio.get_running_loop()
@@ -18,7 +19,10 @@ async def handle(sector: Sector, request, context) -> pb.StartTickResponse:
     except asyncio.TimeoutError:
         logger.warning(
             "Sector (%d,%d): tick %d excedió timeout (%d ms)",
-            sector._col, sector._row, request.tick_id, request.timeout_ms,
+            sector._col,
+            sector._row,
+            request.tick_id,
+            request.timeout_ms,
         )
         return pb.StartTickResponse(ok=True, timed_out=True)
     except Exception as e:

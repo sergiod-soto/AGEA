@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 import grpc.aio
 
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
 from Gestores.Transporte.Proto_Generated.Sectores import (
     gestor_mundo_service_pb2 as pb,
     gestor_mundo_service_pb2_grpc as pb_grpc,
@@ -19,32 +20,22 @@ from Gestores.Transporte.Proto_Generated.Sectores import (
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ActionResult:
-    ok: bool
-    payload: bytes = b""
-    error: str = ""
-    world_tick: int = 0
-
-
 class GestorMundoClient:
-    """
-    Cliente async hacia GestorMundoService.
-    Debe usarse dentro de un event loop asyncio.
-    """
-
     def __init__(self, address: str, timeout: float = 2.0):
         self._address = address
         self._timeout = timeout
-        self._channel = grpc.aio.insecure_channel(address)
-        self._stub = pb_grpc.GestorMundoServiceStub(self._channel)
+        self._channel: grpc.aio.Channel | None = None
+        self._stub = None
+
+    async def _ensure_channel(self) -> None:
+        if self._channel is None:
+            self._channel = grpc.aio.insecure_channel(self._address)
+            self._stub = pb_grpc.GestorMundoServiceStub(self._channel)
 
     async def forward_action(
-        self,
-        bot_id: str,
-        action_type: str,
-        payload: bytes = b"",
+        self, bot_id: str, action_type: str, payload: bytes = b""
     ) -> ActionResult:
+        await self._ensure_channel()
         request = pb.ForwardActionRequest(
             bot_id=bot_id,
             action_type=action_type,
@@ -63,4 +54,6 @@ class GestorMundoClient:
             return ActionResult(ok=False, error=str(exc))
 
     async def close(self) -> None:
-        await self._channel.close()
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None

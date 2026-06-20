@@ -41,6 +41,7 @@ from typing import Optional
 
 import grpc
 
+from Gestores.Mundo.action_result import ActionResult
 from Gestores.Transporte.Proto_Generated import (
     common_pb2,
     world_proxy_service_pb2,
@@ -55,15 +56,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class ActionResult:
-    ok: bool
-    payload: bytes = b""
-    error: str = ""
-    world_tick: int = 0
-
-    def __bool__(self):
-        return self.ok
 
 
 @dataclass

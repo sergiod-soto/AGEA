@@ -18,8 +18,10 @@ from __future__ import annotations
 import logging
 import math
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
+
+from Gestores.Mundo.action_result import ActionResult
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +72,6 @@ class HypervisorInfo:
 @dataclass
 class HypervisorList:
     hypervisors: list[HypervisorInfo]
-
-
-@dataclass
-class ActionResult:
-    ok: bool
-    payload: bytes = b""
-    error: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -327,25 +322,6 @@ class Gestor_Bots:
                 hv.current_load -= 1
 
     # ------------------------------------------------------------------
-    # Fitness
-    # ------------------------------------------------------------------
-
-    def update_fitness(self, bot_id: str, fitness: float, tick: int) -> None:
-        with self._lock:
-            stats = self._bots.get(bot_id)
-            if stats is None:
-                return
-            stats.fitness = fitness
-            stats.tick = tick
-
-    def build_fitness_report(self) -> FitnessReport:
-        with self._lock:
-            sorted_bots = sorted(
-                self._bots.values(), key=lambda b: b.fitness, reverse=True
-            )
-            return FitnessReport(entries=list(sorted_bots))
-
-    # ------------------------------------------------------------------
     # Acciones → Mundo
     # ------------------------------------------------------------------
 
@@ -416,6 +392,4 @@ class Gestor_Bots:
         ]
         if not candidates:
             return None
-        return max(
-            candidates, key=lambda hv: self.bots_por_hypervisor - hv.current_load
-        )
+        return min(candidates, key=lambda hv: hv.current_load)

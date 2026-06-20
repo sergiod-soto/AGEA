@@ -20,7 +20,7 @@ Ejecutar:
 import asyncio
 import os
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from dataclasses import dataclass
 from typing import Any
 
@@ -617,14 +617,14 @@ class TestGestorMundoAntiThrashing:
     async def test_sector_activo_sin_actividad_duerme(self):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
 
-        gm.TICKS_ANTES_DE_DORMIR = 3  # forzar el valor que usa el módulo
+        gm.TICKS_ANTES_DE_DORMIR = 3
         g = GestorMundo()
         info = self._make_sector_info(0, 0, SectorMode.ACTIVO)
         info.ticks_sin_actividad = 3
         g._sectores[(0, 0)] = info
         await g._actualizar_modos_sector()
         assert info.mode == SectorMode.DORMIDO
-        gm.TICKS_ANTES_DE_DORMIR = 10  # restaurar
+        gm.TICKS_ANTES_DE_DORMIR = 10
 
     async def test_sector_activo_con_actividad_no_duerme(self):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
@@ -763,3 +763,20 @@ class TestGestorMundoPausa:
         await g.freeze()
         await g.resume()
         g._bots_stub.ResumeAll.assert_called_once()
+
+    async def test_deep_save_siempre_reanuda(self, tmp_path):
+        """Si _save_snapshot falla, el sistema reanuda igualmente (finally garantizado)."""
+        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+
+        gm_module.SNAPSHOT_DIR = tmp_path
+        g = self._make_gestor()
+        g._bots_stub.SaveSnapshot.return_value = MagicMock(ok=True)
+
+        with patch.object(
+            g, "_save_snapshot", side_effect=Exception("disco lleno")
+        ):
+            with pytest.raises(Exception, match="disco lleno"):
+                await g._deep_save()
+
+        assert g._state == SystemState.RUNNING
+        assert g._pause_event.is_set()

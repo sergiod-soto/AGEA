@@ -47,15 +47,6 @@ MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50))
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
-# Constantes de región a nivel de módulo — válidas solo para el proceso
-# de sector single-instancia (sector_server.py).
-# En tests multi-sector del mismo proceso usar las propiedades de instancia
-# _x0, _y0, _x1, _y1 en lugar de estas constantes.
-REGION_X0 = SECTOR_COL * SECTOR_SIZE
-REGION_Y0 = SECTOR_ROW * SECTOR_SIZE
-REGION_X1 = REGION_X0 + SECTOR_SIZE
-REGION_Y1 = REGION_Y0 + SECTOR_SIZE
-
 
 # ─────────────────────────────────────────────
 #  Modo de sector
@@ -91,7 +82,9 @@ class CeldaStore:
     def get(self, x: int, y: int) -> Optional[Any]:
         return self._celdas.get((x, y))
 
-    def set(self, x: int, y: int, elemento: Any) -> None:
+    def set(
+        self, x: int, y: int, elemento: dict[tuple[int, int], dict[int64, Any]]
+    ) -> None:
         self._celdas[(x, y)] = elemento
 
     def delete(self, x: int, y: int) -> None:

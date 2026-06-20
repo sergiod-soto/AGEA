@@ -16,8 +16,7 @@ import math
 import struct
 import logging
 
-from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
-from Gestores.Mundo.Gestor_Mundo.gestor_mundo import MAX_VISION_DISTANCE
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import MAX_VISION_DISTANCE, ActionResult
 
 logger = logging.getLogger(__name__)
 
@@ -85,27 +84,27 @@ def _raycast(
 def _bresenham_celdas(
     x0: int, y0: int, angulo: float, distancia: int
 ) -> list[tuple[int, int]]:
+    rad = math.radians(angulo)
     """
     Genera las celdas que atraviesa un rayo usando Bresenham con aritmética entera.
     Convierte el ángulo a un vector de dirección y usa el algoritmo de línea de Bresenham
     escalado a la distancia máxima.
     """
-    rad = math.radians(angulo)
-    # Vector destino escalado a la distancia máxima
     x1 = x0 + round(math.cos(rad) * distancia)
     y1 = y0 + round(math.sin(rad) * distancia)
 
-    celdas = []
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
     sx = 1 if x0 < x1 else -1
     sy = 1 if y0 < y1 else -1
     err = dx - dy
     x, y = x0, y0
-    pasos = 0
 
-    while pasos < distancia:
-        if (x, y) != (x0, y0):  # excluir celda origen
+    max_pasos = dx + dy  # número exacto de pasos que da Bresenham
+    celdas = []
+
+    for _ in range(max_pasos):
+        if (x, y) != (x0, y0):
             celdas.append((x, y))
         if x == x1 and y == y1:
             break
@@ -116,7 +115,6 @@ def _bresenham_celdas(
         if e2 < dx:
             err += dx
             y += sy
-        pasos += 1
 
     return celdas
 

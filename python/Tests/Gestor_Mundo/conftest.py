@@ -12,7 +12,7 @@ Qué proporciona:
   - sector_server_factory  : levanta un SectorServicer real en puerto aleatorio.
   - mundo_con_sectores     : GestorMundo cableado con N sectores reales y el
                              fake Gestor_Bots. Listo para llamar _run_tick().
-  - mundo_2x2              : grid 2×2 (4 sectores, SECTOR_SIZE=10). Caso
+  - mundo_2x2              : grid 2x2 (4 sectores, SECTOR_SIZE=10). Caso
                              estándar para la mayoría de tests E2E.
 
 Colocar este fichero en: Tests/Gestor_Mundo/conftest.py
@@ -212,8 +212,6 @@ async def mundo_con_sectores():
 
         gestor = GestorMundo()
 
-        # Inicializar _pending_sounds (bug conocido: no está en __init__)
-        gestor._pending_sounds = {}
 
         # Canal hacia el fake Gestor_Bots
         bots_channel = grpc.aio.insecure_channel(bots_address)

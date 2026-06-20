@@ -1,7 +1,9 @@
 # Gestores/Mundo/Sector/sector_servicer.py
 import asyncio
 import logging
-from Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2_grpc as pb_grpc
+from Gestores.Transporte.Proto_Generated.Sectores import (
+    sector_service_pb2_grpc as pb_grpc,
+)
 from Gestores.Mundo.Sector.sector import Sector
 from Gestores.Mundo.Sector.registry import FUNCIONES
 
@@ -17,7 +19,9 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
         self._fase0_lock = asyncio.Lock()
 
     async def SetSectorMode(self, request, context):
-        return await self._dispatch["SetSectorMode"].handle(self._sector, request, context)
+        return await self._dispatch["SetSectorMode"].handle(
+            self._sector, request, context
+        )
 
     async def LoadState(self, request, context):
         return await self._dispatch["LoadState"].handle(self._sector, request, context)
@@ -27,15 +31,15 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
 
     async def SetGhostZone(self, request, context):
         async with self._fase0_lock:
-            return await self._dispatch["SetGhostZone"].handle(self._sector, request, context)
-
-    async def SetSounds(self, request, context):
-        async with self._fase0_lock:
-            return await self._dispatch["SetSounds"].handle(self._sector, request, context)
+            return await self._dispatch["SetGhostZone"].handle(
+                self._sector, request, context
+            )
 
     async def AddMigratingBot(self, request, context):
         async with self._fase0_lock:
-            return await self._dispatch["AddMigratingBot"].handle(self._sector, request, context)
+            return await self._dispatch["AddMigratingBot"].handle(
+                self._sector, request, context
+            )
 
     async def StartTick(self, request, context):
         return await self._dispatch["StartTick"].handle(self._sector, request, context)
@@ -44,4 +48,9 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
         return await self._dispatch["GetDelta"].handle(self._sector, request, context)
 
     async def SaveSnapshot(self, request, context):
-        return await self._dispatch["SaveSnapshot"].handle(self._sector, request, context)
+        return await self._dispatch["SaveSnapshot"].handle(
+            self._sector, request, context
+        )
+
+    async def SetSounds(self, request, context):
+        return await self._dispatch["SetSounds"].handle(self._sector, request, context)

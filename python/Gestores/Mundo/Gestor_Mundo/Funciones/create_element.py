@@ -1,4 +1,6 @@
 # Gestores/Mundo/Gestor_Mundo/funciones/create_element.py
+import grpc
+
 from Gestores.Transporte.Proto_Generated.Sectores import gestor_mundo_service_pb2 as pb
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SystemState
 import logging

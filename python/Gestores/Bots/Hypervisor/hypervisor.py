@@ -64,6 +64,7 @@ class Hypervisor:
         self,
         hypervisor_id: str,
         gestor_client,
+        gestor_mundo_client,
         capacity: int = 32,
         my_address: str = "localhost",
         my_port: int = 50052,
@@ -71,6 +72,7 @@ class Hypervisor:
     ):
         self.hypervisor_id = hypervisor_id
         self.gestor_client = gestor_client
+        self.gestor_mundo_client = gestor_mundo_client
         self.capacity = capacity
         self._my_address = my_address
         self._my_port = my_port
@@ -80,9 +82,7 @@ class Hypervisor:
         self._bots: dict[str, BotRecord] = {}
         self._procesos: dict[str, subprocess.Popen] = {}
 
-        # Tabla de interceptación: action_name → callable → ActionResult
-        # Se construye una única vez en set_delegated_actions().
-        self._delegated: dict[str, callable] = {}
+        self._delegated: set[str] = set()
 
         logger.info(
             "Hypervisor %s inicializado (cap=%d, proxy=%s:%d)",
@@ -97,13 +97,9 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     def set_delegated_actions(self, action_names: list[str]) -> None:
-        """
-        Construye la tabla de interceptación a partir de los nombres
-        recibidos del Gestor en el momento del registro.
-        Se llama una única vez desde register_with_gestor().
-        """
         if not action_names:
             logger.info("HV %s: sin acciones delegadas.", self.hypervisor_id)
+            self._delegated = set()
             return
 
         try:
@@ -111,33 +107,24 @@ class Hypervisor:
         except ImportError as exc:
             logger.error(
                 "No se pudo importar acciones: %s. "
-                "El HV no interceptará ninguna acción.",
-                exc,
+                "El HV no interceptará ninguna acción.", exc,
             )
+            self._delegated = set()
             return
 
-        tabla: dict[str, callable] = {}
+        validadas = set()
         for name in action_names:
-            entry = ACCIONES.get(name)
-            if entry is None:
+            if name not in ACCIONES:
                 logger.warning(
                     "Acción delegada '%s' no encontrada en ACCIONES; ignorada.", name
                 )
                 continue
-            fn = entry.get("funcion")
-            if fn is None:
-                logger.warning(
-                    "Acción delegada '%s' no tiene 'funcion' en ACCIONES; ignorada.",
-                    name,
-                )
-                continue
-            tabla[name] = fn
+            validadas.add(name)
 
-        self._delegated = tabla
+        self._delegated = validadas
         logger.info(
-            "HV %s: tabla de interceptación construida → %s",
-            self.hypervisor_id,
-            list(tabla.keys()),
+            "HV %s: acciones delegadas → %s",
+            self.hypervisor_id, self._delegated,
         )
 
     def is_delegated(self, action_name: str) -> bool:
@@ -383,5 +370,8 @@ class Hypervisor:
     # Persistencia (stubs)
     # ------------------------------------------------------------------
 
-    def guardar_estado(self): ...
-    def cargar_estado(self): ...
+    def guardar_estado(self):
+        raise NotImplementedError
+
+    def cargar_estado(self):
+        raise NotImplementedError

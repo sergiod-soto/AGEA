@@ -11,11 +11,7 @@ Convenciones:
 """
 
 from __future__ import annotations
-
-from dataclasses import dataclass, field
-from typing import Any
-
-from Exceptions.Mundo.api_exceptions import acciones_error
+from dataclasses import dataclass
 from Gestores.Mundo.Acciones.mirar import mirar
 
 # ---------------------------------------------------------------------------
@@ -23,11 +19,7 @@ from Gestores.Mundo.Acciones.mirar import mirar
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class ActionResult:
-    ok: bool
-    payload: bytes = b""
-    error: str = ""
+
 
 
 @dataclass
@@ -66,8 +58,7 @@ ACCIONES: dict[str, dict] = {
             "hasta la distancia indicada. Devuelve los colores RGB de la primera "
             "celda bloqueante, o [[0,0,0]] si no hay nada."
         ),
-        "funcion_hv": None,
-        "funcion_mundo": mirar,
+        "funcion": mirar,
     },
 }
 
@@ -84,12 +75,6 @@ def get_coste(action_name: str) -> int:
 
 def accion_conocida(action_name: str) -> bool:
     return action_name in ACCIONES
-
-
-def comprobar_congruencia_acciones() -> bool:
-    for funcion, accion in ACCIONES.items():
-        if accion["funcion_hv"] is not None and accion["funcion_mundo"] is not None:
-            raise acciones_error(funcion)
 
 
 def listar() -> list[str]:
