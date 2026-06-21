@@ -1,0 +1,6 @@
+al inyectar ADN, hay tasa de mutacion.
+infeccion solo con cercania
++tamaño de adn infeccioso => +coste infectar
+al modificar un nodo del ADN -> recompilado parcial
+
+hay que separar ann y pesos de ADN

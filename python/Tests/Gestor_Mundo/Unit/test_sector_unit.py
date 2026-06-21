@@ -61,9 +61,6 @@ from Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,
     SystemState,
-    COLS,
-    ROWS,
-    TICKS_ANTES_DE_DORMIR,
 )
 from Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
     BotSnapshot,
@@ -537,12 +534,12 @@ class TestGestorMundoGeometria:
 
     def _make_gestor(self) -> GestorMundo:
         g = GestorMundo()
-        for col in range(COLS):
-            for row in range(ROWS):
+        for col in range(g.COLS):
+            for row in range(g.ROWS):
                 info = SectorInfo(
                     col=col,
                     row=row,
-                    address=f"localhost:{50100 + col * ROWS + row}",
+                    address=f"localhost:{50100 + col * g.ROWS + row}",
                     mode=SectorMode.INACTIVO,
                 )
                 g._sectores[(col, row)] = info
@@ -576,27 +573,26 @@ class TestGestorMundoGeometria:
 
     def test_celdas_de_sector_filtra_correctamente(self):
         g = self._make_gestor()
-        g._gold_cells[(SECTOR_SIZE + 1, SECTOR_SIZE + 1)] = b"dentro"
+        g._gold_cells[(g.SECTOR_SIZE + 1, g.SECTOR_SIZE + 1)] = b"dentro"
         g._gold_cells[(0, 0)] = b"fuera"
         cells = g._celdas_de_sector(g._sectores[(1, 1)])
         posiciones = [(c.pos.x, c.pos.y) for c in cells]
-        assert (SECTOR_SIZE + 1, SECTOR_SIZE + 1) in posiciones
+        assert (g.SECTOR_SIZE + 1, g.SECTOR_SIZE + 1) in posiciones
         assert (0, 0) not in posiciones
 
     def test_ghost_zone_incluye_borde_vecino(self):
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import MAX_VISION_DISTANCE
 
         g = self._make_gestor()
-        bx, by = SECTOR_SIZE - 1, SECTOR_SIZE - 1
+        bx, by = g.SECTOR_SIZE - 1, g.SECTOR_SIZE - 1
         g._gold_cells[(bx, by)] = b"borde"
         ghost = g._calcular_ghost_zone(g._sectores[(1, 1)])
         assert (bx, by) in [(c.pos.x, c.pos.y) for c in ghost]
 
     def test_ghost_zone_no_incluye_celdas_propias(self):
         g = self._make_gestor()
-        g._gold_cells[(SECTOR_SIZE + 1, SECTOR_SIZE + 1)] = b"propia"
+        g._gold_cells[(g.SECTOR_SIZE + 1, g.SECTOR_SIZE + 1)] = b"propia"
         ghost = g._calcular_ghost_zone(g._sectores[(1, 1)])
-        assert (SECTOR_SIZE + 1, SECTOR_SIZE + 1) not in [
+        assert (g.SECTOR_SIZE + 1, g.SECTOR_SIZE + 1) not in [
             (c.pos.x, c.pos.y) for c in ghost
         ]
 
@@ -663,8 +659,8 @@ class TestGestorMundoSnapshots:
     async def test_save_snapshot_crea_fichero(self, tmp_path):
         from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
-        gm_module.SNAPSHOT_DIR = tmp_path
         g = GestorMundo()
+        g.SNAPSHOT_DIR = tmp_path
         g._tick_id = 42
         await g._save_snapshot()
         assert len(list(tmp_path.glob("mundo_*.json"))) == 1
@@ -673,8 +669,8 @@ class TestGestorMundoSnapshots:
         import json
         from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
-        gm_module.SNAPSHOT_DIR = tmp_path
         g = GestorMundo()
+        g.SNAPSHOT_DIR = tmp_path
         g._tick_id = 10
         g._gold_cells[(5, 5)] = b"\x01\x02"
         await g._save_snapshot()
@@ -690,10 +686,9 @@ class TestGestorMundoSnapshots:
 
     async def test_latest_snapshot_path_devuelve_ultimo(self, tmp_path):
         import json
-        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
-        gm_module.SNAPSHOT_DIR = tmp_path
         g = GestorMundo()
+        g.SNAPSHOT_DIR = tmp_path
         g._tick_id = 1
         await g._save_snapshot()
         g._tick_id = 2
@@ -772,9 +767,7 @@ class TestGestorMundoPausa:
         g = self._make_gestor()
         g._bots_stub.SaveSnapshot.return_value = MagicMock(ok=True)
 
-        with patch.object(
-            g, "_save_snapshot", side_effect=Exception("disco lleno")
-        ):
+        with patch.object(g, "_save_snapshot", side_effect=Exception("disco lleno")):
             with pytest.raises(Exception, match="disco lleno"):
                 await g._deep_save()
 
