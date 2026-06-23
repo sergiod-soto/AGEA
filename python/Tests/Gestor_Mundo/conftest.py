@@ -5,22 +5,11 @@ Fixtures compartidas para Tests/Gestor_Mundo/E2E/ (y reutilizables en Integratio
 
 Qué proporciona:
   - FakeGestorBotsServicer : stub gRPC mínimo que simula el Gestor_Bots.
-                             Implementa solo los 4 métodos que usa GestorMundo:
-                             FreezeAll, ResumeAll, ResetBudgets, SaveSnapshot.
-  - fake_bots_server       : fixture que levanta FakeGestorBotsServicer en
-                             un puerto aleatorio y devuelve su dirección.
-  - sector_server_factory  : levanta un SectorServicer real en puerto aleatorio.
-  - mundo_con_sectores     : GestorMundo cableado con N sectores reales y el
-                             fake Gestor_Bots. Listo para llamar _run_tick().
-  - mundo_2x2              : grid 2x2 (4 sectores, SECTOR_SIZE=10). Caso
-                             estándar para la mayoría de tests E2E.
+  - fake_bots_server       : levanta FakeGestorBotsServicer en puerto aleatorio.
+  - mundo_con_sectores     : GestorMundo cableado con N sectores reales y fake Gestor_Bots.
+  - mundo_2x2              : grid 2x2 (4 sectores, SECTOR_SIZE=10). Caso estándar.
 
-Colocar este fichero en: Tests/Gestor_Mundo/conftest.py
-(pytest lo descubre automáticamente para todos los subdirectorios)
-
-Requisitos:
-    pip install pytest pytest-asyncio grpcio grpcio-tools
-    pytest.ini → asyncio_mode = auto
+Colocar en: Tests/Gestor_Mundo/conftest.py
 """
 
 from __future__ import annotations
@@ -32,14 +21,13 @@ from typing import AsyncGenerator
 import grpc
 import pytest
 
-# ── Variables de entorno base (deben estar antes de importar módulos del proyecto) ──
-# Los tests individuales pueden sobreescribir col/row/size según necesiten.
+# ── Variables de entorno base ────────────────────────────────────────────────
 os.environ.setdefault("SECTOR_COL", "0")
 os.environ.setdefault("SECTOR_ROW", "0")
 os.environ.setdefault("SECTOR_SIZE", "10")
 os.environ.setdefault("MAX_VISION_DISTANCE", "3")
 os.environ.setdefault("TICK_TIMEOUT_MS", "5000")
-os.environ.setdefault("TICKS_ANTES_DE_DORMIR", "999")   # desactivar anti-thrashing en tests
+os.environ.setdefault("TICKS_ANTES_DE_DORMIR", "999")
 os.environ.setdefault("UNITY_FRAME_EVERY_N_TICKS", "999")
 os.environ.setdefault("SNAPSHOT_INTERVAL_TICKS", "999")
 os.environ.setdefault("DEEP_SAVE_INTERVAL_TICKS", "9999")
@@ -50,6 +38,7 @@ from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SectorInfo
 
 from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
+    sector_service_pb2 as sector_pb,
 )
 from Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2 as bots_pb,
@@ -57,30 +46,21 @@ from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
 )
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  FakeGestorBotsServicer
-#  Stub mínimo síncrono — implementa solo los métodos que GestorMundo llama.
-#  Registra las llamadas para que los tests puedan inspeccionarlas.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 class FakeGestorBotsServicer(bots_grpc.GestorBotsServiceServicer):
     """
-    Implementa los 4 métodos que GestorMundo usa activamente:
-      - FreezeAll      (llamado en freeze())
-      - ResumeAll      (llamado en resume())
-      - ResetBudgets   (llamado al final de cada _fase_2)
-      - SaveSnapshot   (llamado en _deep_save)
+    Implementa solo los métodos que GestorMundo llama activamente.
+    Los demás fallan con UNIMPLEMENTED — señal clara de bug si se llaman.
 
-    Los demás métodos no se implementan — si GestorMundo los llama
-    en un test, el test fallará con UNIMPLEMENTED (señal clara de bug).
-
-    Atributos públicos para asserts:
-      .freeze_count     : veces que se llamó FreezeAll
-      .resume_count     : veces que se llamó ResumeAll
-      .reset_count      : veces que se llamó ResetBudgets
-      .snapshot_ids     : lista de snapshot_ids recibidos en SaveSnapshot
+    Atributos para asserts:
+      .freeze_count   : veces que se llamó FreezeAll
+      .resume_count   : veces que se llamó ResumeAll
+      .reset_count    : veces que se llamó ResetBudgets
+      .snapshot_ids   : lista de snapshot_ids recibidos en SaveSnapshot
     """
 
     def __init__(self):
@@ -111,21 +91,21 @@ class FakeGestorBotsServicer(bots_grpc.GestorBotsServiceServicer):
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  Fixture: fake_bots_server
-#  Levanta FakeGestorBotsServicer en un puerto aleatorio.
-#  Yield: (address, servicer) — dirección gRPC y referencia al servicer.
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 @pytest.fixture
-async def fake_bots_server() -> AsyncGenerator[tuple[str, FakeGestorBotsServicer], None]:
+async def fake_bots_server() -> (
+    AsyncGenerator[tuple[str, FakeGestorBotsServicer], None]
+):
+    """Levanta FakeGestorBotsServicer en puerto aleatorio."""
     servicer = FakeGestorBotsServicer()
     server = grpc.aio.server()
     bots_grpc.add_GestorBotsServiceServicer_to_server(servicer, server)
     port = server.add_insecure_port("[::]:0")
     await server.start()
 
-    address = f"localhost:{port}"
-    yield address, servicer
+    yield f"localhost:{port}", servicer
 
     await server.stop(grace=0)
 
@@ -135,25 +115,21 @@ async def fake_bots_server() -> AsyncGenerator[tuple[str, FakeGestorBotsServicer
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-async def _start_sector_server(col: int, row: int) -> tuple[int, grpc.aio.Server, Sector]:
+async def _start_sector_server(
+    col: int, row: int
+) -> tuple[int, grpc.aio.Server, Sector]:
     """
     Crea un Sector con col/row dados, lo envuelve en SectorServicer,
     lo registra en un servidor gRPC en puerto aleatorio.
     Devuelve (port, server, sector).
     """
     sector = Sector()
-    # Sobreescribir col/row en runtime (las constantes del módulo ya están fijadas,
-    # pero el objeto Sector permite reasignarlas directamente)
     sector._col = col
     sector._row = row
 
     servicer = SectorServicer(sector)
     server = grpc.aio.server()
-
-    from Gestores.Transporte.Proto_Generated.Sectores import (
-        sector_service_pb2_grpc as pb_grpc,
-    )
-    pb_grpc.add_SectorServiceServicer_to_server(servicer, server)
+    sector_grpc.add_SectorServiceServicer_to_server(servicer, server)
     port = server.add_insecure_port("[::]:0")
     await server.start()
     return port, server, sector
@@ -161,25 +137,23 @@ async def _start_sector_server(col: int, row: int) -> tuple[int, grpc.aio.Server
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  Fixture: mundo_con_sectores
-#  Devuelve una función factory async para crear un GestorMundo con
-#  n_cols × n_rows sectores reales + fake Gestor_Bots.
-#
-#  Uso en test:
-#      async def test_algo(mundo_con_sectores, fake_bots_server, tmp_path):
-#          bots_addr, bots_svc = fake_bots_server
-#          gestor, sectores, servers = await mundo_con_sectores(
-#              n_cols=2, n_rows=2,
-#              bots_address=bots_addr,
-#              snapshot_dir=tmp_path,
-#          )
 # ═══════════════════════════════════════════════════════════════════════════
 
 
 @pytest.fixture
 async def mundo_con_sectores():
     """
-    Factory async. Gestiona internamente la lista de servidores
-    para que el test solo tenga que llamar a la función.
+    Factory async. Crea un GestorMundo con n_cols × n_rows sectores reales
+    y un fake Gestor_Bots. No llama a start() — el test controla el ciclo de vida.
+
+    Uso:
+        async def test_algo(mundo_con_sectores, fake_bots_server, tmp_path):
+            bots_addr, bots_svc = fake_bots_server
+            gestor, sectores = await mundo_con_sectores(
+                n_cols=2, n_rows=2,
+                bots_address=bots_addr,
+                snapshot_dir=tmp_path,
+            )
     """
     _servers: list[grpc.aio.Server] = []
     _channels: list[grpc.aio.Channel] = []
@@ -191,27 +165,24 @@ async def mundo_con_sectores():
         snapshot_dir: Path,
         sector_size: int = 10,
         modo_inicial: SectorMode = SectorMode.ACTIVO,
-    ) -> tuple[GestorMundo, dict[tuple[int, int], Sector], list[grpc.aio.Server]]:
+    ) -> tuple[GestorMundo, dict[tuple[int, int], Sector]]:
         """
-        Crea y cableα un GestorMundo con n_cols × n_rows sectores reales.
-
         Devuelve:
-          gestor   : GestorMundo configurado (sin llamar a start())
-          sectores : dict[(col, row)] → Sector (objeto Python, para asserts directos)
-          servers  : lista de grpc.aio.Server (para parar en teardown si hace falta)
+          gestor   : GestorMundo configurado con variables de entorno del test.
+          sectores : dict[(col, row)] → Sector para asserts directos.
         """
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
-
-        # Parchar constantes del módulo para este test
-        gm_module.SECTOR_SIZE = sector_size
-        gm_module.COLS = n_cols
-        gm_module.ROWS = n_rows
-        gm_module.SNAPSHOT_DIR = snapshot_dir
-        gm_module.TICK_TIMEOUT_MS = 5000
-        gm_module.TICKS_ANTES_DE_DORMIR = 999
+        # Configurar entorno antes de instanciar GestorMundo.
+        # GestorMundo lee del entorno en __init__, así que esto es suficiente
+        # y no requiere parchear constantes de módulo.
+        os.environ["SECTOR_SIZE"] = str(sector_size)
+        os.environ["GRID_WIDTH"] = str(n_cols * sector_size)
+        os.environ["GRID_HEIGHT"] = str(n_rows * sector_size)
+        os.environ["SNAPSHOT_DIR"] = str(snapshot_dir)
+        os.environ["TICK_TIMEOUT_MS"] = "5000"
+        os.environ["TICKS_ANTES_DE_DORMIR"] = "999"
+        os.environ["GESTOR_BOTS_ADDRESS"] = bots_address
 
         gestor = GestorMundo()
-
 
         # Canal hacia el fake Gestor_Bots
         bots_channel = grpc.aio.insecure_channel(bots_address)
@@ -225,18 +196,6 @@ async def mundo_con_sectores():
             for row in range(n_rows):
                 port, server, sector = await _start_sector_server(col, row)
                 _servers.append(server)
-
-                # Calcular región correcta para este sector
-                x0 = col * sector_size
-                y0 = row * sector_size
-                sector._col = col
-                sector._row = row
-                # Parchear las constantes de región del sector
-                import Gestores.Mundo.Sector.sector as sector_module
-                sector_module.REGION_X0 = x0
-                sector_module.REGION_Y0 = y0
-                sector_module.REGION_X1 = x0 + sector_size
-                sector_module.REGION_Y1 = y0 + sector_size
 
                 address = f"localhost:{port}"
                 channel = grpc.aio.insecure_channel(address)
@@ -254,21 +213,16 @@ async def mundo_con_sectores():
                 gestor._sectores[(col, row)] = info
                 sectores[(col, row)] = sector
 
-                # Poner en modo inicial vía gRPC real
                 if modo_inicial != SectorMode.INACTIVO:
                     await stub.SetSectorMode(
-                        __import__(
-                            "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2",
-                            fromlist=["SetSectorModeRequest"],
-                        ).SetSectorModeRequest(mode=modo_inicial.value)
+                        sector_pb.SetSectorModeRequest(mode=modo_inicial.value)
                     )
                     info.mode = modo_inicial
 
-        return gestor, sectores, _servers
+        return gestor, sectores
 
     yield _factory
 
-    # Teardown async — correcto en Python 3.11 con pytest-asyncio
     for ch in _channels:
         await ch.close()
     for srv in _servers:
@@ -277,8 +231,6 @@ async def mundo_con_sectores():
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  Fixture: mundo_2x2
-#  Caso estándar para E2E: grid 20×20, 4 sectores de 10×10, todos ACTIVOS.
-#  Yield: (gestor, sectores, bots_servicer)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
@@ -294,7 +246,7 @@ async def mundo_2x2(
     """
     bots_addr, bots_svc = fake_bots_server
 
-    gestor, sectores, _ = await mundo_con_sectores(
+    gestor, sectores = await mundo_con_sectores(
         n_cols=2,
         n_rows=2,
         bots_address=bots_addr,

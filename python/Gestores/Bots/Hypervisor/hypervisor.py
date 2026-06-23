@@ -42,6 +42,58 @@ class SpawnResult:
 
 
 # ---------------------------------------------------------------------------
+# Tipos de retorno
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class BotInfo:
+    __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
+
+    def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
+        self.bot_id = bot_id
+        self.hypervisor_id = hypervisor_id
+        self.proxy_address = proxy_address
+        self.ok = ok
+        self.error = error
+
+    def __repr__(self):
+        return (
+            f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, " f"error={self.error!r})"
+        )
+
+
+@dataclass
+class BotStats:
+    __slots__ = ("bot_id", "hypervisor_id", "points_left", "alive", "uptime_s")
+
+    def __init__(self, bot_id, hypervisor_id, points_left, alive, uptime_s=0.0):
+        self.bot_id = bot_id
+        self.hypervisor_id = hypervisor_id
+        self.points_left = points_left
+        self.alive = alive
+        self.uptime_s = uptime_s
+
+
+@dataclass
+class BotStatus:
+    __slots__ = ("bot_id", "alive", "budget")
+
+    def __init__(self, bot_id, alive, budget):
+        self.bot_id = bot_id
+        self.alive = alive
+        self.budget = budget
+
+
+@dataclass
+class BotList:
+    __slots__ = ("bots",)
+
+    def __init__(self, bots):
+        self.bots = bots  # list[BotStats]
+
+
+# ---------------------------------------------------------------------------
 # Hypervisor
 # ---------------------------------------------------------------------------
 
@@ -107,7 +159,8 @@ class Hypervisor:
         except ImportError as exc:
             logger.error(
                 "No se pudo importar acciones: %s. "
-                "El HV no interceptará ninguna acción.", exc,
+                "El HV no interceptará ninguna acción.",
+                exc,
             )
             self._delegated = set()
             return
@@ -124,7 +177,8 @@ class Hypervisor:
         self._delegated = validadas
         logger.info(
             "HV %s: acciones delegadas → %s",
-            self.hypervisor_id, self._delegated,
+            self.hypervisor_id,
+            self._delegated,
         )
 
     def is_delegated(self, action_name: str) -> bool:
@@ -208,12 +262,17 @@ class Hypervisor:
         if not bot_id:
             return SpawnResult(ok=False, error="bot_id vacío")
 
-        # Comprobar capacidad antes de escribir en disco
         with self._lock:
             if len(self._bots) >= self.capacity:
                 return SpawnResult(ok=False, error="Hypervisor a plena capacidad")
             if bot_id in self._bots:
-                logger.warning("spawn_bot: bot %s ya existe; sobreescribiendo.", bot_id)
+                return SpawnResult(
+                    ok=False, error=f"Bot {bot_id!r} ya existe en este HV"
+                )
+            # Reservar plaza antes de salir del lock
+            self._bots[bot_id] = BotRecord(
+                bot_id=bot_id, budget=budget, max_budget=budget, alive=False
+            )
 
         # Escribir código en disco fuera del lock
         codigo_path = self._codigo_path(bot_id)
@@ -221,6 +280,8 @@ class Hypervisor:
             codigo_path.parent.mkdir(parents=True, exist_ok=True)
             codigo_path.write_bytes(gzip.decompress(codigo_gz))
         except Exception as exc:
+            with self._lock:
+                self._bots.pop(bot_id, None)
             logger.error("Error escribiendo código de bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error descomprimiendo código: {exc}")
 
@@ -236,18 +297,55 @@ class Hypervisor:
             )
         except Exception as exc:
             codigo_path.unlink(missing_ok=True)
+            with self._lock:
+                self._bots.pop(bot_id, None)
             logger.error("Error lanzando proceso bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error lanzando proceso: {exc}")
 
-        # Solo adquirir lock para actualizar estado
+        # Confirmar spawn exitoso
         with self._lock:
-            self._bots[bot_id] = BotRecord(
-                bot_id=bot_id, budget=budget, max_budget=budget
-            )
+            self._bots[bot_id].alive = True
             self._procesos[bot_id] = proceso
 
         logger.info("Bot %s spawneado (budget=%d).", bot_id, budget)
         return SpawnResult(ok=True)
+
+    def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
+        with self._lock:
+            rec = self._bots.get(bot_id)
+            if rec is None:
+                return None
+            return BotStats(
+                bot_id=rec.bot_id,
+                hypervisor_id=self.hypervisor_id,
+                points_left=rec.budget,
+                alive=rec.alive,
+            )
+
+    def get_bot_status(self, bot_id: str) -> Optional[BotStatus]:
+        with self._lock:
+            rec = self._bots.get(bot_id)
+            if rec is None:
+                return None
+            return BotStatus(
+                bot_id=rec.bot_id,
+                alive=rec.alive,
+                budget=rec.budget,
+            )
+
+    def list_bots(self) -> BotList:
+        with self._lock:
+            return BotList(
+                bots=[
+                    BotStats(
+                        bot_id=rec.bot_id,
+                        hypervisor_id=self.hypervisor_id,
+                        points_left=rec.budget,
+                        alive=rec.alive,
+                    )
+                    for rec in self._bots.values()
+                ]
+            )
 
     def _codigo_path(self, bot_id: str) -> Path:
         return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"

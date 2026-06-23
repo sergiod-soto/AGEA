@@ -28,6 +28,8 @@ from typing import Optional
 
 import grpc
 
+
+from Gestores.Bots.Hypervisor.hypervisor import BotInfo, BotList, BotStats, BotStatus
 from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     hypervisor_service_pb2,
@@ -37,49 +39,7 @@ from Gestores.Transporte.Proto_Generated.Bots import (
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Tipos de retorno (espejo ligero de los de hypervisor.py)
-# ---------------------------------------------------------------------------
 
-class BotInfo:
-    __slots__ = ("bot_id", "hypervisor_id", "ok", "error")
-
-    def __init__(self, bot_id, hypervisor_id, ok, error):
-        self.bot_id        = bot_id
-        self.hypervisor_id = hypervisor_id
-        self.ok            = ok
-        self.error         = error
-
-    def __repr__(self):
-        return (f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, "
-                f"error={self.error!r})")
-
-
-class BotStats:
-    __slots__ = ("bot_id", "hypervisor_id", "points_left", "alive", "uptime_s")
-
-    def __init__(self, bot_id, hypervisor_id, points_left, alive, uptime_s=0.0):
-        self.bot_id        = bot_id
-        self.hypervisor_id = hypervisor_id
-        self.points_left   = points_left
-        self.alive         = alive
-        self.uptime_s      = uptime_s
-
-
-class BotStatus:
-    __slots__ = ("bot_id", "alive", "budget")
-
-    def __init__(self, bot_id, alive, budget):
-        self.bot_id = bot_id
-        self.alive  = alive
-        self.budget = budget
-
-
-class BotList:
-    __slots__ = ("bots",)
-
-    def __init__(self, bots):
-        self.bots = bots   # list[BotStats]
 
 
 # ---------------------------------------------------------------------------

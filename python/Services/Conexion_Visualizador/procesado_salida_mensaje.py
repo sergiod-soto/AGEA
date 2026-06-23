@@ -1,8 +1,7 @@
-import json
 from Services.Conexion_Visualizador.salida_actualizacion import salida_actualizacion
-from Services.Conexion_Visualizador.SalidasDatos.salida_dato import salida_dato
-from Services.Conexion_Visualizador.SalidasDatos.salida_mapa import salida_mapa
-from Services.Conexion_Visualizador.SalidasDatos.salida_perfil import salida_perfil
+from Services.Conexion_Visualizador.Salidas_Datos.salida_dato import salida_dato
+from Services.Conexion_Visualizador.Salidas_Datos.salida_mapa import salida_mapa
+from Services.Conexion_Visualizador.Salidas_Datos.salida_perfil import salida_perfil
 from Utils.Sistema.pause import pause
 from Dev import consola_dev
 

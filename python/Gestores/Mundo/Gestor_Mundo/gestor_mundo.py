@@ -820,10 +820,10 @@ class GestorMundo:
             )
             return ActionResult(ok=False, error=f"Acción desconocida: {action_type}")
 
-        fn = entrada.get("funcion_mundo")
+        fn = entrada.get("funcion")
         if fn is None:
             logger.warning(
-                "handle_action: acción '%s' no tiene funcion_mundo (bot %s)",
+                "handle_action: acción '%s' no tiene funcion (bot %s)",
                 action_type,
                 bot_id,
             )
@@ -918,15 +918,12 @@ class GestorMundo:
         info.channel = grpc.aio.insecure_channel(info.address)
         info.stub = sector_grpc.SectorServiceStub(info.channel)
 
-    @staticmethod
-    def _sector_address(col: int, row: int) -> str:
-        # En producción: SECTOR_ADDR_C{col}_R{row} = "host:port"
-        # En local: se calcula por fórmula desde SECTOR_BASE_PORT
+    def _sector_address(self, col: int, row: int) -> str:
         env_key = f"SECTOR_ADDR_C{col}_R{row}"
         addr = os.getenv(env_key)
         if addr:
             return addr
         base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
         host = os.getenv("SECTOR_HOST", "localhost")
-        port = base_port + col * GestorMundo.ROWS + row
+        port = base_port + col * self.ROWS + row
         return f"{host}:{port}"

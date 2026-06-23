@@ -64,11 +64,6 @@ class WorldProxyServiceStub(object):
                 request_serializer=Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
                 response_deserializer=Bots_dot_common__pb2.ActionResult.FromString,
                 _registered_method=True)
-        self.GetStatus = channel.unary_unary(
-                '/world_proxy.WorldProxyService/GetStatus',
-                request_serializer=Bots_dot_world__proxy__service__pb2.GetStatusRequest.SerializeToString,
-                response_deserializer=Bots_dot_world__proxy__service__pb2.BotStatusResponse.FromString,
-                _registered_method=True)
 
 
 class WorldProxyServiceServicer(object):
@@ -106,13 +101,6 @@ class WorldProxyServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetStatus(self, request, context):
-        """Estado propio del bot. Coste: 0 puntos. Respuesta local del Hypervisor.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_WorldProxyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -120,11 +108,6 @@ def add_WorldProxyServiceServicer_to_server(servicer, server):
                     servicer.Act,
                     request_deserializer=Bots_dot_world__proxy__service__pb2.ActRequest.FromString,
                     response_serializer=Bots_dot_common__pb2.ActionResult.SerializeToString,
-            ),
-            'GetStatus': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetStatus,
-                    request_deserializer=Bots_dot_world__proxy__service__pb2.GetStatusRequest.FromString,
-                    response_serializer=Bots_dot_world__proxy__service__pb2.BotStatusResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -178,33 +161,6 @@ class WorldProxyService(object):
             '/world_proxy.WorldProxyService/Act',
             Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
             Bots_dot_common__pb2.ActionResult.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetStatus(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/world_proxy.WorldProxyService/GetStatus',
-            Bots_dot_world__proxy__service__pb2.GetStatusRequest.SerializeToString,
-            Bots_dot_world__proxy__service__pb2.BotStatusResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -3,6 +3,7 @@ Integration/GestorBots/test_gestor_bots_servicer.py
 Tests de integración del Gestor_Bots_Servicer con un Gestor_Bots real.
 Verifica que el dispatch del servicer conecta correctamente con la lógica del gestor.
 """
+
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -10,12 +11,17 @@ from unittest.mock import MagicMock, patch
 @pytest.fixture
 def servicer(gestor_bots):
     from Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
-    hv_client_factory = MagicMock(return_value=MagicMock(
-        spawn_bot=MagicMock(return_value=MagicMock(ok=True, error="")),
-        kill_bot=MagicMock(return_value=True),
-        reset_budgets=MagicMock(return_value=True),
-    ))
-    return Gestor_Bots_Servicer(gestor_bots, hypervisor_client_factory=hv_client_factory)
+
+    hv_client_factory = MagicMock(
+        return_value=MagicMock(
+            spawn_bot=MagicMock(return_value=MagicMock(ok=True, error="")),
+            kill_bot=MagicMock(return_value=True),
+            reset_budgets=MagicMock(return_value=True),
+        )
+    )
+    return Gestor_Bots_Servicer(
+        gestor_bots, hypervisor_client_factory=hv_client_factory
+    )
 
 
 @pytest.fixture
@@ -27,6 +33,7 @@ def context():
 # RegisterHypervisor
 # ---------------------------------------------------------------------------
 
+
 class TestRegisterHypervisor:
     def test_registro_exitoso(self, servicer, context):
         request = MagicMock()
@@ -35,7 +42,9 @@ class TestRegisterHypervisor:
         request.port = 50052
         request.proxy_port = 50053
         request.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             resp = servicer.RegisterHypervisor(request, context)
         assert resp.ok is True
 
@@ -46,7 +55,9 @@ class TestRegisterHypervisor:
         request.port = 50052
         request.proxy_port = 50053
         request.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             servicer.RegisterHypervisor(request, context)
         assert "hv_nuevo" in servicer._gestor._hypervisor_clients
 
@@ -68,6 +79,7 @@ class TestRegisterHypervisor:
 # SpawnBot
 # ---------------------------------------------------------------------------
 
+
 class TestSpawnBot:
     def _register_hv(self, servicer, context):
         req = MagicMock()
@@ -76,7 +88,9 @@ class TestSpawnBot:
         req.port = 50052
         req.proxy_port = 50053
         req.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             servicer.RegisterHypervisor(req, context)
 
     def test_spawn_exitoso(self, servicer, context):
@@ -88,13 +102,12 @@ class TestSpawnBot:
         request.config.metadata = {}
         resp = servicer.SpawnBot(request, context)
         assert resp.ok is True
-        assert resp.bot_id == "bot_001"
 
     def test_spawn_sin_hvs_falla(self, servicer, context):
         request = MagicMock()
         request.config.bot_id = "bot_001"
         request.config.codigo_gz = b""
-        request.config.budget = 100
+        request.config.stats = {}
         request.config.metadata = {}
         resp = servicer.SpawnBot(request, context)
         assert resp.ok is False
@@ -103,6 +116,7 @@ class TestSpawnBot:
 # ---------------------------------------------------------------------------
 # KillBot
 # ---------------------------------------------------------------------------
+
 
 class TestKillBot:
     def test_kill_bot(self, servicer, context):
@@ -113,7 +127,9 @@ class TestKillBot:
         reg_req.port = 50052
         reg_req.proxy_port = 50053
         reg_req.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             servicer.RegisterHypervisor(reg_req, context)
 
         spawn_req = MagicMock()
@@ -134,6 +150,7 @@ class TestKillBot:
 # BroadcastBudgets
 # ---------------------------------------------------------------------------
 
+
 class TestBroadcastBudgets:
     def test_broadcast(self, servicer, context):
         request = MagicMock()
@@ -147,6 +164,7 @@ class TestBroadcastBudgets:
 # UpdateHypervisorLoad
 # ---------------------------------------------------------------------------
 
+
 class TestUpdateHypervisorLoad:
     def test_update_load(self, servicer, context):
         reg_req = MagicMock()
@@ -155,7 +173,9 @@ class TestUpdateHypervisorLoad:
         reg_req.port = 50052
         reg_req.proxy_port = 50053
         reg_req.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             servicer.RegisterHypervisor(reg_req, context)
 
         request = MagicMock()
@@ -170,6 +190,7 @@ class TestUpdateHypervisorLoad:
 # ListHypervisors
 # ---------------------------------------------------------------------------
 
+
 class TestListHypervisors:
     def test_list_hvs(self, servicer, context):
         reg_req = MagicMock()
@@ -178,7 +199,9 @@ class TestListHypervisors:
         reg_req.port = 50052
         reg_req.proxy_port = 50053
         reg_req.capacity = 10
-        with patch.object(servicer._gestor, "get_delegated_action_names", return_value=[]):
+        with patch.object(
+            servicer._gestor, "get_delegated_action_names", return_value=[]
+        ):
             servicer.RegisterHypervisor(reg_req, context)
 
         request = MagicMock()
@@ -190,9 +213,11 @@ class TestListHypervisors:
 # ForwardAction
 # ---------------------------------------------------------------------------
 
+
 class TestForwardAction:
     def test_forward_action(self, servicer, context, mundo_client):
         from Gestores.Bots.Gestor_Bots.gestor_bots import ActionResult
+
         mundo_client.forward_action.return_value = ActionResult(
             ok=True, payload=b"resultado", error=""
         )

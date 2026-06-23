@@ -24,15 +24,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dSectores/sector_service.proto\x12\x06sector\" \n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"6\n\x04\x43\x65ll\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.sector.Position\x12\x0f\n\x07\x65lement\x18\x02 \x01(\x0c\"[\n\x0b\x42otSnapshot\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x1d\n\x03pos\x18\x02 \x01(\x0b\x32\x10.sector.Position\x12\r\n\x05state\x18\x03 \x01(\x0c\x12\x0e\n\x06\x62udget\x18\x04 \x01(\x05\"R\n\nSoundEvent\x12 \n\x06origin\x18\x01 \x01(\x0b\x32\x10.sector.Position\x12\x11\n\tintensity\x18\x02 \x01(\x05\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"8\n\x14SetSectorModeRequest\x12 \n\x04mode\x18\x01 \x01(\x0e\x32\x12.sector.SectorMode\"2\n\x15SetSectorModeResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"R\n\x10LoadStateRequest\x12\x1b\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\x0c.sector.Cell\x12!\n\x04\x62ots\x18\x02 \x03(\x0b\x32\x13.sector.BotSnapshot\".\n\x11LoadStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x11\n\x0fGetStateRequest\"m\n\x10GetStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x1b\n\x05\x63\x65lls\x18\x03 \x03(\x0b\x32\x0c.sector.Cell\x12!\n\x04\x62ots\x18\x04 \x03(\x0b\x32\x13.sector.BotSnapshot\"I\n\x13SetGhostZoneRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12!\n\x0bghost_cells\x18\x02 \x03(\x0b\x32\x0c.sector.Cell\"1\n\x14SetGhostZoneResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"G\n\x10SetSoundsRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12\"\n\x06sounds\x18\x02 \x03(\x0b\x32\x12.sector.SoundEvent\".\n\x11SetSoundsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"K\n\x16\x41\x64\x64MigratingBotRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12 \n\x03\x62ot\x18\x02 \x01(\x0b\x32\x13.sector.BotSnapshot\"4\n\x17\x41\x64\x64MigratingBotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"7\n\x10StartTickRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12\x12\n\ntimeout_ms\x18\x02 \x01(\x05\"A\n\x11StartTickResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x11\n\ttimed_out\x18\x03 \x01(\x08\"V\n\x0cMigratingBot\x12 \n\x03\x62ot\x18\x01 \x01(\x0b\x32\x13.sector.BotSnapshot\x12$\n\ntarget_pos\x18\x02 \x01(\x0b\x32\x10.sector.Position\"\"\n\x0fGetDeltaRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\"\xd2\x01\n\x10GetDeltaResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07tick_id\x18\x03 \x01(\x03\x12#\n\rchanged_cells\x18\x04 \x03(\x0b\x32\x0c.sector.Cell\x12+\n\routgoing_bots\x18\x05 \x03(\x0b\x32\x14.sector.MigratingBot\x12\x14\n\x0c\x64\x65\x61\x64_bot_ids\x18\x06 \x03(\t\x12*\n\x0e\x65mitted_sounds\x18\x07 \x03(\x0b\x32\x12.sector.SoundEvent\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t*3\n\nSectorMode\x12\x0c\n\x08INACTIVO\x10\x00\x12\x0b\n\x07\x44ORMIDO\x10\x01\x12\n\n\x06\x41\x43TIVO\x10\x02\x32\x8b\x05\n\rSectorService\x12L\n\rSetSectorMode\x12\x1c.sector.SetSectorModeRequest\x1a\x1d.sector.SetSectorModeResponse\x12@\n\tLoadState\x12\x18.sector.LoadStateRequest\x1a\x19.sector.LoadStateResponse\x12=\n\x08GetState\x12\x17.sector.GetStateRequest\x1a\x18.sector.GetStateResponse\x12I\n\x0cSetGhostZone\x12\x1b.sector.SetGhostZoneRequest\x1a\x1c.sector.SetGhostZoneResponse\x12@\n\tSetSounds\x12\x18.sector.SetSoundsRequest\x1a\x19.sector.SetSoundsResponse\x12R\n\x0f\x41\x64\x64MigratingBot\x12\x1e.sector.AddMigratingBotRequest\x1a\x1f.sector.AddMigratingBotResponse\x12@\n\tStartTick\x12\x18.sector.StartTickRequest\x1a\x19.sector.StartTickResponse\x12=\n\x08GetDelta\x12\x17.sector.GetDeltaRequest\x1a\x18.sector.GetDeltaResponse\x12I\n\x0cSaveSnapshot\x12\x1b.sector.SaveSnapshotRequest\x1a\x1c.sector.SaveSnapshotResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dSectores/sector_service.proto\x12\x06sector\" \n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"6\n\x04\x43\x65ll\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.sector.Position\x12\x0f\n\x07\x65lement\x18\x02 \x01(\x0c\"[\n\x0b\x42otSnapshot\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x1d\n\x03pos\x18\x02 \x01(\x0b\x32\x10.sector.Position\x12\r\n\x05state\x18\x03 \x01(\x0c\x12\x0e\n\x06\x62udget\x18\x04 \x01(\x05\"R\n\nSoundEvent\x12 \n\x06origin\x18\x01 \x01(\x0b\x32\x10.sector.Position\x12\x11\n\tintensity\x18\x02 \x01(\x05\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"8\n\x14SetSectorModeRequest\x12 \n\x04mode\x18\x01 \x01(\x0e\x32\x12.sector.SectorMode\"2\n\x15SetSectorModeResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"2\n\x1bGetElementAttributesRequest\x12\x13\n\x0b\x65lement_ids\x18\x01 \x03(\t\"\xbe\x01\n\x11\x45lementAttributes\x12\x12\n\nelement_id\x18\x01 \x01(\t\x12\x17\n\x0f\x63omportamientos\x18\x02 \x03(\t\x12;\n\tatributos\x18\x03 \x03(\x0b\x32(.sector.ElementAttributes.AtributosEntry\x1a?\n\x0e\x41tributosEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.sector.Valor:\x02\x38\x01\"Z\n\x05Valor\x12\x10\n\x06\x65ntero\x18\x01 \x01(\x03H\x00\x12\x11\n\x07\x64\x65\x63imal\x18\x02 \x01(\x01H\x00\x12\x12\n\x08\x62ooleano\x18\x03 \x01(\x08H\x00\x12\x0f\n\x05texto\x18\x04 \x01(\tH\x00\x42\x07\n\x05valor\"g\n\x1cGetElementAttributesResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12,\n\telementos\x18\x03 \x03(\x0b\x32\x19.sector.ElementAttributes\"R\n\x10LoadStateRequest\x12\x1b\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\x0c.sector.Cell\x12!\n\x04\x62ots\x18\x02 \x03(\x0b\x32\x13.sector.BotSnapshot\".\n\x11LoadStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x11\n\x0fGetStateRequest\"m\n\x10GetStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x1b\n\x05\x63\x65lls\x18\x03 \x03(\x0b\x32\x0c.sector.Cell\x12!\n\x04\x62ots\x18\x04 \x03(\x0b\x32\x13.sector.BotSnapshot\"I\n\x13SetGhostZoneRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12!\n\x0bghost_cells\x18\x02 \x03(\x0b\x32\x0c.sector.Cell\"1\n\x14SetGhostZoneResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"G\n\x10SetSoundsRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12\"\n\x06sounds\x18\x02 \x03(\x0b\x32\x12.sector.SoundEvent\".\n\x11SetSoundsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"K\n\x16\x41\x64\x64MigratingBotRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12 \n\x03\x62ot\x18\x02 \x01(\x0b\x32\x13.sector.BotSnapshot\"4\n\x17\x41\x64\x64MigratingBotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"7\n\x10StartTickRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\x12\x12\n\ntimeout_ms\x18\x02 \x01(\x05\"A\n\x11StartTickResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x11\n\ttimed_out\x18\x03 \x01(\x08\"V\n\x0cMigratingBot\x12 \n\x03\x62ot\x18\x01 \x01(\x0b\x32\x13.sector.BotSnapshot\x12$\n\ntarget_pos\x18\x02 \x01(\x0b\x32\x10.sector.Position\"\"\n\x0fGetDeltaRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\"\xd2\x01\n\x10GetDeltaResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07tick_id\x18\x03 \x01(\x03\x12#\n\rchanged_cells\x18\x04 \x03(\x0b\x32\x0c.sector.Cell\x12+\n\routgoing_bots\x18\x05 \x03(\x0b\x32\x14.sector.MigratingBot\x12\x14\n\x0c\x64\x65\x61\x64_bot_ids\x18\x06 \x03(\t\x12*\n\x0e\x65mitted_sounds\x18\x07 \x03(\x0b\x32\x12.sector.SoundEvent\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t*3\n\nSectorMode\x12\x0c\n\x08INACTIVO\x10\x00\x12\x0b\n\x07\x44ORMIDO\x10\x01\x12\n\n\x06\x41\x43TIVO\x10\x02\x32\x8b\x05\n\rSectorService\x12L\n\rSetSectorMode\x12\x1c.sector.SetSectorModeRequest\x1a\x1d.sector.SetSectorModeResponse\x12@\n\tLoadState\x12\x18.sector.LoadStateRequest\x1a\x19.sector.LoadStateResponse\x12=\n\x08GetState\x12\x17.sector.GetStateRequest\x1a\x18.sector.GetStateResponse\x12I\n\x0cSetGhostZone\x12\x1b.sector.SetGhostZoneRequest\x1a\x1c.sector.SetGhostZoneResponse\x12@\n\tSetSounds\x12\x18.sector.SetSoundsRequest\x1a\x19.sector.SetSoundsResponse\x12R\n\x0f\x41\x64\x64MigratingBot\x12\x1e.sector.AddMigratingBotRequest\x1a\x1f.sector.AddMigratingBotResponse\x12@\n\tStartTick\x12\x18.sector.StartTickRequest\x1a\x19.sector.StartTickResponse\x12=\n\x08GetDelta\x12\x17.sector.GetDeltaRequest\x1a\x18.sector.GetDeltaResponse\x12I\n\x0cSaveSnapshot\x12\x1b.sector.SaveSnapshotRequest\x1a\x1c.sector.SaveSnapshotResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Sectores.sector_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SECTORMODE']._serialized_start=1635
-  _globals['_SECTORMODE']._serialized_end=1686
+  _globals['_ELEMENTATTRIBUTES_ATRIBUTOSENTRY']._loaded_options = None
+  _globals['_ELEMENTATTRIBUTES_ATRIBUTOSENTRY']._serialized_options = b'8\001'
+  _globals['_SECTORMODE']._serialized_start=2077
+  _globals['_SECTORMODE']._serialized_end=2128
   _globals['_POSITION']._serialized_start=41
   _globals['_POSITION']._serialized_end=73
   _globals['_CELL']._serialized_start=75
@@ -45,40 +47,50 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SETSECTORMODEREQUEST']._serialized_end=364
   _globals['_SETSECTORMODERESPONSE']._serialized_start=366
   _globals['_SETSECTORMODERESPONSE']._serialized_end=416
-  _globals['_LOADSTATEREQUEST']._serialized_start=418
-  _globals['_LOADSTATEREQUEST']._serialized_end=500
-  _globals['_LOADSTATERESPONSE']._serialized_start=502
-  _globals['_LOADSTATERESPONSE']._serialized_end=548
-  _globals['_GETSTATEREQUEST']._serialized_start=550
-  _globals['_GETSTATEREQUEST']._serialized_end=567
-  _globals['_GETSTATERESPONSE']._serialized_start=569
-  _globals['_GETSTATERESPONSE']._serialized_end=678
-  _globals['_SETGHOSTZONEREQUEST']._serialized_start=680
-  _globals['_SETGHOSTZONEREQUEST']._serialized_end=753
-  _globals['_SETGHOSTZONERESPONSE']._serialized_start=755
-  _globals['_SETGHOSTZONERESPONSE']._serialized_end=804
-  _globals['_SETSOUNDSREQUEST']._serialized_start=806
-  _globals['_SETSOUNDSREQUEST']._serialized_end=877
-  _globals['_SETSOUNDSRESPONSE']._serialized_start=879
-  _globals['_SETSOUNDSRESPONSE']._serialized_end=925
-  _globals['_ADDMIGRATINGBOTREQUEST']._serialized_start=927
-  _globals['_ADDMIGRATINGBOTREQUEST']._serialized_end=1002
-  _globals['_ADDMIGRATINGBOTRESPONSE']._serialized_start=1004
-  _globals['_ADDMIGRATINGBOTRESPONSE']._serialized_end=1056
-  _globals['_STARTTICKREQUEST']._serialized_start=1058
-  _globals['_STARTTICKREQUEST']._serialized_end=1113
-  _globals['_STARTTICKRESPONSE']._serialized_start=1115
-  _globals['_STARTTICKRESPONSE']._serialized_end=1180
-  _globals['_MIGRATINGBOT']._serialized_start=1182
-  _globals['_MIGRATINGBOT']._serialized_end=1268
-  _globals['_GETDELTAREQUEST']._serialized_start=1270
-  _globals['_GETDELTAREQUEST']._serialized_end=1304
-  _globals['_GETDELTARESPONSE']._serialized_start=1307
-  _globals['_GETDELTARESPONSE']._serialized_end=1517
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=1519
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=1561
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=1563
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=1633
-  _globals['_SECTORSERVICE']._serialized_start=1689
-  _globals['_SECTORSERVICE']._serialized_end=2340
+  _globals['_GETELEMENTATTRIBUTESREQUEST']._serialized_start=418
+  _globals['_GETELEMENTATTRIBUTESREQUEST']._serialized_end=468
+  _globals['_ELEMENTATTRIBUTES']._serialized_start=471
+  _globals['_ELEMENTATTRIBUTES']._serialized_end=661
+  _globals['_ELEMENTATTRIBUTES_ATRIBUTOSENTRY']._serialized_start=598
+  _globals['_ELEMENTATTRIBUTES_ATRIBUTOSENTRY']._serialized_end=661
+  _globals['_VALOR']._serialized_start=663
+  _globals['_VALOR']._serialized_end=753
+  _globals['_GETELEMENTATTRIBUTESRESPONSE']._serialized_start=755
+  _globals['_GETELEMENTATTRIBUTESRESPONSE']._serialized_end=858
+  _globals['_LOADSTATEREQUEST']._serialized_start=860
+  _globals['_LOADSTATEREQUEST']._serialized_end=942
+  _globals['_LOADSTATERESPONSE']._serialized_start=944
+  _globals['_LOADSTATERESPONSE']._serialized_end=990
+  _globals['_GETSTATEREQUEST']._serialized_start=992
+  _globals['_GETSTATEREQUEST']._serialized_end=1009
+  _globals['_GETSTATERESPONSE']._serialized_start=1011
+  _globals['_GETSTATERESPONSE']._serialized_end=1120
+  _globals['_SETGHOSTZONEREQUEST']._serialized_start=1122
+  _globals['_SETGHOSTZONEREQUEST']._serialized_end=1195
+  _globals['_SETGHOSTZONERESPONSE']._serialized_start=1197
+  _globals['_SETGHOSTZONERESPONSE']._serialized_end=1246
+  _globals['_SETSOUNDSREQUEST']._serialized_start=1248
+  _globals['_SETSOUNDSREQUEST']._serialized_end=1319
+  _globals['_SETSOUNDSRESPONSE']._serialized_start=1321
+  _globals['_SETSOUNDSRESPONSE']._serialized_end=1367
+  _globals['_ADDMIGRATINGBOTREQUEST']._serialized_start=1369
+  _globals['_ADDMIGRATINGBOTREQUEST']._serialized_end=1444
+  _globals['_ADDMIGRATINGBOTRESPONSE']._serialized_start=1446
+  _globals['_ADDMIGRATINGBOTRESPONSE']._serialized_end=1498
+  _globals['_STARTTICKREQUEST']._serialized_start=1500
+  _globals['_STARTTICKREQUEST']._serialized_end=1555
+  _globals['_STARTTICKRESPONSE']._serialized_start=1557
+  _globals['_STARTTICKRESPONSE']._serialized_end=1622
+  _globals['_MIGRATINGBOT']._serialized_start=1624
+  _globals['_MIGRATINGBOT']._serialized_end=1710
+  _globals['_GETDELTAREQUEST']._serialized_start=1712
+  _globals['_GETDELTAREQUEST']._serialized_end=1746
+  _globals['_GETDELTARESPONSE']._serialized_start=1749
+  _globals['_GETDELTARESPONSE']._serialized_end=1959
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=1961
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=2003
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=2005
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=2075
+  _globals['_SECTORSERVICE']._serialized_start=2131
+  _globals['_SECTORSERVICE']._serialized_end=2782
 # @@protoc_insertion_point(module_scope)

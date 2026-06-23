@@ -18,7 +18,8 @@ from typing import Optional
 
 import grpc
 
-from Gestores.Mundo.action_result import ActionResult
+from Gestores.Bots.Hypervisor.hypervisor import BotInfo
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
 from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     gestor_bots_service_pb2,
@@ -31,23 +32,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Tipos de retorno
 # ---------------------------------------------------------------------------
-
-
-class BotInfo:
-    __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
-
-    def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
-        self.bot_id = bot_id
-        self.hypervisor_id = hypervisor_id
-        self.proxy_address = proxy_address
-        self.ok = ok
-        self.error = error
-
-    def __repr__(self):
-        return (
-            f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, "
-            f"proxy={self.proxy_address!r}, error={self.error!r})"
-        )
 
 
 class HypervisorInfo:

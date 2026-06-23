@@ -23,7 +23,6 @@ from Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
 from Gestores.Mundo.Sector.sector import SectorMode
 from Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as sector_pb
 
-
 SECTOR_SIZE = 10
 
 
@@ -98,8 +97,9 @@ class TestGoldCells:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         bots_addr, _ = fake_bots_server
-        gestor, sectores, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, sectores = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
         )
@@ -115,8 +115,9 @@ class TestGoldCells:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         bots_addr, _ = fake_bots_server
-        gestor, _, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, _ = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
         )
@@ -134,12 +135,13 @@ class TestGhostZone:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         bots_addr, _ = fake_bots_server
-        gestor, sectores, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, sectores = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
         )
-        gestor._gold_cells[(9, 9)] = b"\xAA"
+        gestor._gold_cells[(9, 9)] = b"\xaa"
         ghost = gestor._calcular_ghost_zone(gestor._sectores[(1, 1)])
         posiciones = [(c.pos.x, c.pos.y) for c in ghost]
         assert (9, 9) in posiciones
@@ -148,8 +150,9 @@ class TestGhostZone:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         bots_addr, _ = fake_bots_server
-        gestor, _, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, _ = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
         )
@@ -160,7 +163,7 @@ class TestGhostZone:
 
     async def test_fase0_envia_ghost_zone_a_sectores(self, mundo_2x2):
         gestor, sectores, _ = mundo_2x2
-        gestor._gold_cells[(9, 9)] = b"\xBB"
+        gestor._gold_cells[(9, 9)] = b"\xbb"
         await gestor._fase_0()
         assert (9, 9) in sectores[(1, 1)]._ghost
 
@@ -206,8 +209,9 @@ class TestMigracion:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         bots_addr, _ = fake_bots_server
-        gestor, sectores, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, sectores = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
             modo_inicial=SectorMode.ACTIVO,
@@ -228,11 +232,16 @@ class TestMigracion:
 class TestAntiThrashing:
 
     async def _gestor_thrashing(
-        self, mundo_con_sectores, fake_bots_server, tmp_path, ticks_antes=2,
+        self,
+        mundo_con_sectores,
+        fake_bots_server,
+        tmp_path,
+        ticks_antes=2,
     ):
         bots_addr, bots_svc = fake_bots_server
-        gestor, sectores, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, sectores = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
             modo_inicial=SectorMode.ACTIVO,
@@ -249,7 +258,7 @@ class TestAntiThrashing:
             mundo_con_sectores, fake_bots_server, tmp_path
         )
         # FIX: parchear ANTES de los ticks para que _actualizar_modos_sector lo lea
-        gm_module.TICKS_ANTES_DE_DORMIR = 2
+        gestor.TICKS_ANTES_DE_DORMIR = 2
 
         for _ in range(2):
             await gestor._run_tick()
@@ -261,15 +270,15 @@ class TestAntiThrashing:
     async def test_vecino_de_activo_se_despierta(
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
         bots_addr, _ = fake_bots_server
-        gestor, sectores, _ = await mundo_con_sectores(
-            n_cols=2, n_rows=2,
+        gestor, sectores = await mundo_con_sectores(
+            n_cols=2,
+            n_rows=2,
             bots_address=bots_addr,
             snapshot_dir=tmp_path,
             modo_inicial=SectorMode.INACTIVO,
         )
-        gm_module.TICKS_ANTES_DE_DORMIR = 999
+        gestor.TICKS_ANTES_DE_DORMIR = 999
 
         info_00 = gestor._sectores[(0, 0)]
         await gestor._set_sector_mode(info_00, SectorMode.ACTIVO)
@@ -279,9 +288,9 @@ class TestAntiThrashing:
 
         vecinos = gestor._vecinos(info_00)
         for v in vecinos:
-            assert v.mode == SectorMode.DORMIDO, (
-                f"Vecino ({v.col},{v.row}) debería ser DORMIDO, es {v.mode}"
-            )
+            assert (
+                v.mode == SectorMode.DORMIDO
+            ), f"Vecino ({v.col},{v.row}) debería ser DORMIDO, es {v.mode}"
 
     async def test_sector_dormido_no_computa_tick(self, mundo_2x2):
         """Sector DORMIDO: GestorMundo no lo incluye en _fase_1, delta es None."""
@@ -312,6 +321,7 @@ class TestSnapshot:
 
     async def test_save_snapshot_crea_fichero(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         gestor._tick_id = 42
@@ -320,6 +330,7 @@ class TestSnapshot:
 
     async def test_save_snapshot_tick_id_correcto(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         gestor._tick_id = 77
@@ -330,6 +341,7 @@ class TestSnapshot:
 
     async def test_save_snapshot_incluye_sectores(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         gestor._tick_id = 1
@@ -341,17 +353,19 @@ class TestSnapshot:
 
     async def test_save_snapshot_incluye_gold_cells(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         gestor._tick_id = 5
-        gestor._gold_cells[(3, 3)] = b"\xDE\xAD"
+        gestor._gold_cells[(3, 3)] = b"\xde\xad"
         await gestor._save_snapshot()
         data = json.loads(list(tmp_path.glob("mundo_*.json"))[0].read_text())
         assert "3,3" in data["gold_cells"]
-        assert data["gold_cells"]["3,3"] == b"\xDE\xAD".hex()
+        assert data["gold_cells"]["3,3"] == b"\xde\xad".hex()
 
     async def test_latest_snapshot_path_sin_ficheros(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         assert gestor._latest_snapshot_path() is None
@@ -360,6 +374,7 @@ class TestSnapshot:
         self, mundo_2x2, tmp_path
     ):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         for tick in [1, 2, 3]:
@@ -370,6 +385,7 @@ class TestSnapshot:
 
     async def test_save_snapshot_tras_tick_real(self, mundo_2x2, tmp_path):
         import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
         await gestor._run_tick()

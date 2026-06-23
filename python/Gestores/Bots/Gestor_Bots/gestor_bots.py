@@ -21,7 +21,9 @@ import threading
 from dataclasses import dataclass
 from typing import Optional
 
-from Gestores.Mundo.action_result import ActionResult
+from Gestores.Bots.Hypervisor.hypervisor import BotStats
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Gestores.Transporte.gestor_bots_client import BotInfo
 
 logger = logging.getLogger(__name__)
 
@@ -29,33 +31,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Tipos de retorno internos
 # ---------------------------------------------------------------------------
-
-
-@dataclass
-class BotInfo:
-    bot_id: str
-    hypervisor_id: str
-    proxy_address: str
-    ok: bool = True
-    error: str = ""
-
-
-@dataclass
-class BotStats:
-    bot_id: str
-    fitness: float
-    tick: int
-    hypervisor_id: str
-
-
-@dataclass
-class BotList:
-    bots: list[BotStats]
-
-
-@dataclass
-class FitnessReport:
-    entries: list[BotStats]
 
 
 @dataclass
@@ -235,7 +210,9 @@ class Gestor_Bots:
     # ------------------------------------------------------------------
 
     def spawn_bot(self, bot_config: dict) -> BotInfo:
+
         bot_id = bot_config.get("bot_id", "")
+
         if not bot_id:
             return BotInfo(
                 bot_id="",
@@ -258,9 +235,10 @@ class Gestor_Bots:
             hv.current_load += 1
             self._bots[bot_id] = BotStats(
                 bot_id=bot_id,
-                fitness=0.0,
-                tick=0,
                 hypervisor_id=hv.hypervisor_id,
+                points_left=bot_config.get("budget", 0),
+                alive=True,
+                uptime_s=0.0,
             )
 
         client = self._hypervisor_clients.get(hv.hypervisor_id)
