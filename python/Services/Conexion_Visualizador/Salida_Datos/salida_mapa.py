@@ -1,8 +1,13 @@
+# Services/Conexion_Visualizador/Salida_Datos/salida_mapa.py
+
 import Utils.Sistema.codigos_errores as Codigos_Errores
-from Services.Conexion_Visualizador.SalidasDatos.salida_error import salida_error
+from Services.Conexion_Visualizador.Salida_Datos.salida_error import salida_error
 
 
 def salida_mapa(shared_data, entrada):
+    """
+    TODO
+    """
 
     # hay que comprobar si hay error y cual, o no
 
@@ -15,8 +20,6 @@ def salida_mapa(shared_data, entrada):
     # partes = []
     # partes.append("{\n")
     # partes.append('"tipo": "mapa",')
-
-
 
     # partes.append("\n}<END>")
     # serializacion = serializacion.join(partes)

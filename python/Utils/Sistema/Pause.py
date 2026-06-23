@@ -1,5 +1,3 @@
-
-
 def pause(shared_data):
 
     # Auxiliares: resumir

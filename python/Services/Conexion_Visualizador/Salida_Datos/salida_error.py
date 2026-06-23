@@ -1,3 +1,5 @@
+# Services/Conexion_Visualizador/Salida_Datos/salida_error.py
+
 def salida_error(codigo, datos):
     serializacion = ""
     partes = []

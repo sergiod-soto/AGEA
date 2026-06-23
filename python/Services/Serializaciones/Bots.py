@@ -1,3 +1,5 @@
+# Services/Conexion_Visualizador/Serializaciones/bots.py
+
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 
 

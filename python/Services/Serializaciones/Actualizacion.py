@@ -1,4 +1,6 @@
-from Services.Serializaciones.mundo import serializar_mundo
+# Services/Conexion_Visualizador/Serializaciones/actualizacion.py
+
+from Serializaciones.mundo import serializar_mundo
 from Services.Serializaciones.bots import serializar_bots
 
 
