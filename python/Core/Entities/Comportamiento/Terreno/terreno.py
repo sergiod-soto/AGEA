@@ -1,5 +1,4 @@
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
-from Core.Entities.meta import RestriccionMeta
 
 
 class Terreno(Comportamiento):

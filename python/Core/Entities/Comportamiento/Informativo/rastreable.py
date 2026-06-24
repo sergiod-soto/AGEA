@@ -1,9 +1,9 @@
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Informativo.informativo import Informativo
+from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.rastro import Rastro
-from Core.Entities.Elementos.Simples.Terreno.terreno import Terreno
 
 
 class Rastreable(Informativo):
@@ -24,9 +24,7 @@ class Rastreable(Informativo):
     """
 
     def __init__(
-        self,
-        condiciones_rastro: list[tuple[list[Condicion], float]] = None,
-        **kwargs
+        self, condiciones_rastro: list[tuple[list[Condicion], float]] = None, **kwargs
     ):
         super().__init__(**kwargs)
         self.condiciones_rastro = condiciones_rastro or []

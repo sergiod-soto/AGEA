@@ -41,8 +41,8 @@ from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
 from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
 from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Exceptions.exceptions import *
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
+from Exceptions.exceptions import NumAtributosIncorrecto
 
 comportamientos = Comportamiento.declarar_comportamientos(
     Peso,
@@ -268,27 +268,23 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
         }
 
     def serialize_all(self):
-        return str(
-            {
-                "id": self.id,
-                "tamanho": self.serialize_tamanho(),
-                "distancia_visible": self.serialize_distancia_visible(),
-                "casilla": self.serialize_casilla(),
-                "rotacion": self.serialize_rotacion(),
-                "apellidos": self.serializar_apellidos(),
-                "adn": self.serializar_adn(),
-                "stats": self.stats.serialize(),
-                "padres": self.serializar_padres(),
-            }
-        )
+        return {
+            "id": self.id,
+            "tamanho": self.serialize_tamanho(),
+            "distancia_visible": self.serialize_distancia_visible(),
+            "casilla": self.serialize_casilla(),
+            "rotacion": self.serialize_rotacion(),
+            "apellidos": self.serializar_apellidos(),
+            "adn": self.serializar_adn(),
+            "stats": self.stats.serialize(),
+            "padres": self.serializar_padres(),
+        }
 
     def serialize_position(self):
-        return str(
-            {
-                "id": self.id,
-                "tamanho": self.serialize_tamanho(),
-                "distancia_visible": self.serialize_distancia_visible(),
-                "casilla": self.serialize_casilla(),
-                "rotacion": self.serialize_rotacion(),
-            }
-        )
+        return {
+            "id": self.id,
+            "tamanho": self.serialize_tamanho(),
+            "distancia_visible": self.serialize_distancia_visible(),
+            "casilla": self.serialize_casilla(),
+            "rotacion": self.serialize_rotacion(),
+        }

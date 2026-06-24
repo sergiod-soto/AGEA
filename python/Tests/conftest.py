@@ -108,6 +108,7 @@ def sector_activo(sector):
     return sector
 
 
+
 # ---------------------------------------------------------------------------
 # Helpers de construcción de protos mock
 # ---------------------------------------------------------------------------
@@ -127,3 +128,5 @@ def make_mock_bot(bot_id, x, y, budget=100):
     bot.pos.y = y
     bot.budget = budget
     return bot
+
+

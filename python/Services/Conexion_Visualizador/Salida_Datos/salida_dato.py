@@ -1,29 +1,22 @@
 # Services/Conexion_Visualizador/Salida_Datos/salida_dato.py
 
-from Services.Conexion_Visualizador.Salida_Datos.salida_bot import salida_bot_full
+from Services.Conexion_Visualizador.Salida_Datos.Entidades.salida_bot import salida_bot_full
+
+_HANDLERS: dict = {
+    "bot": salida_bot_full,
+}
 
 
-def salida_dato(shared_data, entrada):
-    serializacion = ""
-    partes = []
-    partes.append("{\n")
-    partes.append('"tipo": "dato",')
+def salida_dato(shared_data, entrada: dict) -> dict | None:
+    entity = entrada.get("entity")
+    handler = _HANDLERS.get(entity)
 
-    # Switch para determinar qué tipo de dato se está pidiendo
-    #
+    if handler is None:
+        print(f"[SALIDA_DATO] Entidad desconocida: {entity!r}")
+        return None
 
-    if entrada["entity"] == "bot":
-        # Se pide detalles de un bot
-        partes.append('"bot":' + salida_bot_full(shared_data, entrada))
+    dato = handler(shared_data, entrada)
+    if dato is None:
+        return None
 
-    elif entrada["entity"] == "":
-        # Se pide detalles de un ""
-        partes.append('"":""')
-
-    #
-    ##########################################################
-
-    partes.append("\n}<END>")
-    serializacion = serializacion.join(partes)
-    # print("mensaje para unity:\n" + serializacion)
-    return serializacion
+    return {"tipo": "dato", entity: dato}

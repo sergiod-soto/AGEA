@@ -1,72 +1,43 @@
 # Services/Conexion_Visualizador/Salida_Datos/salida_perfil.py
 
+from Config import settings
 from Utils.Ficheros.leer_json import leer_JSON_Datos
 
 
-def salida_perfil(shared_data, mensaje):
+def salida_perfil(shared_data, mensaje: dict) -> dict | None:
+    tipo = mensaje.get("tipo")
 
-    serializacion = ""
-    partes = []
-    if mensaje["peticion"] != "perfil":
-        return
-    if mensaje["tipo"] == "obtener_perfiles":
-        partes.append("{\n")
-        partes.append('"peticion": "perfil"')
-        partes.append(",\n")
-        partes.append('"tipo": "obtener_perfiles",\n')
-        partes.append('"perfiles": [\n')
-        partes.append(_obtener_perfiles())
-        partes.append("\n]\n}")
-        partes.append("<END>")
+    if tipo == "obtener_perfiles":
+        return _obtener_perfiles()
 
-    serializacion = serializacion.join(partes)
-
-    return serializacion
+    print(f"[SALIDA_PERFIL] Tipo desconocido: {tipo!r}")
+    return None
 
 
-def _obtener_perfiles():
+def _obtener_perfiles() -> dict:
+    perfiles = []
+    for num in range(1, settings.NUM_PERFILES + 1):
+        perfil = _obtener_perfil(num)
+        if perfil is not None:
+            perfiles.append(perfil)
 
-    serializacion = ""
-    partes = []
-
-    partes.append(_obtener_perfil(1))
-    partes.append(",\n")
-    partes.append(_obtener_perfil(2))
-    partes.append(",\n")
-    partes.append(_obtener_perfil(3))
-    partes.append(",\n")
-    partes.append(_obtener_perfil(4))
-    partes.append(",\n")
-    partes.append(_obtener_perfil(5))
-    partes.append(",\n")
-    partes.append(_obtener_perfil(6))
-
-    serializacion = serializacion.join(partes)
-
-    return serializacion
+    return {
+        "peticion": "perfil",
+        "tipo": "obtener_perfiles",
+        "perfiles": perfiles,
+    }
 
 
-def _obtener_perfil(perfil_num):
+def _obtener_perfil(perfil_num: int) -> dict | None:
+    try:
+        perfil = leer_JSON_Datos(perfil_num)
+    except Exception as e:
+        print(f"[SALIDA_PERFIL] Error leyendo perfil {perfil_num}: {e}")
+        return None
 
-    perfil = leer_JSON_Datos(perfil_num)
-
-    print("perfil leido:", perfil)
-
-    serializacion = ""
-    partes = []
-
-    partes.append("{")
-    partes.append(f'"id": "{perfil["id"]}"')
-    partes.append(",\n")
-    partes.append(f'"nombre": "{perfil["nombre"]}"')
-    partes.append(",\n")
-    partes.append(f'"fecha": "{perfil["fecha"]}"')
-    partes.append(",\n")
-    partes.append(f'"tiempo_entrenamiento": {perfil["tiempo_entrenamiento"]}')
-    partes.append("}")
-
-    serializacion = serializacion.join(partes)
-
-    print(f"__obtener_perfil {perfil_num}:\n{serializacion}")
-
-    return serializacion
+    return {
+        "id": perfil["id"],
+        "nombre": perfil["nombre"],
+        "fecha": perfil["fecha"],
+        "tiempo_entrenamiento": perfil["tiempo_entrenamiento"],
+    }

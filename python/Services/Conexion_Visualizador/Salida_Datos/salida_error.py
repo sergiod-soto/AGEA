@@ -1,12 +1,9 @@
 # Services/Conexion_Visualizador/Salida_Datos/salida_error.py
 
-def salida_error(codigo, datos):
-    serializacion = ""
-    partes = []
-    partes.append("{\n")
-    partes.append('"tipo": "error",')
-    partes.append('"codigo":"' + str(codigo) + '",')
-    partes.append('"datos":"' + datos + '"')
-    partes.append("\n}<END>")
-    serializacion = serializacion.join(partes)
-    return serializacion
+
+def salida_error(codigo: int | str, datos: str) -> dict:
+    return {
+        "tipo": "error",
+        "codigo": str(codigo),
+        "datos": datos,
+    }
