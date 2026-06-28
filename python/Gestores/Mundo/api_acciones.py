@@ -1,5 +1,5 @@
 """
-api_acciones.py — Registro central de acciones del mundo.
+Gestores/Mundo/api_acciones.py — Registro central de acciones del mundo.
 
 Para añadir una acción nueva:
   1. Crear script en Gestores/Mundo/Acciones/mi_accion.py

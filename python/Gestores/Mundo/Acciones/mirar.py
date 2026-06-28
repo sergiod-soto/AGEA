@@ -16,7 +16,8 @@ import math
 import struct
 import logging
 
-from Gestores.Mundo.Gestor_Mundo.gestor_mundo import MAX_VISION_DISTANCE, ActionResult
+from Config.settings import MAX_VISION_DISTANCE
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
 
 logger = logging.getLogger(__name__)
 

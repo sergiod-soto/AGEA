@@ -1,24 +1,5 @@
 """
-hypervisor_server.py — Arranque del Hypervisor.
-
-Levanta dos servidores gRPC en el mismo proceso:
-  - HypervisorService  (puerto HV_PORT)       ← escucha al Gestor
-  - WorldProxyService  (puerto HV_PROXY_PORT) ← escucha a los Bots
-
-Tras arrancar ambos servidores se registra en el Gestor automáticamente.
-
-Uso:
-    python -m Hypervisores.Hypervisor.hypervisor_server
-
-Variables de entorno (todas opcionales):
-    HV_ID           identificador único de este HV       (default: "hv_01")
-    HV_ADDRESS      IP/hostname accesible desde fuera    (default: "localhost")
-    HV_PORT         puerto del HypervisorService         (default: 50052)
-    HV_PROXY_PORT   puerto del WorldProxyService         (default: 50053)
-    HV_CAPACITY     slots de bots simultáneos            (default: 32)
-    HV_WORKERS      hilos por servidor gRPC              (default: 10)
-    GESTOR_ADDRESS  host:puerto del Gestor               (default: "localhost:50051")
-    LOG_LEVEL       nivel de logging                     (default: INFO)
+hypervisor_server.py
 """
 
 from __future__ import annotations
@@ -28,9 +9,13 @@ import os
 import signal
 import sys
 import time
+import threading
 from concurrent import futures
+from pathlib import Path
 
 import grpc
+
+sys.path.insert(0, str(Path(__file__).parents[4]))
 
 from Gestores.Transporte.Proto_Generated.Bots import (
     hypervisor_service_pb2_grpc,
@@ -40,26 +25,15 @@ from Gestores.Transporte.gestor_bots_client import GestorBotsClient
 from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
 from Gestores.Bots.Hypervisor.world_proxy_servicer import WorldProxyServicer
-
 from Gestores.Transporte.remote_log_handler import setup_remote_logging
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parents[4]))  # N = niveles hasta python/
-
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
 logging.basicConfig(
-    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("hypervisor_server")
 
-# ---------------------------------------------------------------------------
-# Opciones gRPC comunes
-# ---------------------------------------------------------------------------
 _GRPC_OPTIONS = [
     ("grpc.max_receive_message_length", 256 * 1024 * 1024),
     ("grpc.max_send_message_length", 256 * 1024 * 1024),
@@ -69,31 +43,16 @@ _GRPC_OPTIONS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Construcción
-# ---------------------------------------------------------------------------
-
-
 def build_servers(
-    hv_id: str = "hv_01",
-    my_address: str = "localhost",
-    my_port: int = 50052,
-    my_proxy_port: int = 50053,
-    capacity: int = 32,
-    workers: int = 10,
-    gestor_address: str = "localhost:50051",
+    hv_id: str,
+    my_address: str,
+    my_port: int,
+    my_proxy_port: int,
+    capacity: int,
+    workers: int,
+    gestor_address: str,
 ) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorBotsClient]:
-    """
-    Construye y devuelve:
-        (servidor_gestion, servidor_proxy, hypervisor, gestor_client)
-
-    No arranca los servidores; solo los configura.
-    Separar construcción de arranque permite tests de integración sin procesos.
-    """
-    # 1. Cliente hacia el Gestor
     gestor_client = GestorBotsClient(gestor_address)
-
-    # 2. Lógica pura
     hv = Hypervisor(
         hypervisor_id=hv_id,
         gestor_client=gestor_client,
@@ -103,20 +62,16 @@ def build_servers(
         my_proxy_port=my_proxy_port,
     )
 
-    # 3. Servidor de gestión (Gestor → HV)
     management_server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=workers),
-        options=_GRPC_OPTIONS,
+        futures.ThreadPoolExecutor(max_workers=workers), options=_GRPC_OPTIONS
     )
     hypervisor_service_pb2_grpc.add_HypervisorServiceServicer_to_server(
         HypervisorServicer(hv), management_server
     )
     management_server.add_insecure_port(f"[::]:{my_port}")
 
-    # 4. Servidor proxy (Bot → HV)
     proxy_server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=workers),
-        options=_GRPC_OPTIONS,
+        futures.ThreadPoolExecutor(max_workers=workers), options=_GRPC_OPTIONS
     )
     world_proxy_service_pb2_grpc.add_WorldProxyServiceServicer_to_server(
         WorldProxyServicer(hv), proxy_server
@@ -126,26 +81,24 @@ def build_servers(
     return management_server, proxy_server, hv, gestor_client
 
 
-# ---------------------------------------------------------------------------
-# Arranque principal
-# ---------------------------------------------------------------------------
-
-
 def serve():
+    # Variables alineadas con lo que inyecta main.py
+    hv_id = os.getenv("HYPERVISOR_ID", "hv_00")
+    my_address = os.getenv("HYPERVISOR_HOST", "localhost")
+    my_port = int(os.getenv("HYPERVISOR_PORT", 50300))
+    my_proxy_port = int(os.getenv("HYPERVISOR_PROXY_PORT", 50400))
+    capacity = int(os.getenv("HYPERVISOR_CAPACITY", 32))
+    workers = int(os.getenv("HYPERVISOR_WORKERS", 10))
+    gestor_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
+    log_address = os.getenv("LOG_SERVER_ADDRESS", "")
 
-    setup_remote_logging(
-        mundo_address="10.0.0.1:50060",  # IP local del Mundo
-        component="gestor",
-        local_log_path="logs/gestor_local.log",
-    )
-
-    hv_id = os.environ.get("HV_ID", "hv_01")
-    my_address = os.environ.get("HV_ADDRESS", "localhost")
-    my_port = int(os.environ.get("HV_PORT", "50052"))
-    my_proxy_port = int(os.environ.get("HV_PROXY_PORT", "50053"))
-    capacity = int(os.environ.get("HV_CAPACITY", "32"))
-    workers = int(os.environ.get("HV_WORKERS", "10"))
-    gestor_addr = os.environ.get("GESTOR_ADDRESS", "localhost:50051")
+    # Log remoto solo si hay dirección configurada
+    if log_address:
+        setup_remote_logging(
+            mundo_address=log_address,
+            component=hv_id,
+            local_log_path=f"Logs/Bots/Hypervisor/{hv_id}.log",
+        )
 
     management_server, proxy_server, hv, gestor_client = build_servers(
         hv_id=hv_id,
@@ -154,27 +107,16 @@ def serve():
         my_proxy_port=my_proxy_port,
         capacity=capacity,
         workers=workers,
-        gestor_address=gestor_addr,
+        gestor_address=gestor_address,
     )
 
-    # Arrancamos los dos servidores
     management_server.start()
-    logger.info(
-        "HypervisorService arrancado en [::]:%d  (gestión, Gestor → HV)",
-        my_port,
-    )
+    logger.info("HypervisorService arrancado en [::]:%d", my_port)
 
     proxy_server.start()
-    logger.info(
-        "WorldProxyService arrancado en [::]:%d  (proxy, Bot → HV)",
-        my_proxy_port,
-    )
+    logger.info("WorldProxyService arrancado en [::]:%d", my_proxy_port)
 
-    # Nos registramos en el Gestor (con reintentos por si arranca antes)
-    _register_with_retries(hv, retries=10, delay=2.0)
-
-    # Heartbeat periódico: reportamos carga cada 30 s
-    import threading
+    _register_with_retries(hv)
 
     def _heartbeat():
         while True:
@@ -186,7 +128,6 @@ def serve():
 
     threading.Thread(target=_heartbeat, daemon=True, name="hv-heartbeat").start()
 
-    # Apagado limpio
     stop_event = {"fired": False}
 
     def _shutdown(signum, frame):
@@ -197,7 +138,6 @@ def serve():
         management_server.stop(grace=5)
         proxy_server.stop(grace=5)
         gestor_client.close()
-        logger.info("Hypervisor %s apagado.", hv_id)
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _shutdown)
@@ -211,35 +151,20 @@ def serve():
 
 
 def _register_with_retries(hv: Hypervisor, retries: int = 10, delay: float = 2.0):
-    """
-    Intenta registrarse en el Gestor hasta `retries` veces.
-    Espera `delay` segundos entre intentos.
-    El Gestor puede tardar en arrancar si los procesos se lanzan juntos.
-    """
     for attempt in range(1, retries + 1):
         try:
-            ok = hv.register_with_gestor()
-            if ok:
+            if hv.register_with_gestor():
                 return
-            logger.warning(
-                "Registro rechazado por el Gestor (intento %d/%d). Reintentando...",
-                attempt,
-                retries,
-            )
+            logger.warning("Registro rechazado (intento %d/%d).", attempt, retries)
         except Exception as exc:
             logger.warning(
-                "No se pudo contactar con el Gestor (intento %d/%d): %s",
+                "No se pudo contactar con Gestor (intento %d/%d): %s",
                 attempt,
                 retries,
                 exc,
             )
         time.sleep(delay)
-
-    logger.error(
-        "No se pudo registrar en el Gestor tras %d intentos. "
-        "El Hypervisor sigue en marcha pero sin asignación de bots.",
-        retries,
-    )
+    logger.error("No se pudo registrar tras %d intentos.", retries)
 
 
 if __name__ == "__main__":

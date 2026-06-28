@@ -1,48 +1,32 @@
 """
 gestor_mundo_server.py
-----------------------
-Arranca el servidor gRPC del GestorMundo y el bucle de ticks.
-
-Carpeta: Gestores/Mundo/Gestor_Mundo/
-
-Uso:
-    python -m Gestores.Mundo.Gestor_Mundo.gestor_mundo_server [--fresh]
-
-    --fresh    Partida nueva. Sin este flag intenta restaurar desde snapshot.
 """
 
 import argparse
 import asyncio
 import logging
 import os
-import signal
 import sys
+from pathlib import Path
 
 import grpc
+
+sys.path.insert(0, str(Path(__file__).parents[4]))
 
 from Gestores.Transporte.Proto_Generated.Sectores import (
     gestor_mundo_service_pb2_grpc as pb_grpc,
 )
+
+from Utils.Sistema.sistema import registrar_signals
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import GestorMundoServicer
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parents[4]))  # N = niveles hasta python/
-
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────
-#  Configuración
-# ─────────────────────────────────────────────
-
-GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]:50060")
+GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
+GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
 GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 10))
-
-
-# ─────────────────────────────────────────────
-#  Servidor
-# ─────────────────────────────────────────────
+LOG_SERVER_ADDRESS = os.getenv("LOG_SERVER_ADDRESS", "")  # vacío = sin log remoto
 
 
 async def serve(fresh: bool) -> None:
@@ -51,38 +35,30 @@ async def serve(fresh: bool) -> None:
 
     server = grpc.aio.server(
         options=[
-            # Sin límite de mensaje para el streaming de GetWorldMap
             ("grpc.max_send_message_length", -1),
             ("grpc.max_receive_message_length", -1),
         ]
     )
     pb_grpc.add_GestorMundoServiceServicer_to_server(servicer, server)
-    server.add_insecure_port(GESTOR_MUNDO_HOST)
 
+    address = f"{GESTOR_MUNDO_HOST}:{GESTOR_MUNDO_PORT}"
+    server.add_insecure_port(address)
     await server.start()
-    logger.info("GestorMundo gRPC escuchando en %s", GESTOR_MUNDO_HOST)
+    logger.info("GestorMundo gRPC escuchando en %s", address)
 
-    # Arrancar el gestor (carga estado o inicia limpio)
     await gestor.start(fresh=fresh)
 
-    # Manejar señales de apagado limpio
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
     def _shutdown(sig):
         logger.info("Señal %s recibida — apagando...", sig.name)
-        stop_event.set()
+        loop.call_soon_threadsafe(stop_event.set)
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _shutdown, sig)
+    registrar_signals(loop, _shutdown)
 
-    # Lanzar el bucle de ticks como tarea paralela
-    tick_task = asyncio.create_task(
-        _run_tick_loop(gestor),
-        name="tick_loop",
-    )
+    tick_task = asyncio.create_task(_run_tick_loop(gestor), name="tick_loop")
 
-    # Esperar señal de apagado
     await stop_event.wait()
 
     logger.info("Deteniendo bucle de ticks...")
@@ -98,34 +74,19 @@ async def serve(fresh: bool) -> None:
 
 
 async def _run_tick_loop(gestor: GestorMundo) -> None:
-    """
-    Envuelve gestor.run_loop() para capturar excepciones inesperadas
-    y reintentar en lugar de silenciar el fallo.
-    """
     while True:
         try:
             await gestor.run_loop()
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.exception(
-                "Error inesperado en el bucle de ticks — reintentando en 1s"
-            )
+            logger.exception("Error en bucle de ticks — reintentando en 1s")
             await asyncio.sleep(1)
 
 
-# ─────────────────────────────────────────────
-#  Entrada
-# ─────────────────────────────────────────────
-
-
 def main() -> None:
-    parser = argparse.ArgumentParser(description="GestorMundo gRPC server")
-    parser.add_argument(
-        "--fresh",
-        action="store_true",
-        help="Iniciar partida nueva (ignora snapshots existentes)",
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fresh", action="store_true")
     parser.add_argument(
         "--log-level",
         default=os.getenv("LOG_LEVEL", "INFO"),

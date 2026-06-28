@@ -1,5 +1,5 @@
 """
-core/log_servicer.py — Implementación gRPC del LogService.
+Gestores/Log/log_servicer.py — Implementación gRPC del LogService.
 
 Vive en el Mundo (local). Recibe logs del Gestor y los Hypervisores
 (ambos en AWS) y los escribe en disco organizados por componente.
@@ -18,7 +18,7 @@ import logging
 import logging.handlers
 from pathlib import Path
 
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Transporte.Proto_Generated.Otros import (
     log_service_pb2,
     log_service_pb2_grpc,
 )
@@ -27,10 +27,10 @@ from Gestores.Transporte.Proto_Generated import (
 # Mapeado LogLevel protobuf → logging Python
 # ---------------------------------------------------------------------------
 _PB_TO_PY: dict[int, int] = {
-    log_service_pb2.DEBUG:    logging.DEBUG,
-    log_service_pb2.INFO:     logging.INFO,
-    log_service_pb2.WARNING:  logging.WARNING,
-    log_service_pb2.ERROR:    logging.ERROR,
+    log_service_pb2.DEBUG: logging.DEBUG,
+    log_service_pb2.INFO: logging.INFO,
+    log_service_pb2.WARNING: logging.WARNING,
+    log_service_pb2.ERROR: logging.ERROR,
     log_service_pb2.CRITICAL: logging.CRITICAL,
 }
 
@@ -57,8 +57,8 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
         max_bytes: int = 10 * 1024 * 1024,
         backup_count: int = 5,
     ):
-        self._log_dir     = Path(log_dir)
-        self._max_bytes   = max_bytes
+        self._log_dir = Path(log_dir)
+        self._max_bytes = max_bytes
         self._backup_count = backup_count
         self._log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -89,7 +89,7 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
     def _write(self, record: log_service_pb2.LogRecord) -> None:
         """Escribe un LogRecord en el fichero del componente correspondiente."""
         logger = self._get_logger(record.component)
-        level  = _PB_TO_PY.get(record.level, logging.INFO)
+        level = _PB_TO_PY.get(record.level, logging.INFO)
 
         # Reconstruimos un LogRecord Python para que el formatter lo procese
         py_record = logging.LogRecord(
@@ -102,9 +102,9 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
             exc_info=None,
         )
         # Sustituimos el tiempo por el timestamp original del componente remoto
-        py_record.created    = record.timestamp / 1000.0
-        py_record.msecs      = record.timestamp % 1000
-        py_record.exc_text   = record.exc_info or None
+        py_record.created = record.timestamp / 1000.0
+        py_record.msecs = record.timestamp % 1000
+        py_record.exc_text = record.exc_info or None
 
         logger.handle(py_record)
 
@@ -124,21 +124,24 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
 
         # Fichero con rotación por tamaño
         log_path = self._log_dir / f"{component}.log"
-        handler  = logging.handlers.RotatingFileHandler(
+        handler = logging.handlers.RotatingFileHandler(
             log_path,
             maxBytes=self._max_bytes,
             backupCount=self._backup_count,
             encoding="utf-8",
         )
-        handler.setFormatter(logging.Formatter(
-            fmt="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        ))
+        handler.setFormatter(
+            logging.Formatter(
+                fmt="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
         logger.addHandler(handler)
 
         self._loggers[component] = logger
         logging.getLogger(__name__).info(
             "Nuevo componente registrado para logs: %s → %s",
-            component, log_path,
+            component,
+            log_path,
         )
         return logger

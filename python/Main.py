@@ -34,18 +34,21 @@ logger = logging.getLogger("main")
 # ─────────────────────────────────────────────────────────────
 
 ROOT = Path(__file__).parent
-PYTHON_ROOT = ROOT / "python"  # ⚠ ajustar si la raíz de imports es diferente
+PYTHON_ROOT = ROOT  # ⚠ ajustar si la raíz de imports es diferente
 
 
 # ─────────────────────────────────────────────────────────────
 #  Configuración por entorno
 # ─────────────────────────────────────────────────────────────
 
+
 def _cargar_env(modo: str) -> None:
     """Carga el fichero .env.<modo> si existe. No sobreescribe variables ya definidas."""
     env_file = ROOT / f".env.{modo}"
     if not env_file.exists():
-        logger.warning("No se encontró %s — usando variables de entorno del sistema.", env_file)
+        logger.warning(
+            "No se encontró %s — usando variables de entorno del sistema.", env_file
+        )
         return
     for line in env_file.read_text().splitlines():
         line = line.strip()
@@ -53,7 +56,7 @@ def _cargar_env(modo: str) -> None:
             continue
         key, _, value = line.partition("=")
         key = key.strip()
-        if key not in os.environ:          # no sobreescribir si ya está definida
+        if key not in os.environ:  # no sobreescribir si ya está definida
             os.environ[key] = value.strip()
     logger.info("Entorno cargado desde %s", env_file)
 
@@ -62,18 +65,20 @@ def _cargar_env(modo: str) -> None:
 #  Definición de componentes
 # ─────────────────────────────────────────────────────────────
 
+
 def _build_sector_components() -> list[dict]:
     """
     Genera un componente por sector según GRID_WIDTH, GRID_HEIGHT y SECTOR_SIZE.
     Las direcciones siguen la misma lógica que GestorMundo._sector_address().
     """
-    grid_w    = int(os.getenv("GRID_WIDTH",    100))   # ⚠ defaults reducidos para local
-    grid_h    = int(os.getenv("GRID_HEIGHT",   100))
-    sector_sz = int(os.getenv("SECTOR_SIZE",   100))
+    grid_w = int(os.getenv("GRID_WIDTH", 100))  # ⚠ defaults reducidos para local
+    grid_h = int(os.getenv("GRID_HEIGHT", 100))
+    sector_sz = int(os.getenv("SECTOR_SIZE", 100))
     base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
-    host      = os.getenv("SECTOR_HOST", "localhost")
+    host = os.getenv("SECTOR_HOST", "localhost")
 
     import math
+
     cols = math.ceil(grid_w / sector_sz)
     rows = math.ceil(grid_h / sector_sz)
 
@@ -81,20 +86,26 @@ def _build_sector_components() -> list[dict]:
     for col in range(cols):
         for row in range(rows):
             port = base_port + col * rows + row
-            components.append({
-                "nombre":  f"sector_{col}_{row}",
-                "script":  PYTHON_ROOT / "Gestores" / "Mundo" / "Sector" / "sector_server.py",
-                "healthcheck_address": f"{host}:{port}",
-                # ⚠ ajustar el import del stub cuando tengas el proto compilado
-                "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2_grpc",
-                "healthcheck_stub_class":  "SectorServiceStub",
-                "env_extra": {
-                    f"SECTOR_ADDR_C{col}_R{row}": f"{host}:{port}",
-                    "SECTOR_COL":  str(col),
-                    "SECTOR_ROW":  str(row),
-                    "SECTOR_PORT": str(port),
-                },
-            })
+            components.append(
+                {
+                    "nombre": f"sector_{col}_{row}",
+                    "script": PYTHON_ROOT
+                    / "Gestores"
+                    / "Mundo"
+                    / "Sector"
+                    / "sector_server.py",
+                    "healthcheck_address": f"{host}:{port}",
+                    # ⚠ ajustar el import del stub cuando tengas el proto compilado
+                    "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2_grpc",
+                    "healthcheck_stub_class": "SectorServiceStub",
+                    "env_extra": {
+                        f"SECTOR_ADDR_C{col}_R{row}": f"{host}:{port}",
+                        "SECTOR_COL": str(col),
+                        "SECTOR_ROW": str(row),
+                        "SECTOR_PORT": str(port),
+                    },
+                }
+            )
     return components
 
 
@@ -103,22 +114,26 @@ def _build_components() -> list[dict]:
     Orden de arranque: sectores → gestor_mundo → gestor_bots → hypervisores.
     Cada grupo espera healthcheck antes de arrancar el siguiente.
     """
-    gm_host   = os.getenv("GESTOR_MUNDO_HOST", "localhost")
-    gm_port   = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
-    gb_host   = os.getenv("GESTOR_BOTS_HOST", "localhost")
-    gb_port   = int(os.getenv("GESTOR_BOTS_PORT", 50051))
-    hv_host   = os.getenv("HYPERVISOR_HOST", "localhost")
-    hv_port   = int(os.getenv("HYPERVISOR_BASE_PORT", 50300))
-    hv_count  = int(os.getenv("HYPERVISOR_COUNT", 1))          # ⚠ ajustar para local
+    gm_host = os.getenv("GESTOR_MUNDO_HOST", "localhost")
+    gm_port = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
+    gb_host = os.getenv("GESTOR_BOTS_HOST", "localhost")
+    gb_port = int(os.getenv("GESTOR_BOTS_PORT", 50051))
+    hv_host = os.getenv("HYPERVISOR_HOST", "localhost")
+    hv_port = int(os.getenv("HYPERVISOR_BASE_PORT", 50300))
+    hv_count = int(os.getenv("HYPERVISOR_COUNT", 1))  # ⚠ ajustar para local
 
     sectores = _build_sector_components()
 
     gestor_mundo = {
         "nombre": "gestor_mundo",
-        "script": PYTHON_ROOT / "Gestores" / "Mundo" / "Gestor_Mundo" / "gestor_mundo_server.py",
+        "script": PYTHON_ROOT
+        / "Gestores"
+        / "Mundo"
+        / "Gestor_Mundo"
+        / "gestor_mundo_server.py",
         "healthcheck_address": f"{gm_host}:{gm_port}",
         "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Sectores.gestor_mundo_service_pb2_grpc",
-        "healthcheck_stub_class":  "GestorMundoStub",
+        "healthcheck_stub_class": "GestorMundoStub",
         "env_extra": {
             "GESTOR_MUNDO_HOST": gm_host,
             "GESTOR_MUNDO_PORT": str(gm_port),
@@ -127,37 +142,47 @@ def _build_components() -> list[dict]:
 
     gestor_bots = {
         "nombre": "gestor_bots",
-        "script": PYTHON_ROOT / "Gestores" / "Bots" / "Gestor_Bots" / "gestor_bots_server.py",
+        "script": PYTHON_ROOT
+        / "Gestores"
+        / "Bots"
+        / "Gestor_Bots"
+        / "gestor_bots_server.py",
         "healthcheck_address": f"{gb_host}:{gb_port}",
         "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Bots.gestor_bots_service_pb2_grpc",
-        "healthcheck_stub_class":  "GestorBotsStub",
+        "healthcheck_stub_class": "GestorBotsStub",
         "env_extra": {
-            "GESTOR_BOTS_HOST":    gb_host,
-            "GESTOR_BOTS_PORT":    str(gb_port),
+            "GESTOR_BOTS_HOST": gb_host,
+            "GESTOR_BOTS_PORT": str(gb_port),
             "GESTOR_MUNDO_ADDRESS": f"{gm_host}:{gm_port}",
         },
     }
 
     hypervisores = []
     for i in range(hv_count):
-        port       = hv_port + i
+        port = hv_port + i
         proxy_port = int(os.getenv("HYPERVISOR_PROXY_BASE_PORT", 50400)) + i
-        hv_id      = f"hv_{i:02d}"
-        hypervisores.append({
-            "nombre": f"hypervisor_{i:02d}",
-            "script": PYTHON_ROOT / "Gestores" / "Bots" / "Hypervisor" / "hypervisor_server.py",
-            "healthcheck_address": f"{hv_host}:{port}",
-            "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Bots.hypervisor_service_pb2_grpc",
-            "healthcheck_stub_class":  "HypervisorServiceStub",
-            "env_extra": {
-                "HYPERVISOR_ID":           hv_id,
-                "HYPERVISOR_HOST":         hv_host,
-                "HYPERVISOR_PORT":         str(port),
-                "HYPERVISOR_PROXY_PORT":   str(proxy_port),
-                "GESTOR_BOTS_ADDRESS":     f"{gb_host}:{gb_port}",
-                "GESTOR_MUNDO_ADDRESS":    f"{gm_host}:{gm_port}",
-            },
-        })
+        hv_id = f"hv_{i:02d}"
+        hypervisores.append(
+            {
+                "nombre": f"hypervisor_{i:02d}",
+                "script": PYTHON_ROOT
+                / "Gestores"
+                / "Bots"
+                / "Hypervisor"
+                / "hypervisor_server.py",
+                "healthcheck_address": f"{hv_host}:{port}",
+                "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Bots.hypervisor_service_pb2_grpc",
+                "healthcheck_stub_class": "HypervisorServiceStub",
+                "env_extra": {
+                    "HYPERVISOR_ID": hv_id,
+                    "HYPERVISOR_HOST": hv_host,
+                    "HYPERVISOR_PORT": str(port),
+                    "HYPERVISOR_PROXY_PORT": str(proxy_port),
+                    "GESTOR_BOTS_ADDRESS": f"{gb_host}:{gb_port}",
+                    "GESTOR_MUNDO_ADDRESS": f"{gm_host}:{gm_port}",
+                },
+            }
+        )
 
     # Grupos ordenados: cada lista es una "barrera" — todos deben estar listos antes del siguiente grupo
     return [
@@ -172,7 +197,10 @@ def _build_components() -> list[dict]:
 #  Healthcheck gRPC
 # ─────────────────────────────────────────────────────────────
 
-def _healthcheck(address: str, stub_module: str, stub_class: str, timeout_s: int = 30) -> bool:
+
+def _healthcheck(
+    address: str, stub_module: str, stub_class: str, timeout_s: int = 30
+) -> bool:
     """
     Intenta conectar al servicio gRPC en `address` hasta que responde o se agota timeout_s.
     Usa el stub real — si el canal abre, el proceso está listo.
@@ -180,7 +208,7 @@ def _healthcheck(address: str, stub_module: str, stub_class: str, timeout_s: int
     import importlib
 
     deadline = time.monotonic() + timeout_s
-    mod  = importlib.import_module(stub_module)
+    mod = importlib.import_module(stub_module)
     Stub = getattr(mod, stub_class)
 
     while time.monotonic() < deadline:
@@ -200,6 +228,7 @@ def _healthcheck(address: str, stub_module: str, stub_class: str, timeout_s: int
 #  Arranque de procesos
 # ─────────────────────────────────────────────────────────────
 
+
 def _lanzar_proceso(componente: dict) -> subprocess.Popen:
     env = os.environ.copy()
     env.update(componente.get("env_extra", {}))
@@ -211,7 +240,7 @@ def _lanzar_proceso(componente: dict) -> subprocess.Popen:
     proc = subprocess.Popen(
         [sys.executable, str(script)],
         env=env,
-        cwd=str(PYTHON_ROOT),   # ⚠ los _server.py hacen imports relativos a PYTHON_ROOT
+        cwd=str(PYTHON_ROOT),  # ⚠ los _server.py hacen imports relativos a PYTHON_ROOT
     )
     logger.info("Lanzado %s (pid %d)", componente["nombre"], proc.pid)
     return proc
@@ -266,20 +295,38 @@ def _apagar_procesos(procesos: list) -> None:
 #  Modo producción — arranque de componente único
 # ─────────────────────────────────────────────────────────────
 
-def _arrancar_componente_produccion(nombre: str) -> None:
-    """
-    En producción cada máquina AWS arranca su propio componente.
-    Este main.py actúa como wrapper que carga el .env y lanza el _server.py correcto.
-    """
+
+def _arrancar_componente_produccion(
+    nombre: str, python_root: Path | None = None
+) -> None:
+    root = python_root or PYTHON_ROOT  # permite inyección en tests
     scripts = {
-        "gestor_mundo":  PYTHON_ROOT / "Gestores" / "Mundo"  / "Gestor_Mundo" / "gestor_mundo_server.py",
-        "gestor_bots":   PYTHON_ROOT / "Gestores" / "Bots"   / "Gestor_Bots"  / "gestor_bots_server.py",
-        "hypervisor":    PYTHON_ROOT / "Gestores" / "Bots"   / "Hypervisor"   / "hypervisor_server.py",
-        "sector":        PYTHON_ROOT / "Gestores" / "Mundo"  / "Sector"       / "sector_server.py",
+        "gestor_mundo": root
+        / "Gestores"
+        / "Mundo"
+        / "Gestor_Mundo"
+        / "gestor_mundo_server.py",
+        "gestor_bots": root
+        / "Gestores"
+        / "Bots"
+        / "Gestor_Bots"
+        / "gestor_bots_server.py",
+        "hypervisor": root
+        / "Gestores"
+        / "Bots"
+        / "Hypervisor"
+        / "hypervisor_server.py",
+        "sector": root / "Gestores" / "Mundo" / "Sector" / "sector_server.py",
     }
 
-    # Normalizar: "sector_0_1" → "sector"
-    tipo = nombre.split("_")[0] if "_" in nombre else nombre
+    # Normalizar: "sector_0_1" → "sector", "hypervisor_00" → "hypervisor"
+    # "gestor_mundo" y "gestor_bots" son claves directas — no normalizar.
+    COMPONENTES_DIRECTOS = {"gestor_mundo", "gestor_bots", "hypervisor", "sector"}
+
+    if nombre in COMPONENTES_DIRECTOS:
+        tipo = nombre
+    else:
+        tipo = nombre.split("_")[0]
 
     script = scripts.get(tipo)
     if script is None:
@@ -290,12 +337,13 @@ def _arrancar_componente_produccion(nombre: str) -> None:
         raise FileNotFoundError(f"Script no encontrado: {script}")
 
     logger.info("Producción: arrancando %s desde %s", nombre, script)
-    os.execv(sys.executable, [sys.executable, str(script)])   # reemplaza este proceso
+    os.execv(sys.executable, [sys.executable, str(script)])
 
 
 # ─────────────────────────────────────────────────────────────
 #  Entry point
 # ─────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Orquestador del proyecto.")
@@ -332,7 +380,7 @@ def main() -> None:
             _apagar_procesos([(None, p) for p in procesos])
             sys.exit(0)
 
-        signal.signal(signal.SIGINT,  _shutdown)
+        signal.signal(signal.SIGINT, _shutdown)
         signal.signal(signal.SIGTERM, _shutdown)
 
         # Supervisión: si algún proceso muere, apagar todo

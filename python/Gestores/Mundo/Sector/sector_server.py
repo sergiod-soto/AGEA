@@ -2,12 +2,9 @@
 sector_server.py
 ----------------
 Arranca el servidor gRPC del Sector.
-
 Carpeta: Gestores/Mundo/Sector/
-
 Uso:
     python -m Gestores.Mundo.Sector.sector_server
-
 Variables de entorno relevantes:
     SECTOR_COL, SECTOR_ROW
     SECTOR_HOST, SECTOR_BASE_PORT   (puerto = BASE_PORT + col * ROWS + row)
@@ -19,18 +16,19 @@ import asyncio
 import logging
 import os
 import signal
+import sys
+from pathlib import Path
 
 import grpc
+
+sys.path.insert(0, str(Path(__file__).parents[4]))
 
 from Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as pb_grpc,
 )
 from Gestores.Mundo.Sector.sector import Sector
 from Gestores.Mundo.Sector.sector_servicer import SectorServicer
-
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parents[4]))  # N = niveles hasta python/
+from Utils.Sistema.sistema import registrar_signals
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +41,7 @@ SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_HOST = os.getenv("SECTOR_HOST", "[::]")
 SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 50100))
 SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
-
-# Número de filas de sectores — necesario para calcular el puerto
-ROWS = int(os.getenv("ROWS", 10))  # ceil(GRID_HEIGHT / SECTOR_SIZE)
+ROWS = int(os.getenv("ROWS", 10))
 
 
 def _sector_port() -> int:
@@ -71,16 +67,10 @@ async def serve() -> None:
 
     address = f"{SECTOR_HOST}:{_sector_port()}"
     server.add_insecure_port(address)
-
     await server.start()
-    logger.info(
-        "Sector (%d,%d) gRPC escuchando en %s",
-        SECTOR_COL,
-        SECTOR_ROW,
-        address,
-    )
 
-    # Apagado limpio
+    logger.info("Sector (%d,%d) gRPC escuchando en %s", SECTOR_COL, SECTOR_ROW, address)
+
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
@@ -91,13 +81,11 @@ async def serve() -> None:
             SECTOR_COL,
             SECTOR_ROW,
         )
-        stop_event.set()
+        loop.call_soon_threadsafe(stop_event.set)
 
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _shutdown, sig)
+    registrar_signals(loop, _shutdown)
 
     await stop_event.wait()
-
     logger.info("Apagando servidor gRPC del sector (%d,%d)...", SECTOR_COL, SECTOR_ROW)
     await server.stop(grace=5)
     logger.info("Sector (%d,%d) detenido.", SECTOR_COL, SECTOR_ROW)

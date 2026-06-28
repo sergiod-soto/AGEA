@@ -1,5 +1,5 @@
 """
-core/log_server.py — Servidor gRPC del LogService.
+Gestores/Log/log_server.py — Servidor gRPC del LogService.
 
 El Mundo lo arranca al inicializarse. Escucha en un puerto
 dedicado exclusivamente a recibir logs de componentes remotos.
@@ -28,7 +28,7 @@ from pathlib import Path
 import grpc
 
 from Gestores.Transporte.Proto_Generated.Otros import log_service_pb2_grpc
-from Gestores.Mundo.log_servicer import LogServicer
+from Gestores.Log.log_servicer import LogServicer
 
 import sys
 from pathlib import Path

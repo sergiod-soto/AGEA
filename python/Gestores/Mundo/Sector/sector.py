@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 SECTOR_COL = int(os.getenv("SECTOR_COL", 0))
 SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50))
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
