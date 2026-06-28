@@ -12,15 +12,18 @@ public class SolicitudDatos : MonoBehaviour, ISolicitudDatos
 
     public void SolicitarDatos(GameObject objeto)
     {
-        if (objeto.TryGetComponent<BotInfo>(out _))
-        {
-            SolicitarDatosBot(objeto);
-        }
-
+        if (objeto.TryGetComponent<BotInfo>(out BotInfo botInfo))
+            SolicitarDatosBot(botInfo);
     }
 
-    void SolicitarDatosBot(GameObject bot)
+    void SolicitarDatosBot(BotInfo bot)
     {
-        conexion.EnviarMensaje("{\"peticion\":\"dato\",\"entity\":\"bot\",\"id\":\"" + bot.GetComponent<BotInfo>().id + "\"}");
+        var msg = new JObject
+        {
+            ["peticion"] = "dato",
+            ["entity"] = "bot",
+            ["id"] = bot.id
+        };
+        conexion.EnviarMensaje(msg.ToString(Newtonsoft.Json.Formatting.None));
     }
 }

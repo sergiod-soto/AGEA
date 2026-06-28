@@ -14,8 +14,8 @@ import pytest
 from Services.Conexion_Visualizador import protocolo
 from Services.Conexion_Visualizador.conexion import run_exporter
 
-
 # ── fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def servidor(shared_data):
@@ -28,7 +28,7 @@ def servidor(shared_data):
         s.bind(("127.0.0.1", 0))
         puerto = s.getsockname()[1]
 
-    with patch("Services.Conexion_Visualizador.conexion.settings") as mock_settings:
+    with patch("Config/settings.py") as mock_settings:
         mock_settings.UNITY_HOST = "127.0.0.1"
         mock_settings.UNITY_PORT = puerto
 
@@ -53,6 +53,7 @@ def cliente(servidor):
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _enviar_peticion(conn: socket.socket, peticion: dict) -> dict:
     protocolo.enviar(conn, json.dumps(peticion).encode())
     respuesta = protocolo.recibir(conn)
@@ -61,6 +62,7 @@ def _enviar_peticion(conn: socket.socket, peticion: dict) -> dict:
 
 
 # ── tests ─────────────────────────────────────────────────────────────────────
+
 
 def test_peticion_actualizacion(cliente, shared_data, bot_position_dict):
     respuesta = _enviar_peticion(cliente, {"peticion": "actualizacion"})

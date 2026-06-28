@@ -27,8 +27,12 @@ from pathlib import Path
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import log_service_pb2_grpc
+from Gestores.Transporte.Proto_Generated.Otros import log_service_pb2_grpc
 from Gestores.Mundo.log_servicer import LogServicer
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[3]))  # N = niveles hasta python/
 
 
 class LogServer:

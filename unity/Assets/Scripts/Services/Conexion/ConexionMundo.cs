@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Sockets;
 using System.Text;
@@ -9,11 +8,8 @@ using System.Collections.Concurrent;
 
 public class ConexionMundo : MonoBehaviour, IConexionMundo
 {
-    IProcesamientoEntradaConexion procesamientoEntrada;
-
     TcpClient client;
     NetworkStream stream;
-    System.IO.StreamWriter writer;
 
     Thread receiveThread;
     Thread sendThread;
@@ -21,16 +17,17 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     CancellationTokenSource _cts;
 
     ConcurrentQueue<JObject> accionesPendientes;
-    ConcurrentQueue<string> mensajesPendientes;
+    ConcurrentQueue<byte[]> mensajesPendientes;
 
     public string address;
     public int PORT;
 
-    // ── Unity ─────────────────────────────────────────────────────────────────
+    public event Action OnDesconectado;
+
+    // ── Unity ──────────────────────────────────────────────────────────────────
 
     void Awake()
     {
-        procesamientoEntrada = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();
         accionesPendientes = new();
         mensajesPendientes = new();
     }
@@ -38,12 +35,11 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
     void OnApplicationQuit()
     {
         _cts?.Cancel();
-        writer?.Close();
         stream?.Close();
         client?.Close();
     }
 
-    // ── API pública ───────────────────────────────────────────────────────────
+    // ── API pública ────────────────────────────────────────────────────────────
 
     public void Arrancar()
     {
@@ -52,12 +48,9 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
             _cts = new CancellationTokenSource();
             client = new TcpClient(address, PORT);
             stream = client.GetStream();
-            writer = new System.IO.StreamWriter(stream) { AutoFlush = true };
 
-            receiveThread = new Thread(() => HiloRecepcion(_cts.Token));
-            sendThread = new Thread(() => HiloEnvio(_cts.Token));
-            receiveThread.IsBackground = true;
-            sendThread.IsBackground = true;
+            receiveThread = new Thread(() => HiloRecepcion(_cts.Token)) { IsBackground = true };
+            sendThread = new Thread(() => HiloEnvio(_cts.Token)) { IsBackground = true };
             receiveThread.Start();
             sendThread.Start();
         }
@@ -67,74 +60,72 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         }
     }
 
-    /// <summary>Encola un mensaje para enviarlo a Python.</summary>
+    /// <summary>Encola un mensaje para enviarlo a Python (se serializa a length-prefix).</summary>
     public void EnviarMensaje(string data)
     {
-        mensajesPendientes.Enqueue(data + "<END>");
+        byte[] payload = Encoding.UTF8.GetBytes(data);
+        byte[] length = BitConverter.GetBytes(payload.Length); // 4 bytes little-endian
+        byte[] mensaje = new byte[4 + payload.Length];
+        Buffer.BlockCopy(length, 0, mensaje, 0, 4);
+        Buffer.BlockCopy(payload, 0, mensaje, 4, payload.Length);
+        mensajesPendientes.Enqueue(mensaje);
     }
 
     public ConcurrentQueue<JObject> GetAccionesPendientes() => accionesPendientes;
-    public ConcurrentQueue<string> GetMensajesPendientes() => mensajesPendientes;
 
-    // ── Hilo de recepción ─────────────────────────────────────────────────────
+    // ── Hilo de recepción ──────────────────────────────────────────────────────
 
     void HiloRecepcion(CancellationToken token)
     {
-        byte[] buffer = new byte[4096];
-        StringBuilder sb = new();
-
-        while (!token.IsCancellationRequested)
+        try
         {
-            try
+            while (!token.IsCancellationRequested)
             {
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                if (bytesRead == 0) break; // conexión cerrada
+                // Leer exactamente 4 bytes de longitud
+                byte[] lenBuf = LeerExacto(4, token);
+                if (lenBuf == null) break;
 
-                sb.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                int payloadLen = BitConverter.ToInt32(lenBuf, 0);
 
-                // Procesar TODOS los mensajes completos que hayan llegado
-                // en este read (puede haber más de uno)
-                ProcesarMensajesEnBuffer(sb);
+                // Leer exactamente payloadLen bytes
+                byte[] payload = LeerExacto(payloadLen, token);
+                if (payload == null) break;
+
+                string mensaje = Encoding.UTF8.GetString(payload);
+
+                try { accionesPendientes.Enqueue(JObject.Parse(mensaje)); }
+                catch { Debug.LogWarning("[ConexionMundo] JSON inválido:\n" + mensaje); }
             }
-            catch (Exception e) when (!token.IsCancellationRequested)
-            {
-                Debug.Log("[ConexionMundo] Error al recibir:");
-                Debug.LogException(e);
-            }
+        }
+        catch (Exception e) when (!token.IsCancellationRequested)
+        {
+            Debug.LogException(e);
+        }
+
+        if (!token.IsCancellationRequested)
+        {
+            Debug.LogWarning("[ConexionMundo] Conexión perdida.");
+            OnDesconectado?.Invoke();
         }
     }
 
-    void ProcesarMensajesEnBuffer(StringBuilder sb)
+    /// <summary>Lee exactamente <paramref name="n"/> bytes del stream. Devuelve null si se cierra la conexión.</summary>
+    byte[] LeerExacto(int n, CancellationToken token)
     {
-        const string FIN = "<END>";
+        byte[] buf = new byte[n];
+        int leidos = 0;
 
-        string data = sb.ToString();
-        int endIndex;
-
-        while ((endIndex = data.IndexOf(FIN)) != -1)
+        while (leidos < n && !token.IsCancellationRequested)
         {
-            string mensaje = data[..endIndex];
-            string resto = data[(endIndex + FIN.Length)..];
-
-            // Actualizar el buffer con lo que queda tras el <END>
-            sb.Clear();
-            sb.Append(resto);
-            data = resto;
-
-            if (string.IsNullOrWhiteSpace(mensaje)) continue;
-
-            try
-            {
-                accionesPendientes.Enqueue(JObject.Parse(mensaje));
-            }
-            catch
-            {
-                Debug.Log("[ConexionMundo] Error parseando JSON:\n" + mensaje);
-            }
+            int r = stream.Read(buf, leidos, n - leidos);
+            if (r == 0) return null; // conexión cerrada
+            leidos += r;
         }
+
+        return leidos == n ? buf : null;
     }
 
-    // ── Hilo de envío ─────────────────────────────────────────────────────────
+    // ── Hilo de envío ──────────────────────────────────────────────────────────
 
     void HiloEnvio(CancellationToken token)
     {
@@ -142,14 +133,10 @@ public class ConexionMundo : MonoBehaviour, IConexionMundo
         {
             try
             {
-                if (mensajesPendientes.TryDequeue(out string mensaje))
-                {
-                    writer.WriteLine(mensaje);
-                }
+                if (mensajesPendientes.TryDequeue(out byte[] mensaje))
+                    stream.Write(mensaje, 0, mensaje.Length);
                 else
-                {
                     Thread.Sleep(5);
-                }
             }
             catch (System.IO.IOException)
             {

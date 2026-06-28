@@ -43,6 +43,10 @@ from Gestores.Bots.Hypervisor.world_proxy_servicer import WorldProxyServicer
 
 from Gestores.Transporte.remote_log_handler import setup_remote_logging
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[4]))  # N = niveles hasta python/
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------

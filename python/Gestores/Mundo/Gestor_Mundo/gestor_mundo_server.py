@@ -26,6 +26,10 @@ from Gestores.Transporte.Proto_Generated.Sectores import (
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
 from Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import GestorMundoServicer
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[4]))  # N = niveles hasta python/
+
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────

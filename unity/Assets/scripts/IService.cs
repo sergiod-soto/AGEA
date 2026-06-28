@@ -1,5 +1,7 @@
 
+
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +23,16 @@ public interface IConexionMundo : IService
     void Arrancar();
     void EnviarMensaje(string data);
     ConcurrentQueue<JObject> GetAccionesPendientes();
-    ConcurrentQueue<string> GetMensajesPendientes();
+}
+
+/*
+ *      
+ */
+public interface IProcesamientoEntradaConexion : IService
+{
+    void DigerirEntrada(JObject data);
+    void RegistrarHandler(string peticion, Action<JObject> handler);
+    void EliminarHandler(string peticion);
 }
 
 
@@ -55,17 +66,10 @@ public interface IGameLogica : IService
 {
     public void ActivarActualizacionDatos();
     public void DesactivarActualizacionDatos();
-
     public void PausarSimulacion();
 }
 
-/*
- *      Control visual del mundo
- */
-public interface IMundo : IService
-{
-    void RenderizarBots(Dictionary<string, GameObject> bots_gameObject);
-}
+
 
 /*
  *      Datos de los bots como informacion, no como objeto
@@ -82,14 +86,6 @@ public interface IDEVManager : IService
 {
     void StartFakeServer();
     void Test();
-}
-
-/*
- *      Que se hace con los mensajes que llegan desde Python
- */
-public interface IProcesamientoEntradaConexion : IService
-{
-    void DigerirEntrada(JObject data);
 }
 
 /*

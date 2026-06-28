@@ -1,16 +1,17 @@
+# Core/Mundo/datos.py
 """
-.       Datos del mundo generado/cargado
+Datos del mundo generado/cargado
 """
 
 """
-        Bots
+Bots
 """
 # region bots
 
-bots = {}  # K: id, V: bot
+bots = {}  # {id:uint64, bot:Bot}
 
 
-def serializar_bots():
+def obtener_bots():
     return bots
 
 

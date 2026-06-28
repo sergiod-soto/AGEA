@@ -22,12 +22,15 @@ from concurrent import futures
 
 import grpc
 
-from Gestores.Transporte.Proto_Generated import gestor_bots_service_pb2_grpc
+from Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2_grpc
 from Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
 from Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
 
 from Gestores.Transporte.remote_log_handler import setup_remote_logging
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parents[4])) 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------

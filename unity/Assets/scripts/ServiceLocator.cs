@@ -62,9 +62,9 @@ public class ServiceLocator : MonoBehaviour
             {
                 if (services.ContainsKey(iface))
                 {
-                    Debug.LogWarning(
+                    Debug.LogError(
                         $"ServiceLocator: ya existe un servicio registrado para {iface.Name}. " +
-                        $"Se ignora la implementación {mbType.Name}."
+                        $"Implementación duplicada: {mbType.Name}."
                     );
                     continue;
                 }
