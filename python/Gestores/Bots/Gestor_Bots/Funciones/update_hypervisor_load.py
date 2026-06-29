@@ -6,9 +6,10 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "UpdateHypervisorLoad"
 
-def handle(gestor: Gestor_Bots, request, context):
+
+async def handle(gestor: Gestor_Bots, request, context):
     try:
-        gestor.update_hypervisor_load(request.hypervisor_id, request.current_load)
+        await gestor.update_hypervisor_load(request.hypervisor_id, request.current_load)
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en UpdateHypervisorLoad")

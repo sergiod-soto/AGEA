@@ -1,4 +1,5 @@
 """
+Gestores/Bots/Gestor_Bots/acciones_delegadas.py
 
 Registro de acciones que los Hypervisores ejecutan localmente
 en lugar de reenviar al Mundo.
@@ -18,15 +19,12 @@ Para quitarla: elimínala de la lista. Sin más cambios.
 
 from __future__ import annotations
 
-from Gestores.Mundo.api_acciones import ACCIONES
-
 # ---------------------------------------------------------------------------
 # Lista de callables delegadas al HV
 # ---------------------------------------------------------------------------
-# Cada entrada es la función extraída directamente de ACCIONES,
-# fuente de verdad de todas las acciones del sistema.
-# Pueden ser sobreescritas.
+# Lista de nombres de acciones que el HV intercepta y ejecuta localmente.
+# La función se obtiene en tiempo de ejecución desde ACCIONES.
 
-ACCIONES_DELEGADAS: list = [
-    ACCIONES["mirar"]["funcion"],
+ACCIONES_DELEGADAS: list[str] = [
+    "mirar",
 ]

@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "BroadcastBudgets"
 
-def handle(gestor: Gestor_Bots, request, context):
+async def handle(gestor: Gestor_Bots, request, context):
     overrides = {entry.bot_id: entry.budget for entry in request.overrides}
     try:
         gestor.broadcast_budgets(request.default_budget, overrides)

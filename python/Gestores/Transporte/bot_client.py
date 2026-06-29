@@ -41,8 +41,8 @@ from typing import Optional
 
 import grpc
 
-from Gestores.Mundo.action_result import ActionResult
-from Gestores.Transporte.Proto_Generated import (
+from Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Gestores.Transporte.Proto_Generated.Bots import (
     common_pb2,
     world_proxy_service_pb2,
     world_proxy_service_pb2_grpc,
@@ -54,8 +54,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Tipos de retorno
 # ---------------------------------------------------------------------------
-
-
 
 
 @dataclass

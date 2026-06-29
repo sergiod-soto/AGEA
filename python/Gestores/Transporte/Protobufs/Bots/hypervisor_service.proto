@@ -77,7 +77,13 @@ message ResetBudgetsRequest {
   repeated common.BudgetEntry overrides = 3;
 }
 
+message FreezeRequest {}
 
+message ResumeRequest {}
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;
+}
 
 message SetPointBudgetRequest {
   string bot_id = 1;

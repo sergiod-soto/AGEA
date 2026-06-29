@@ -4,6 +4,7 @@ hypervisor.py — Lógica pura del Hypervisor.
 
 from __future__ import annotations
 
+import datetime
 import gzip
 import logging
 import os
@@ -22,11 +23,6 @@ logger = logging.getLogger(__name__)
 DEFAULT_BUDGET = 100
 
 
-# ---------------------------------------------------------------------------
-# Tipos internos
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class BotRecord:
     bot_id: str
@@ -41,11 +37,6 @@ class SpawnResult:
     error: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Tipos de retorno
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class BotInfo:
     __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
@@ -58,9 +49,7 @@ class BotInfo:
         self.error = error
 
     def __repr__(self):
-        return (
-            f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, " f"error={self.error!r})"
-        )
+        return f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, error={self.error!r})"
 
 
 @dataclass
@@ -90,12 +79,7 @@ class BotList:
     __slots__ = ("bots",)
 
     def __init__(self, bots):
-        self.bots = bots  # list[BotStats]
-
-
-# ---------------------------------------------------------------------------
-# Hypervisor
-# ---------------------------------------------------------------------------
+        self.bots = bots
 
 
 class Hypervisor:
@@ -104,12 +88,13 @@ class Hypervisor:
 
     Parámetros
     ----------
-    hypervisor_id   : str
-    gestor_client   : GestorBotsClient
-    capacity        : int
-    my_address      : str
-    my_port         : int
-    my_proxy_port   : int
+    hypervisor_id      : str
+    gestor_client      : GestorBotsClient
+    gestor_mundo_client: GestorMundoClient
+    capacity           : int
+    my_address         : str
+    my_port            : int
+    my_proxy_port      : int
     """
 
     def __init__(
@@ -134,7 +119,10 @@ class Hypervisor:
         self._bots: dict[str, BotRecord] = {}
         self._procesos: dict[str, subprocess.Popen] = {}
 
-        self._delegated: set[str] = set()
+        self._frozen = False
+
+        # nombre → callable. Poblado en set_delegated_actions.
+        self._delegated: dict[str, callable] = {}
 
         logger.info(
             "Hypervisor %s inicializado (cap=%d, proxy=%s:%d)",
@@ -149,36 +137,39 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     def set_delegated_actions(self, action_names: list[str]) -> None:
+        """
+        Recibe los nombres de acciones delegadas desde el Gestor_Bots
+        y construye el mapa nombre → callable desde ACCIONES.
+        """
         if not action_names:
             logger.info("HV %s: sin acciones delegadas.", self.hypervisor_id)
-            self._delegated = set()
+            self._delegated = {}
             return
 
         try:
             from Gestores.Mundo.api_acciones import ACCIONES
         except ImportError as exc:
-            logger.error(
-                "No se pudo importar acciones: %s. "
-                "El HV no interceptará ninguna acción.",
-                exc,
-            )
-            self._delegated = set()
+            logger.error("No se pudo importar ACCIONES: %s.", exc)
+            self._delegated = {}
             return
 
-        validadas = set()
+        delegated = {}
         for name in action_names:
-            if name not in ACCIONES:
+            entrada = ACCIONES.get(name)
+            if entrada is None:
                 logger.warning(
                     "Acción delegada '%s' no encontrada en ACCIONES; ignorada.", name
                 )
                 continue
-            validadas.add(name)
+            fn = entrada.get("funcion")
+            if fn is None:
+                logger.warning("Acción delegada '%s' no tiene funcion; ignorada.", name)
+                continue
+            delegated[name] = fn
 
-        self._delegated = validadas
+        self._delegated = delegated
         logger.info(
-            "HV %s: acciones delegadas → %s",
-            self.hypervisor_id,
-            self._delegated,
+            "HV %s: acciones delegadas → %s", self.hypervisor_id, list(self._delegated)
         )
 
     def is_delegated(self, action_name: str) -> bool:
@@ -188,19 +179,34 @@ class Hypervisor:
     def execute_delegated(
         self, bot_id: str, action_name: str, payload: bytes
     ) -> ActionResult:
+        """
+        Ejecuta una acción interceptada por el HV.
+        El AccionContext no tiene gold_cells ni elements — la función
+        debe funcionar con solo bot_id y payload.
+        Si la función necesita datos del Mundo, debe usar gestor_mundo_client.
+        """
         fn = self._delegated.get(action_name)
         if fn is None:
             return ActionResult(
-                ok=False, error=f"Acción '{action_name}' no está delegada en este HV."
+                ok=False,
+                payload=b"",
+                error=f"Acción '{action_name}' no está delegada en este HV.",
             )
 
         with self._lock:
             if bot_id not in self._bots:
-                return ActionResult(ok=False, error=f"Bot {bot_id!r} no encontrado.")
+                return ActionResult(
+                    ok=False, payload=b"", error=f"Bot {bot_id!r} no encontrado."
+                )
 
         from Gestores.Mundo.api_acciones import AccionContext
 
-        ctx = AccionContext(bot_id=bot_id, payload=payload)
+        ctx = AccionContext(
+            bot_id=bot_id,
+            payload=payload,
+            # gold_cells, elements, bot_positions = None → la función
+            # sabe que está en contexto HV y usa gestor_mundo_client si necesita.
+        )
 
         try:
             return fn(ctx)
@@ -211,18 +217,13 @@ class Hypervisor:
                 bot_id,
                 exc,
             )
-            return ActionResult(ok=False, error=str(exc))
+            return ActionResult(ok=False, payload=b"", error=str(exc))
 
     # ------------------------------------------------------------------
     # Registro en el Gestor
     # ------------------------------------------------------------------
 
     def register_with_gestor(self) -> bool:
-        """
-        Llama a RegisterHypervisor en el Gestor y construye
-        la tabla de interceptación con la lista recibida.
-        Devuelve True si el Gestor aceptó el registro.
-        """
         result = self.gestor_client.register_hypervisor(
             hypervisor_id=self.hypervisor_id,
             address=self._my_address,
@@ -230,19 +231,13 @@ class Hypervisor:
             proxy_port=self._my_proxy_port,
             capacity=self.capacity,
         )
-
         if result.ok:
             self.set_delegated_actions(result.delegated_actions)
-            logger.info(
-                "HV %s registrado correctamente en el Gestor.", self.hypervisor_id
-            )
+            logger.info("HV %s registrado correctamente.", self.hypervisor_id)
         else:
             logger.error(
-                "El Gestor rechazó el registro del HV %s: %s",
-                self.hypervisor_id,
-                result.error,
+                "Gestor rechazó registro de HV %s: %s", self.hypervisor_id, result.error
             )
-
         return result.ok
 
     def report_load(self) -> None:
@@ -269,12 +264,10 @@ class Hypervisor:
                 return SpawnResult(
                     ok=False, error=f"Bot {bot_id!r} ya existe en este HV"
                 )
-            # Reservar plaza antes de salir del lock
             self._bots[bot_id] = BotRecord(
                 bot_id=bot_id, budget=budget, max_budget=budget, alive=False
             )
 
-        # Escribir código en disco fuera del lock
         codigo_path = self._codigo_path(bot_id)
         try:
             codigo_path.parent.mkdir(parents=True, exist_ok=True)
@@ -285,7 +278,6 @@ class Hypervisor:
             logger.error("Error escribiendo código de bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error descomprimiendo código: {exc}")
 
-        # Lanzar proceso fuera del lock
         try:
             proceso = subprocess.Popen(
                 ["python", str(codigo_path)],
@@ -302,7 +294,6 @@ class Hypervisor:
             logger.error("Error lanzando proceso bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error lanzando proceso: {exc}")
 
-        # Confirmar spawn exitoso
         with self._lock:
             self._bots[bot_id].alive = True
             self._procesos[bot_id] = proceso
@@ -327,11 +318,7 @@ class Hypervisor:
             rec = self._bots.get(bot_id)
             if rec is None:
                 return None
-            return BotStatus(
-                bot_id=rec.bot_id,
-                alive=rec.alive,
-                budget=rec.budget,
-            )
+            return BotStatus(bot_id=rec.bot_id, alive=rec.alive, budget=rec.budget)
 
     def list_bots(self) -> BotList:
         with self._lock:
@@ -377,6 +364,8 @@ class Hypervisor:
 
     def try_spend_points(self, bot_id: str, cost: int) -> tuple[bool, int]:
         with self._lock:
+            if self._frozen:
+                return False, 0
             rec = self._bots.get(bot_id)
             if rec is None:
                 logger.warning("try_spend_points: bot desconocido %s", bot_id)
@@ -392,9 +381,6 @@ class Hypervisor:
                 )
                 return False, rec.budget
             rec.budget -= cost
-            logger.debug(
-                "Bot %s gastó %d pt(s). Restantes: %d.", bot_id, cost, rec.budget
-            )
             return True, rec.budget
 
     def set_point_budget(self, bot_id: str, points: int) -> None:
@@ -422,7 +408,20 @@ class Hypervisor:
     # Proxy al Mundo
     # ------------------------------------------------------------------
 
-    def forward_to_gestor(self, bot_id: str, action_type: str, payload: bytes):
+    def forward_to_mundo(
+        self, bot_id: str, action_type: str, payload: bytes
+    ) -> ActionResult:
+        """Redirige una acción no delegada al gestor_mundo."""
+        return self.gestor_mundo_client.forward_action(
+            bot_id=bot_id,
+            action_type=action_type,
+            payload=payload,
+        )
+
+    def forward_to_gestor(
+        self, bot_id: str, action_type: str, payload: bytes
+    ) -> ActionResult:
+        """Redirige una acción al gestor_bots (para acciones que pasan por él)."""
         return self.gestor_client.forward_action(
             bot_id=bot_id,
             hypervisor_id=self.hypervisor_id,
@@ -473,3 +472,46 @@ class Hypervisor:
 
     def cargar_estado(self):
         raise NotImplementedError
+
+    # ------------------------------------------------------------------
+    # Gestion Hypervisores
+    # ------------------------------------------------------------------
+
+    def freeze(self) -> None:
+        """Marca el HV como congelado — los bots no pueden gastar puntos."""
+        with self._lock:
+            self._frozen = True
+        logger.info("Hypervisor %s congelado.", self.hypervisor_id)
+
+    def resume(self) -> None:
+        with self._lock:
+            self._frozen = False
+        logger.info("Hypervisor %s reanudado.", self.hypervisor_id)
+
+    def save_snapshot(self, snapshot_id: str) -> None:
+        """
+        Guarda el estado del HV a disco.
+        El HV es responsable de su propio estado — al restaurar
+        lee este fichero sin necesitar al gestor.
+        """
+        import json
+        from pathlib import Path
+
+        state = {
+            "snapshot_id": snapshot_id,
+            "hypervisor_id": self.hypervisor_id,
+            "bots": [
+                {
+                    "bot_id": rec.bot_id,
+                    "budget": rec.budget,
+                    "max_budget": rec.max_budget,
+                    "alive": rec.alive,
+                }
+                for rec in self._bots.values()
+            ],
+            "date": datetime.datetime.now(),
+        }
+        path = Path("data/snapshots") / f"hv_{self.hypervisor_id}_{snapshot_id}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(state))
+        logger.info("Hypervisor %s snapshot guardado: %s", self.hypervisor_id, path)

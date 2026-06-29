@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x42ots/hypervisor_service.proto\x12\nhypervisor\x1a\x11\x42ots/common.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"\x11\n\x0fListBotsRequest\"f\n\x13ResetBudgetsRequest\x12\x0f\n\x07\x62ot_ids\x18\x01 \x03(\t\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x02 \x01(\x05\x12&\n\toverrides\x18\x03 \x03(\x0b\x32\x13.common.BudgetEntry\"7\n\x15SetPointBudgetRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0e\n\x06points\x18\x02 \x01(\x05\x32\xb1\x03\n\x11HypervisorService\x12\x38\n\x08SpawnBot\x12\x1b.hypervisor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12\x30\n\x07KillBot\x12\x18.hypervisor.BotIdRequest\x1a\x0b.common.Ack\x12\x39\n\x0bGetBotStats\x12\x18.hypervisor.BotIdRequest\x1a\x10.common.BotStats\x12\x38\n\x08ListBots\x12\x1b.hypervisor.ListBotsRequest\x1a\x0f.common.BotList\x12<\n\x0cResetBudgets\x12\x1f.hypervisor.ResetBudgetsRequest\x1a\x0b.common.Ack\x12@\n\x0eSetPointBudget\x12!.hypervisor.SetPointBudgetRequest\x1a\x0b.common.Ack\x12;\n\x0cGetBotStatus\x12\x18.hypervisor.BotIdRequest\x1a\x11.common.BotStatusb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x42ots/hypervisor_service.proto\x12\nhypervisor\x1a\x11\x42ots/common.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"\x11\n\x0fListBotsRequest\"f\n\x13ResetBudgetsRequest\x12\x0f\n\x07\x62ot_ids\x18\x01 \x03(\t\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x02 \x01(\x05\x12&\n\toverrides\x18\x03 \x03(\x0b\x32\x13.common.BudgetEntry\"\x0f\n\rFreezeRequest\"\x0f\n\rResumeRequest\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"7\n\x15SetPointBudgetRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0e\n\x06points\x18\x02 \x01(\x05\x32\xb1\x03\n\x11HypervisorService\x12\x38\n\x08SpawnBot\x12\x1b.hypervisor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12\x30\n\x07KillBot\x12\x18.hypervisor.BotIdRequest\x1a\x0b.common.Ack\x12\x39\n\x0bGetBotStats\x12\x18.hypervisor.BotIdRequest\x1a\x10.common.BotStats\x12\x38\n\x08ListBots\x12\x1b.hypervisor.ListBotsRequest\x1a\x0f.common.BotList\x12<\n\x0cResetBudgets\x12\x1f.hypervisor.ResetBudgetsRequest\x1a\x0b.common.Ack\x12@\n\x0eSetPointBudget\x12!.hypervisor.SetPointBudgetRequest\x1a\x0b.common.Ack\x12;\n\x0cGetBotStatus\x12\x18.hypervisor.BotIdRequest\x1a\x11.common.BotStatusb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -40,8 +40,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_LISTBOTSREQUEST']._serialized_end=167
   _globals['_RESETBUDGETSREQUEST']._serialized_start=169
   _globals['_RESETBUDGETSREQUEST']._serialized_end=271
-  _globals['_SETPOINTBUDGETREQUEST']._serialized_start=273
-  _globals['_SETPOINTBUDGETREQUEST']._serialized_end=328
-  _globals['_HYPERVISORSERVICE']._serialized_start=331
-  _globals['_HYPERVISORSERVICE']._serialized_end=764
+  _globals['_FREEZEREQUEST']._serialized_start=273
+  _globals['_FREEZEREQUEST']._serialized_end=288
+  _globals['_RESUMEREQUEST']._serialized_start=290
+  _globals['_RESUMEREQUEST']._serialized_end=305
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=307
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=349
+  _globals['_SETPOINTBUDGETREQUEST']._serialized_start=351
+  _globals['_SETPOINTBUDGETREQUEST']._serialized_end=406
+  _globals['_HYPERVISORSERVICE']._serialized_start=409
+  _globals['_HYPERVISORSERVICE']._serialized_end=842
 # @@protoc_insertion_point(module_scope)

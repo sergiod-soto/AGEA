@@ -95,7 +95,6 @@ def _build_sector_components() -> list[dict]:
                     / "Sector"
                     / "sector_server.py",
                     "healthcheck_address": f"{host}:{port}",
-                    # ⚠ ajustar el import del stub cuando tengas el proto compilado
                     "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2_grpc",
                     "healthcheck_stub_class": "SectorServiceStub",
                     "env_extra": {
@@ -133,7 +132,7 @@ def _build_components() -> list[dict]:
         / "gestor_mundo_server.py",
         "healthcheck_address": f"{gm_host}:{gm_port}",
         "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Sectores.gestor_mundo_service_pb2_grpc",
-        "healthcheck_stub_class": "GestorMundoStub",
+        "healthcheck_stub_class": "GestorMundoServiceStub",
         "env_extra": {
             "GESTOR_MUNDO_HOST": gm_host,
             "GESTOR_MUNDO_PORT": str(gm_port),
@@ -149,7 +148,7 @@ def _build_components() -> list[dict]:
         / "gestor_bots_server.py",
         "healthcheck_address": f"{gb_host}:{gb_port}",
         "healthcheck_stub_module": "Gestores.Transporte.Proto_Generated.Bots.gestor_bots_service_pb2_grpc",
-        "healthcheck_stub_class": "GestorBotsStub",
+        "healthcheck_stub_class": "GestorBotsServiceStub",
         "env_extra": {
             "GESTOR_BOTS_HOST": gb_host,
             "GESTOR_BOTS_PORT": str(gb_port),

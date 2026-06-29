@@ -4,16 +4,22 @@ from Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
 import logging
 
 logger = logging.getLogger(__name__)
+
 NAME = "RegisterHypervisor"
 
-def handle(gestor: Gestor_Bots, request, context):
+
+async def handle(gestor, request, context):
+
     logger.info(
         "RegisterHypervisor: %s en %s:%d (proxy:%d, cap:%d)",
-        request.hypervisor_id, request.address, request.port,
-        request.proxy_port, request.capacity,
+        request.hypervisor_id,
+        request.address,
+        request.port,
+        request.proxy_port,
+        request.capacity,
     )
     try:
-        gestor.register_hypervisor(
+        await gestor.register_hypervisor(
             hypervisor_id=request.hypervisor_id,
             address=request.address,
             port=request.port,

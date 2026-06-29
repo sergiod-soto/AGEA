@@ -1,5 +1,11 @@
-# Gestores/Bots/Gestor_Bots/gestor_bots_servicer.py
+"""
+gestor_bots_servicer.py
+"""
+
+from __future__ import annotations
+
 import logging
+
 from Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2_grpc as pb_grpc,
 )
@@ -16,33 +22,61 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         self._hv_client_factory = hypervisor_client_factory
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
 
-    def SpawnBot(self, request, context):
-        return self._dispatch["SpawnBot"].handle(self._gestor, request, context)
+    async def SpawnBot(self, request, context):
+        return await self._dispatch["SpawnBot"].handle(self._gestor, request, context)
 
-    def KillBot(self, request, context):
-        return self._dispatch["KillBot"].handle(self._gestor, request, context)
+    async def KillBot(self, request, context):
+        return await self._dispatch["KillBot"].handle(self._gestor, request, context)
 
-    def BroadcastBudgets(self, request, context):
-        return self._dispatch["BroadcastBudgets"].handle(self._gestor, request, context)
-
-    def RegisterHypervisor(self, request, context):
-        ack = self._dispatch["RegisterHypervisor"].handle(
+    async def NotifyBotDeath(self, request, context):
+        return await self._dispatch["NotifyBotDeath"].handle(
             self._gestor, request, context
         )
-        # El cliente de vuelta se inyecta aquí porque requiere acceso al factory,
-        # que no pertenece a la lógica pura del gestor.
+
+    async def BroadcastBudgets(self, request, context):
+        return await self._dispatch["BroadcastBudgets"].handle(
+            self._gestor, request, context
+        )
+
+    async def ResetBudgets(self, request, context):
+        return await self._dispatch["ResetBudgets"].handle(
+            self._gestor, request, context
+        )
+
+    async def FreezeAll(self, request, context):
+        return await self._dispatch["FreezeAll"].handle(self._gestor, request, context)
+
+    async def ResumeAll(self, request, context):
+        return await self._dispatch["ResumeAll"].handle(self._gestor, request, context)
+
+    async def SaveSnapshot(self, request, context):
+        return await self._dispatch["SaveSnapshot"].handle(
+            self._gestor, request, context
+        )
+
+    async def LoadState(self, request, context):
+        return await self._dispatch["LoadState"].handle(self._gestor, request, context)
+
+    async def RegisterHypervisor(self, request, context):
+        ack = await self._dispatch["RegisterHypervisor"].handle(
+            self._gestor, request, context
+        )
         if ack.ok and self._hv_client_factory is not None:
             client = self._hv_client_factory(request.address, request.port)
             self._gestor.set_hypervisor_client(request.hypervisor_id, client)
         return ack
 
-    def UpdateHypervisorLoad(self, request, context):
-        return self._dispatch["UpdateHypervisorLoad"].handle(
+    async def UpdateHypervisorLoad(self, request, context):
+        return await self._dispatch["UpdateHypervisorLoad"].handle(
             self._gestor, request, context
         )
 
-    def ListHypervisors(self, request, context):
-        return self._dispatch["ListHypervisors"].handle(self._gestor, request, context)
+    async def ListHypervisors(self, request, context):
+        return await self._dispatch["ListHypervisors"].handle(
+            self._gestor, request, context
+        )
 
-    def ForwardAction(self, request, context):
-        return self._dispatch["ForwardAction"].handle(self._gestor, request, context)
+    async def ForwardAction(self, request, context):
+        return await self._dispatch["ForwardAction"].handle(
+            self._gestor, request, context
+        )

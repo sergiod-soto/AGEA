@@ -34,32 +34,38 @@ import main
 
 # Puertos reservados para tests — distintos a los de desarrollo
 # para poder correr ambos a la vez sin colisión.
-TEST_SECTOR_PORT     = 51100
-TEST_GM_PORT         = 51200
-TEST_GB_PORT         = 51051
-TEST_HV_PORT         = 51300
-TEST_HV_PROXY_PORT   = 51400
+TEST_SECTOR_PORT = 51150
+TEST_GM_PORT = 51250
+TEST_GB_PORT = 51151
+TEST_HV_PORT = 51350
+TEST_HV_PROXY_PORT = 51450
+
+TEST_FULL_SECTOR_PORT = 52100
+TEST_FULL_GM_PORT = 52200
+TEST_FULL_GB_PORT = 52051
+TEST_FULL_HV_PORT = 52300
+TEST_FULL_HV_PROXY_PORT = 52400
 
 
 @pytest.fixture(autouse=True)
 def env_test(monkeypatch):
     """Inyecta variables de entorno de test en todos los tests de este módulo."""
-    monkeypatch.setenv("GRID_WIDTH",                "100")
-    monkeypatch.setenv("GRID_HEIGHT",               "100")
-    monkeypatch.setenv("SECTOR_SIZE",               "100")
-    monkeypatch.setenv("SECTOR_HOST",               "localhost")
-    monkeypatch.setenv("SECTOR_BASE_PORT",          str(TEST_SECTOR_PORT))
-    monkeypatch.setenv("GESTOR_MUNDO_HOST",         "localhost")
-    monkeypatch.setenv("GESTOR_MUNDO_PORT",         str(TEST_GM_PORT))
-    monkeypatch.setenv("GESTOR_BOTS_HOST",          "localhost")
-    monkeypatch.setenv("GESTOR_BOTS_PORT",          str(TEST_GB_PORT))
-    monkeypatch.setenv("GESTOR_BOTS_ADDRESS",       f"localhost:{TEST_GB_PORT}")
-    monkeypatch.setenv("HYPERVISOR_HOST",           "localhost")
-    monkeypatch.setenv("HYPERVISOR_BASE_PORT",      str(TEST_HV_PORT))
-    monkeypatch.setenv("HYPERVISOR_PROXY_BASE_PORT",str(TEST_HV_PROXY_PORT))
-    monkeypatch.setenv("HYPERVISOR_COUNT",          "1")
-    monkeypatch.setenv("FRESH_START",               "1")
-    monkeypatch.setenv("PYTHONPATH",                str(ROOT))
+    monkeypatch.setenv("GRID_WIDTH", "100")
+    monkeypatch.setenv("GRID_HEIGHT", "100")
+    monkeypatch.setenv("SECTOR_SIZE", "100")
+    monkeypatch.setenv("SECTOR_HOST", "localhost")
+    monkeypatch.setenv("SECTOR_BASE_PORT", str(TEST_SECTOR_PORT))
+    monkeypatch.setenv("GESTOR_MUNDO_HOST", "localhost")
+    monkeypatch.setenv("GESTOR_MUNDO_PORT", str(TEST_GM_PORT))
+    monkeypatch.setenv("GESTOR_BOTS_HOST", "localhost")
+    monkeypatch.setenv("GESTOR_BOTS_PORT", str(TEST_GB_PORT))
+    monkeypatch.setenv("GESTOR_BOTS_ADDRESS", f"localhost:{TEST_GB_PORT}")
+    monkeypatch.setenv("HYPERVISOR_HOST", "localhost")
+    monkeypatch.setenv("HYPERVISOR_BASE_PORT", str(TEST_HV_PORT))
+    monkeypatch.setenv("HYPERVISOR_PROXY_BASE_PORT", str(TEST_HV_PROXY_PORT))
+    monkeypatch.setenv("HYPERVISOR_COUNT", "1")
+    monkeypatch.setenv("FRESH_START", "1")
+    monkeypatch.setenv("PYTHONPATH", str(ROOT))
 
 
 def _wait_grpc(address: str, timeout_s: int = 20) -> bool:
@@ -92,14 +98,15 @@ def _lanzar(script_rel: str, env_extra: dict) -> subprocess.Popen:
 #  Tests individuales por componente
 # ─────────────────────────────────────────────────────────────
 
+
 class TestSectorArranca:
 
     def test_sector_responde_grpc(self):
         proc = _lanzar(
             "Gestores/Mundo/Sector/sector_server.py",
             {
-                "SECTOR_COL":  "0",
-                "SECTOR_ROW":  "0",
+                "SECTOR_COL": "0",
+                "SECTOR_ROW": "0",
                 "SECTOR_PORT": str(TEST_SECTOR_PORT),
                 f"SECTOR_ADDR_C0_R0": f"localhost:{TEST_SECTOR_PORT}",
             },
@@ -119,8 +126,8 @@ class TestGestorMundoArranca:
         sector = _lanzar(
             "Gestores/Mundo/Sector/sector_server.py",
             {
-                "SECTOR_COL":  "0",
-                "SECTOR_ROW":  "0",
+                "SECTOR_COL": "0",
+                "SECTOR_ROW": "0",
                 "SECTOR_PORT": str(TEST_SECTOR_PORT),
                 f"SECTOR_ADDR_C0_R0": f"localhost:{TEST_SECTOR_PORT}",
             },
@@ -172,10 +179,10 @@ class TestHypervisorArranca:
         hv = _lanzar(
             "Gestores/Bots/Hypervisor/hypervisor_server.py",
             {
-                "HYPERVISOR_ID":         "hv_test",
-                "HYPERVISOR_PORT":       str(TEST_HV_PORT),
+                "HYPERVISOR_ID": "hv_test",
+                "HYPERVISOR_PORT": str(TEST_HV_PORT),
                 "HYPERVISOR_PROXY_PORT": str(TEST_HV_PROXY_PORT),
-                "GESTOR_BOTS_ADDRESS":   f"localhost:{TEST_GB_PORT}",
+                "GESTOR_BOTS_ADDRESS": f"localhost:{TEST_GB_PORT}",
             },
         )
         try:
@@ -192,6 +199,7 @@ class TestHypervisorArranca:
 #  Test de arranque completo del sistema
 # ─────────────────────────────────────────────────────────────
 
+
 class TestArranqueCompleto:
     """
     Lanza el sistema completo a través de main._arrancar_local()
@@ -205,32 +213,37 @@ class TestArranqueCompleto:
 
         # _arrancar_local bloquea con el supervisor — lo detenemos
         # justo después de que todos los healthchecks pasen.
-        with patch("main._healthcheck", return_value=True), \
-             patch("main._lanzar_proceso") as mock_lanzar:
+        with patch("main._healthcheck", return_value=True), patch(
+            "main._lanzar_proceso"
+        ) as mock_lanzar:
 
-            mock_proc = type("P", (), {
-                "pid": 9999,
-                "poll": lambda self: None,
-                "terminate": lambda self: None,
-                "wait": lambda self, timeout=None: None,
-                "kill": lambda self: None,
-            })()
+            mock_proc = type(
+                "P",
+                (),
+                {
+                    "pid": 9999,
+                    "poll": lambda self: None,
+                    "terminate": lambda self: None,
+                    "wait": lambda self, timeout=None: None,
+                    "kill": lambda self: None,
+                },
+            )()
             mock_lanzar.return_value = mock_proc
 
             procesos = main._arrancar_local()
 
         # Todos los componentes fueron lanzados
         # Con grid 100x100, sector 100 → 1 sector + gm + gb + 1 hv = 4
-        assert mock_lanzar.call_count == 4, (
-            f"Se esperaban 4 lanzamientos, se hicieron {mock_lanzar.call_count}"
-        )
+        assert (
+            mock_lanzar.call_count == 4
+        ), f"Se esperaban 4 lanzamientos, se hicieron {mock_lanzar.call_count}"
 
     def test_apagado_si_proceso_falla_en_healthcheck(self):
         from unittest.mock import patch, MagicMock
 
-        with patch("main._healthcheck", return_value=False), \
-             patch("main._lanzar_proceso") as mock_lanzar, \
-             patch("main._apagar_procesos") as mock_apagar:
+        with patch("main._healthcheck", return_value=False), patch(
+            "main._lanzar_proceso"
+        ) as mock_lanzar, patch("main._apagar_procesos") as mock_apagar:
 
             mock_proc = MagicMock()
             mock_proc.pid = 1111
@@ -244,14 +257,19 @@ class TestArranqueCompleto:
 
     @pytest.mark.skipif(
         os.getenv("CI") == "true",
-        reason="Test de integración real — omitido en CI sin infraestructura"
+        reason="Test de integración real — omitido en CI sin infraestructura",
     )
-    def test_sistema_completo_real(self):
+    def test_sistema_completo_real(self, monkeypatch):
         """
         Lanza el sistema completo con procesos reales y verifica
         que todos los componentes responden por gRPC.
         Solo corre si CI != true.
         """
+        monkeypatch.setenv("SECTOR_BASE_PORT", str(TEST_FULL_SECTOR_PORT))
+        monkeypatch.setenv("GESTOR_MUNDO_PORT", str(TEST_FULL_GM_PORT))
+        monkeypatch.setenv("GESTOR_BOTS_PORT", str(TEST_FULL_GB_PORT))
+        monkeypatch.setenv("HYPERVISOR_BASE_PORT", str(TEST_FULL_HV_PORT))
+        monkeypatch.setenv("HYPERVISOR_PROXY_BASE_PORT", str(TEST_FULL_HV_PROXY_PORT))
         procesos = main._arrancar_local()
         try:
             componentes = main._build_components()

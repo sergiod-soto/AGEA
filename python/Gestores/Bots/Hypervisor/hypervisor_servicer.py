@@ -35,3 +35,12 @@ class HypervisorServicer(pb_grpc.HypervisorServiceServicer):
 
     def GetBotStatus(self, request, context):
         return self._dispatch["GetBotStatus"].handle(self._hv, request, context)
+
+    def Freeze(self, request, context):
+        return self._dispatch["Freeze"].handle(self._hv, request, context)
+
+    def Resume(self, request, context):
+        return self._dispatch["Resume"].handle(self._hv, request, context)
+
+    def SaveSnapshot(self, request, context):
+        return self._dispatch["SaveSnapshot"].handle(self._hv, request, context)

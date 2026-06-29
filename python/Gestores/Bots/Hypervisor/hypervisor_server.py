@@ -15,6 +15,8 @@ from pathlib import Path
 
 import grpc
 
+from Gestores.Transporte.gestor_mundo_client import GestorMundoClient
+
 sys.path.insert(0, str(Path(__file__).parents[4]))
 
 from Gestores.Transporte.Proto_Generated.Bots import (
@@ -51,11 +53,14 @@ def build_servers(
     capacity: int,
     workers: int,
     gestor_address: str,
+    gestor_mundo_address: str,
 ) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorBotsClient]:
     gestor_client = GestorBotsClient(gestor_address)
+    gestor_mundo_client = GestorMundoClient(gestor_mundo_address)
     hv = Hypervisor(
         hypervisor_id=hv_id,
         gestor_client=gestor_client,
+        gestor_mundo_client=gestor_mundo_client,
         capacity=capacity,
         my_address=my_address,
         my_port=my_port,
@@ -83,6 +88,7 @@ def build_servers(
 
 def serve():
     # Variables alineadas con lo que inyecta main.py
+    gestor_mundo_address = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
     hv_id = os.getenv("HYPERVISOR_ID", "hv_00")
     my_address = os.getenv("HYPERVISOR_HOST", "localhost")
     my_port = int(os.getenv("HYPERVISOR_PORT", 50300))
@@ -108,6 +114,7 @@ def serve():
         capacity=capacity,
         workers=workers,
         gestor_address=gestor_address,
+        gestor_mundo_address=gestor_mundo_address,
     )
 
     management_server.start()

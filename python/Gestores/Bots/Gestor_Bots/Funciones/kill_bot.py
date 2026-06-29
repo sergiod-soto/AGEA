@@ -6,10 +6,11 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "KillBot"
 
-def handle(gestor: Gestor_Bots, request, context):
+
+async def handle(gestor: Gestor_Bots, request, context):
     logger.info("KillBot: bot_id=%s", request.bot_id)
     try:
-        gestor.kill_bot(request.bot_id)
+        await gestor.kill_bot(request.bot_id)
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en KillBot")

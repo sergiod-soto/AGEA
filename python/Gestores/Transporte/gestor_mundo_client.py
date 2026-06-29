@@ -57,3 +57,15 @@ class GestorMundoClient:
         if self._channel is not None:
             await self._channel.close()
             self._channel = None
+
+    async def notify_bot_death(self, bot_id: str, cause: str, tick: int) -> None:
+        await self._ensure_channel()
+        request = pb.BotDeathNotification(
+            bot_id=bot_id,
+            cause=cause,
+            tick=tick,
+        )
+        try:
+            await self._stub.NotifyBotDeath(request, timeout=self._timeout)
+        except grpc.aio.AioRpcError as exc:
+            logger.error("GestorMundoClient.notify_bot_death error: %s", exc)

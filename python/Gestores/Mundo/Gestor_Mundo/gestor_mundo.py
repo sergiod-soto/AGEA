@@ -204,7 +204,7 @@ class GestorMundo:
         self.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
         self._bots_channel = grpc.aio.insecure_channel(self.GESTOR_BOTS_ADDRESS)
-        self._bots_stub = bots_grpc.GestorBotsStub(self._bots_channel)
+        self._bots_stub = bots_grpc.GestorBotsServiceStub(self._bots_channel)
 
         if fresh:
             await self._init_fresh()
