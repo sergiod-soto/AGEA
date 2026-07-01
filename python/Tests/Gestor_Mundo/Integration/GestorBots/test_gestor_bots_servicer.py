@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 @pytest.fixture
 def servicer(gestor_bots):
-    from Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
+    from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
 
     hv_client_factory = MagicMock(
         return_value=MagicMock(
@@ -216,7 +216,7 @@ class TestListHypervisors:
 
 class TestForwardAction:
     def test_forward_action(self, servicer, context, mundo_client):
-        from Gestores.Bots.Gestor_Bots.gestor_bots import ActionResult
+        from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import ActionResult
 
         mundo_client.forward_action.return_value = ActionResult(
             ok=True, payload=b"resultado", error=""

@@ -12,8 +12,8 @@ from Tests.conftest import make_mock_cell, make_mock_bot
 
 @pytest.fixture
 def servicer(sector):
-    from Gestores.Mundo.Sector.sector_servicer import SectorServicer
-    from Gestores.Mundo.Sector.registry import FUNCIONES
+    from Infraestructura.Gestores.Mundo.Sector.sector_servicer import SectorServicer
+    from Infraestructura.Gestores.Mundo.Sector.registry import FUNCIONES
 
     with patch("Gestores.Mundo.Sector.sector_servicer.FUNCIONES", FUNCIONES):
         return SectorServicer(sector)
@@ -33,7 +33,7 @@ def context():
 
 class TestSetSectorMode:
     async def test_set_modo_activo(self, servicer, context):
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         request = MagicMock()
         request.mode = SectorMode.ACTIVO.value
@@ -56,7 +56,7 @@ class TestSetSectorMode:
 
 class TestLoadGetState:
     async def test_load_y_get_state(self, servicer, context):
-        from Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
             Cell,
             Position,
             BotSnapshot,
@@ -153,7 +153,7 @@ class TestStartGetTick:
         assert resp.ok is True
 
     async def test_start_y_get_delta(self, servicer, context):
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         servicer._sector.set_mode(SectorMode.ACTIVO)
 
@@ -170,7 +170,7 @@ class TestStartGetTick:
         assert get_resp.tick_id == 5
 
     async def test_get_delta_tick_incorrecto(self, servicer, context):
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         servicer._sector.set_mode(SectorMode.ACTIVO)
 
@@ -185,7 +185,7 @@ class TestStartGetTick:
         assert get_resp.ok is False
 
     async def test_start_tick_timeout(self, servicer, context):
-        from Gestores.Mundo.Sector.sector import SectorMode, TickDelta
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode, TickDelta
 
         servicer._sector.set_mode(SectorMode.ACTIVO)
 
@@ -229,7 +229,7 @@ class TestSaveSnapshot:
 
 class TestFlujoCompleto:
     async def test_ciclo_completo_un_tick(self, servicer, context):
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         servicer._sector.set_mode(SectorMode.ACTIVO)
 

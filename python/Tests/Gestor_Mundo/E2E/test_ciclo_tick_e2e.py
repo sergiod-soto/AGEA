@@ -53,8 +53,8 @@ class InProcessSectorStub:
 
 
 def _make_sector_info(col, row, stub):
-    from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SectorInfo
-    from Gestores.Mundo.Sector.sector import SectorMode
+    from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SectorInfo
+    from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
     info = SectorInfo(col=col, row=row, address=f"local:{col}:{row}")
     info.stub = stub
@@ -73,14 +73,14 @@ def sector_e2e(monkeypatch):
     monkeypatch.setenv("SECTOR_ROW", "0")
     monkeypatch.setenv("SECTOR_SIZE", "10")
     monkeypatch.setenv("MAX_VISION_DISTANCE", "5")
-    from Gestores.Mundo.Sector.sector import Sector
+    from Infraestructura.Gestores.Mundo.Sector.sector import Sector
 
     return Sector()
 
 
 @pytest.fixture
 def sector_servicer_e2e(sector_e2e):
-    from Gestores.Mundo.Sector.sector_servicer import SectorServicer
+    from Infraestructura.Gestores.Mundo.Sector.sector_servicer import SectorServicer
 
     return SectorServicer(sector_e2e)
 
@@ -92,7 +92,7 @@ def sector_stub_e2e(sector_servicer_e2e):
 
 @pytest.fixture
 def gestor_mundo_e2e(sector_stub_e2e):
-    from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SectorMode
+    from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SectorMode
 
     gestor = GestorMundo()
     info = _make_sector_info(0, 0, sector_stub_e2e)
@@ -117,7 +117,7 @@ class TestCicloTickE2E:
 
     async def test_activar_sector_y_ejecutar_tick(self, gestor_mundo_e2e):
         """Activar sector y ejecutar tick completo FASE 0 → 1 → 2."""
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         gestor = gestor_mundo_e2e
         info = gestor._sectores[(0, 0)]
@@ -154,13 +154,13 @@ class TestCicloTickE2E:
         self, monkeypatch, sector_stub_e2e, sector_servicer_e2e
     ):
         """Bot que cruza borde se transfiere al sector destino."""
-        from Gestores.Mundo.Sector.sector import SectorMode, Sector
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
-        from Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode, Sector
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
+        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
             BotSnapshot,
             Position,
         )
-        from Gestores.Mundo.Sector.sector_servicer import SectorServicer
+        from Infraestructura.Gestores.Mundo.Sector.sector_servicer import SectorServicer
 
         # Crear gestor antes de monkeypatch para que use entorno limpio
         gestor = GestorMundo()
@@ -197,7 +197,7 @@ class TestCicloTickE2E:
 
 class TestPausaReanuudacion:
     async def test_freeze_y_resume(self, gestor_mundo_e2e):
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
 
         gestor = gestor_mundo_e2e
         await gestor.freeze()
@@ -208,7 +208,7 @@ class TestPausaReanuudacion:
         assert gestor._pause_event.is_set()
 
     async def test_freeze_idempotente(self, gestor_mundo_e2e):
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
 
         gestor = gestor_mundo_e2e
         await gestor.freeze()
@@ -216,7 +216,7 @@ class TestPausaReanuudacion:
         assert gestor._state == SystemState.PAUSED
 
     async def test_resume_sin_freeze_no_cambia_estado(self, gestor_mundo_e2e):
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
 
         gestor = gestor_mundo_e2e
         assert gestor._state == SystemState.RUNNING
@@ -227,7 +227,7 @@ class TestPausaReanuudacion:
 class TestDeepSave:
     async def test_deep_save_siempre_reanuda(self, gestor_mundo_e2e, tmp_path):
         """Si _save_snapshot falla, el sistema debe reanudar igualmente."""
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
 
         gestor = gestor_mundo_e2e
         with patch.object(
@@ -240,7 +240,7 @@ class TestDeepSave:
 
     async def test_deep_save_completo(self, gestor_mundo_e2e, tmp_path):
         """Deep save completo: freeze → snapshot → resume."""
-        from Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import SystemState
 
         gestor = gestor_mundo_e2e
         # SNAPSHOT_DIR ahora es atributo de instancia, no constante de módulo
@@ -253,7 +253,7 @@ class TestDeepSave:
 class TestAntiThrashing:
     async def test_sector_activo_sin_actividad_se_duerme(self, gestor_mundo_e2e):
         """Sector ACTIVO sin actividad durante TICKS_ANTES_DE_DORMIR ticks pasa a DORMIDO."""
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         gestor = gestor_mundo_e2e
         info = gestor._sectores[(0, 0)]
@@ -263,7 +263,7 @@ class TestAntiThrashing:
         assert info.mode == SectorMode.DORMIDO
 
     async def test_delta_con_actividad_resetea_contador(self, gestor_mundo_e2e):
-        from Gestores.Mundo.Sector.sector import SectorMode
+        from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 
         gestor = gestor_mundo_e2e
         info = gestor._sectores[(0, 0)]

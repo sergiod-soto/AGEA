@@ -18,7 +18,7 @@ def mundo_client():
 
 @pytest.fixture
 def gestor_bots(mundo_client):
-    from Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
+    from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
     return Gestor_Bots(mundo_client=mundo_client, bots_por_hypervisor=10)
 
 
@@ -73,7 +73,7 @@ def gestor_mundo_client():
 
 @pytest.fixture
 def hypervisor(gestor_client, gestor_mundo_client):
-    from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
+    from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
     return Hypervisor(
         hypervisor_id="hv_test",
         gestor_client=gestor_client,
@@ -97,13 +97,13 @@ def sector_env(monkeypatch):
 
 @pytest.fixture
 def sector(sector_env):
-    from Gestores.Mundo.Sector.sector import Sector
+    from Infraestructura.Gestores.Mundo.Sector.sector import Sector
     return Sector()
 
 
 @pytest.fixture
 def sector_activo(sector):
-    from Gestores.Mundo.Sector.sector import SectorMode
+    from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
     sector.set_mode(SectorMode.ACTIVO)
     return sector
 

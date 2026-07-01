@@ -40,7 +40,7 @@ os.environ.update(
     }
 )
 
-from Gestores.Mundo.Sector.sector import (
+from Infraestructura.Gestores.Mundo.Sector.sector import (
     Sector,
     SectorMode,
     CeldaStore,
@@ -57,12 +57,12 @@ REGION_X0 = _COL * _SIZE
 REGION_Y0 = _ROW * _SIZE
 REGION_X1 = REGION_X0 + _SIZE
 REGION_Y1 = REGION_Y0 + _SIZE
-from Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
+from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,
     SystemState,
 )
-from Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
     BotSnapshot,
     Position as ProtoPosition,
 )
@@ -611,7 +611,7 @@ class TestGestorMundoAntiThrashing:
         return info
 
     async def test_sector_activo_sin_actividad_duerme(self):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
 
         gm.TICKS_ANTES_DE_DORMIR = 3
         g = GestorMundo()
@@ -623,7 +623,7 @@ class TestGestorMundoAntiThrashing:
         gm.TICKS_ANTES_DE_DORMIR = 10
 
     async def test_sector_activo_con_actividad_no_duerme(self):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
 
         gm.TICKS_ANTES_DE_DORMIR = 3
         g = GestorMundo()
@@ -635,7 +635,7 @@ class TestGestorMundoAntiThrashing:
         gm.TICKS_ANTES_DE_DORMIR = 10
 
     async def test_vecinos_de_activo_se_despiertan(self):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm
 
         gm.TICKS_ANTES_DE_DORMIR = 3
         g = GestorMundo()
@@ -657,7 +657,7 @@ class TestGestorMundoAntiThrashing:
 class TestGestorMundoSnapshots:
 
     async def test_save_snapshot_crea_fichero(self, tmp_path):
-        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
         g = GestorMundo()
         g.SNAPSHOT_DIR = tmp_path
@@ -667,7 +667,7 @@ class TestGestorMundoSnapshots:
 
     async def test_save_snapshot_contenido_correcto(self, tmp_path):
         import json
-        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
         g = GestorMundo()
         g.SNAPSHOT_DIR = tmp_path
@@ -679,7 +679,7 @@ class TestGestorMundoSnapshots:
         assert "5,5" in data["gold_cells"]
 
     def test_latest_snapshot_path_sin_snapshots(self, tmp_path):
-        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         assert GestorMundo()._latest_snapshot_path() is None
@@ -761,7 +761,7 @@ class TestGestorMundoPausa:
 
     async def test_deep_save_siempre_reanuda(self, tmp_path):
         """Si _save_snapshot falla, el sistema reanuda igualmente (finally garantizado)."""
-        from Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         g = self._make_gestor()

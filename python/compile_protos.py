@@ -17,23 +17,30 @@ import sys
 #  Rutas
 # ─────────────────────────────────────────────
 
-ROOT      = pathlib.Path(__file__).parent
-PROTO_DIR = ROOT / "Gestores" / "Transporte" / "Protobufs"
-OUT_DIR   = ROOT / "Gestores" / "Transporte" / "Proto_Generated"
+ROOT = pathlib.Path(__file__).parent
+PROTO_DIR = ROOT / "Infraestructura" / "Gestores" / "Transporte" / "Protobufs"
+OUT_DIR = ROOT / "Infraestructura" / "Gestores" / "Transporte" / "Proto_Generated"
 
 # Grupos: (subcarpeta_proto, subcarpeta_salida, [ficheros])
 GROUPS = [
     (
-        "Bots", "Bots",
-        ["common.proto", "gestor_bots_service.proto",
-         "hypervisor_service.proto", "world_proxy_service.proto"],
+        "Bots",
+        "Bots",
+        [
+            "common.proto",
+            "gestor_bots_service.proto",
+            "hypervisor_service.proto",
+            "world_proxy_service.proto",
+        ],
     ),
     (
-        "Sectores", "Sectores",
+        "Sectores",
+        "Sectores",
         ["sector_service.proto", "gestor_mundo_service.proto"],
     ),
     (
-        "Otros", "Otros",
+        "Otros",
+        "Otros",
         ["log_service.proto"],
     ),
 ]
@@ -65,7 +72,7 @@ print(f"==> Salida generada: {OUT_DIR}")
 
 for subproto, subout, files in GROUPS:
     proto_subdir = PROTO_DIR / subproto
-    out_subdir   = OUT_DIR   / subout
+    out_subdir = OUT_DIR / subout
 
     for fname in files:
         proto_path = proto_subdir / fname
@@ -76,7 +83,9 @@ for subproto, subout, files in GROUPS:
         print(f"  Compilando {subproto}/{fname} ...")
         result = subprocess.run(
             [
-                sys.executable, "-m", "grpc_tools.protoc",
+                sys.executable,
+                "-m",
+                "grpc_tools.protoc",
                 # proto_path = raíz de Protobufs para resolver imports entre protos
                 f"--proto_path={PROTO_DIR}",
                 f"--python_out={OUT_DIR}",
@@ -94,7 +103,7 @@ for subproto, subout, files in GROUPS:
         # proto_path es PROTO_DIR y el fichero está en subproto/fname.
         # Verificar que el fichero llegó a la subcarpeta correcta.
         generated_stem = fname.replace(".proto", "")
-        expected_pb2      = OUT_DIR / subproto / f"{generated_stem}_pb2.py"
+        expected_pb2 = OUT_DIR / subproto / f"{generated_stem}_pb2.py"
         expected_pb2_grpc = OUT_DIR / subproto / f"{generated_stem}_pb2_grpc.py"
 
         if not expected_pb2.exists():
@@ -129,7 +138,7 @@ BASE_PKG = "Gestores.Transporte.Proto_Generated"
 
 for pb_file in sorted(OUT_DIR.rglob("*_pb2*.py")):
     original = pb_file.read_text(encoding="utf-8")
-    fixed    = original
+    fixed = original
 
     # Fix 1: import X_pb2 → from . import X_pb2
     fixed = pattern_simple.sub(r"from . import \1", fixed)

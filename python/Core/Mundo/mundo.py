@@ -1,4 +1,4 @@
-from Gestores.Mundo.Bus_Eventos.bus import BusEventos
+from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
 
 """
 Este Mundo es El Mundo. 

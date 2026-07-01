@@ -23,6 +23,8 @@ import os
 import pytest
 import grpc
 
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as pb
+
 # ── Variables de entorno ANTES de cualquier import del proyecto ─────────────
 # SECTOR_COL=1, SECTOR_ROW=1, SECTOR_SIZE=10
 # → REGION_X0=10, REGION_Y0=10, REGION_X1=20, REGION_Y1=20
@@ -35,10 +37,9 @@ os.environ.update(
     }
 )
 
-from Gestores.Mundo.Sector.sector import Sector, SectorMode
-from Gestores.Mundo.Sector.sector_servicer import SectorServicer
-from Gestores.Transporte.Proto_Generated.Sectores import (
-    sector_service_pb2 as pb,
+from Infraestructura.Gestores.Mundo.Sector.sector import Sector, SectorMode
+from Infraestructura.Gestores.Mundo.Sector.sector_servicer import SectorServicer
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as pb_grpc,
 )
 

@@ -1,0 +1,31 @@
+aws:
+  region: us-east-1
+  ami_id: ami-PENDIENTE          # se actualiza con build_ami.py
+  bucket: ia-evolutiva-PENDIENTE
+  security_group_id: sg-PENDIENTE
+
+instancias:
+  gestor_bots:
+    tipo: t3.small
+  gestor_mundo:
+    tipo: t3.small
+  hypervisor:
+    tipo: t3.medium
+    cantidad: 2
+  sector:
+    tipo: t3.small
+    cantidad: 4
+
+bots:
+  max_por_hypervisor: 100
+  umbral_shutdown_segundos: 90   # si el HV tarda más en hibernar, reduce max_bots_por_hv
+
+red:
+  puerto_grpc_componentes: 50051 # todos los componentes escuchan en este puerto
+  puerto_http_unity: 8080
+
+timeouts:
+  arranque_segundos: 180         # tiempo máximo para que todos los componentes estén listos
+  shutdown_segundos: 60          # tiempo máximo para que un componente confirme shutdown
+  heartbeat_intervalo: 5         # segundos entre polls de heartbeat
+  heartbeat_perdidos_max: 3      # fallos consecutivos antes de fail-fast

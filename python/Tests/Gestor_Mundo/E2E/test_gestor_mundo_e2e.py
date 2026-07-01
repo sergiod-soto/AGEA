@@ -15,13 +15,13 @@ import os
 
 import pytest
 
-from Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
+from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,
     SystemState,
 )
-from Gestores.Mundo.Sector.sector import SectorMode
-from Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as sector_pb
+from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as sector_pb
 
 SECTOR_SIZE = 10
 
@@ -252,7 +252,7 @@ class TestAntiThrashing:
         self, mundo_con_sectores, fake_bots_server, tmp_path
     ):
         """Sector ACTIVO sin actividad durante TICKS_ANTES_DE_DORMIR → DORMIDO."""
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gestor, sectores, _ = await self._gestor_thrashing(
             mundo_con_sectores, fake_bots_server, tmp_path
@@ -320,7 +320,7 @@ class TestAntiThrashing:
 class TestSnapshot:
 
     async def test_save_snapshot_crea_fichero(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -329,7 +329,7 @@ class TestSnapshot:
         assert len(list(tmp_path.glob("mundo_*.json"))) == 1
 
     async def test_save_snapshot_tick_id_correcto(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -340,7 +340,7 @@ class TestSnapshot:
         assert data["tick_id"] == 77
 
     async def test_save_snapshot_incluye_sectores(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -352,7 +352,7 @@ class TestSnapshot:
         assert cols_rows == {(0, 0), (0, 1), (1, 0), (1, 1)}
 
     async def test_save_snapshot_incluye_gold_cells(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -364,7 +364,7 @@ class TestSnapshot:
         assert data["gold_cells"]["3,3"] == b"\xde\xad".hex()
 
     async def test_latest_snapshot_path_sin_ficheros(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -373,7 +373,7 @@ class TestSnapshot:
     async def test_latest_snapshot_path_devuelve_el_mas_reciente(
         self, mundo_2x2, tmp_path
     ):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2
@@ -384,7 +384,7 @@ class TestSnapshot:
         assert data["tick_id"] == 3
 
     async def test_save_snapshot_tras_tick_real(self, mundo_2x2, tmp_path):
-        import Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
+        import Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo as gm_module
 
         gm_module.SNAPSHOT_DIR = tmp_path
         gestor, _, _ = mundo_2x2

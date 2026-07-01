@@ -1,10 +1,11 @@
 # tests/test_hypervisor_servicer.py
 from unittest.mock import MagicMock
-from Gestores.Bots.Hypervisor.hypervisor import Hypervisor
-from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
-from Gestores.Transporte.Proto_Generated.Bots import (
-    hypervisor_service_pb2, common_pb2
+from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
+from Infraestructura.Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    hypervisor_service_pb2
 )
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
 
 def make_servicer():
     gestor_mock = MagicMock()

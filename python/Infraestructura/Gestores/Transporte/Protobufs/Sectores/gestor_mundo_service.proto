@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package gestor_mundo;
+
+// ─────────────────────────────────────────────
+//  Tipos compartidos
+// ─────────────────────────────────────────────
+
+message Ack {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message Cell {
+  Position pos     = 1;
+  string   type_id = 2;
+  bytes    element = 3;
+}
+
+// ─────────────────────────────────────────────
+//  GetWorldMap
+// ─────────────────────────────────────────────
+
+message GetWorldMapRequest {
+  bool only_active_sectors = 1;
+}
+
+message GetWorldMapResponse {
+  repeated Cell cells = 1;
+}
+
+// ─────────────────────────────────────────────
+//  GetGlobalState
+// ─────────────────────────────────────────────
+
+message GetGlobalStateRequest {}
+
+message GlobalElementState {
+  string name  = 1;
+  bytes  state = 2;
+}
+
+message GetGlobalStateResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  int64  tick_id     = 3;
+  string snapshot_id = 4;
+  repeated GlobalElementState elementos_globales = 5;
+}
+
+// ─────────────────────────────────────────────
+//  GetSnapshotInfo
+// ─────────────────────────────────────────────
+
+message GetSnapshotInfoRequest {}
+
+message GetSnapshotInfoResponse {
+  bool   ok               = 1;
+  string error            = 2;
+  string snapshot_id      = 3;
+  int64  tick_id          = 4;
+  int64  timestamp_unix   = 5;
+  bool   is_deep_snapshot = 6;
+}
+
+
+// ─────────────────────────────────────────────
+//  Pause/Resume
+// ─────────────────────────────────────────────
+
+message PauseRequest  {}
+message ResumeRequest {}
+
+// ─────────────────────────────────────────────
+//  TriggerDeepSave
+// ─────────────────────────────────────────────
+
+message TriggerDeepSaveRequest {}
+
+message TriggerDeepSaveResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}
+
+// ─────────────────────────────────────────────
+//  SetTickRate
+// ─────────────────────────────────────────────
+
+message SetTickRateRequest {
+  int32 ticks_per_second = 1;   // 0 o negativo = sin límite
+}
+
+// ─────────────────────────────────────────────
+//  Eventos globales
+// ─────────────────────────────────────────────
+
+message GlobalEvent {
+  string   event_id = 1;
+  string   type     = 2;
+  Position pos      = 3;   // opcional; vacío si el evento no tiene posición
+  bytes    payload  = 4;
+}
+
+message SpawnGlobalEventRequest {
+  GlobalEvent event = 1;
+}
+
+message SpawnGlobalEventResponse {
+  bool   ok       = 1;
+  string error    = 2;
+  string event_id = 3;
+}
+
+message DespawnGlobalEventRequest {
+  string event_id = 1;
+  string reason   = 2;
+}
+
+message GetActiveEventsRequest {}
+
+message GetActiveEventsResponse {
+  bool   ok    = 1;
+  string error = 2;
+  repeated GlobalEvent events = 3;
+}
+
+// ─────────────────────────────────────────────
+//  Modificación en caliente (solo dev, requiere pausa)
+// ─────────────────────────────────────────────
+
+message ModifyElementRequest {
+  Position pos     = 1;
+  string   type_id = 2;
+  bytes    patch   = 3;
+}
+
+message CreateElementRequest {
+  Position pos     = 1;
+  string   type_id = 2;
+  bytes    element = 3;
+}
+
+message DeleteElementRequest {
+  Position pos = 1;
+}
+
+// ─────────────────────────────────────────────
+//  ForwardAction
+// ─────────────────────────────────────────────
+
+message ForwardActionRequest {
+  string bot_id      = 1;
+  string action_type = 2;
+  bytes  payload     = 3;
+}
+
+message ForwardActionResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;
+  int64  tick_id = 4;
+}
+
+// ─────────────────────────────────────────────
+//  GestorMundoService
+// ─────────────────────────────────────────────
+
+service GestorMundoService {
+  rpc GetWorldMap        (GetWorldMapRequest)        returns (stream GetWorldMapResponse);
+  rpc GetGlobalState     (GetGlobalStateRequest)     returns (GetGlobalStateResponse);
+  rpc GetSnapshotInfo    (GetSnapshotInfoRequest)    returns (GetSnapshotInfoResponse);
+
+  rpc Pause              (PauseRequest)              returns (Ack);
+  rpc Resume             (ResumeRequest)             returns (Ack);
+  rpc SetTickRate        (SetTickRateRequest)        returns (Ack);
+  rpc TriggerDeepSave    (TriggerDeepSaveRequest)    returns (TriggerDeepSaveResponse);
+
+  rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
+  rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (Ack);
+  rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
+
+  rpc ModifyElement      (ModifyElementRequest)      returns (Ack);
+  rpc CreateElement      (CreateElementRequest)      returns (Ack);
+  rpc DeleteElement      (DeleteElementRequest)      returns (Ack);
+
+  rpc ForwardAction      (ForwardActionRequest)      returns (ForwardActionResponse);
+}

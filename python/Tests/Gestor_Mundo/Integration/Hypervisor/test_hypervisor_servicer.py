@@ -14,7 +14,7 @@ def _codigo_gz(contenido="print('bot')"):
 
 @pytest.fixture
 def servicer(hypervisor):
-    from Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
+    from Infraestructura.Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
     return HypervisorServicer(hypervisor)
 
 
