@@ -1,0 +1,187 @@
+syntax = "proto3";
+package common;
+
+// ============================================================
+//  Genéricos
+// ============================================================
+
+message Ack {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ============================================================
+//  Grid
+// ============================================================
+
+// Posición absoluta en el grid global.
+// Sustituye a GridPos (renombrada) y a las Position locales de
+// gestor_mundo_service y sector_service.
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// Celda del grid. type_id es el nombre de clase del elemento
+// ("Bot", "Piedra", …) necesario para el registry del Mundo.
+message Cell {
+  Position pos     = 1;
+  string   type_id = 2;
+  bytes    element = 3;
+}
+
+// ============================================================
+//  Bots
+// ============================================================
+
+message BotConfig {
+  string bot_id    = 1;
+  int32  budget    = 2;
+  bytes  codigo_gz = 3;   // gzip del código Python compilado
+  map<string, string> metadata = 4;
+}
+
+message BotInfo {
+  string bot_id        = 1;
+  string hypervisor_id = 2;
+  string proxy_address = 3;   // "host:puerto" del world_proxy
+  bool   ok            = 4;
+  string error         = 5;
+}
+
+message BotStats {
+  string bot_id        = 1;
+  string hypervisor_id = 2;
+  double fitness       = 3;
+  int64  tick          = 4;
+  int32  points_left   = 5;
+}
+
+message BotStatus {
+  string bot_id = 1;
+  bool   alive  = 2;
+  int32  budget = 3;
+}
+
+message BotList {
+  repeated BotStats bots = 1;
+}
+
+// Estado de un bot para migración entre sectores o hibernación.
+// Movido desde sector_service (se usa también en gestor_mundo).
+message BotSnapshot {
+  string   bot_id = 1;
+  Position pos    = 2;
+  bytes    state  = 3;
+  int32    budget = 4;
+}
+
+// ============================================================
+//  Acciones
+// ============================================================
+
+message ActionResult {
+  bool   ok         = 1;
+  bytes  payload    = 2;
+  string error      = 3;
+  int64  world_tick = 4;
+}
+
+// ============================================================
+//  Observación
+// ============================================================
+
+enum EntityType {
+  ENTITY_UNKNOWN  = 0;
+  ENTITY_BOT      = 1;
+  ENTITY_RESOURCE = 2;
+  ENTITY_OBSTACLE = 3;
+}
+
+message RayHit {
+  bool       hit      = 1;
+  EntityType type     = 2;
+  int32      distance = 3;
+}
+
+message ObserveResult {
+  repeated RayHit rays = 1;
+}
+
+// ============================================================
+//  Hypervisores
+// ============================================================
+
+message HypervisorInfo {
+  string hypervisor_id = 1;
+  string address       = 2;
+  int32  port          = 3;
+  int32  proxy_port    = 4;
+  int32  capacity      = 5;
+  int32  current_load  = 6;
+  bool   online        = 7;
+}
+
+message HypervisorList {
+  repeated HypervisorInfo hypervisors = 1;
+}
+
+// ============================================================
+//  Presupuesto
+// ============================================================
+
+message BudgetEntry {
+  string bot_id = 1;
+  int32  budget = 2;
+}
+
+// ============================================================
+//  Sonido cross-border
+//  Movido desde sector_service: gestor_mundo lo necesita para
+//  enrutar sonidos entre sectores vecinos.
+// ============================================================
+
+message SoundEvent {
+  Position origin    = 1;
+  int32    intensity = 2;
+  bytes    payload   = 3;
+}
+
+// ============================================================
+//  Heartbeat — tipos de estado de hijos
+//  Usados en las respuestas de heartbeat de los gestores.
+// ============================================================
+
+message HeartbeatRequest {}
+
+message HVStatus {
+  string hypervisor_id = 1;
+  bool   alive         = 2;
+  int32  bot_count     = 3;
+}
+
+message SectorStatus {
+  string sector_id = 1;
+  bool   alive     = 2;
+}
+
+// ============================================================
+//  Shutdown coordinado
+//  Usado por main.py → todos los componentes.
+// ============================================================
+
+message ShutdownRequest {
+  // Igual al session_id de la partida.
+  // Si un componente recibe un Shutdown con el mismo shutdown_id
+  // que ya está procesando, lo ignora silenciosamente.
+  string shutdown_id = 1;
+  // "user"               → cierre manual
+  // "spot_interruption"  → AWS reclamando la instancia
+  // "component_failure"  → fail-fast por caída de otro componente
+  string reason      = 2;
+}
+
+message ShutdownResponse {
+  bool   ok    = 1;
+  string error = 2;
+}

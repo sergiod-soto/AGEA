@@ -22,14 +22,15 @@ from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
 )
 from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as sector_pb
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common
 
 SECTOR_SIZE = 10
 
 
 def _make_bot(bot_id, x, y, budget=100):
-    return sector_pb.BotSnapshot(
+    return common.BotSnapshot(
         bot_id=bot_id,
-        pos=sector_pb.Position(x=x, y=y),
+        pos=common.Position(x=x, y=y),
         state=b"",
         budget=budget,
     )

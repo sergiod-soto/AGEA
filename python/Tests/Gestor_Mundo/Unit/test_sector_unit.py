@@ -62,10 +62,7 @@ from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
     SectorInfo,
     SystemState,
 )
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
-    BotSnapshot,
-    Position as ProtoPosition,
-)
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  Fixtures y helpers
@@ -105,11 +102,13 @@ class FakeSoundEvent:
         self.payload = b""
 
 
-def make_bot_proto(bot_id: str, x: int, y: int, budget: int = 100) -> BotSnapshot:
+def make_bot_proto(
+    bot_id: str, x: int, y: int, budget: int = 100
+) -> common.BotSnapshot:
     """Crea un BotSnapshot proto real para usar en tests."""
-    return BotSnapshot(
+    return common.BotSnapshot(
         bot_id=bot_id,
-        pos=ProtoPosition(x=x, y=y),
+        pos=common.Position(x=x, y=y),
         state=b"",
         budget=budget,
     )
@@ -123,18 +122,18 @@ def make_sector() -> Sector:
     return s
 
 
-def make_bot_en_centro() -> BotSnapshot:
+def make_bot_en_centro() -> common.BotSnapshot:
     cx = REGION_X0 + SECTOR_SIZE // 2
     cy = REGION_Y0 + SECTOR_SIZE // 2
     return make_bot_proto("bot_centro", cx, cy)
 
 
-def make_bot_en_borde() -> BotSnapshot:
+def make_bot_en_borde() -> common.BotSnapshot:
     """Bot justo fuera del borde derecho de la región."""
     return make_bot_proto("bot_borde", REGION_X1, REGION_Y0 + 1)
 
 
-def make_bot_en_borde_izquierdo() -> BotSnapshot:
+def make_bot_en_borde_izquierdo() -> common.BotSnapshot:
     return make_bot_proto("bot_borde_izq", REGION_X0 - 1, REGION_Y0 + 1)
 
 
@@ -657,7 +656,9 @@ class TestGestorMundoAntiThrashing:
 class TestGestorMundoSnapshots:
 
     async def test_save_snapshot_crea_fichero(self, tmp_path):
-        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import (
+            gestor_mundo as gm_module,
+        )
 
         g = GestorMundo()
         g.SNAPSHOT_DIR = tmp_path
@@ -667,7 +668,9 @@ class TestGestorMundoSnapshots:
 
     async def test_save_snapshot_contenido_correcto(self, tmp_path):
         import json
-        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import (
+            gestor_mundo as gm_module,
+        )
 
         g = GestorMundo()
         g.SNAPSHOT_DIR = tmp_path
@@ -679,7 +682,9 @@ class TestGestorMundoSnapshots:
         assert "5,5" in data["gold_cells"]
 
     def test_latest_snapshot_path_sin_snapshots(self, tmp_path):
-        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import (
+            gestor_mundo as gm_module,
+        )
 
         gm_module.SNAPSHOT_DIR = tmp_path
         assert GestorMundo()._latest_snapshot_path() is None
@@ -761,7 +766,9 @@ class TestGestorMundoPausa:
 
     async def test_deep_save_siempre_reanuda(self, tmp_path):
         """Si _save_snapshot falla, el sistema reanuda igualmente (finally garantizado)."""
-        from Infraestructura.Gestores.Mundo.Gestor_Mundo import gestor_mundo as gm_module
+        from Infraestructura.Gestores.Mundo.Gestor_Mundo import (
+            gestor_mundo as gm_module,
+        )
 
         gm_module.SNAPSHOT_DIR = tmp_path
         g = self._make_gestor()

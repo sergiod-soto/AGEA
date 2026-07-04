@@ -1,5 +1,5 @@
 # Gestores/Bots/Gestor_Bots/funciones/kill_bot.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
 import logging
 

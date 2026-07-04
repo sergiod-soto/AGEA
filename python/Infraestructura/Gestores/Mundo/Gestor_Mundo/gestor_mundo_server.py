@@ -16,10 +16,12 @@ sys.path.insert(0, str(Path(__file__).parents[4]))
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     gestor_mundo_service_pb2_grpc as pb_grpc,
 )
-
+from Config.settings import FRESH
 from Utils.Sistema.sistema import registrar_signals
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import GestorMundoServicer
+from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import (
+    GestorMundoServicer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,6 @@ async def _run_tick_loop(gestor: GestorMundo) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fresh", action="store_true")
     parser.add_argument(
         "--log-level",
         default=os.getenv("LOG_LEVEL", "INFO"),
@@ -100,7 +101,7 @@ def main() -> None:
     )
 
     try:
-        asyncio.run(serve(fresh=args.fresh))
+        asyncio.run(serve(fresh=FRESH))
     except KeyboardInterrupt:
         pass
 

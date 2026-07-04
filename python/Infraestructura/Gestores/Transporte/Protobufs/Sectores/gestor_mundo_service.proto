@@ -1,42 +1,76 @@
 syntax = "proto3";
-
 package gestor_mundo;
+import "common.proto";
 
-// ─────────────────────────────────────────────
-//  Tipos compartidos
-// ─────────────────────────────────────────────
+// ============================================================
+//  GestorMundoService — expuesto por el Gestor del Mundo.
+//
+//  Clientes:
+//    - main.py       → Heartbeat, Shutdown, GetWorldMap,
+//                      GetGlobalState, GetSnapshotInfo,
+//                      Pause, Resume, SetTickRate,
+//                      TriggerDeepSave, eventos globales,
+//                      modificación en caliente
+//    - GestorBots    → ForwardActionGestorMundo
+// ============================================================
 
-message Ack {
+service GestorMundoService {
+  // ----- Infraestructura (main.py) -----
+  rpc Heartbeat          (common.HeartbeatRequest)       returns (GestorMundoHeartbeatResponse);
+  rpc Shutdown           (common.ShutdownRequest)        returns (common.ShutdownResponse);
+
+  // ----- Consulta del mundo -----
+  rpc GetWorldMap        (GetWorldMapRequest)             returns (stream GetWorldMapResponse);
+  rpc GetGlobalState     (GetGlobalStateRequest)          returns (GetGlobalStateResponse);
+  rpc GetSnapshotInfo    (GetSnapshotInfoRequest)         returns (GetSnapshotInfoResponse);
+
+  // ----- Control del ciclo de vida -----
+  rpc Pause              (PauseRequest)                   returns (common.Ack);
+  rpc Resume             (ResumeRequest)                  returns (common.Ack);
+  rpc SetTickRate        (SetTickRateRequest)             returns (common.Ack);
+  rpc TriggerDeepSave    (TriggerDeepSaveRequest)         returns (TriggerDeepSaveResponse);
+
+  // ----- Eventos globales -----
+  rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)        returns (SpawnGlobalEventResponse);
+  rpc DespawnGlobalEvent (DespawnGlobalEventRequest)      returns (common.Ack);
+  rpc GetActiveEvents    (GetActiveEventsRequest)         returns (GetActiveEventsResponse);
+
+  // ----- Modificación en caliente (solo dev, requiere pausa) -----
+  rpc ModifyElement      (ModifyElementRequest)           returns (common.Ack);
+  rpc CreateElement      (CreateElementRequest)           returns (common.Ack);
+  rpc DeleteElement      (DeleteElementRequest)           returns (common.Ack);
+
+  // ----- Acciones de bots (enviadas por GestorBots) -----
+  rpc ForwardActionGestorMundo (ForwardActionGestorMundoRequest) returns (ForwardActionGestorMundoResponse);
+}
+
+// ============================================================
+//  Heartbeat
+// ============================================================
+
+// El gestor incluye el estado de todos sus sectores.
+// main.py detecta así caídas de sectores sin contactarlos directamente.
+message GestorMundoHeartbeatResponse {
   bool   ok    = 1;
   string error = 2;
+  repeated common.SectorStatus sector_statuses = 3;
 }
 
-message Position {
-  int32 x = 1;
-  int32 y = 2;
-}
-
-message Cell {
-  Position pos     = 1;
-  string   type_id = 2;
-  bytes    element = 3;
-}
-
-// ─────────────────────────────────────────────
+// ============================================================
 //  GetWorldMap
-// ─────────────────────────────────────────────
+// ============================================================
 
 message GetWorldMapRequest {
   bool only_active_sectors = 1;
 }
 
 message GetWorldMapResponse {
-  repeated Cell cells = 1;
+  repeated common.Cell cells = 1;
 }
 
-// ─────────────────────────────────────────────
+// ============================================================
 //  GetGlobalState
-// ─────────────────────────────────────────────
+// ============================================================
 
 message GetGlobalStateRequest {}
 
@@ -53,9 +87,9 @@ message GetGlobalStateResponse {
   repeated GlobalElementState elementos_globales = 5;
 }
 
-// ─────────────────────────────────────────────
+// ============================================================
 //  GetSnapshotInfo
-// ─────────────────────────────────────────────
+// ============================================================
 
 message GetSnapshotInfoRequest {}
 
@@ -68,17 +102,20 @@ message GetSnapshotInfoResponse {
   bool   is_deep_snapshot = 6;
 }
 
-
-// ─────────────────────────────────────────────
-//  Pause/Resume
-// ─────────────────────────────────────────────
+// ============================================================
+//  Pause / Resume / SetTickRate
+// ============================================================
 
 message PauseRequest  {}
 message ResumeRequest {}
 
-// ─────────────────────────────────────────────
+message SetTickRateRequest {
+  int32 ticks_per_second = 1;   // 0 o negativo = sin límite
+}
+
+// ============================================================
 //  TriggerDeepSave
-// ─────────────────────────────────────────────
+// ============================================================
 
 message TriggerDeepSaveRequest {}
 
@@ -88,23 +125,15 @@ message TriggerDeepSaveResponse {
   string snapshot_id = 3;
 }
 
-// ─────────────────────────────────────────────
-//  SetTickRate
-// ─────────────────────────────────────────────
-
-message SetTickRateRequest {
-  int32 ticks_per_second = 1;   // 0 o negativo = sin límite
-}
-
-// ─────────────────────────────────────────────
+// ============================================================
 //  Eventos globales
-// ─────────────────────────────────────────────
+// ============================================================
 
 message GlobalEvent {
-  string   event_id = 1;
-  string   type     = 2;
-  Position pos      = 3;   // opcional; vacío si el evento no tiene posición
-  bytes    payload  = 4;
+  string          event_id = 1;
+  string          type     = 2;
+  common.Position pos      = 3;   // vacío si el evento no tiene posición
+  bytes           payload  = 4;
 }
 
 message SpawnGlobalEventRequest {
@@ -119,7 +148,7 @@ message SpawnGlobalEventResponse {
 
 message DespawnGlobalEventRequest {
   string event_id = 1;
-  string reason   = 2;
+  string reason   = 2;   // "completed" | "cancelled" | "expired"
 }
 
 message GetActiveEventsRequest {}
@@ -130,64 +159,39 @@ message GetActiveEventsResponse {
   repeated GlobalEvent events = 3;
 }
 
-// ─────────────────────────────────────────────
+// ============================================================
 //  Modificación en caliente (solo dev, requiere pausa)
-// ─────────────────────────────────────────────
+// ============================================================
 
 message ModifyElementRequest {
-  Position pos     = 1;
-  string   type_id = 2;
-  bytes    patch   = 3;
+  common.Position pos     = 1;
+  string          type_id = 2;
+  bytes           patch   = 3;
 }
 
 message CreateElementRequest {
-  Position pos     = 1;
-  string   type_id = 2;
-  bytes    element = 3;
+  common.Position pos     = 1;
+  string          type_id = 2;
+  bytes           element = 3;
 }
 
 message DeleteElementRequest {
-  Position pos = 1;
+  common.Position pos = 1;
 }
 
-// ─────────────────────────────────────────────
-//  ForwardAction
-// ─────────────────────────────────────────────
+// ============================================================
+//  ForwardAction (GestorBots → GestorMundo)
+// ============================================================
 
-message ForwardActionRequest {
+message ForwardActionGestorMundoRequest {
   string bot_id      = 1;
   string action_type = 2;
   bytes  payload     = 3;
 }
 
-message ForwardActionResponse {
+message ForwardActionGestorMundoResponse {
   bool   ok      = 1;
   string error   = 2;
   bytes  payload = 3;
   int64  tick_id = 4;
-}
-
-// ─────────────────────────────────────────────
-//  GestorMundoService
-// ─────────────────────────────────────────────
-
-service GestorMundoService {
-  rpc GetWorldMap        (GetWorldMapRequest)        returns (stream GetWorldMapResponse);
-  rpc GetGlobalState     (GetGlobalStateRequest)     returns (GetGlobalStateResponse);
-  rpc GetSnapshotInfo    (GetSnapshotInfoRequest)    returns (GetSnapshotInfoResponse);
-
-  rpc Pause              (PauseRequest)              returns (Ack);
-  rpc Resume             (ResumeRequest)             returns (Ack);
-  rpc SetTickRate        (SetTickRateRequest)        returns (Ack);
-  rpc TriggerDeepSave    (TriggerDeepSaveRequest)    returns (TriggerDeepSaveResponse);
-
-  rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
-  rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (Ack);
-  rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
-
-  rpc ModifyElement      (ModifyElementRequest)      returns (Ack);
-  rpc CreateElement      (CreateElementRequest)      returns (Ack);
-  rpc DeleteElement      (DeleteElementRequest)      returns (Ack);
-
-  rpc ForwardAction      (ForwardActionRequest)      returns (ForwardActionResponse);
 }

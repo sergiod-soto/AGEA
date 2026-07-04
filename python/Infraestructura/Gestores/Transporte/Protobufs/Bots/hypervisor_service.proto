@@ -1,57 +1,46 @@
 syntax = "proto3";
-
 package hypervisor;
-
-import "Bots/common.proto";
+import "common.proto";
 
 // ============================================================
 //  HypervisorService — expuesto por cada Hypervisor.
 //
-//  Cliente único: el Gestor.
-//
-//  Flujo típico:
-//    1. Gestor recibe SpawnBot del Mundo
-//    2. Gestor elige el HV con más espacio libre
-//    3. Gestor llama SpawnBot aquí → el HV registra el bot localmente
-//    4. Al inicio de cada ciclo, Gestor llama ResetBudgets en todos los HVs
-//    5. Si un bot muere o el Mundo lo elimina → Gestor llama KillBot aquí
+//  Clientes:
+//    - El Gestor  → todo excepto Shutdown
+//    - main.py    → Shutdown (cierre directo sin pasar por gestor)
 // ============================================================
+
 service HypervisorService {
+  // ----- Infraestructura (main.py) -----
+  rpc Shutdown        (common.ShutdownRequest)  returns (common.ShutdownResponse);
 
   // ----- Ciclo de vida de bots -----
-
-  // El Gestor ordena al HV que registre un nuevo bot localmente.
-  // El HV asigna su presupuesto inicial y lo añade a su tabla interna.
-  rpc SpawnBot (SpawnBotRequest) returns (common.BotInfo);
-
-  // El Gestor ordena eliminar un bot de este HV.
-  rpc KillBot (BotIdRequest) returns (common.Ack);
-
-  // Devuelve el estado de un bot concreto (puntos, alive, uptime).
-  rpc GetBotStats (BotIdRequest) returns (common.BotStats);
-
-  // Lista todos los bots activos en este HV.
-  rpc ListBots (ListBotsRequest) returns (common.BotList);
+  rpc SpawnBot        (SpawnBotRequest)         returns (common.BotInfo);
+  rpc KillBot         (BotIdRequest)            returns (common.Ack);
+  rpc GetBotStats     (BotIdRequest)            returns (common.BotStats);
+  rpc ListBots        (ListBotsRequest)         returns (common.BotList);
 
   // ----- Control de presupuesto -----
-
-  // El Gestor resetea los presupuestos al inicio de cada ciclo.
-  // Cada bot recibe su nuevo presupuesto (default o override individual).
-  rpc ResetBudgets (ResetBudgetsRequest) returns (common.Ack);
-
-  // El Gestor ajusta el presupuesto de un bot concreto fuera de ciclo.
-  // Útil para penalizaciones o bonificaciones puntuales.
-  rpc SetPointBudget (SetPointBudgetRequest) returns (common.Ack);
+  rpc ResetBudgets    (ResetBudgetsRequest)     returns (common.Ack);
+  rpc SetPointBudget  (SetPointBudgetRequest)   returns (common.Ack);
 
   // ----- Consultas de estado -----
+  rpc GetBotStatus    (BotIdRequest)            returns (common.BotStatus);
 
-  // Devuelve el estado vivo/muerto y puntos restantes de un bot.
-  // Versión ligera de GetBotStats para checks rápidos.
-  rpc GetBotStatus (BotIdRequest) returns (common.BotStatus);
+  // ----- Pausa y reanudación (mid-session, coordinado por gestor) -----
+  // Freeze suspende la ejecución de todos los bots de este HV.
+  // Se usa durante TriggerDeepSave para garantizar un snapshot consistente.
+  rpc Freeze          (FreezeRequest)           returns (common.Ack);
+  rpc Resume          (ResumeRequest)           returns (common.Ack);
+
+  // ----- Snapshot (mid-session, coordinado por gestor) -----
+  // Persiste el estado de los bots con el snapshot_id compartido del sistema.
+  // Solo se llama con el HV en Freeze.
+  rpc SaveSnapshot    (SaveSnapshotRequest)     returns (SaveSnapshotResponse);
 }
 
 // ============================================================
-//  Mensajes de entrada (Request)
+//  Mensajes
 // ============================================================
 
 message SpawnBotRequest {
@@ -62,30 +51,28 @@ message BotIdRequest {
   string bot_id = 1;
 }
 
-message ListBotsRequest {}   // sin parámetros: devuelve todos los bots del HV
+message ListBotsRequest {}
 
 message ResetBudgetsRequest {
-  // Bots de este HV a los que se les resetea el presupuesto.
-  // Normalmente es la lista completa de bots del HV, pero puede ser parcial.
-  repeated string bot_ids = 1;
+  repeated string             bot_ids        = 1;
+  int32                       default_budget = 2;
+  repeated common.BudgetEntry overrides      = 3;
+}
 
-  // Presupuesto por defecto para los bots que no tengan override.
-  int32 default_budget = 2;
-
-  // Overrides individuales: bot_id → presupuesto especial.
-  // Si un bot_id aparece aquí, ignora default_budget.
-  repeated common.BudgetEntry overrides = 3;
+message SetPointBudgetRequest {
+  string bot_id = 1;
+  int32  points = 2;
 }
 
 message FreezeRequest {}
-
 message ResumeRequest {}
 
 message SaveSnapshotRequest {
   string snapshot_id = 1;
 }
 
-message SetPointBudgetRequest {
-  string bot_id = 1;
-  int32  points = 2;
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
 }

@@ -1,24 +1,47 @@
 """
-Test/Main/test_main_unit.py
----------------------------
-Tests unitarios de main.py.
-No lanza procesos reales ni conexiones gRPC.
-Todo subprocess y grpc se mockea.
+Tests/Main/test_main_unit.py
+-----------------------------
+Tests unitarios de main.py — sin subprocesos reales ni gRPC real.
+Todo mockeado. Para tests de integración con procesos reales, ver
+test_main_integration.py.
+
+No se testea aquí:
+  - _arrancar_local() end-to-end: ya cubierto en
+    test_main_integration.py::TestArranqueCompleto con el mismo enfoque
+    de mocks; duplicarlo aquí no añade cobertura, solo mantenimiento extra.
+  - main() a nivel de CLI completo: es solo parseo de argparse + despacho
+    a las funciones que sí se testean aquí una a una.
 """
 
+import argparse
 import os
-import sys
-import signal
 import subprocess
+import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open, call
+from unittest.mock import MagicMock, patch
+
 import pytest
 
-# Aseguramos que la raíz del proyecto está en el path
 ROOT = Path(__file__).parents[2]
 sys.path.insert(0, str(ROOT))
 
 import main
+
+
+@pytest.fixture(autouse=True)
+def _entorno_limpio():
+    """
+    Aísla os.environ entre tests.
+
+    Necesario porque _cargar_env y _arrancar_componente_produccion escriben
+    directamente en os.environ (no via monkeypatch.setenv), así que sin este
+    fixture un test podría dejar variables filtradas al siguiente.
+    """
+    antes = dict(os.environ)
+    yield
+    os.environ.clear()
+    os.environ.update(antes)
+
 
 # ─────────────────────────────────────────────────────────────
 #  _cargar_env
@@ -28,44 +51,36 @@ import main
 class TestCargarEnv:
 
     def test_carga_variables_de_fichero(self, tmp_path, monkeypatch):
-        env_file = tmp_path / ".env.test"
-        env_file.write_text("CLAVE_TEST=valor_test\nOTRA_CLAVE=123\n")
-        monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(main, "ROOT", tmp_path)
-        monkeypatch.delenv("CLAVE_TEST", raising=False)
-        monkeypatch.delenv("OTRA_CLAVE", raising=False)
+        (tmp_path / ".env.test").write_text("MI_VAR=hola\n")
 
         main._cargar_env("test")
 
-        assert os.environ["CLAVE_TEST"] == "valor_test"
-        assert os.environ["OTRA_CLAVE"] == "123"
+        assert os.environ["MI_VAR"] == "hola"
 
     def test_no_sobreescribe_variables_existentes(self, tmp_path, monkeypatch):
-        env_file = tmp_path / ".env.test"
-        env_file.write_text("CLAVE_TEST=desde_fichero\n")
-        monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(main, "ROOT", tmp_path)
-        monkeypatch.setenv("CLAVE_TEST", "ya_existia")
+        os.environ["MI_VAR"] = "original"
+        (tmp_path / ".env.test").write_text("MI_VAR=nuevo\n")
 
         main._cargar_env("test")
 
-        assert os.environ["CLAVE_TEST"] == "ya_existia"
+        assert os.environ["MI_VAR"] == "original"
 
     def test_ignora_comentarios_y_lineas_vacias(self, tmp_path, monkeypatch):
-        env_file = tmp_path / ".env.test"
-        env_file.write_text("# comentario\n\nCLAVE_REAL=ok\n")
-        monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(main, "ROOT", tmp_path)
-        monkeypatch.delenv("CLAVE_REAL", raising=False)
+        (tmp_path / ".env.test").write_text(
+            "# comentario\n\nMI_VAR=hola\n\n# otro comentario\n"
+        )
 
         main._cargar_env("test")
 
-        assert os.environ["CLAVE_REAL"] == "ok"
+        assert os.environ["MI_VAR"] == "hola"
 
     def test_fichero_inexistente_no_lanza_excepcion(self, tmp_path, monkeypatch):
         monkeypatch.setattr(main, "ROOT", tmp_path)
-        # No debe lanzar nada
-        main._cargar_env("no_existe")
+        # No se crea ningún .env.test — debe limitarse a avisar, no fallar.
+        main._cargar_env("test")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -75,52 +90,37 @@ class TestCargarEnv:
 
 class TestBuildSectorComponents:
 
-    def test_grid_100x100_sector_100_genera_un_sector(self, monkeypatch):
-        monkeypatch.setenv("GRID_WIDTH", "100")
-        monkeypatch.setenv("GRID_HEIGHT", "100")
-        monkeypatch.setenv("SECTOR_SIZE", "100")
+    def _set_env(self, monkeypatch, grid_w, grid_h, sector_sz=100):
+        monkeypatch.setenv("GRID_WIDTH", str(grid_w))
+        monkeypatch.setenv("GRID_HEIGHT", str(grid_h))
+        monkeypatch.setenv("SECTOR_SIZE", str(sector_sz))
         monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
         monkeypatch.setenv("SECTOR_HOST", "localhost")
 
+    def test_grid_100x100_sector_100_genera_un_sector(self, monkeypatch):
+        self._set_env(monkeypatch, 100, 100)
         comps = main._build_sector_components()
         assert len(comps) == 1
         assert comps[0]["nombre"] == "sector_0_0"
 
     def test_grid_200x100_sector_100_genera_dos_sectores(self, monkeypatch):
-        monkeypatch.setenv("GRID_WIDTH", "200")
-        monkeypatch.setenv("GRID_HEIGHT", "100")
-        monkeypatch.setenv("SECTOR_SIZE", "100")
-        monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
-        monkeypatch.setenv("SECTOR_HOST", "localhost")
-
+        self._set_env(monkeypatch, 200, 100)
         comps = main._build_sector_components()
-        assert len(comps) == 2
         nombres = {c["nombre"] for c in comps}
         assert nombres == {"sector_0_0", "sector_1_0"}
 
     def test_puertos_no_colisionan(self, monkeypatch):
-        monkeypatch.setenv("GRID_WIDTH", "200")
-        monkeypatch.setenv("GRID_HEIGHT", "200")
-        monkeypatch.setenv("SECTOR_SIZE", "100")
-        monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
-        monkeypatch.setenv("SECTOR_HOST", "localhost")
-
+        self._set_env(monkeypatch, 300, 200)
         comps = main._build_sector_components()
-        direcciones = [c["healthcheck_address"] for c in comps]
-        assert len(direcciones) == len(
-            set(direcciones)
-        ), "Colisión de puertos entre sectores"
+        puertos = [c["healthcheck_address"] for c in comps]
+        assert len(puertos) == len(set(puertos))
 
     def test_env_extra_contiene_col_y_row(self, monkeypatch):
-        monkeypatch.setenv("GRID_WIDTH", "100")
-        monkeypatch.setenv("GRID_HEIGHT", "100")
-        monkeypatch.setenv("SECTOR_SIZE", "100")
-        monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
-        monkeypatch.setenv("SECTOR_HOST", "localhost")
-
-        comp = main._build_sector_components()[0]
-        assert comp["env_extra"]["SECTOR_COL"] == "0"
-        assert comp["env_extra"]["SECTOR_ROW"] == "0"
+        self._set_env(monkeypatch, 100, 100)
+        comps = main._build_sector_components()
+        env_extra = comps[0]["env_extra"]
+        assert env_extra["SECTOR_COL"] == "0"
+        assert env_extra["SECTOR_ROW"] == "0"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -134,8 +134,6 @@ class TestBuildComponents:
         monkeypatch.setenv("GRID_WIDTH", "100")
         monkeypatch.setenv("GRID_HEIGHT", "100")
         monkeypatch.setenv("SECTOR_SIZE", "100")
-        monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
-        monkeypatch.setenv("SECTOR_HOST", "localhost")
         monkeypatch.setenv("GESTOR_MUNDO_HOST", "localhost")
         monkeypatch.setenv("GESTOR_MUNDO_PORT", "50200")
         monkeypatch.setenv("GESTOR_BOTS_HOST", "localhost")
@@ -146,34 +144,99 @@ class TestBuildComponents:
         monkeypatch.setenv("HYPERVISOR_COUNT", "1")
 
     def test_orden_arranque(self, monkeypatch):
+        """
+        _build_components devuelve list[list[dict]] — grupos ejecutados en
+        orden, componentes de un mismo grupo en paralelo (sin orden entre
+        ellos). Se testea contra esa estructura real, no aplanada, para no
+        perder justo la invariante que la función garantiza.
+        """
         self._set_env_minimo(monkeypatch)
-        comps = main._build_components()
-        nombres = [c["nombre"] for c in comps]
+        grupos = main._build_components()
 
-        # Los sectores van primero
-        assert nombres[0].startswith("sector_")
-        # gestor_mundo antes que gestor_bots
-        idx_gm = nombres.index("gestor_mundo")
-        idx_gb = nombres.index("gestor_bots")
-        assert idx_gm < idx_gb
-
-        # hypervisores al final
-        idx_hv = nombres.index("hypervisor_00")
-        assert idx_hv > idx_gb
+        assert len(grupos) == 4
+        assert all(c["nombre"].startswith("sector_") for c in grupos[0])
+        assert [c["nombre"] for c in grupos[1]] == ["gestor_mundo"]
+        assert [c["nombre"] for c in grupos[2]] == ["gestor_bots"]
+        assert all(c["nombre"].startswith("hypervisor_") for c in grupos[3])
 
     def test_hypervisor_count_respetado(self, monkeypatch):
         self._set_env_minimo(monkeypatch)
         monkeypatch.setenv("HYPERVISOR_COUNT", "3")
 
-        comps = main._build_components()
-        hvs = [c for c in comps if c["nombre"].startswith("hypervisor_")]
+        grupos = main._build_components()
+        hvs = grupos[3]
+
         assert len(hvs) == 3
+        assert {c["nombre"] for c in hvs} == {
+            "hypervisor_00",
+            "hypervisor_01",
+            "hypervisor_02",
+        }
 
     def test_gestor_bots_conoce_direccion_gestor_mundo(self, monkeypatch):
         self._set_env_minimo(monkeypatch)
-        comps = main._build_components()
-        gb = next(c for c in comps if c["nombre"] == "gestor_bots")
-        assert "GESTOR_MUNDO_ADDRESS" in gb["env_extra"]
+        grupos = main._build_components()
+        gestor_bots = grupos[2][0]
+
+        assert gestor_bots["env_extra"]["GESTOR_MUNDO_ADDRESS"] == "localhost:50200"
+
+
+# ─────────────────────────────────────────────────────────────
+#  _healthcheck
+# ─────────────────────────────────────────────────────────────
+
+
+class TestHealthcheck:
+
+    def _comp(self, **overrides):
+        base = dict(
+            healthcheck_address="localhost:50100",
+            healthcheck_stub_module="modulo.stub_grpc",
+            healthcheck_stub_class="StubFalso",
+            healthcheck_request_module="modulo.request",
+            healthcheck_request_class="RequestFalso",
+            healthcheck_method="Metodo",
+        )
+        base.update(overrides)
+        return base
+
+    def test_retorna_true_si_responde(self, monkeypatch):
+        stub_instance = MagicMock()
+        stub_class = MagicMock(return_value=stub_instance)
+        modulo_stub = MagicMock(StubFalso=stub_class)
+        modulo_request = MagicMock(RequestFalso=MagicMock(return_value=MagicMock()))
+
+        def fake_import_module(name):
+            return {
+                "modulo.stub_grpc": modulo_stub,
+                "modulo.request": modulo_request,
+            }[name]
+
+        canal_mock = MagicMock()
+        canal_mock.__enter__ = MagicMock(return_value=MagicMock())
+        canal_mock.__exit__ = MagicMock(return_value=False)
+
+        monkeypatch.setattr(main.importlib, "import_module", fake_import_module)
+        monkeypatch.setattr(
+            main.grpc, "insecure_channel", MagicMock(return_value=canal_mock)
+        )
+
+        assert main._healthcheck(self._comp()) is True
+
+    def test_retorna_false_si_agota_timeout(self, monkeypatch):
+        # Secuencia de time.monotonic(): deadline, primera comprobación
+        # (aún dentro de plazo), segunda comprobación (ya fuera de plazo).
+        tiempos = iter([0, 0, 999])
+        monkeypatch.setattr(main.time, "monotonic", lambda: next(tiempos))
+        monkeypatch.setattr(main.time, "sleep", lambda s: None)
+        monkeypatch.setattr(main.importlib, "import_module", lambda name: MagicMock())
+        monkeypatch.setattr(
+            main.grpc,
+            "insecure_channel",
+            MagicMock(side_effect=ConnectionError("no disponible")),
+        )
+
+        assert main._healthcheck(self._comp(), timeout_s=1) is False
 
 
 # ─────────────────────────────────────────────────────────────
@@ -185,25 +248,66 @@ class TestLanzarProceso:
 
     def test_lanza_con_env_extra(self, tmp_path, monkeypatch):
         script = tmp_path / "dummy_server.py"
-        script.write_text("import time; time.sleep(999)")
-        monkeypatch.setattr(main, "PYTHON_ROOT", tmp_path)
+        script.write_text("# dummy")
 
-        comp = {
+        componente = {
             "nombre": "dummy",
             "script": script,
-            "env_extra": {"MI_VAR": "mi_valor"},
+            "env_extra": {"FOO": "bar"},
         }
 
-        with patch("subprocess.Popen") as mock_popen:
-            mock_popen.return_value = MagicMock(pid=1234)
-            main._lanzar_proceso(comp)
-            _, kwargs = mock_popen.call_args
-            assert kwargs["env"]["MI_VAR"] == "mi_valor"
+        proc_mock = MagicMock(pid=1234)
+        popen_mock = MagicMock(return_value=proc_mock)
+        monkeypatch.setattr(main.subprocess, "Popen", popen_mock)
+
+        resultado = main._lanzar_proceso(componente)
+
+        assert resultado is proc_mock
+        args, kwargs = popen_mock.call_args
+        assert args[0] == [sys.executable, str(script)]
+        assert kwargs["env"]["FOO"] == "bar"
 
     def test_script_inexistente_lanza_error(self, tmp_path):
-        # tmp_path vacío → el script no existe
+        componente = {
+            "nombre": "dummy",
+            "script": tmp_path / "no_existe.py",
+            "env_extra": {},
+        }
         with pytest.raises(FileNotFoundError):
-            main._arrancar_componente_produccion("gestor_mundo", python_root=tmp_path)
+            main._lanzar_proceso(componente)
+
+
+# ─────────────────────────────────────────────────────────────
+#  _lanzar_grupo
+# ─────────────────────────────────────────────────────────────
+
+
+class TestLanzarGrupo:
+
+    def test_todos_los_componentes_ok(self, monkeypatch):
+        grupo = [{"nombre": "a"}, {"nombre": "b"}]
+        monkeypatch.setattr(
+            main, "_lanzar_proceso", MagicMock(side_effect=lambda c: MagicMock())
+        )
+        monkeypatch.setattr(main, "_healthcheck", MagicMock(return_value=True))
+
+        procs, fallidos = main._lanzar_grupo(grupo)
+
+        assert len(procs) == 2
+        assert fallidos == []
+
+    def test_componente_fallido_se_reporta_por_nombre(self, monkeypatch):
+        grupo = [{"nombre": "a"}, {"nombre": "b"}]
+        monkeypatch.setattr(
+            main, "_lanzar_proceso", MagicMock(side_effect=lambda c: MagicMock())
+        )
+        # executor.map preserva el orden de entrada, así que esto asigna
+        # de forma determinista True→"a", False→"b".
+        monkeypatch.setattr(main, "_healthcheck", MagicMock(side_effect=[True, False]))
+
+        _, fallidos = main._lanzar_grupo(grupo)
+
+        assert fallidos == ["b"]
 
 
 # ─────────────────────────────────────────────────────────────
@@ -216,9 +320,8 @@ class TestApagarProcesos:
     def test_termina_procesos_vivos(self):
         proc = MagicMock()
         proc.poll.return_value = None  # vivo
-        proc.wait.return_value = None
 
-        main._apagar_procesos([(None, proc)])
+        main._apagar_procesos([proc])
 
         proc.terminate.assert_called_once()
 
@@ -226,7 +329,7 @@ class TestApagarProcesos:
         proc = MagicMock()
         proc.poll.return_value = 0  # ya terminó
 
-        main._apagar_procesos([(None, proc)])
+        main._apagar_procesos([proc])
 
         proc.terminate.assert_not_called()
 
@@ -235,7 +338,7 @@ class TestApagarProcesos:
         proc.poll.return_value = None
         proc.wait.side_effect = subprocess.TimeoutExpired(cmd="x", timeout=5)
 
-        main._apagar_procesos([(None, proc)])
+        main._apagar_procesos([proc])
 
         proc.kill.assert_called_once()
 
@@ -248,66 +351,39 @@ class TestApagarProcesos:
 class TestArrancarComponenteProduccion:
 
     def test_componente_desconocido_sale_con_error(self):
+        args = argparse.Namespace(
+            componente="componente_inventado", id=None, sesion=None, bucket=None
+        )
         with pytest.raises(SystemExit) as exc:
-            main._arrancar_componente_produccion("componente_inventado")
+            main._arrancar_componente_produccion(args)
         assert exc.value.code == 1
 
     def test_script_inexistente_lanza_error(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(main, "PYTHON_ROOT", tmp_path)
-        # PYTHON_ROOT vacío → el script no existe
+        monkeypatch.setattr(main, "SCRIPT_GESTOR_MUNDO", tmp_path / "no_existe.py")
+        args = argparse.Namespace(
+            componente="gestor_mundo", id=None, sesion=None, bucket=None
+        )
         with pytest.raises(FileNotFoundError):
-            main._arrancar_componente_produccion("gestor_mundo")
+            main._arrancar_componente_produccion(args)
 
-    def test_sector_con_sufijo_normaliza_a_sector(self, tmp_path):
-        script = tmp_path / "Gestores" / "Mundo" / "Sector" / "sector_server.py"
-        script.parent.mkdir(parents=True)
-        script.write_text("")
+    def test_arranca_componente_valido(self, tmp_path, monkeypatch):
+        script = tmp_path / "sector_server.py"
+        script.write_text("# dummy")
+        monkeypatch.setattr(main, "SCRIPT_SECTOR", script)
 
-        with patch("os.execv") as mock_execv:
-            main._arrancar_componente_produccion("sector_0_1", python_root=tmp_path)
-            mock_execv.assert_called_once()
+        # componente = tipo ("sector"); id = instancia concreta
+        # ("sector_0_1"). Son campos distintos de main() --componente/--id;
+        # no hay ninguna normalización de nombres en el código real.
+        args = argparse.Namespace(
+            componente="sector", id="sector_0_1", sesion="s1", bucket="b1"
+        )
 
+        with patch("main.os.execv") as mock_execv:
+            main._arrancar_componente_produccion(args)
 
-# ─────────────────────────────────────────────────────────────
-#  _healthcheck
-# ─────────────────────────────────────────────────────────────
-
-
-class TestHealthcheck:
-
-    def test_retorna_true_si_canal_responde(self):
-        with patch("main.grpc.insecure_channel") as mock_channel, patch(
-            "main.grpc.channel_ready_future"
-        ) as mock_future, patch("importlib.import_module") as mock_import:
-
-            mock_stub = MagicMock()
-            mock_import.return_value = MagicMock(**{"SectorServiceStub": mock_stub})
-            mock_future.return_value.result.return_value = None
-            mock_channel.return_value.__enter__ = lambda s: MagicMock()
-            mock_channel.return_value.__exit__ = MagicMock(return_value=False)
-
-            result = main._healthcheck(
-                "localhost:50100",
-                "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2_grpc",
-                "SectorServiceStub",
-                timeout_s=5,
-            )
-            assert result is True
-
-    def test_retorna_false_si_agota_timeout(self):
-        with patch("main.grpc.insecure_channel") as mock_channel, patch(
-            "main.grpc.channel_ready_future"
-        ) as mock_future, patch("importlib.import_module") as mock_import, patch(
-            "time.monotonic", side_effect=[0, 0, 999]
-        ):  # timeout inmediato
-
-            mock_import.return_value = MagicMock()
-            mock_future.return_value.result.side_effect = Exception("timeout")
-
-            result = main._healthcheck(
-                "localhost:9999",
-                "modulo.falso",
-                "StubFalso",
-                timeout_s=1,
-            )
-            assert result is False
+        assert os.environ["COMPONENT_ID"] == "sector_0_1"
+        assert os.environ["SESSION_ID"] == "s1"
+        assert os.environ["S3_BUCKET"] == "b1"
+        mock_execv.assert_called_once_with(
+            sys.executable, [sys.executable, str(script)]
+        )

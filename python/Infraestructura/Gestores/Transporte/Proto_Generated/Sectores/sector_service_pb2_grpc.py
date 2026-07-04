@@ -3,7 +3,8 @@
 import grpc
 import warnings
 
-from Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as Sectores_dot_sector__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as Sectores_dot_sector__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -26,9 +27,12 @@ if _version_not_supported:
 
 
 class SectorServiceStub(object):
-    """─────────────────────────────────────────────
-    SectorService
-    ─────────────────────────────────────────────
+    """============================================================
+    SectorService — expuesto por cada Sector.
+
+    Cliente único: Gestor_Mundo.
+    main.py también puede llamar a Shutdown directamente.
+    ============================================================
 
     """
 
@@ -38,6 +42,11 @@ class SectorServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Shutdown = channel.unary_unary(
+                '/sector.SectorService/Shutdown',
+                request_serializer=common__pb2.ShutdownRequest.SerializeToString,
+                response_deserializer=common__pb2.ShutdownResponse.FromString,
+                _registered_method=True)
         self.SetSectorMode = channel.unary_unary(
                 '/sector.SectorService/SetSectorMode',
                 request_serializer=Sectores_dot_sector__service__pb2.SetSectorModeRequest.SerializeToString,
@@ -83,17 +92,34 @@ class SectorServiceStub(object):
                 request_serializer=Sectores_dot_sector__service__pb2.SaveSnapshotRequest.SerializeToString,
                 response_deserializer=Sectores_dot_sector__service__pb2.SaveSnapshotResponse.FromString,
                 _registered_method=True)
+        self.GetElementAttributes = channel.unary_unary(
+                '/sector.SectorService/GetElementAttributes',
+                request_serializer=Sectores_dot_sector__service__pb2.GetElementAttributesRequest.SerializeToString,
+                response_deserializer=Sectores_dot_sector__service__pb2.GetElementAttributesResponse.FromString,
+                _registered_method=True)
 
 
 class SectorServiceServicer(object):
-    """─────────────────────────────────────────────
-    SectorService
-    ─────────────────────────────────────────────
+    """============================================================
+    SectorService — expuesto por cada Sector.
+
+    Cliente único: Gestor_Mundo.
+    main.py también puede llamar a Shutdown directamente.
+    ============================================================
 
     """
 
+    def Shutdown(self, request, context):
+        """----- Infraestructura (main.py) -----
+        Los sectores no tienen estado que hibernar: su existencia es discreta.
+        Shutdown simplemente termina el proceso.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def SetSectorMode(self, request, context):
-        """Ciclo de vida
+        """----- Ciclo de vida -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -112,7 +138,7 @@ class SectorServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SetGhostZone(self, request, context):
-        """FASE 0 — preparación del tick
+        """----- FASE 0 — preparación del tick -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -131,21 +157,28 @@ class SectorServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def StartTick(self, request, context):
-        """FASE 1 — computación
+        """----- FASE 1 — computación -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetDelta(self, request, context):
-        """FASE 2 — consolidación
+        """----- FASE 2 — consolidación -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SaveSnapshot(self, request, context):
-        """Guardado profundo coordinado
+        """----- Guardado profundo coordinado -----
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetElementAttributes(self, request, context):
+        """----- Consulta de atributos (debug/dev) -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -154,6 +187,11 @@ class SectorServiceServicer(object):
 
 def add_SectorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Shutdown': grpc.unary_unary_rpc_method_handler(
+                    servicer.Shutdown,
+                    request_deserializer=common__pb2.ShutdownRequest.FromString,
+                    response_serializer=common__pb2.ShutdownResponse.SerializeToString,
+            ),
             'SetSectorMode': grpc.unary_unary_rpc_method_handler(
                     servicer.SetSectorMode,
                     request_deserializer=Sectores_dot_sector__service__pb2.SetSectorModeRequest.FromString,
@@ -199,6 +237,11 @@ def add_SectorServiceServicer_to_server(servicer, server):
                     request_deserializer=Sectores_dot_sector__service__pb2.SaveSnapshotRequest.FromString,
                     response_serializer=Sectores_dot_sector__service__pb2.SaveSnapshotResponse.SerializeToString,
             ),
+            'GetElementAttributes': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetElementAttributes,
+                    request_deserializer=Sectores_dot_sector__service__pb2.GetElementAttributesRequest.FromString,
+                    response_serializer=Sectores_dot_sector__service__pb2.GetElementAttributesResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'sector.SectorService', rpc_method_handlers)
@@ -208,11 +251,41 @@ def add_SectorServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class SectorService(object):
-    """─────────────────────────────────────────────
-    SectorService
-    ─────────────────────────────────────────────
+    """============================================================
+    SectorService — expuesto por cada Sector.
+
+    Cliente único: Gestor_Mundo.
+    main.py también puede llamar a Shutdown directamente.
+    ============================================================
 
     """
+
+    @staticmethod
+    def Shutdown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sector.SectorService/Shutdown',
+            common__pb2.ShutdownRequest.SerializeToString,
+            common__pb2.ShutdownResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def SetSectorMode(request,
@@ -447,6 +520,33 @@ class SectorService(object):
             '/sector.SectorService/SaveSnapshot',
             Sectores_dot_sector__service__pb2.SaveSnapshotRequest.SerializeToString,
             Sectores_dot_sector__service__pb2.SaveSnapshotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetElementAttributes(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sector.SectorService/GetElementAttributes',
+            Sectores_dot_sector__service__pb2.GetElementAttributesRequest.SerializeToString,
+            Sectores_dot_sector__service__pb2.GetElementAttributesResponse.FromString,
             options,
             channel_credentials,
             insecure,

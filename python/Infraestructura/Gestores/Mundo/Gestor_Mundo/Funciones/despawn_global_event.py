@@ -1,25 +1,29 @@
-# Gestores/Mundo/Gestor_Mundo/funciones/despawn_global_event.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import gestor_mundo_service_pb2 as pb
+# Infraestructura/Gestores/Mundo/Gestor_Mundo/Funciones/despawn_global_event.py
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
 import logging
 
 logger = logging.getLogger(__name__)
+
 NAME = "DespawnGlobalEvent"
 
-async def handle(gestor: GestorMundo, request, context) -> pb.DespawnGlobalEventResponse:
+
+async def handle(gestor: GestorMundo, request, context) -> common_pb2.Ack:
     try:
         async with gestor._gold_lock:
             event = gestor._active_events.pop(request.event_id, None)
             if event is None:
-                return pb.DespawnGlobalEventResponse(
+                return common_pb2.Ack(
                     ok=False, error=f"Evento '{request.event_id}' no encontrado."
                 )
+            # Solo hay celda gold que limpiar si el evento tenía posición
+            # (algunos eventos globales, como ciclos día/noche, no la tienen).
             if event.HasField("pos"):
                 key = (event.pos.x, event.pos.y)
                 gestor._gold_cells.pop(key, None)
-                await gestor._distribuir_celda_modificada(key, b"")
+                await gestor._distribute_gold_to_sectors()
         logger.info("Evento global despawneado: %s (razón: %s)", request.event_id, request.reason)
-        return pb.DespawnGlobalEventResponse(ok=True)
+        return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en DespawnGlobalEvent")
-        return pb.DespawnGlobalEventResponse(ok=False, error=str(e))
+        return common_pb2.Ack(ok=False, error=str(e))

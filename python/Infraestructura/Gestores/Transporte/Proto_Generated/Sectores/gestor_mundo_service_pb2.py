@@ -22,67 +22,64 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#Sectores/gestor_mundo_service.proto\x12\x0cgestor_mundo\" \n\x03\x41\x63k\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\" \n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"M\n\x04\x43\x65ll\x12#\n\x03pos\x18\x01 \x01(\x0b\x32\x16.gestor_mundo.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\x0f\n\x07\x65lement\x18\x03 \x01(\x0c\"1\n\x12GetWorldMapRequest\x12\x1b\n\x13only_active_sectors\x18\x01 \x01(\x08\"8\n\x13GetWorldMapResponse\x12!\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\x12.gestor_mundo.Cell\"\x17\n\x15GetGlobalStateRequest\"1\n\x12GlobalElementState\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05state\x18\x02 \x01(\x0c\"\x97\x01\n\x16GetGlobalStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07tick_id\x18\x03 \x01(\x03\x12\x13\n\x0bsnapshot_id\x18\x04 \x01(\t\x12<\n\x12\x65lementos_globales\x18\x05 \x03(\x0b\x32 .gestor_mundo.GlobalElementState\"\x18\n\x16GetSnapshotInfoRequest\"\x8c\x01\n\x17GetSnapshotInfoResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x12\x16\n\x0etimestamp_unix\x18\x05 \x01(\x03\x12\x18\n\x10is_deep_snapshot\x18\x06 \x01(\x08\"\x0e\n\x0cPauseRequest\"\x0f\n\rResumeRequest\"\x18\n\x16TriggerDeepSaveRequest\"I\n\x17TriggerDeepSaveResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\".\n\x12SetTickRateRequest\x12\x18\n\x10ticks_per_second\x18\x01 \x01(\x05\"c\n\x0bGlobalEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12#\n\x03pos\x18\x03 \x01(\x0b\x32\x16.gestor_mundo.Position\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\"C\n\x17SpawnGlobalEventRequest\x12(\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x19.gestor_mundo.GlobalEvent\"G\n\x18SpawnGlobalEventResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\"=\n\x19\x44\x65spawnGlobalEventRequest\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"\x18\n\x16GetActiveEventsRequest\"_\n\x17GetActiveEventsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12)\n\x06\x65vents\x18\x03 \x03(\x0b\x32\x19.gestor_mundo.GlobalEvent\"[\n\x14ModifyElementRequest\x12#\n\x03pos\x18\x01 \x01(\x0b\x32\x16.gestor_mundo.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\r\n\x05patch\x18\x03 \x01(\x0c\"]\n\x14\x43reateElementRequest\x12#\n\x03pos\x18\x01 \x01(\x0b\x32\x16.gestor_mundo.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\x0f\n\x07\x65lement\x18\x03 \x01(\x0c\";\n\x14\x44\x65leteElementRequest\x12#\n\x03pos\x18\x01 \x01(\x0b\x32\x16.gestor_mundo.Position\"L\n\x14\x46orwardActionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"T\n\x15\x46orwardActionResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x32\x84\t\n\x12GestorMundoService\x12T\n\x0bGetWorldMap\x12 .gestor_mundo.GetWorldMapRequest\x1a!.gestor_mundo.GetWorldMapResponse0\x01\x12[\n\x0eGetGlobalState\x12#.gestor_mundo.GetGlobalStateRequest\x1a$.gestor_mundo.GetGlobalStateResponse\x12^\n\x0fGetSnapshotInfo\x12$.gestor_mundo.GetSnapshotInfoRequest\x1a%.gestor_mundo.GetSnapshotInfoResponse\x12\x36\n\x05Pause\x12\x1a.gestor_mundo.PauseRequest\x1a\x11.gestor_mundo.Ack\x12\x38\n\x06Resume\x12\x1b.gestor_mundo.ResumeRequest\x1a\x11.gestor_mundo.Ack\x12\x42\n\x0bSetTickRate\x12 .gestor_mundo.SetTickRateRequest\x1a\x11.gestor_mundo.Ack\x12^\n\x0fTriggerDeepSave\x12$.gestor_mundo.TriggerDeepSaveRequest\x1a%.gestor_mundo.TriggerDeepSaveResponse\x12\x61\n\x10SpawnGlobalEvent\x12%.gestor_mundo.SpawnGlobalEventRequest\x1a&.gestor_mundo.SpawnGlobalEventResponse\x12P\n\x12\x44\x65spawnGlobalEvent\x12\'.gestor_mundo.DespawnGlobalEventRequest\x1a\x11.gestor_mundo.Ack\x12^\n\x0fGetActiveEvents\x12$.gestor_mundo.GetActiveEventsRequest\x1a%.gestor_mundo.GetActiveEventsResponse\x12\x46\n\rModifyElement\x12\".gestor_mundo.ModifyElementRequest\x1a\x11.gestor_mundo.Ack\x12\x46\n\rCreateElement\x12\".gestor_mundo.CreateElementRequest\x1a\x11.gestor_mundo.Ack\x12\x46\n\rDeleteElement\x12\".gestor_mundo.DeleteElementRequest\x1a\x11.gestor_mundo.Ack\x12X\n\rForwardAction\x12\".gestor_mundo.ForwardActionRequest\x1a#.gestor_mundo.ForwardActionResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#Sectores/gestor_mundo_service.proto\x12\x0cgestor_mundo\x1a\x0c\x63ommon.proto\"h\n\x1cGestorMundoHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12-\n\x0fsector_statuses\x18\x03 \x03(\x0b\x32\x14.common.SectorStatus\"1\n\x12GetWorldMapRequest\x12\x1b\n\x13only_active_sectors\x18\x01 \x01(\x08\"2\n\x13GetWorldMapResponse\x12\x1b\n\x05\x63\x65lls\x18\x01 \x03(\x0b\x32\x0c.common.Cell\"\x17\n\x15GetGlobalStateRequest\"1\n\x12GlobalElementState\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05state\x18\x02 \x01(\x0c\"\x97\x01\n\x16GetGlobalStateResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07tick_id\x18\x03 \x01(\x03\x12\x13\n\x0bsnapshot_id\x18\x04 \x01(\t\x12<\n\x12\x65lementos_globales\x18\x05 \x03(\x0b\x32 .gestor_mundo.GlobalElementState\"\x18\n\x16GetSnapshotInfoRequest\"\x8c\x01\n\x17GetSnapshotInfoResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x12\x16\n\x0etimestamp_unix\x18\x05 \x01(\x03\x12\x18\n\x10is_deep_snapshot\x18\x06 \x01(\x08\"\x0e\n\x0cPauseRequest\"\x0f\n\rResumeRequest\".\n\x12SetTickRateRequest\x12\x18\n\x10ticks_per_second\x18\x01 \x01(\x05\"\x18\n\x16TriggerDeepSaveRequest\"I\n\x17TriggerDeepSaveResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\"]\n\x0bGlobalEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x1d\n\x03pos\x18\x03 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\"C\n\x17SpawnGlobalEventRequest\x12(\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x19.gestor_mundo.GlobalEvent\"G\n\x18SpawnGlobalEventResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\"=\n\x19\x44\x65spawnGlobalEventRequest\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"\x18\n\x16GetActiveEventsRequest\"_\n\x17GetActiveEventsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12)\n\x06\x65vents\x18\x03 \x03(\x0b\x32\x19.gestor_mundo.GlobalEvent\"U\n\x14ModifyElementRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\r\n\x05patch\x18\x03 \x01(\x0c\"W\n\x14\x43reateElementRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\x0f\n\x07\x65lement\x18\x03 \x01(\x0c\"5\n\x14\x44\x65leteElementRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\"W\n\x1f\x46orwardActionGestorMundoRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"_\n ForwardActionGestorMundoResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x32\x8d\n\n\x12GestorMundoService\x12Q\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a*.gestor_mundo.GestorMundoHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12T\n\x0bGetWorldMap\x12 .gestor_mundo.GetWorldMapRequest\x1a!.gestor_mundo.GetWorldMapResponse0\x01\x12[\n\x0eGetGlobalState\x12#.gestor_mundo.GetGlobalStateRequest\x1a$.gestor_mundo.GetGlobalStateResponse\x12^\n\x0fGetSnapshotInfo\x12$.gestor_mundo.GetSnapshotInfoRequest\x1a%.gestor_mundo.GetSnapshotInfoResponse\x12\x30\n\x05Pause\x12\x1a.gestor_mundo.PauseRequest\x1a\x0b.common.Ack\x12\x32\n\x06Resume\x12\x1b.gestor_mundo.ResumeRequest\x1a\x0b.common.Ack\x12<\n\x0bSetTickRate\x12 .gestor_mundo.SetTickRateRequest\x1a\x0b.common.Ack\x12^\n\x0fTriggerDeepSave\x12$.gestor_mundo.TriggerDeepSaveRequest\x1a%.gestor_mundo.TriggerDeepSaveResponse\x12\x61\n\x10SpawnGlobalEvent\x12%.gestor_mundo.SpawnGlobalEventRequest\x1a&.gestor_mundo.SpawnGlobalEventResponse\x12J\n\x12\x44\x65spawnGlobalEvent\x12\'.gestor_mundo.DespawnGlobalEventRequest\x1a\x0b.common.Ack\x12^\n\x0fGetActiveEvents\x12$.gestor_mundo.GetActiveEventsRequest\x1a%.gestor_mundo.GetActiveEventsResponse\x12@\n\rModifyElement\x12\".gestor_mundo.ModifyElementRequest\x1a\x0b.common.Ack\x12@\n\rCreateElement\x12\".gestor_mundo.CreateElementRequest\x1a\x0b.common.Ack\x12@\n\rDeleteElement\x12\".gestor_mundo.DeleteElementRequest\x1a\x0b.common.Ack\x12y\n\x18\x46orwardActionGestorMundo\x12-.gestor_mundo.ForwardActionGestorMundoRequest\x1a..gestor_mundo.ForwardActionGestorMundoResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Sectores.gestor_mundo_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ACK']._serialized_start=53
-  _globals['_ACK']._serialized_end=85
-  _globals['_POSITION']._serialized_start=87
-  _globals['_POSITION']._serialized_end=119
-  _globals['_CELL']._serialized_start=121
-  _globals['_CELL']._serialized_end=198
-  _globals['_GETWORLDMAPREQUEST']._serialized_start=200
-  _globals['_GETWORLDMAPREQUEST']._serialized_end=249
-  _globals['_GETWORLDMAPRESPONSE']._serialized_start=251
-  _globals['_GETWORLDMAPRESPONSE']._serialized_end=307
-  _globals['_GETGLOBALSTATEREQUEST']._serialized_start=309
-  _globals['_GETGLOBALSTATEREQUEST']._serialized_end=332
-  _globals['_GLOBALELEMENTSTATE']._serialized_start=334
-  _globals['_GLOBALELEMENTSTATE']._serialized_end=383
-  _globals['_GETGLOBALSTATERESPONSE']._serialized_start=386
-  _globals['_GETGLOBALSTATERESPONSE']._serialized_end=537
-  _globals['_GETSNAPSHOTINFOREQUEST']._serialized_start=539
-  _globals['_GETSNAPSHOTINFOREQUEST']._serialized_end=563
-  _globals['_GETSNAPSHOTINFORESPONSE']._serialized_start=566
-  _globals['_GETSNAPSHOTINFORESPONSE']._serialized_end=706
-  _globals['_PAUSEREQUEST']._serialized_start=708
-  _globals['_PAUSEREQUEST']._serialized_end=722
-  _globals['_RESUMEREQUEST']._serialized_start=724
-  _globals['_RESUMEREQUEST']._serialized_end=739
-  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_start=741
-  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_end=765
-  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_start=767
-  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_end=840
-  _globals['_SETTICKRATEREQUEST']._serialized_start=842
-  _globals['_SETTICKRATEREQUEST']._serialized_end=888
-  _globals['_GLOBALEVENT']._serialized_start=890
-  _globals['_GLOBALEVENT']._serialized_end=989
-  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_start=991
-  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_end=1058
-  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_start=1060
-  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_end=1131
-  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_start=1133
-  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_end=1194
-  _globals['_GETACTIVEEVENTSREQUEST']._serialized_start=1196
-  _globals['_GETACTIVEEVENTSREQUEST']._serialized_end=1220
-  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_start=1222
-  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_end=1317
-  _globals['_MODIFYELEMENTREQUEST']._serialized_start=1319
-  _globals['_MODIFYELEMENTREQUEST']._serialized_end=1410
-  _globals['_CREATEELEMENTREQUEST']._serialized_start=1412
-  _globals['_CREATEELEMENTREQUEST']._serialized_end=1505
-  _globals['_DELETEELEMENTREQUEST']._serialized_start=1507
-  _globals['_DELETEELEMENTREQUEST']._serialized_end=1566
-  _globals['_FORWARDACTIONREQUEST']._serialized_start=1568
-  _globals['_FORWARDACTIONREQUEST']._serialized_end=1644
-  _globals['_FORWARDACTIONRESPONSE']._serialized_start=1646
-  _globals['_FORWARDACTIONRESPONSE']._serialized_end=1730
-  _globals['_GESTORMUNDOSERVICE']._serialized_start=1733
-  _globals['_GESTORMUNDOSERVICE']._serialized_end=2889
+  _globals['_GESTORMUNDOHEARTBEATRESPONSE']._serialized_start=67
+  _globals['_GESTORMUNDOHEARTBEATRESPONSE']._serialized_end=171
+  _globals['_GETWORLDMAPREQUEST']._serialized_start=173
+  _globals['_GETWORLDMAPREQUEST']._serialized_end=222
+  _globals['_GETWORLDMAPRESPONSE']._serialized_start=224
+  _globals['_GETWORLDMAPRESPONSE']._serialized_end=274
+  _globals['_GETGLOBALSTATEREQUEST']._serialized_start=276
+  _globals['_GETGLOBALSTATEREQUEST']._serialized_end=299
+  _globals['_GLOBALELEMENTSTATE']._serialized_start=301
+  _globals['_GLOBALELEMENTSTATE']._serialized_end=350
+  _globals['_GETGLOBALSTATERESPONSE']._serialized_start=353
+  _globals['_GETGLOBALSTATERESPONSE']._serialized_end=504
+  _globals['_GETSNAPSHOTINFOREQUEST']._serialized_start=506
+  _globals['_GETSNAPSHOTINFOREQUEST']._serialized_end=530
+  _globals['_GETSNAPSHOTINFORESPONSE']._serialized_start=533
+  _globals['_GETSNAPSHOTINFORESPONSE']._serialized_end=673
+  _globals['_PAUSEREQUEST']._serialized_start=675
+  _globals['_PAUSEREQUEST']._serialized_end=689
+  _globals['_RESUMEREQUEST']._serialized_start=691
+  _globals['_RESUMEREQUEST']._serialized_end=706
+  _globals['_SETTICKRATEREQUEST']._serialized_start=708
+  _globals['_SETTICKRATEREQUEST']._serialized_end=754
+  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_start=756
+  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_end=780
+  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_start=782
+  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_end=855
+  _globals['_GLOBALEVENT']._serialized_start=857
+  _globals['_GLOBALEVENT']._serialized_end=950
+  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_start=952
+  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_end=1019
+  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_start=1021
+  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_end=1092
+  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_start=1094
+  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_end=1155
+  _globals['_GETACTIVEEVENTSREQUEST']._serialized_start=1157
+  _globals['_GETACTIVEEVENTSREQUEST']._serialized_end=1181
+  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_start=1183
+  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_end=1278
+  _globals['_MODIFYELEMENTREQUEST']._serialized_start=1280
+  _globals['_MODIFYELEMENTREQUEST']._serialized_end=1365
+  _globals['_CREATEELEMENTREQUEST']._serialized_start=1367
+  _globals['_CREATEELEMENTREQUEST']._serialized_end=1454
+  _globals['_DELETEELEMENTREQUEST']._serialized_start=1456
+  _globals['_DELETEELEMENTREQUEST']._serialized_end=1509
+  _globals['_FORWARDACTIONGESTORMUNDOREQUEST']._serialized_start=1511
+  _globals['_FORWARDACTIONGESTORMUNDOREQUEST']._serialized_end=1598
+  _globals['_FORWARDACTIONGESTORMUNDORESPONSE']._serialized_start=1600
+  _globals['_FORWARDACTIONGESTORMUNDORESPONSE']._serialized_end=1695
+  _globals['_GESTORMUNDOSERVICE']._serialized_start=1698
+  _globals['_GESTORMUNDOSERVICE']._serialized_end=2991
 # @@protoc_insertion_point(module_scope)

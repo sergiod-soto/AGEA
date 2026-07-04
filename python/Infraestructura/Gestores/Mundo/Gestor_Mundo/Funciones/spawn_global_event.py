@@ -1,10 +1,14 @@
-# Gestores/Mundo/Gestor_Mundo/funciones/spawn_global_event.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import gestor_mundo_service_pb2 as pb
+# Infraestructura/Gestores/Mundo/Gestor_Mundo/Funciones/spawn_global_event.py
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
+    gestor_mundo_service_pb2 as pb,
+)
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
 import logging
 
 logger = logging.getLogger(__name__)
+
 NAME = "SpawnGlobalEvent"
+
 
 async def handle(gestor: GestorMundo, request, context) -> pb.SpawnGlobalEventResponse:
     event = request.event
@@ -14,7 +18,7 @@ async def handle(gestor: GestorMundo, request, context) -> pb.SpawnGlobalEventRe
             if event.HasField("pos"):
                 key = (event.pos.x, event.pos.y)
                 gestor._gold_cells[key] = event.payload
-                await gestor._distribuir_celda_modificada(key, event.payload)
+                await gestor._distribute_gold_to_sectors()
         logger.info("Evento global spawneado: %s (%s)", event.event_id, event.type)
         return pb.SpawnGlobalEventResponse(ok=True, event_id=event.event_id)
     except Exception as e:

@@ -500,6 +500,7 @@ class Hypervisor:
         state = {
             "snapshot_id": snapshot_id,
             "hypervisor_id": self.hypervisor_id,
+            "fecha": datetime.datetime.now().isoformat(),
             "bots": [
                 {
                     "bot_id": rec.bot_id,
@@ -509,7 +510,6 @@ class Hypervisor:
                 }
                 for rec in self._bots.values()
             ],
-            "date": datetime.datetime.now(),
         }
         path = Path("data/snapshots") / f"hv_{self.hypervisor_id}_{snapshot_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)

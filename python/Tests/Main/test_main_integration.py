@@ -26,6 +26,14 @@ import pytest
 ROOT = Path(__file__).parents[2]
 sys.path.insert(0, str(ROOT))
 
+from Config.rutas import (
+    ROOT,
+    SCRIPT_SECTOR,
+    SCRIPT_GESTOR_MUNDO,
+    SCRIPT_GESTOR_BOTS,
+    SCRIPT_HYPERVISOR,
+)
+
 import main
 
 # ─────────────────────────────────────────────────────────────
@@ -81,9 +89,8 @@ def _wait_grpc(address: str, timeout_s: int = 20) -> bool:
     return False
 
 
-def _lanzar(script_rel: str, env_extra: dict) -> subprocess.Popen:
+def _lanzar(script: Path, env_extra: dict) -> subprocess.Popen:
     """Lanza un _server.py como subproceso con el entorno dado."""
-    script = ROOT / script_rel
     assert script.exists(), f"Script no encontrado: {script}"
     env = os.environ.copy()
     env.update(env_extra)
@@ -103,7 +110,7 @@ class TestSectorArranca:
 
     def test_sector_responde_grpc(self):
         proc = _lanzar(
-            "Gestores/Mundo/Sector/sector_server.py",
+            SCRIPT_SECTOR,
             {
                 "SECTOR_COL": "0",
                 "SECTOR_ROW": "0",
@@ -124,7 +131,7 @@ class TestGestorMundoArranca:
     def test_gestor_mundo_responde_grpc(self):
         # El gestor_mundo necesita al menos el sector activo para arrancar
         sector = _lanzar(
-            "Gestores/Mundo/Sector/sector_server.py",
+            SCRIPT_SECTOR,
             {
                 "SECTOR_COL": "0",
                 "SECTOR_ROW": "0",
@@ -135,7 +142,7 @@ class TestGestorMundoArranca:
         assert _wait_grpc(f"localhost:{TEST_SECTOR_PORT}"), "Sector no arrancó"
 
         gm = _lanzar(
-            "Gestores/Mundo/Gestor_Mundo/gestor_mundo_server.py",
+            SCRIPT_GESTOR_MUNDO,
             {
                 "GESTOR_MUNDO_PORT": str(TEST_GM_PORT),
                 "GESTOR_BOTS_ADDRESS": f"localhost:{TEST_GB_PORT}",
@@ -155,7 +162,7 @@ class TestGestorBotsArranca:
 
     def test_gestor_bots_responde_grpc(self):
         gb = _lanzar(
-            "Gestores/Bots/Gestor_Bots/gestor_bots_server.py",
+            SCRIPT_GESTOR_BOTS,
             {"GESTOR_BOTS_PORT": str(TEST_GB_PORT)},
         )
         try:
@@ -171,13 +178,13 @@ class TestHypervisorArranca:
     def test_hypervisor_responde_grpc(self):
         # Hypervisor necesita gestor_bots para registrarse
         gb = _lanzar(
-            "Gestores/Bots/Gestor_Bots/gestor_bots_server.py",
+            SCRIPT_GESTOR_BOTS,
             {"GESTOR_BOTS_PORT": str(TEST_GB_PORT)},
         )
         assert _wait_grpc(f"localhost:{TEST_GB_PORT}"), "Gestor_bots no arrancó"
 
         hv = _lanzar(
-            "Gestores/Bots/Hypervisor/hypervisor_server.py",
+            SCRIPT_HYPERVISOR,
             {
                 "HYPERVISOR_ID": "hv_test",
                 "HYPERVISOR_PORT": str(TEST_HV_PORT),
@@ -272,9 +279,11 @@ class TestArranqueCompleto:
         monkeypatch.setenv("HYPERVISOR_PROXY_BASE_PORT", str(TEST_FULL_HV_PROXY_PORT))
         procesos = main._arrancar_local()
         try:
-            componentes = main._build_components()
+            # _build_components() devuelve grupos (list[list[dict]]); hay que
+            # aplanarlos para iterar componente a componente.
+            componentes = [c for grupo in main._build_components() for c in grupo]
             for comp in componentes:
                 ok = _wait_grpc(comp["healthcheck_address"], timeout_s=30)
                 assert ok, f"{comp['nombre']} no respondió por gRPC"
         finally:
-            main._apagar_procesos([(None, p) for p in procesos])
+            main._apagar_procesos(procesos)

@@ -1,8 +1,6 @@
 syntax = "proto3";
-
 package world_proxy;
-
-import "Bots/common.proto";
+import "common.proto";
 
 // ============================================================
 //  WorldProxyService — expuesto por cada Hypervisor en su
@@ -17,21 +15,9 @@ import "Bots/common.proto";
 //  Las acciones disponibles y sus costes se definen en:
 //    core/acciones.py
 //  No hay que tocar este proto para añadir nuevas acciones.
-//
-//  Único RPC de acción: Act
-//    action_name: nombre de la acción (debe existir en core/acciones.py)
-//    payload:     datos específicos de la acción (bytes opacos)
-//
-//  El Hypervisor:
-//    1. Extrae bot-id del header.
-//    2. Consulta core/acciones.py para obtener el coste.
-//    3. Descuenta puntos localmente.
-//    4. Reenvía al Gestor → Mundo si hay puntos.
 // ============================================================
-service WorldProxyService {
 
-  // Acción genérica. Cubre cualquier acción definida en core/acciones.py.
-  // El Hypervisor valida los puntos; el Mundo interpreta el payload.
+service WorldProxyService {
   rpc Act (ActRequest) returns (common.ActionResult);
 }
 
@@ -40,22 +26,24 @@ service WorldProxyService {
 // ============================================================
 
 message ActRequest {
-  string action_name = 1;  // debe coincidir con una clave de core/acciones.py
-  bytes  payload     = 2;  // datos opacos; el Mundo los interpreta según action_name
+  string action_name = 1;
+  bytes  payload     = 2;
 }
 
+// TODO: definir e integrar cuando se implemente observación directa
 message MirarRequest {
-  int32 distancia = 1;  // distancia máxima en celdas
+  int32 distancia = 1;
 }
 
+// TODO: definir e integrar cuando se implemente consulta de estado desde bot
 message GetStatusRequest {}
 
 message BotStatusResponse {
-  string         bot_id      = 1;
-  common.GridPos position    = 2;
-  float          rotation    = 3;
-  float          health      = 4;   // 0.0 – 1.0
-  int32          points_left = 5;
-  int64          world_tick  = 6;
-  bool           alive       = 7;
+  string           bot_id      = 1;
+  common.Position  position    = 2;
+  float            rotation    = 3;
+  float            health      = 4;
+  int32            points_left = 5;
+  int64            world_tick  = 6;
+  bool             alive       = 7;
 }

@@ -1,43 +1,60 @@
 syntax = "proto3";
 package gestor;
-import "Bots/common.proto";
+import "common.proto";
 
 // ============================================================
-//  GestorService — expuesto por el Gestor.
+//  GestorBotsService — expuesto por el Gestor de Bots.
 //
 //  Clientes:
+//    - main.py        → Heartbeat, Shutdown
 //    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
 //                       BroadcastBudgets, SaveSnapshot, LoadState,
 //                       FreezeAll, ResumeAll, ResetBudgets
 //    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-//                       ForwardAction, ListHypervisors
+//                       ForwardActionHV, ListHypervisors
 // ============================================================
 
 service GestorBotsService {
+  // ----- Infraestructura (main.py) -----
+  rpc Heartbeat           (common.HeartbeatRequest)   returns (GestorBotsHeartbeatResponse);
+  rpc Shutdown            (common.ShutdownRequest)    returns (common.ShutdownResponse);
+
   // ----- Ciclo de vida de bots (llamado por el Mundo) -----
-  rpc SpawnBot            (SpawnBotRequest)          returns (common.BotInfo);
-  rpc KillBot             (BotIdRequest)             returns (common.Ack);
-  rpc NotifyBotDeath      (BotDeathNotification)     returns (common.Ack);
-  rpc BroadcastBudgets    (BroadcastBudgetsRequest)  returns (common.Ack);
+  rpc SpawnBot            (SpawnBotRequest)            returns (common.BotInfo);
+  rpc KillBot             (BotIdRequest)               returns (common.Ack);
+  rpc NotifyBotDeath      (BotDeathNotification)       returns (common.Ack);
+  rpc BroadcastBudgets    (BroadcastBudgetsRequest)    returns (common.Ack);
 
   // ----- Persistencia -----
-  rpc SaveSnapshot        (SaveSnapshotRequest)      returns (SaveSnapshotResponse);
-  rpc LoadState           (LoadStateRequest)         returns (common.Ack);
+  rpc SaveSnapshot        (SaveSnapshotRequest)        returns (SaveSnapshotResponse);
+  rpc LoadState           (LoadStateRequest)           returns (common.Ack);
 
   // ----- Pausa y reanudación -----
-  rpc FreezeAll           (FreezeAllRequest)         returns (common.Ack);
-  rpc ResumeAll           (ResumeAllRequest)         returns (common.Ack);
+  rpc FreezeAll           (FreezeAllRequest)           returns (common.Ack);
+  rpc ResumeAll           (ResumeAllRequest)           returns (common.Ack);
 
   // ----- Reset de presupuestos -----
-  rpc ResetBudgets        (ResetBudgetsRequest)      returns (common.Ack);
+  rpc ResetBudgets        (ResetBudgetsRequest)        returns (common.Ack);
 
   // ----- Registro y control de Hypervisores -----
-  rpc RegisterHypervisor  (RegisterHypervisorRequest) returns (RegisterHVAck);
-  rpc UpdateHypervisorLoad(UpdateLoadRequest)         returns (common.Ack);
-  rpc ListHypervisors     (ListHypervisorsRequest)    returns (common.HypervisorList);
+  rpc RegisterHypervisor  (RegisterHypervisorRequest)  returns (RegisterHVAck);
+  rpc UpdateHypervisorLoad(UpdateLoadRequest)           returns (common.Ack);
+  rpc ListHypervisors     (ListHypervisorsRequest)      returns (common.HypervisorList);
 
   // ----- Reenvío de acciones al Mundo -----
-  rpc ForwardAction       (ForwardActionRequest)     returns (common.ActionResult);
+  rpc ForwardActionHV     (ForwardActionHVRequest)      returns (common.ActionResult);
+}
+
+// ============================================================
+//  Heartbeat
+// ============================================================
+
+// El gestor incluye el estado de todos sus HVs registrados.
+// main.py detecta así caídas de HVs sin necesidad de contactarlos.
+message GestorBotsHeartbeatResponse {
+  bool   ok    = 1;
+  string error = 2;
+  repeated common.HVStatus hv_statuses = 3;
 }
 
 // ============================================================
@@ -59,8 +76,8 @@ message BotDeathNotification {
 }
 
 message BroadcastBudgetsRequest {
-  int32                    default_budget = 1;
-  repeated common.BudgetEntry overrides   = 2;
+  int32                       default_budget = 1;
+  repeated common.BudgetEntry overrides      = 2;
 }
 
 // ============================================================
@@ -77,8 +94,10 @@ message SaveSnapshotResponse {
   string snapshot_id = 3;
 }
 
+// snapshot_id identifica el estado a restaurar en S3.
+// Sustituye al antiguo campo path (ruta local) que no es válido en AWS.
 message LoadStateRequest {
-  string path = 1;
+  string snapshot_id = 1;
 }
 
 // ============================================================
@@ -86,7 +105,6 @@ message LoadStateRequest {
 // ============================================================
 
 message FreezeAllRequest {}
-
 message ResumeAllRequest {}
 
 // ============================================================
@@ -124,7 +142,7 @@ message ListHypervisorsRequest {}
 //  Mensajes — reenvío de acciones
 // ============================================================
 
-message ForwardActionRequest {
+message ForwardActionHVRequest {
   string bot_id        = 1;
   string hypervisor_id = 2;
   string action_type   = 3;

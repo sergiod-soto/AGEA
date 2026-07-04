@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
-from Gestores.Transporte.Proto_Generated.Bots import world_proxy_service_pb2 as Bots_dot_world__proxy__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import world_proxy_service_pb2 as Bots_dot_world__proxy__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -40,17 +40,8 @@ class WorldProxyServiceStub(object):
     Las acciones disponibles y sus costes se definen en:
     core/acciones.py
     No hay que tocar este proto para añadir nuevas acciones.
-
-    Único RPC de acción: Act
-    action_name: nombre de la acción (debe existir en core/acciones.py)
-    payload:     datos específicos de la acción (bytes opacos)
-
-    El Hypervisor:
-    1. Extrae bot-id del header.
-    2. Consulta core/acciones.py para obtener el coste.
-    3. Descuenta puntos localmente.
-    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
+
     """
 
     def __init__(self, channel):
@@ -62,7 +53,7 @@ class WorldProxyServiceStub(object):
         self.Act = channel.unary_unary(
                 '/world_proxy.WorldProxyService/Act',
                 request_serializer=Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.ActionResult.FromString,
+                response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
 
 
@@ -80,23 +71,12 @@ class WorldProxyServiceServicer(object):
     Las acciones disponibles y sus costes se definen en:
     core/acciones.py
     No hay que tocar este proto para añadir nuevas acciones.
-
-    Único RPC de acción: Act
-    action_name: nombre de la acción (debe existir en core/acciones.py)
-    payload:     datos específicos de la acción (bytes opacos)
-
-    El Hypervisor:
-    1. Extrae bot-id del header.
-    2. Consulta core/acciones.py para obtener el coste.
-    3. Descuenta puntos localmente.
-    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
+
     """
 
     def Act(self, request, context):
-        """Acción genérica. Cubre cualquier acción definida en core/acciones.py.
-        El Hypervisor valida los puntos; el Mundo interpreta el payload.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -107,7 +87,7 @@ def add_WorldProxyServiceServicer_to_server(servicer, server):
             'Act': grpc.unary_unary_rpc_method_handler(
                     servicer.Act,
                     request_deserializer=Bots_dot_world__proxy__service__pb2.ActRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.ActionResult.SerializeToString,
+                    response_serializer=common__pb2.ActionResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -131,17 +111,8 @@ class WorldProxyService(object):
     Las acciones disponibles y sus costes se definen en:
     core/acciones.py
     No hay que tocar este proto para añadir nuevas acciones.
-
-    Único RPC de acción: Act
-    action_name: nombre de la acción (debe existir en core/acciones.py)
-    payload:     datos específicos de la acción (bytes opacos)
-
-    El Hypervisor:
-    1. Extrae bot-id del header.
-    2. Consulta core/acciones.py para obtener el coste.
-    3. Descuenta puntos localmente.
-    4. Reenvía al Gestor → Mundo si hay puntos.
     ============================================================
+
     """
 
     @staticmethod
@@ -160,7 +131,7 @@ class WorldProxyService(object):
             target,
             '/world_proxy.WorldProxyService/Act',
             Bots_dot_world__proxy__service__pb2.ActRequest.SerializeToString,
-            Bots_dot_common__pb2.ActionResult.FromString,
+            common__pb2.ActionResult.FromString,
             options,
             channel_credentials,
             insecure,

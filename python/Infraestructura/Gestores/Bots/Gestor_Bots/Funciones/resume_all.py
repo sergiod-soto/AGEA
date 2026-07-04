@@ -1,5 +1,5 @@
 # Gestores/Bots/Gestor_Bots/Funciones/resume_all.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 import logging
 
 logger = logging.getLogger(__name__)

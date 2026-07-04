@@ -34,7 +34,7 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         )
 
     async def BroadcastBudgets(self, request, context):
-        return await self._dispatch["BroadcastBudgets"].handle(
+        return await self._dispatch["BroadcastBudgetsAsync"].handle(
             self._gestor, request, context
         )
 
@@ -63,7 +63,7 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         )
         if ack.ok and self._hv_client_factory is not None:
             client = self._hv_client_factory(request.address, request.port)
-            self._gestor.set_hypervisor_client(request.hypervisor_id, client)
+            await self._gestor.set_hypervisor_client(request.hypervisor_id, client)
         return ack
 
     async def UpdateHypervisorLoad(self, request, context):

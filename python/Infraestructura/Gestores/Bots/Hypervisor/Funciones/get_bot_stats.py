@@ -1,11 +1,13 @@
 # Gestores/Bots/Hypervisor/Funciones/get_bot_stats.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 import grpc
 import logging
 
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
+
 logger = logging.getLogger(__name__)
 NAME = "GetBotStats"
+
 
 def handle(hv: Hypervisor, request, context):
     try:

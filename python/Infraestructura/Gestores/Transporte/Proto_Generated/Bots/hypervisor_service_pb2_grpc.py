@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
-from Gestores.Transporte.Proto_Generated.Bots import hypervisor_service_pb2 as Bots_dot_hypervisor__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import hypervisor_service_pb2 as Bots_dot_hypervisor__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -30,15 +30,11 @@ class HypervisorServiceStub(object):
     """============================================================
     HypervisorService — expuesto por cada Hypervisor.
 
-    Cliente único: el Gestor.
-
-    Flujo típico:
-    1. Gestor recibe SpawnBot del Mundo
-    2. Gestor elige el HV con más espacio libre
-    3. Gestor llama SpawnBot aquí → el HV registra el bot localmente
-    4. Al inicio de cada ciclo, Gestor llama ResetBudgets en todos los HVs
-    5. Si un bot muere o el Mundo lo elimina → Gestor llama KillBot aquí
+    Clientes:
+    - El Gestor  → todo excepto Shutdown
+    - main.py    → Shutdown (cierre directo sin pasar por gestor)
     ============================================================
+
     """
 
     def __init__(self, channel):
@@ -47,40 +43,60 @@ class HypervisorServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Shutdown = channel.unary_unary(
+                '/hypervisor.HypervisorService/Shutdown',
+                request_serializer=common__pb2.ShutdownRequest.SerializeToString,
+                response_deserializer=common__pb2.ShutdownResponse.FromString,
+                _registered_method=True)
         self.SpawnBot = channel.unary_unary(
                 '/hypervisor.HypervisorService/SpawnBot',
                 request_serializer=Bots_dot_hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.BotInfo.FromString,
+                response_deserializer=common__pb2.BotInfo.FromString,
                 _registered_method=True)
         self.KillBot = channel.unary_unary(
                 '/hypervisor.HypervisorService/KillBot',
                 request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.GetBotStats = channel.unary_unary(
                 '/hypervisor.HypervisorService/GetBotStats',
                 request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.BotStats.FromString,
+                response_deserializer=common__pb2.BotStats.FromString,
                 _registered_method=True)
         self.ListBots = channel.unary_unary(
                 '/hypervisor.HypervisorService/ListBots',
                 request_serializer=Bots_dot_hypervisor__service__pb2.ListBotsRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.BotList.FromString,
+                response_deserializer=common__pb2.BotList.FromString,
                 _registered_method=True)
         self.ResetBudgets = channel.unary_unary(
                 '/hypervisor.HypervisorService/ResetBudgets',
                 request_serializer=Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.SetPointBudget = channel.unary_unary(
                 '/hypervisor.HypervisorService/SetPointBudget',
                 request_serializer=Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.GetBotStatus = channel.unary_unary(
                 '/hypervisor.HypervisorService/GetBotStatus',
                 request_serializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.BotStatus.FromString,
+                response_deserializer=common__pb2.BotStatus.FromString,
+                _registered_method=True)
+        self.Freeze = channel.unary_unary(
+                '/hypervisor.HypervisorService/Freeze',
+                request_serializer=Bots_dot_hypervisor__service__pb2.FreezeRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.Resume = channel.unary_unary(
+                '/hypervisor.HypervisorService/Resume',
+                request_serializer=Bots_dot_hypervisor__service__pb2.ResumeRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.SaveSnapshot = channel.unary_unary(
+                '/hypervisor.HypervisorService/SaveSnapshot',
+                request_serializer=Bots_dot_hypervisor__service__pb2.SaveSnapshotRequest.SerializeToString,
+                response_deserializer=Bots_dot_hypervisor__service__pb2.SaveSnapshotResponse.FromString,
                 _registered_method=True)
 
 
@@ -88,71 +104,84 @@ class HypervisorServiceServicer(object):
     """============================================================
     HypervisorService — expuesto por cada Hypervisor.
 
-    Cliente único: el Gestor.
-
-    Flujo típico:
-    1. Gestor recibe SpawnBot del Mundo
-    2. Gestor elige el HV con más espacio libre
-    3. Gestor llama SpawnBot aquí → el HV registra el bot localmente
-    4. Al inicio de cada ciclo, Gestor llama ResetBudgets en todos los HVs
-    5. Si un bot muere o el Mundo lo elimina → Gestor llama KillBot aquí
+    Clientes:
+    - El Gestor  → todo excepto Shutdown
+    - main.py    → Shutdown (cierre directo sin pasar por gestor)
     ============================================================
+
     """
+
+    def Shutdown(self, request, context):
+        """----- Infraestructura (main.py) -----
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def SpawnBot(self, request, context):
         """----- Ciclo de vida de bots -----
-
-        El Gestor ordena al HV que registre un nuevo bot localmente.
-        El HV asigna su presupuesto inicial y lo añade a su tabla interna.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def KillBot(self, request, context):
-        """El Gestor ordena eliminar un bot de este HV.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetBotStats(self, request, context):
-        """Devuelve el estado de un bot concreto (puntos, alive, uptime).
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ListBots(self, request, context):
-        """Lista todos los bots activos en este HV.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ResetBudgets(self, request, context):
         """----- Control de presupuesto -----
-
-        El Gestor resetea los presupuestos al inicio de cada ciclo.
-        Cada bot recibe su nuevo presupuesto (default o override individual).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SetPointBudget(self, request, context):
-        """El Gestor ajusta el presupuesto de un bot concreto fuera de ciclo.
-        Útil para penalizaciones o bonificaciones puntuales.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetBotStatus(self, request, context):
         """----- Consultas de estado -----
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-        Devuelve el estado vivo/muerto y puntos restantes de un bot.
-        Versión ligera de GetBotStats para checks rápidos.
+    def Freeze(self, request, context):
+        """----- Pausa y reanudación (mid-session, coordinado por gestor) -----
+        Freeze suspende la ejecución de todos los bots de este HV.
+        Se usa durante TriggerDeepSave para garantizar un snapshot consistente.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Resume(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SaveSnapshot(self, request, context):
+        """----- Snapshot (mid-session, coordinado por gestor) -----
+        Persiste el estado de los bots con el snapshot_id compartido del sistema.
+        Solo se llama con el HV en Freeze.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -161,40 +190,60 @@ class HypervisorServiceServicer(object):
 
 def add_HypervisorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Shutdown': grpc.unary_unary_rpc_method_handler(
+                    servicer.Shutdown,
+                    request_deserializer=common__pb2.ShutdownRequest.FromString,
+                    response_serializer=common__pb2.ShutdownResponse.SerializeToString,
+            ),
             'SpawnBot': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnBot,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.SpawnBotRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.BotInfo.SerializeToString,
+                    response_serializer=common__pb2.BotInfo.SerializeToString,
             ),
             'KillBot': grpc.unary_unary_rpc_method_handler(
                     servicer.KillBot,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'GetBotStats': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBotStats,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.BotStats.SerializeToString,
+                    response_serializer=common__pb2.BotStats.SerializeToString,
             ),
             'ListBots': grpc.unary_unary_rpc_method_handler(
                     servicer.ListBots,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.ListBotsRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.BotList.SerializeToString,
+                    response_serializer=common__pb2.BotList.SerializeToString,
             ),
             'ResetBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.ResetBudgets,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'SetPointBudget': grpc.unary_unary_rpc_method_handler(
                     servicer.SetPointBudget,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'GetBotStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetBotStatus,
                     request_deserializer=Bots_dot_hypervisor__service__pb2.BotIdRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.BotStatus.SerializeToString,
+                    response_serializer=common__pb2.BotStatus.SerializeToString,
+            ),
+            'Freeze': grpc.unary_unary_rpc_method_handler(
+                    servicer.Freeze,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.FreezeRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'Resume': grpc.unary_unary_rpc_method_handler(
+                    servicer.Resume,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.ResumeRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'SaveSnapshot': grpc.unary_unary_rpc_method_handler(
+                    servicer.SaveSnapshot,
+                    request_deserializer=Bots_dot_hypervisor__service__pb2.SaveSnapshotRequest.FromString,
+                    response_serializer=Bots_dot_hypervisor__service__pb2.SaveSnapshotResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -208,16 +257,39 @@ class HypervisorService(object):
     """============================================================
     HypervisorService — expuesto por cada Hypervisor.
 
-    Cliente único: el Gestor.
-
-    Flujo típico:
-    1. Gestor recibe SpawnBot del Mundo
-    2. Gestor elige el HV con más espacio libre
-    3. Gestor llama SpawnBot aquí → el HV registra el bot localmente
-    4. Al inicio de cada ciclo, Gestor llama ResetBudgets en todos los HVs
-    5. Si un bot muere o el Mundo lo elimina → Gestor llama KillBot aquí
+    Clientes:
+    - El Gestor  → todo excepto Shutdown
+    - main.py    → Shutdown (cierre directo sin pasar por gestor)
     ============================================================
+
     """
+
+    @staticmethod
+    def Shutdown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hypervisor.HypervisorService/Shutdown',
+            common__pb2.ShutdownRequest.SerializeToString,
+            common__pb2.ShutdownResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def SpawnBot(request,
@@ -235,7 +307,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/SpawnBot',
             Bots_dot_hypervisor__service__pb2.SpawnBotRequest.SerializeToString,
-            Bots_dot_common__pb2.BotInfo.FromString,
+            common__pb2.BotInfo.FromString,
             options,
             channel_credentials,
             insecure,
@@ -262,7 +334,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/KillBot',
             Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -289,7 +361,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/GetBotStats',
             Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            Bots_dot_common__pb2.BotStats.FromString,
+            common__pb2.BotStats.FromString,
             options,
             channel_credentials,
             insecure,
@@ -316,7 +388,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/ListBots',
             Bots_dot_hypervisor__service__pb2.ListBotsRequest.SerializeToString,
-            Bots_dot_common__pb2.BotList.FromString,
+            common__pb2.BotList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -343,7 +415,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/ResetBudgets',
             Bots_dot_hypervisor__service__pb2.ResetBudgetsRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -370,7 +442,7 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/SetPointBudget',
             Bots_dot_hypervisor__service__pb2.SetPointBudgetRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -397,7 +469,88 @@ class HypervisorService(object):
             target,
             '/hypervisor.HypervisorService/GetBotStatus',
             Bots_dot_hypervisor__service__pb2.BotIdRequest.SerializeToString,
-            Bots_dot_common__pb2.BotStatus.FromString,
+            common__pb2.BotStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Freeze(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hypervisor.HypervisorService/Freeze',
+            Bots_dot_hypervisor__service__pb2.FreezeRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Resume(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hypervisor.HypervisorService/Resume',
+            Bots_dot_hypervisor__service__pb2.ResumeRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SaveSnapshot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/hypervisor.HypervisorService/SaveSnapshot',
+            Bots_dot_hypervisor__service__pb2.SaveSnapshotRequest.SerializeToString,
+            Bots_dot_hypervisor__service__pb2.SaveSnapshotResponse.FromString,
             options,
             channel_credentials,
             insecure,

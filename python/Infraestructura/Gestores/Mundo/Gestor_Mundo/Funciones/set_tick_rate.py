@@ -1,4 +1,4 @@
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import common_pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 import logging
 
 logger = logging.getLogger(__name__)

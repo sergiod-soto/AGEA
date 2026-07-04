@@ -1,7 +1,8 @@
 # Gestores/Bots/Hypervisor/funciones/kill_bot.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 import logging
+
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 
 logger = logging.getLogger(__name__)
 NAME = "KillBot"

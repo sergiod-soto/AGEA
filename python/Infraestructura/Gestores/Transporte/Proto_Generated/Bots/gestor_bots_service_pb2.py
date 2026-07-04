@@ -22,46 +22,48 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x42ots/gestor_bots_service.proto\x12\x06gestor\x1a\x11\x42ots/common.proto\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"C\n\x14\x42otDeathNotification\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\x12\x0c\n\x04tick\x18\x03 \x01(\x03\"Y\n\x17\x42roadcastBudgetsRequest\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x01 \x01(\x05\x12&\n\toverrides\x18\x02 \x03(\x0b\x32\x13.common.BudgetEntry\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\" \n\x10LoadStateRequest\x12\x0c\n\x04path\x18\x01 \x01(\t\"\x12\n\x10\x46reezeAllRequest\"\x12\n\x10ResumeAllRequest\"\x15\n\x13ResetBudgetsRequest\"w\n\x19RegisterHypervisorRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\"E\n\rRegisterHVAck\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x19\n\x11\x64\x65legated_actions\x18\x03 \x03(\t\"@\n\x11UpdateLoadRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63urrent_load\x18\x02 \x01(\x05\"\x18\n\x16ListHypervisorsRequest\"c\n\x14\x46orwardActionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x03 \x01(\t\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\x32\xb7\x06\n\x11GestorBotsService\x12\x34\n\x08SpawnBot\x12\x17.gestor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12,\n\x07KillBot\x12\x14.gestor.BotIdRequest\x1a\x0b.common.Ack\x12;\n\x0eNotifyBotDeath\x12\x1c.gestor.BotDeathNotification\x1a\x0b.common.Ack\x12@\n\x10\x42roadcastBudgets\x12\x1f.gestor.BroadcastBudgetsRequest\x1a\x0b.common.Ack\x12I\n\x0cSaveSnapshot\x12\x1b.gestor.SaveSnapshotRequest\x1a\x1c.gestor.SaveSnapshotResponse\x12\x32\n\tLoadState\x12\x18.gestor.LoadStateRequest\x1a\x0b.common.Ack\x12\x32\n\tFreezeAll\x12\x18.gestor.FreezeAllRequest\x1a\x0b.common.Ack\x12\x32\n\tResumeAll\x12\x18.gestor.ResumeAllRequest\x1a\x0b.common.Ack\x12\x38\n\x0cResetBudgets\x12\x1b.gestor.ResetBudgetsRequest\x1a\x0b.common.Ack\x12N\n\x12RegisterHypervisor\x12!.gestor.RegisterHypervisorRequest\x1a\x15.gestor.RegisterHVAck\x12>\n\x14UpdateHypervisorLoad\x12\x19.gestor.UpdateLoadRequest\x1a\x0b.common.Ack\x12I\n\x0fListHypervisors\x12\x1e.gestor.ListHypervisorsRequest\x1a\x16.common.HypervisorList\x12\x43\n\rForwardAction\x12\x1c.gestor.ForwardActionRequest\x1a\x14.common.ActionResultb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x42ots/gestor_bots_service.proto\x12\x06gestor\x1a\x0c\x63ommon.proto\"_\n\x1bGestorBotsHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12%\n\x0bhv_statuses\x18\x03 \x03(\x0b\x32\x10.common.HVStatus\"4\n\x0fSpawnBotRequest\x12!\n\x06\x63onfig\x18\x01 \x01(\x0b\x32\x11.common.BotConfig\"\x1e\n\x0c\x42otIdRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"C\n\x14\x42otDeathNotification\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\r\n\x05\x63\x61use\x18\x02 \x01(\t\x12\x0c\n\x04tick\x18\x03 \x01(\x03\"Y\n\x17\x42roadcastBudgetsRequest\x12\x16\n\x0e\x64\x65\x66\x61ult_budget\x18\x01 \x01(\x05\x12&\n\toverrides\x18\x02 \x03(\x0b\x32\x13.common.BudgetEntry\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\"\'\n\x10LoadStateRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"\x12\n\x10\x46reezeAllRequest\"\x12\n\x10ResumeAllRequest\"\x15\n\x13ResetBudgetsRequest\"w\n\x19RegisterHypervisorRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\"E\n\rRegisterHVAck\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x19\n\x11\x64\x65legated_actions\x18\x03 \x03(\t\"@\n\x11UpdateLoadRequest\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x14\n\x0c\x63urrent_load\x18\x02 \x01(\x05\"\x18\n\x16ListHypervisorsRequest\"e\n\x16\x46orwardActionHVRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x03 \x01(\t\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\x32\xc6\x07\n\x11GestorBotsService\x12J\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a#.gestor.GestorBotsHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12\x34\n\x08SpawnBot\x12\x17.gestor.SpawnBotRequest\x1a\x0f.common.BotInfo\x12,\n\x07KillBot\x12\x14.gestor.BotIdRequest\x1a\x0b.common.Ack\x12;\n\x0eNotifyBotDeath\x12\x1c.gestor.BotDeathNotification\x1a\x0b.common.Ack\x12@\n\x10\x42roadcastBudgets\x12\x1f.gestor.BroadcastBudgetsRequest\x1a\x0b.common.Ack\x12I\n\x0cSaveSnapshot\x12\x1b.gestor.SaveSnapshotRequest\x1a\x1c.gestor.SaveSnapshotResponse\x12\x32\n\tLoadState\x12\x18.gestor.LoadStateRequest\x1a\x0b.common.Ack\x12\x32\n\tFreezeAll\x12\x18.gestor.FreezeAllRequest\x1a\x0b.common.Ack\x12\x32\n\tResumeAll\x12\x18.gestor.ResumeAllRequest\x1a\x0b.common.Ack\x12\x38\n\x0cResetBudgets\x12\x1b.gestor.ResetBudgetsRequest\x1a\x0b.common.Ack\x12N\n\x12RegisterHypervisor\x12!.gestor.RegisterHypervisorRequest\x1a\x15.gestor.RegisterHVAck\x12>\n\x14UpdateHypervisorLoad\x12\x19.gestor.UpdateLoadRequest\x1a\x0b.common.Ack\x12I\n\x0fListHypervisors\x12\x1e.gestor.ListHypervisorsRequest\x1a\x16.common.HypervisorList\x12G\n\x0f\x46orwardActionHV\x12\x1e.gestor.ForwardActionHVRequest\x1a\x14.common.ActionResultb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'Bots.gestor_bots_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SPAWNBOTREQUEST']._serialized_start=61
-  _globals['_SPAWNBOTREQUEST']._serialized_end=113
-  _globals['_BOTIDREQUEST']._serialized_start=115
-  _globals['_BOTIDREQUEST']._serialized_end=145
-  _globals['_BOTDEATHNOTIFICATION']._serialized_start=147
-  _globals['_BOTDEATHNOTIFICATION']._serialized_end=214
-  _globals['_BROADCASTBUDGETSREQUEST']._serialized_start=216
-  _globals['_BROADCASTBUDGETSREQUEST']._serialized_end=305
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=307
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=349
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=351
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=421
-  _globals['_LOADSTATEREQUEST']._serialized_start=423
-  _globals['_LOADSTATEREQUEST']._serialized_end=455
-  _globals['_FREEZEALLREQUEST']._serialized_start=457
-  _globals['_FREEZEALLREQUEST']._serialized_end=475
-  _globals['_RESUMEALLREQUEST']._serialized_start=477
-  _globals['_RESUMEALLREQUEST']._serialized_end=495
-  _globals['_RESETBUDGETSREQUEST']._serialized_start=497
-  _globals['_RESETBUDGETSREQUEST']._serialized_end=518
-  _globals['_REGISTERHYPERVISORREQUEST']._serialized_start=520
-  _globals['_REGISTERHYPERVISORREQUEST']._serialized_end=639
-  _globals['_REGISTERHVACK']._serialized_start=641
-  _globals['_REGISTERHVACK']._serialized_end=710
-  _globals['_UPDATELOADREQUEST']._serialized_start=712
-  _globals['_UPDATELOADREQUEST']._serialized_end=776
-  _globals['_LISTHYPERVISORSREQUEST']._serialized_start=778
-  _globals['_LISTHYPERVISORSREQUEST']._serialized_end=802
-  _globals['_FORWARDACTIONREQUEST']._serialized_start=804
-  _globals['_FORWARDACTIONREQUEST']._serialized_end=903
-  _globals['_GESTORBOTSSERVICE']._serialized_start=906
-  _globals['_GESTORBOTSSERVICE']._serialized_end=1729
+  _globals['_GESTORBOTSHEARTBEATRESPONSE']._serialized_start=56
+  _globals['_GESTORBOTSHEARTBEATRESPONSE']._serialized_end=151
+  _globals['_SPAWNBOTREQUEST']._serialized_start=153
+  _globals['_SPAWNBOTREQUEST']._serialized_end=205
+  _globals['_BOTIDREQUEST']._serialized_start=207
+  _globals['_BOTIDREQUEST']._serialized_end=237
+  _globals['_BOTDEATHNOTIFICATION']._serialized_start=239
+  _globals['_BOTDEATHNOTIFICATION']._serialized_end=306
+  _globals['_BROADCASTBUDGETSREQUEST']._serialized_start=308
+  _globals['_BROADCASTBUDGETSREQUEST']._serialized_end=397
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=399
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=441
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=443
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=513
+  _globals['_LOADSTATEREQUEST']._serialized_start=515
+  _globals['_LOADSTATEREQUEST']._serialized_end=554
+  _globals['_FREEZEALLREQUEST']._serialized_start=556
+  _globals['_FREEZEALLREQUEST']._serialized_end=574
+  _globals['_RESUMEALLREQUEST']._serialized_start=576
+  _globals['_RESUMEALLREQUEST']._serialized_end=594
+  _globals['_RESETBUDGETSREQUEST']._serialized_start=596
+  _globals['_RESETBUDGETSREQUEST']._serialized_end=617
+  _globals['_REGISTERHYPERVISORREQUEST']._serialized_start=619
+  _globals['_REGISTERHYPERVISORREQUEST']._serialized_end=738
+  _globals['_REGISTERHVACK']._serialized_start=740
+  _globals['_REGISTERHVACK']._serialized_end=809
+  _globals['_UPDATELOADREQUEST']._serialized_start=811
+  _globals['_UPDATELOADREQUEST']._serialized_end=875
+  _globals['_LISTHYPERVISORSREQUEST']._serialized_start=877
+  _globals['_LISTHYPERVISORSREQUEST']._serialized_end=901
+  _globals['_FORWARDACTIONHVREQUEST']._serialized_start=903
+  _globals['_FORWARDACTIONHVREQUEST']._serialized_end=1004
+  _globals['_GESTORBOTSSERVICE']._serialized_start=1007
+  _globals['_GESTORBOTSSERVICE']._serialized_end=1973
 # @@protoc_insertion_point(module_scope)

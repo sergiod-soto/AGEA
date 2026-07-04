@@ -1,5 +1,5 @@
 # Gestores/Bots/Hypervisor/funciones/set_point_budget.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 import logging
 

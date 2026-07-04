@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from Gestores.Transporte.Proto_Generated.Otros import log_service_pb2 as Otros_dot_log__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import log_service_pb2 as Otros_dot_log__service__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -31,13 +31,11 @@ class LogServiceStub(object):
 
     Clientes: Gestor, Hypervisores (ambos en AWS).
 
-    Cada componente remoto envía sus registros de log aquí.
-    El Mundo los escribe en disco organizados por componente.
-
     El envío es fire-and-forget: si falla la red, el componente
     sigue funcionando y el log se pierde (aceptable; los logs
     críticos también se escriben localmente en AWS como respaldo).
     ============================================================
+
     """
 
     def __init__(self, channel):
@@ -64,26 +62,21 @@ class LogServiceServicer(object):
 
     Clientes: Gestor, Hypervisores (ambos en AWS).
 
-    Cada componente remoto envía sus registros de log aquí.
-    El Mundo los escribe en disco organizados por componente.
-
     El envío es fire-and-forget: si falla la red, el componente
     sigue funcionando y el log se pierde (aceptable; los logs
     críticos también se escriben localmente en AWS como respaldo).
     ============================================================
+
     """
 
     def SendLog(self, request, context):
-        """Envía un único registro de log. Usado para logs urgentes.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SendBatch(self, request, context):
-        """Envía un lote de registros. Usado por el handler en background.
-        Más eficiente que SendLog para logs de alta frecuencia.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -115,13 +108,11 @@ class LogService(object):
 
     Clientes: Gestor, Hypervisores (ambos en AWS).
 
-    Cada componente remoto envía sus registros de log aquí.
-    El Mundo los escribe en disco organizados por componente.
-
     El envío es fire-and-forget: si falla la red, el componente
     sigue funcionando y el log se pierde (aceptable; los logs
     críticos también se escriben localmente en AWS como respaldo).
     ============================================================
+
     """
 
     @staticmethod

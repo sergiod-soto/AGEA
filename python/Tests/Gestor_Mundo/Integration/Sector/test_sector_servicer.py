@@ -15,7 +15,7 @@ def servicer(sector):
     from Infraestructura.Gestores.Mundo.Sector.sector_servicer import SectorServicer
     from Infraestructura.Gestores.Mundo.Sector.registry import FUNCIONES
 
-    with patch("Gestores.Mundo.Sector.sector_servicer.FUNCIONES", FUNCIONES):
+    with patch("Infraestructura.Gestores.Mundo.Sector.sector_servicer.FUNCIONES", FUNCIONES):
         return SectorServicer(sector)
 
 
@@ -56,7 +56,7 @@ class TestSetSectorMode:
 
 class TestLoadGetState:
     async def test_load_y_get_state(self, servicer, context):
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
             Cell,
             Position,
             BotSnapshot,

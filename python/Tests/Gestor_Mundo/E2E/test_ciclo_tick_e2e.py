@@ -92,7 +92,10 @@ def sector_stub_e2e(sector_servicer_e2e):
 
 @pytest.fixture
 def gestor_mundo_e2e(sector_stub_e2e):
-    from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo, SectorMode
+    from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
+        GestorMundo,
+        SectorMode,
+    )
 
     gestor = GestorMundo()
     info = _make_sector_info(0, 0, sector_stub_e2e)
@@ -156,7 +159,7 @@ class TestCicloTickE2E:
         """Bot que cruza borde se transfiere al sector destino."""
         from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode, Sector
         from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
             BotSnapshot,
             Position,
         )

@@ -23,7 +23,10 @@ import os
 import pytest
 import grpc
 
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as pb
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
+    sector_service_pb2 as pb,
+)
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common
 
 # ── Variables de entorno ANTES de cualquier import del proyecto ─────────────
 # SECTOR_COL=1, SECTOR_ROW=1, SECTOR_SIZE=10
@@ -55,25 +58,25 @@ REGION_Y1 = 20
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-def _make_bot(bot_id: str, x: int, y: int, budget: int = 100) -> pb.BotSnapshot:
-    return pb.BotSnapshot(
+def _make_bot(bot_id: str, x: int, y: int, budget: int = 100) -> common.BotSnapshot:
+    return common.BotSnapshot(
         bot_id=bot_id,
-        pos=pb.Position(x=x, y=y),
+        pos=common.Position(x=x, y=y),
         state=b"",
         budget=budget,
     )
 
 
-def _make_cell(x: int, y: int, element: bytes = b"\x01") -> pb.Cell:
-    return pb.Cell(pos=pb.Position(x=x, y=y), element=element)
+def _make_cell(x: int, y: int, element: bytes = b"\x01") -> common.Cell:
+    return common.Cell(pos=common.Position(x=x, y=y), element=element)
 
 
-def _bot_dentro(bot_id: str = "bot_dentro") -> pb.BotSnapshot:
+def _bot_dentro(bot_id: str = "bot_dentro") -> common.BotSnapshot:
     """Bot en el centro de la región (col=1,row=1,size=10 → [10,20))."""
     return _make_bot(bot_id, x=15, y=15)
 
 
-def _bot_fuera(bot_id: str = "bot_fuera") -> pb.BotSnapshot:
+def _bot_fuera(bot_id: str = "bot_fuera") -> common.BotSnapshot:
     """Bot justo en el borde derecho (x=REGION_X1 → fuera)."""
     return _make_bot(bot_id, x=REGION_X1, y=REGION_Y0 + 1)
 
@@ -297,7 +300,9 @@ class TestStartTick:
         stub, sector = sector_server
         await stub.SetSectorMode(pb.SetSectorModeRequest(mode=pb.SectorMode.ACTIVO))
         sounds = [
-            pb.SoundEvent(origin=pb.Position(x=0, y=0), intensity=10, payload=b"")
+            common.SoundEvent(
+                origin=common.Position(x=0, y=0), intensity=10, payload=b""
+            )
         ]
         await stub.SetSounds(pb.SetSoundsRequest(tick_id=1, sounds=sounds))
         await stub.StartTick(pb.StartTickRequest(tick_id=1, timeout_ms=5000))

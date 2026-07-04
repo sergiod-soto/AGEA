@@ -1,8 +1,9 @@
 # Gestores/Bots/Hypervisor/funciones/get_bot_status.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
 import grpc
 import logging
+
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 
 logger = logging.getLogger(__name__)
 NAME = "GetBotStatus"

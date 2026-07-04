@@ -237,7 +237,7 @@ class Sector:
         """
         Devuelve el estado completo del sector (para GetState del servicer).
         """
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
             Cell,
             Position,
             BotSnapshot,
@@ -349,6 +349,8 @@ class Sector:
         """
         from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
             MigratingBot,
+        )
+        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
             Position,
         )
 

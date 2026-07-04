@@ -37,6 +37,7 @@ from numpy import uint64
 from typing import Optional
 
 # Imports generados por protoc — ajustar paths según Proto_Generated
+from Config.settings import DEFAULT_TICK_RATE
 from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
@@ -47,8 +48,13 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
 )
 
 from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2 as bots_pb
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as sector_pb
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    gestor_bots_service_pb2 as bots_pb,
+)
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
+    sector_service_pb2 as sector_pb,
+)
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +168,7 @@ class GestorMundo:
         self._state: SystemState = SystemState.RUNNING
         self._pause_event: asyncio.Event = asyncio.Event()
         self._pause_event.set()  # set = puede correr; clear = pausado
-        self._tick_rate: int = int(os.getenv("DEFAULT_TICK_RATE", 0))  # 0 = sin límite
+        self._tick_rate: int = DEFAULT_TICK_RATE
         self._tick_interval: float = 0.0  # calculado desde _tick_rate
 
         # Canal hacia Gestor_Bots
@@ -541,7 +547,7 @@ class GestorMundo:
     #  Sonidos cross-border
     # ─────────────────────────────────────────────
 
-    def _distribuir_sonido(self, sound: sector_pb.SoundEvent) -> None:
+    def _distribuir_sonido(self, sound: common_pb.SoundEvent) -> None:
         """
         Determina qué sectores reciben este sonido usando el mapa low-res
         y los acumula en _pending_sounds para la FASE 0 del siguiente tick.
@@ -698,6 +704,7 @@ class GestorMundo:
             data = {
                 "tick_id": self._tick_id,
                 "snapshot_id": snapshot_id,
+                "fecha": datetime.datetime.now().isoformat(),
                 "sectores": [
                     {
                         "col": info.col,
@@ -714,7 +721,6 @@ class GestorMundo:
                     elem.__class__.__name__: elem.to_snapshot()
                     for elem in self._elementos_globales.values()
                 },
-                "fecha": str(datetime.datetime.now()),
             }
 
         path.write_text(__import__("json").dumps(data))
@@ -894,8 +900,8 @@ class GestorMundo:
         for (x, y), element in self._gold_cells.items():
             if x0 <= x < x1 and y0 <= y < y1:
                 result.append(
-                    sector_pb.Cell(
-                        pos=sector_pb.Position(x=x, y=y),
+                    common_pb.Cell(
+                        pos=common_pb.Position(x=x, y=y),
                         element=element,
                     )
                 )
@@ -924,8 +930,8 @@ class GestorMundo:
                 and not (x0 <= x < x1 and y0 <= y < y1)
             ):
                 result.append(
-                    sector_pb.Cell(
-                        pos=sector_pb.Position(x=x, y=y),
+                    common_pb.Cell(
+                        pos=common_pb.Position(x=x, y=y),
                         element=element,
                     )
                 )

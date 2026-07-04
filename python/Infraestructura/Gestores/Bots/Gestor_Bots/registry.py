@@ -2,13 +2,25 @@
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
     notify_bot_death,
 )
-from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import broadcast_budgets, forward_action, freeze_all, kill_bot, list_hypervisors, register_hypervisor, reset_budgets, resume_all, save_snapshot, spawn_bot, update_hypervisor_load
+from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
+    broadcast_budgets_async,
+    forward_action,
+    freeze_all,
+    kill_bot,
+    list_hypervisors,
+    register_hypervisor,
+    reset_budgets,
+    resume_all,
+    save_snapshot,
+    spawn_bot,
+    update_hypervisor_load,
+)
 
 FUNCIONES = [
     spawn_bot,
     kill_bot,
     notify_bot_death,
-    broadcast_budgets,
+    broadcast_budgets_async,
     reset_budgets,
     freeze_all,
     resume_all,

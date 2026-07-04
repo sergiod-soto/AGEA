@@ -34,11 +34,6 @@ class GestorMundoServicer(pb_grpc.GestorMundoServiceServicer):
     async def Resume(self, request, context):
         return await self._dispatch["Resume"].handle(self._gestor, request, context)
 
-    async def SetTickSpeed(self, request, context):
-        return await self._dispatch["SetTickSpeed"].handle(
-            self._gestor, request, context
-        )
-
     async def TriggerDeepSave(self, request, context):
         return await self._dispatch["TriggerDeepSave"].handle(
             self._gestor, request, context
@@ -74,7 +69,7 @@ class GestorMundoServicer(pb_grpc.GestorMundoServiceServicer):
             self._gestor, request, context
         )
 
-    async def ForwardAction(self, request, context):
+    async def ForwardActionGestorMundo(self, request, context):
         return await self._dispatch["ForwardAction"].handle(
             self._gestor, request, context
         )

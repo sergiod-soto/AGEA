@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from Gestores.Transporte.Proto_Generated.Bots import common_pb2 as Bots_dot_common__pb2
-from Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2 as Bots_dot_gestor__bots__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2 as Bots_dot_gestor__bots__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -28,14 +28,15 @@ if _version_not_supported:
 
 class GestorBotsServiceStub(object):
     """============================================================
-    GestorService — expuesto por el Gestor.
+    GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
+    - main.py        → Heartbeat, Shutdown
     - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
     - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardAction, ListHypervisors
+    ForwardActionHV, ListHypervisors
     ============================================================
 
     """
@@ -46,25 +47,35 @@ class GestorBotsServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Heartbeat = channel.unary_unary(
+                '/gestor.GestorBotsService/Heartbeat',
+                request_serializer=common__pb2.HeartbeatRequest.SerializeToString,
+                response_deserializer=Bots_dot_gestor__bots__service__pb2.GestorBotsHeartbeatResponse.FromString,
+                _registered_method=True)
+        self.Shutdown = channel.unary_unary(
+                '/gestor.GestorBotsService/Shutdown',
+                request_serializer=common__pb2.ShutdownRequest.SerializeToString,
+                response_deserializer=common__pb2.ShutdownResponse.FromString,
+                _registered_method=True)
         self.SpawnBot = channel.unary_unary(
                 '/gestor.GestorBotsService/SpawnBot',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.SpawnBotRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.BotInfo.FromString,
+                response_deserializer=common__pb2.BotInfo.FromString,
                 _registered_method=True)
         self.KillBot = channel.unary_unary(
                 '/gestor.GestorBotsService/KillBot',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.NotifyBotDeath = channel.unary_unary(
                 '/gestor.GestorBotsService/NotifyBotDeath',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.BroadcastBudgets = channel.unary_unary(
                 '/gestor.GestorBotsService/BroadcastBudgets',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.SaveSnapshot = channel.unary_unary(
                 '/gestor.GestorBotsService/SaveSnapshot',
@@ -74,22 +85,22 @@ class GestorBotsServiceStub(object):
         self.LoadState = channel.unary_unary(
                 '/gestor.GestorBotsService/LoadState',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.LoadStateRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.FreezeAll = channel.unary_unary(
                 '/gestor.GestorBotsService/FreezeAll',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.FreezeAllRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.ResumeAll = channel.unary_unary(
                 '/gestor.GestorBotsService/ResumeAll',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.ResumeAllRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.ResetBudgets = channel.unary_unary(
                 '/gestor.GestorBotsService/ResetBudgets',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.ResetBudgetsRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.RegisterHypervisor = channel.unary_unary(
                 '/gestor.GestorBotsService/RegisterHypervisor',
@@ -99,33 +110,47 @@ class GestorBotsServiceStub(object):
         self.UpdateHypervisorLoad = channel.unary_unary(
                 '/gestor.GestorBotsService/UpdateHypervisorLoad',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.UpdateLoadRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.Ack.FromString,
+                response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.ListHypervisors = channel.unary_unary(
                 '/gestor.GestorBotsService/ListHypervisors',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.ListHypervisorsRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.HypervisorList.FromString,
+                response_deserializer=common__pb2.HypervisorList.FromString,
                 _registered_method=True)
-        self.ForwardAction = channel.unary_unary(
-                '/gestor.GestorBotsService/ForwardAction',
-                request_serializer=Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
-                response_deserializer=Bots_dot_common__pb2.ActionResult.FromString,
+        self.ForwardActionHV = channel.unary_unary(
+                '/gestor.GestorBotsService/ForwardActionHV',
+                request_serializer=Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.SerializeToString,
+                response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
 
 
 class GestorBotsServiceServicer(object):
     """============================================================
-    GestorService — expuesto por el Gestor.
+    GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
+    - main.py        → Heartbeat, Shutdown
     - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
     - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardAction, ListHypervisors
+    ForwardActionHV, ListHypervisors
     ============================================================
 
     """
+
+    def Heartbeat(self, request, context):
+        """----- Infraestructura (main.py) -----
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Shutdown(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def SpawnBot(self, request, context):
         """----- Ciclo de vida de bots (llamado por el Mundo) -----
@@ -204,7 +229,7 @@ class GestorBotsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ForwardAction(self, request, context):
+    def ForwardActionHV(self, request, context):
         """----- Reenvío de acciones al Mundo -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -214,25 +239,35 @@ class GestorBotsServiceServicer(object):
 
 def add_GestorBotsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+                    servicer.Heartbeat,
+                    request_deserializer=common__pb2.HeartbeatRequest.FromString,
+                    response_serializer=Bots_dot_gestor__bots__service__pb2.GestorBotsHeartbeatResponse.SerializeToString,
+            ),
+            'Shutdown': grpc.unary_unary_rpc_method_handler(
+                    servicer.Shutdown,
+                    request_deserializer=common__pb2.ShutdownRequest.FromString,
+                    response_serializer=common__pb2.ShutdownResponse.SerializeToString,
+            ),
             'SpawnBot': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnBot,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.SpawnBotRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.BotInfo.SerializeToString,
+                    response_serializer=common__pb2.BotInfo.SerializeToString,
             ),
             'KillBot': grpc.unary_unary_rpc_method_handler(
                     servicer.KillBot,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'NotifyBotDeath': grpc.unary_unary_rpc_method_handler(
                     servicer.NotifyBotDeath,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.BotDeathNotification.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'BroadcastBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.BroadcastBudgets,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'SaveSnapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.SaveSnapshot,
@@ -242,22 +277,22 @@ def add_GestorBotsServiceServicer_to_server(servicer, server):
             'LoadState': grpc.unary_unary_rpc_method_handler(
                     servicer.LoadState,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.LoadStateRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'FreezeAll': grpc.unary_unary_rpc_method_handler(
                     servicer.FreezeAll,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.FreezeAllRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'ResumeAll': grpc.unary_unary_rpc_method_handler(
                     servicer.ResumeAll,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.ResumeAllRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'ResetBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.ResetBudgets,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.ResetBudgetsRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'RegisterHypervisor': grpc.unary_unary_rpc_method_handler(
                     servicer.RegisterHypervisor,
@@ -267,17 +302,17 @@ def add_GestorBotsServiceServicer_to_server(servicer, server):
             'UpdateHypervisorLoad': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateHypervisorLoad,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.UpdateLoadRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.Ack.SerializeToString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'ListHypervisors': grpc.unary_unary_rpc_method_handler(
                     servicer.ListHypervisors,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.ListHypervisorsRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.HypervisorList.SerializeToString,
+                    response_serializer=common__pb2.HypervisorList.SerializeToString,
             ),
-            'ForwardAction': grpc.unary_unary_rpc_method_handler(
-                    servicer.ForwardAction,
-                    request_deserializer=Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.FromString,
-                    response_serializer=Bots_dot_common__pb2.ActionResult.SerializeToString,
+            'ForwardActionHV': grpc.unary_unary_rpc_method_handler(
+                    servicer.ForwardActionHV,
+                    request_deserializer=Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.FromString,
+                    response_serializer=common__pb2.ActionResult.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -289,17 +324,72 @@ def add_GestorBotsServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class GestorBotsService(object):
     """============================================================
-    GestorService — expuesto por el Gestor.
+    GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
+    - main.py        → Heartbeat, Shutdown
     - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
     - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardAction, ListHypervisors
+    ForwardActionHV, ListHypervisors
     ============================================================
 
     """
+
+    @staticmethod
+    def Heartbeat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorBotsService/Heartbeat',
+            common__pb2.HeartbeatRequest.SerializeToString,
+            Bots_dot_gestor__bots__service__pb2.GestorBotsHeartbeatResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Shutdown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorBotsService/Shutdown',
+            common__pb2.ShutdownRequest.SerializeToString,
+            common__pb2.ShutdownResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def SpawnBot(request,
@@ -317,7 +407,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/SpawnBot',
             Bots_dot_gestor__bots__service__pb2.SpawnBotRequest.SerializeToString,
-            Bots_dot_common__pb2.BotInfo.FromString,
+            common__pb2.BotInfo.FromString,
             options,
             channel_credentials,
             insecure,
@@ -344,7 +434,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/KillBot',
             Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -371,7 +461,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/NotifyBotDeath',
             Bots_dot_gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -398,7 +488,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/BroadcastBudgets',
             Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -452,7 +542,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/LoadState',
             Bots_dot_gestor__bots__service__pb2.LoadStateRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -479,7 +569,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/FreezeAll',
             Bots_dot_gestor__bots__service__pb2.FreezeAllRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -506,7 +596,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/ResumeAll',
             Bots_dot_gestor__bots__service__pb2.ResumeAllRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -533,7 +623,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/ResetBudgets',
             Bots_dot_gestor__bots__service__pb2.ResetBudgetsRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -587,7 +677,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/UpdateHypervisorLoad',
             Bots_dot_gestor__bots__service__pb2.UpdateLoadRequest.SerializeToString,
-            Bots_dot_common__pb2.Ack.FromString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,
@@ -614,7 +704,7 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/ListHypervisors',
             Bots_dot_gestor__bots__service__pb2.ListHypervisorsRequest.SerializeToString,
-            Bots_dot_common__pb2.HypervisorList.FromString,
+            common__pb2.HypervisorList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -626,7 +716,7 @@ class GestorBotsService(object):
             _registered_method=True)
 
     @staticmethod
-    def ForwardAction(request,
+    def ForwardActionHV(request,
             target,
             options=(),
             channel_credentials=None,
@@ -639,9 +729,9 @@ class GestorBotsService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/gestor.GestorBotsService/ForwardAction',
-            Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
-            Bots_dot_common__pb2.ActionResult.FromString,
+            '/gestor.GestorBotsService/ForwardActionHV',
+            Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.SerializeToString,
+            common__pb2.ActionResult.FromString,
             options,
             channel_credentials,
             insecure,
