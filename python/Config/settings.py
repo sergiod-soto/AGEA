@@ -31,3 +31,18 @@ NUM_PERFILES: int = int(os.getenv("NUM_PERFILES", "6"))
 
 # ── Ficheros ──────────────────────────────────────────────────────────────────
 NOMBRE_FICHERO_URLS: str = os.getenv("NOMBRE_FICHERO_URLS", "Urls.csv")
+
+# ── Directorio raíz de logs ────────────────────────────────────────────────
+LOG_DIR: str = os.getenv("LOG_DIR", "Logs/")
+
+# ── Modo de arranque: "local" o "remoto"/"produccion" ─────────────────────────
+# Lo fija main.py al lanzar cada subproceso (mismo mecanismo que FRESH: se
+# hereda vía os.environ.copy(), sin pasar argumentos por línea de comandos).
+# Cada _server.py lo usa para decidir si loguea directo a fichero (local,
+# sin red) o acumula en buffer + expone PullLogs (remoto, sin conexión
+# entrante hacia el ordenador local).
+MODO: str = os.getenv("MODO", "local")
+
+# ── Intervalo de polling de logs en modo remoto (segundos) ────────────────────
+# main.py, en modo remoto, pregunta a cada componente cada este intervalo.
+LOG_PULL_INTERVAL_SEGUNDOS: int = int(os.getenv("LOG_PULL_INTERVAL_SEGUNDOS", 5))

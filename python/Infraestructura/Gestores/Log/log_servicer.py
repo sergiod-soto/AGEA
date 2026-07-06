@@ -1,15 +1,14 @@
+# Infraestructura/Gestores/Log/log_servicer.py
 """
-Gestores/Log/log_servicer.py — Implementación gRPC del LogService.
+log_servicer.py — Escritura a disco de logs recogidos por pull.
 
-Vive en el Mundo (local). Recibe logs del Gestor y los Hypervisores
-(ambos en AWS) y los escribe en disco organizados por componente.
+Modelo pull, es main.py quien pregunta a cada componente remoto y
+recibe los LogRecord de vuelta. Esta clase solo sabe convertir esos
+LogRecord en entradas en el fichero .log correspondiente, categorizado
+por componente (ver log_categorias.py).
 
-Estructura de ficheros generada en logs/:
-    logs/
-    ├── gestor.log
-    ├── hv_01.log
-    ├── hv_02.log
-    └── mundo.log      ← el Mundo escribe el suyo directamente (no via gRPC)
+Se instancia una vez en main.py y se invoca su método escribir() por
+cada LogRecord recibido en cada ciclo de polling.
 """
 
 from __future__ import annotations
@@ -18,14 +17,12 @@ import logging
 import logging.handlers
 from pathlib import Path
 
-from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
-    log_service_pb2_grpc,
-)
 from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import log_service_pb2
+from Infraestructura.Gestores.Log.log_categorias import categoria
 
-# ---------------------------------------------------------------------------
+logger = logging.getLogger(__name__)
+
 # Mapeado LogLevel protobuf → logging Python
-# ---------------------------------------------------------------------------
 _PB_TO_PY: dict[int, int] = {
     log_service_pb2.DEBUG: logging.DEBUG,
     log_service_pb2.INFO: logging.INFO,
@@ -35,20 +32,17 @@ _PB_TO_PY: dict[int, int] = {
 }
 
 
-class LogServicer(log_service_pb2_grpc.LogServiceServicer):
+class LogServicer:
     """
-    Recibe LogRecord / LogBatch de componentes remotos y los
-    escribe en ficheros de log locales separados por componente.
+    Escribe LogRecord en ficheros de log locales, separados por
+    componente y organizados según log_categorias.categoria().
 
     Parámetros
     ----------
     log_dir : str | Path
-        Directorio donde se crearán los ficheros .log.
-        Se crea si no existe.
-    max_bytes : int
-        Tamaño máximo de cada fichero antes de rotar (default 10 MB).
-    backup_count : int
-        Número de ficheros rotados a conservar (default 5).
+        Directorio raíz donde se crearán los ficheros .log.
+    max_bytes, backup_count : rotación de cada fichero (igual criterio
+        que el resto del proyecto: 10 MB / 5 backups por defecto).
     """
 
     def __init__(
@@ -65,30 +59,9 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
         # Caché de loggers Python por componente para no recrearlos
         self._loggers: dict[str, logging.Logger] = {}
 
-        logging.getLogger(__name__).info(
-            "LogServicer iniciado. Logs en: %s", self._log_dir.resolve()
-        )
-
-    # ------------------------------------------------------------------
-    # RPCs
-    # ------------------------------------------------------------------
-
-    def SendLog(self, request, context):
-        self._write(request)
-        return log_service_pb2.LogAck(ok=True)
-
-    def SendBatch(self, request, context):
-        for record in request.records:
-            self._write(record)
-        return log_service_pb2.LogAck(ok=True)
-
-    # ------------------------------------------------------------------
-    # Escritura en disco
-    # ------------------------------------------------------------------
-
-    def _write(self, record: log_service_pb2.LogRecord) -> None:
+    def escribir(self, record: log_service_pb2.LogRecord) -> None:
         """Escribe un LogRecord en el fichero del componente correspondiente."""
-        logger = self._get_logger(record.component)
+        logger_componente = self._get_logger(record.component)
         level = _PB_TO_PY.get(record.level, logging.INFO)
 
         # Reconstruimos un LogRecord Python para que el formatter lo procese
@@ -106,24 +79,31 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
         py_record.msecs = record.timestamp % 1000
         py_record.exc_text = record.exc_info or None
 
-        logger.handle(py_record)
+        logger_componente.handle(py_record)
 
     def _get_logger(self, component: str) -> logging.Logger:
-        """
-        Devuelve (o crea) el logger Python para un componente.
-        Cada componente escribe en su propio fichero con rotación.
-        """
+        """Devuelve (o crea) el logger Python para un componente."""
         if component in self._loggers:
             return self._loggers[component]
 
-        # Nombre único para evitar colisiones con el logger raíz
-        logger_name = f"remote.{component}"
-        logger = logging.getLogger(logger_name)
-        logger.setLevel(logging.DEBUG)
-        logger.propagate = False  # no sube al logger raíz
+        subcarpeta = categoria(component)
+        if subcarpeta == Path("."):
+            logger.warning(
+                "Componente sin categoría de carpeta asignada: %s "
+                "(log en la raíz de %s)",
+                component,
+                self._log_dir,
+            )
 
-        # Fichero con rotación por tamaño
-        log_path = self._log_dir / f"{component}.log"
+        log_dir_componente = self._log_dir / subcarpeta
+        log_dir_componente.mkdir(parents=True, exist_ok=True)
+
+        logger_name = f"remote.{component}"
+        logger_componente = logging.getLogger(logger_name)
+        logger_componente.setLevel(logging.DEBUG)
+        logger_componente.propagate = False  # no sube al logger raíz
+
+        log_path = log_dir_componente / f"{component}.log"
         handler = logging.handlers.RotatingFileHandler(
             log_path,
             maxBytes=self._max_bytes,
@@ -136,12 +116,7 @@ class LogServicer(log_service_pb2_grpc.LogServiceServicer):
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
-        logger.addHandler(handler)
+        logger_componente.addHandler(handler)
 
-        self._loggers[component] = logger
-        logging.getLogger(__name__).info(
-            "Nuevo componente registrado para logs: %s → %s",
-            component,
-            log_path,
-        )
-        return logger
+        self._loggers[component] = logger_componente
+        return logger_componente

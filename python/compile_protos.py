@@ -23,7 +23,13 @@ OUT_DIR = ROOT / "Infraestructura" / "Gestores" / "Transporte" / "Proto_Generate
 
 # Grupos: (subcarpeta_proto, subcarpeta_salida, [ficheros])
 GROUPS = [
-    ("", "", ["common.proto"]),
+    (
+        "",  # raiz
+        "",
+        [
+            "common.proto",
+        ],
+    ),
     (
         "Bots",
         "Bots",
@@ -33,8 +39,22 @@ GROUPS = [
             "world_proxy_service.proto",
         ],
     ),
-    ("Sectores", "Sectores", ["sector_service.proto", "gestor_mundo_service.proto"]),
-    ("Otros", "Otros", ["log_service.proto"]),
+    (
+        "Sectores",
+        "Sectores",
+        [
+            "sector_service.proto",
+            "gestor_mundo_service.proto",
+        ],
+    ),
+    (
+        "Otros",
+        "Otros",
+        [
+            "log_pull_service.proto",
+            "log_service.proto",
+        ],
+    ),
 ]
 
 BASE_PKG = "Infraestructura.Gestores.Transporte.Proto_Generated"

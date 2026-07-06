@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Bots/Gestor_Bots/gestor_bots_server.py
 """
 gestor_bots_server.py
 """
@@ -14,18 +15,27 @@ import grpc
 
 sys.path.insert(0, str(Path(__file__).parents[4]))
 
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2_grpc
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots_servicer import Gestor_Bots_Servicer
-from Infraestructura.Gestores.Transporte.remote_log_handler import setup_remote_logging
-from Utils.Sistema.sistema import registrar_signals
-
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-    datefmt="%H:%M:%S",
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    gestor_bots_service_pb2_grpc,
 )
+from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
+    log_pull_service_pb2_grpc,
+)
+from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
+from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots_servicer import (
+    Gestor_Bots_Servicer,
+)
+from Infraestructura.Gestores.Log.local_logging import setup_local_logging
+from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
+from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
+from Utils.Sistema.sistema import registrar_signals
+from Config.settings import MODO, LOG_DIR
+
 logger = logging.getLogger("gestor_bots_server")
+
+# Único componente de este tipo — nombre fijo, ya registrado en
+# log_categorias._CARPETA_POR_COMPONENTE.
+_COMPONENT_ID = "gestor_bots"
 
 
 async def serve() -> None:
@@ -33,17 +43,16 @@ async def serve() -> None:
     port = int(os.getenv("GESTOR_BOTS_PORT", 50051))
     workers = int(os.getenv("GESTOR_BOTS_WORKERS", 10))
     bots_por_hv = int(os.getenv("BOTS_POR_HYPERVISOR", 100))
-    log_address = os.getenv("LOG_SERVER_ADDRESS", "")
     mundo_address = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
+    log_level_name = os.getenv("LOG_LEVEL", "INFO")
+    log_level = getattr(logging, log_level_name)
+
+    if MODO == "local":
+        setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)
+    else:
+        log_handler = setup_buffered_logging(component=_COMPONENT_ID, level=log_level)
 
     address = f"{host}:{port}"
-
-    if log_address:
-        setup_remote_logging(
-            mundo_address=log_address,
-            component="gestor_bots",
-            local_log_path="Logs/Bots/Gestor/gestor_bots.log",
-        )
 
     logger.info(
         "Configuración — host=%s workers=%d bots_por_hv=%d",
@@ -53,7 +62,9 @@ async def serve() -> None:
     )
 
     try:
-        from Infraestructura.Gestores.Transporte.hypervisor_client import HypervisorClient
+        from Infraestructura.Gestores.Transporte.hypervisor_client import (
+            HypervisorClient,
+        )
 
         def hypervisor_client_factory(addr: str, port: int) -> HypervisorClient:
             return HypervisorClient(addr, port)
@@ -62,7 +73,9 @@ async def serve() -> None:
         logger.warning("HypervisorClient no disponible.")
         hypervisor_client_factory = None
 
-    from Infraestructura.Gestores.Transporte.gestor_mundo_client import GestorMundoClient
+    from Infraestructura.Gestores.Transporte.gestor_mundo_client import (
+        GestorMundoClient,
+    )
 
     mundo_client = GestorMundoClient(mundo_address)
 
@@ -87,6 +100,12 @@ async def serve() -> None:
     gestor_bots_service_pb2_grpc.add_GestorBotsServiceServicer_to_server(
         servicer, server
     )
+
+    if MODO != "local":
+        log_pull_service_pb2_grpc.add_LogPullServiceServicer_to_server(
+            LogPullServicerAsync(log_handler), server
+        )
+
     server.add_insecure_port(address)
 
     await server.start()
@@ -108,6 +127,9 @@ async def serve() -> None:
 
 
 def main() -> None:
+    # Sin logging.basicConfig() aquí: serve() configura el logger raíz vía
+    # setup_local_logging/setup_buffered_logging (ver comentario equivalente
+    # en sector_server.py sobre por qué basicConfig() interfería).
     try:
         asyncio.run(serve())
     except KeyboardInterrupt:

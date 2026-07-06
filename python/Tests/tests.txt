@@ -1,0 +1,50 @@
+- AWS
+    pytest Tests/AWS/test_aws.py -v 
+    pytest Tests/AWS/test_monitor.py -v 
+    pytest Tests/AWS/test_remote.py -v 
+    pytest Tests/AWS/test_shutdown.py -v 
+
+- Funciones
+    - Vision
+
+- Gestor_Bots
+    pytest Tests/Gestor_Bots/test_gestor_bots.py -v 
+    pytest Tests/Gestor_Bots/test_hypervisor_integration.py -v 
+    pytest Tests/Gestor_Bots/test_hypervisor_servicer.py -v 
+    pytest Tests/Gestor_Bots/test_hypervisor.py -v 
+
+- Gestor_Mundo
+    - AWS
+
+    - E2E
+        pytest Tests/Gestor_Mundo/E2E/test_ciclo_tick_e2e.py -v 
+        pytest Tests/Gestor_Mundo/E2E/test_gestor_mundo_e2e.py -v 
+
+    - Integration
+        - GestorBots
+            pytest Tests/Gestor_Mundo/Integration/GestorBots/test_gestor_bots_servicer.py -v 
+
+        - Hypervisor
+            pytest Tests/Gestor_Mundo/Integration/Hypervisor/test_hypervisor_servicer.py -v 
+
+        - Sector
+            pytest Tests/Gestor_Mundo/Integration/Sector/test_sector_servicer_integration.py -v 
+            pytest Tests/Gestor_Mundo/Integration/Sector/test_sector_servicer.py -v 
+
+    - Unit
+        pytest Tests/Gestor_Mundo/Unit/test_sector_unit.py -v 
+
+- Main
+    pytest Tests/Main/test_main_integration.py -v 
+    pytest Tests/Main/test_main_unit.py -v
+
+- Unity
+    - Integration
+        pytest Tests/Unity/Integration/test_conexion_integration.py -v
+
+    - Unit
+        pytest Tests/Unity/Unit/test_importer.py -v
+        pytest Tests/Unity/Unit/test_procesado_salida_mensaje.py -v
+        pytest Tests/Unity/Unit/test_protocolo.py -v
+        pytest Tests/Unity/Unit/test_salida_datos.py -v
+        pytest Tests/Unity/Unit/test_serializaciones.py -v

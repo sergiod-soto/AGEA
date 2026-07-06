@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Bots/Hypervisor/hypervisor_server.py
 """
 hypervisor_server.py
 """
@@ -15,8 +16,15 @@ from pathlib import Path
 
 import grpc
 
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import hypervisor_service_pb2_grpc
-from Infraestructura.Gestores.Transporte.gestor_mundo_client import GestorMundoClient
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    hypervisor_service_pb2_grpc,
+)
+from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
+    log_pull_service_pb2_grpc,
+)
+from Infraestructura.Gestores.Transporte.gestor_mundo_client_sync import (
+    GestorMundoClientSync,
+)
 
 sys.path.insert(0, str(Path(__file__).parents[4]))
 
@@ -25,15 +33,17 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
 )
 from Infraestructura.Gestores.Transporte.gestor_bots_client import GestorBotsClient
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
-from Infraestructura.Gestores.Bots.Hypervisor.hypervisor_servicer import HypervisorServicer
-from Infraestructura.Gestores.Bots.Hypervisor.world_proxy_servicer import WorldProxyServicer
-from Infraestructura.Gestores.Transporte.remote_log_handler import setup_remote_logging
-
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-    datefmt="%H:%M:%S",
+from Infraestructura.Gestores.Bots.Hypervisor.hypervisor_servicer import (
+    HypervisorServicer,
 )
+from Infraestructura.Gestores.Bots.Hypervisor.world_proxy_servicer import (
+    WorldProxyServicer,
+)
+from Infraestructura.Gestores.Log.local_logging import setup_local_logging
+from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
+from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicer
+from Config.settings import MODO, LOG_DIR
+
 logger = logging.getLogger("hypervisor_server")
 
 _GRPC_OPTIONS = [
@@ -41,7 +51,6 @@ _GRPC_OPTIONS = [
     ("grpc.max_send_message_length", 256 * 1024 * 1024),
     ("grpc.keepalive_time_ms", 20_000),
     ("grpc.keepalive_timeout_ms", 10_000),
-    ("grpc.keepalive_permit_without_calls", 1),
 ]
 
 
@@ -56,7 +65,9 @@ def build_servers(
     gestor_mundo_address: str,
 ) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorBotsClient]:
     gestor_client = GestorBotsClient(gestor_address)
-    gestor_mundo_client = GestorMundoClient(gestor_mundo_address)
+    # Cliente síncrono hacia el Mundo (ver gestor_mundo_client_sync.py
+    # para el porqué: el Hypervisor no corre ningún event loop asyncio).
+    gestor_mundo_client = GestorMundoClientSync(gestor_mundo_address)
     hv = Hypervisor(
         hypervisor_id=hv_id,
         gestor_client=gestor_client,
@@ -96,15 +107,17 @@ def serve():
     capacity = int(os.getenv("HYPERVISOR_CAPACITY", 32))
     workers = int(os.getenv("HYPERVISOR_WORKERS", 10))
     gestor_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
-    log_address = os.getenv("LOG_SERVER_ADDRESS", "")
+    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
 
-    # Log remoto solo si hay dirección configurada
-    if log_address:
-        setup_remote_logging(
-            mundo_address=log_address,
-            component=hv_id,
-            local_log_path=f"Logs/Bots/Hypervisor/{hv_id}.log",
-        )
+    # Logging: única fuente de verdad (sin logging.basicConfig() en
+    # paralelo — decisión ya tomada para los otros _server.py, mismo
+    # motivo aquí). En local escribe directo a fichero; en remoto acumula
+    # en memoria y expone PullLogs sobre el MISMO servidor y puerto que
+    # HypervisorService (management_server) — no se abre un puerto nuevo.
+    if MODO == "local":
+        setup_local_logging(component=hv_id, log_dir=LOG_DIR, level=log_level)
+    else:
+        log_handler = setup_buffered_logging(component=hv_id, level=log_level)
 
     management_server, proxy_server, hv, gestor_client = build_servers(
         hv_id=hv_id,
@@ -116,6 +129,11 @@ def serve():
         gestor_address=gestor_address,
         gestor_mundo_address=gestor_mundo_address,
     )
+
+    if MODO != "local":
+        log_pull_service_pb2_grpc.add_LogPullServiceServicer_to_server(
+            LogPullServicer(log_handler), management_server
+        )
 
     management_server.start()
     logger.info("HypervisorService arrancado en [::]:%d", my_port)
@@ -145,6 +163,9 @@ def serve():
         management_server.stop(grace=5)
         proxy_server.stop(grace=5)
         gestor_client.close()
+        # Antes no se cerraba explícitamente: se añade aquí por
+        # consistencia (mismo criterio que gestor_client.close()).
+        hv.gestor_mundo_client.close()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _shutdown)

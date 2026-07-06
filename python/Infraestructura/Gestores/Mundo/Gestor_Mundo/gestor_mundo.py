@@ -733,6 +733,7 @@ class GestorMundo:
         (mundo + sectores + bots con el mismo snapshot_id), reanuda.
         """
         logger.info("Guardado profundo iniciado (tick %d)", self._tick_id)
+        estaba_corriendo = self._state == SystemState.RUNNING
         await self.freeze()
         try:
             snapshot_id = f"{self._tick_id:010d}_deep"
@@ -772,7 +773,8 @@ class GestorMundo:
 
             logger.info("Guardado profundo completado. snapshot_id=%s", snapshot_id)
         finally:
-            await self.resume()
+            if estaba_corriendo:
+                await self.resume()
 
     def _latest_snapshot_path(self) -> Optional[Path]:
         """Devuelve el path del snapshot más reciente en SNAPSHOT_DIR."""

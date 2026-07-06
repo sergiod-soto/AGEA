@@ -1,3 +1,4 @@
+# Core/Entities/comportamiento/comportamiento.py
 from abc import abstractmethod
 from dataclasses import dataclass
 import inspect
@@ -298,6 +299,3 @@ class Comportamiento:
 
         for key, value in data.items():
             setattr(self, key, value)
-
-
-

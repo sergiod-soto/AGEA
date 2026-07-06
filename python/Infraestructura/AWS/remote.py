@@ -20,6 +20,14 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from Config.settings import LOG_DIR, LOG_PULL_INTERVAL_SEGUNDOS
+from Infraestructura.Gestores.Log.log_servicer import LogServicer
+from Infraestructura.Gestores.Log.log_poller import LogPoller
+from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
+    log_pull_service_pb2,
+    log_pull_service_pb2_grpc,
+)
+
 import grpc
 
 from Infraestructura.AWS.aws import (
@@ -134,25 +142,30 @@ def _healthcheck_remoto(comp_id: str, ip: str, config: dict) -> bool:
 def _crear_stubs(
     ip_por_comp: dict[str, str],
     config: dict,
-) -> tuple[dict, list[grpc.Channel]]:
+) -> tuple[dict, dict, list[grpc.Channel]]:
     """
-    Crea un canal gRPC persistente y su stub por cada componente.
-    Los canales deben cerrarse explícitamente al terminar la sesión.
+    Crea un canal gRPC persistente por componente, y sobre cada canal dos
+    stubs: el del servicio principal (varía por tipo de componente) y el
+    de LogPullService (idéntico en los cuatro tipos — mismo .proto, mismo
+    servidor y puerto que el servicio principal).
     """
     puerto = config["red"]["puerto_grpc_componentes"]
     stubs = {}
+    log_stubs = {}
     canales = []
 
     for comp_id, ip in ip_por_comp.items():
         canal = grpc.insecure_channel(f"{ip}:{puerto}")
         canales.append(canal)
+
         info = _STUB_INFO[_tipo(comp_id)]
         StubClass = getattr(
             importlib.import_module(info["stub_module"]), info["stub_class"]
         )
         stubs[comp_id] = StubClass(canal)
+        log_stubs[comp_id] = log_pull_service_pb2_grpc.LogPullServiceStub(canal)
 
-    return stubs, canales
+    return stubs, log_stubs, canales
 
 
 def _make_shutdown_fn(stub, timeout: int):
@@ -228,7 +241,30 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     logger.info("Todos los componentes listos.")
 
     # ── 6. Crear stubs persistentes ───────────────────────────
-    stubs, canales = _crear_stubs(ip_por_comp, config)
+    stubs, log_stubs, canales = _crear_stubs(ip_por_comp, config)
+
+    # ── 6.1 Recolección de logs (modelo pull) ─────────────────
+    # Cada componente remoto acumula sus logs en memoria y los expone vía
+    # PullLogs; aquí, en la máquina local, se pregunta periódicamente y se
+    # escriben a disco con LogServicer (misma estructura de carpetas que
+    # en modo local — ver log_categorias.py).
+    log_servicer = LogServicer(log_dir=LOG_DIR)
+    log_poller = LogPoller(
+        intervalo_segundos=LOG_PULL_INTERVAL_SEGUNDOS,
+        escribir=log_servicer.escribir,
+    )
+    for comp_id, log_stub in log_stubs.items():
+        log_poller.registrar(
+            comp_id,
+            # Valores por defecto en el lambda para capturar log_stub por
+            # closure correctamente — mismo problema (y misma solución)
+            # que _make_shutdown_fn más abajo: sin esto, todas las
+            # llamadas usarían el último stub del bucle.
+            lambda req=log_pull_service_pb2.PullLogsRequest(), stub=log_stub: (
+                stub.PullLogs(req, timeout=5).records
+            ),
+        )
+    log_poller.iniciar()
 
     # ── 7. Si es reanudación, borrar hibernación de S3 ────────
     # Se borra después de que los componentes están listos, no antes,
@@ -268,6 +304,7 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
         nonlocal exit_code
         exit_code = 1
         logger.error("Componente caído: %s — iniciando shutdown.", comp_id)
+        log_poller.detener()
         coord.ejecutar(reason="component_failure")
         shutdown_completado.set()
 
@@ -286,6 +323,7 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     def _on_signal(sig, frame) -> None:
         logger.info("Señal %s recibida — iniciando shutdown.", sig)
         monitor.detener()
+        log_poller.detener()
         coord.ejecutar(reason="user")
         shutdown_completado.set()
 

@@ -14,6 +14,7 @@ Uso:
 import argparse
 import importlib
 import logging
+import logging.handlers
 import math
 import os
 import signal
@@ -21,15 +22,6 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-
-import grpc
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
-)
-logger = logging.getLogger("main")
 
 from Config.rutas import (
     ROOT,
@@ -38,6 +30,27 @@ from Config.rutas import (
     SCRIPT_GESTOR_BOTS,
     SCRIPT_HYPERVISOR,
 )
+
+import grpc
+
+_LOG_DIR_LOCAL = ROOT / "Logs" / "Local"
+_LOG_DIR_LOCAL.mkdir(parents=True, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # consola, como hasta ahora
+        logging.handlers.RotatingFileHandler(
+            _LOG_DIR_LOCAL / "main.log",
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,
+            encoding="utf-8",
+        ),
+    ],
+)
+logger = logging.getLogger("main")
+
 
 # ─────────────────────────────────────────────────────────────
 #  Configuración por entorno

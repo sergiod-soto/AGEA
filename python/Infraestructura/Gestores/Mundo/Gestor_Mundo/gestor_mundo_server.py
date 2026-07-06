@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo_server.py
 """
 gestor_mundo_server.py
 """
@@ -16,22 +17,41 @@ sys.path.insert(0, str(Path(__file__).parents[4]))
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     gestor_mundo_service_pb2_grpc as pb_grpc,
 )
-from Config.settings import FRESH
+from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
+    log_pull_service_pb2_grpc,
+)
+from Config.settings import FRESH, MODO, LOG_DIR
 from Utils.Sistema.sistema import registrar_signals
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import (
     GestorMundoServicer,
 )
+from Infraestructura.Gestores.Log.local_logging import setup_local_logging
+from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
+from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 
 logger = logging.getLogger(__name__)
 
 GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
 GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
 GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 10))
-LOG_SERVER_ADDRESS = os.getenv("LOG_SERVER_ADDRESS", "")  # vacío = sin log remoto
+
+# Nombre fijo: ya registrado en log_categorias._CARPETA_POR_COMPONENTE
+# como "mundo" → carpeta Logs/Mundo/. En modo remoto, gestor_mundo corre
+# en su propia instancia EC2 (ver remote.py) igual que los demás
+# componentes, así que necesita el mismo tratamiento de logging pull.
+_COMPONENT_ID = "mundo"
 
 
-async def serve(fresh: bool) -> None:
+async def serve(fresh: bool, log_level: int) -> None:
+    # Logging: única fuente de verdad para el logger raíz (sin
+    # logging.basicConfig() en paralelo — ver mismo razonamiento en
+    # sector_server.py / gestor_bots_server.py / hypervisor_server.py).
+    if MODO == "local":
+        setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)
+    else:
+        log_handler = setup_buffered_logging(component=_COMPONENT_ID, level=log_level)
+
     gestor = GestorMundo()
     servicer = GestorMundoServicer(gestor)
 
@@ -42,6 +62,13 @@ async def serve(fresh: bool) -> None:
         ]
     )
     pb_grpc.add_GestorMundoServiceServicer_to_server(servicer, server)
+
+    if MODO != "local":
+        # Mismo servidor y puerto que GestorMundoService — no se abre
+        # ningún puerto adicional para logs.
+        log_pull_service_pb2_grpc.add_LogPullServiceServicer_to_server(
+            LogPullServicerAsync(log_handler), server
+        )
 
     address = f"{GESTOR_MUNDO_HOST}:{GESTOR_MUNDO_PORT}"
     server.add_insecure_port(address)
@@ -94,14 +121,15 @@ def main() -> None:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     args = parser.parse_args()
+    log_level = getattr(logging, args.log_level)
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-
+    # Sin logging.basicConfig() aquí: serve() configura el logger raíz vía
+    # setup_local_logging/setup_buffered_logging. Tenerlos duplicados hacía
+    # que basicConfig() añadiera un StreamHandler antes de tiempo, y el
+    # guard "if not root.handlers" de esas funciones quedaba siempre en
+    # falso — el fichero de log nunca llegaba a añadirse (bug ya cazado).
     try:
-        asyncio.run(serve(fresh=FRESH))
+        asyncio.run(serve(fresh=FRESH, log_level=log_level))
     except KeyboardInterrupt:
         pass
 

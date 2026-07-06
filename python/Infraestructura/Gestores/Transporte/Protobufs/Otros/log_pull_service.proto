@@ -1,0 +1,10 @@
+// Infraestructura/Gestores/Transporte/Protobufs/Otros/log_pull_service.proto
+syntax = "proto3";
+package log_pull;
+import "Otros/log_service.proto"; 
+
+service LogPullService {
+  rpc PullLogs (PullLogsRequest) returns (logs.LogBatch);
+}
+
+message PullLogsRequest {}

@@ -8,6 +8,7 @@ import datetime
 import gzip
 import logging
 import os
+import sys
 import subprocess
 import threading
 from dataclasses import dataclass
@@ -35,6 +36,53 @@ class BotRecord:
 class SpawnResult:
     ok: bool
     error: str = ""
+
+
+@dataclass
+class LanzadorProcesosBot:
+    """
+    Encapsula el despliegue real de un bot: descomprimir su código,
+    escribirlo a disco y lanzar el proceso del sistema operativo.
+
+    Se inyecta en Hypervisor en vez de vivir hardcodeado dentro de
+    spawn_bot/kill_bot.
+    """
+
+    def __init__(self, codigo_dir: Path = Path("bots_codigo")):
+        self._codigo_dir = codigo_dir
+
+    def codigo_path(self, hypervisor_id: str, bot_id: str) -> Path:
+        return self._codigo_dir / hypervisor_id / f"{bot_id}.py"
+
+    def lanzar(
+        self,
+        hypervisor_id: str,
+        bot_id: str,
+        codigo_gz: bytes,
+        env_extra: dict,
+    ) -> subprocess.Popen:
+        """
+        Descomprime codigo_gz, lo escribe a disco y lanza el proceso.
+        Deja que cualquier excepción se propague tal cual — spawn_bot
+        decide qué hacer si falla (deshacer el registro del bot, etc.).
+        """
+        codigo_path = self.codigo_path(hypervisor_id, bot_id)
+        codigo_path.parent.mkdir(parents=True, exist_ok=True)
+        codigo_path.write_bytes(gzip.decompress(codigo_gz))
+
+        # sys.executable, no el string literal "python": garantiza usar
+        # el mismo intérprete que corre este proceso. "python" a secas
+        # puede no existir en el PATH (p. ej. sistemas donde el binario
+        # se llama "python3"), o apuntar a un intérprete distinto al del
+        # venv activo.
+        return subprocess.Popen(
+            [sys.executable, str(codigo_path)],
+            env={**os.environ, **env_extra},
+        )
+
+    def limpiar(self, hypervisor_id: str, bot_id: str) -> None:
+        """Elimina el fichero de código del bot, si existe. Idempotente."""
+        self.codigo_path(hypervisor_id, bot_id).unlink(missing_ok=True)
 
 
 @dataclass
@@ -106,6 +154,7 @@ class Hypervisor:
         my_address: str = "localhost",
         my_port: int = 50052,
         my_proxy_port: int = 50053,
+        lanzador_procesos: Optional[LanzadorProcesosBot] = None,
     ):
         self.hypervisor_id = hypervisor_id
         self.gestor_client = gestor_client
@@ -118,6 +167,11 @@ class Hypervisor:
         self._lock = threading.Lock()
         self._bots: dict[str, BotRecord] = {}
         self._procesos: dict[str, subprocess.Popen] = {}
+
+        # Real por defecto (escribe a disco, lanza subprocess.Popen real).
+        # Los tests inyectan una versión falsa para no tocar el sistema
+        # de ficheros ni lanzar procesos — ver LanzadorProcesosBot arriba.
+        self._lanzador = lanzador_procesos or LanzadorProcesosBot()
 
         self._frozen = False
 
@@ -268,31 +322,25 @@ class Hypervisor:
                 bot_id=bot_id, budget=budget, max_budget=budget, alive=False
             )
 
-        codigo_path = self._codigo_path(bot_id)
         try:
-            codigo_path.parent.mkdir(parents=True, exist_ok=True)
-            codigo_path.write_bytes(gzip.decompress(codigo_gz))
-        except Exception as exc:
-            with self._lock:
-                self._bots.pop(bot_id, None)
-            logger.error("Error escribiendo código de bot %s: %s", bot_id, exc)
-            return SpawnResult(ok=False, error=f"Error descomprimiendo código: {exc}")
-
-        try:
-            proceso = subprocess.Popen(
-                ["python", str(codigo_path)],
-                env={
-                    **os.environ,
+            proceso = self._lanzador.lanzar(
+                hypervisor_id=self.hypervisor_id,
+                bot_id=bot_id,
+                codigo_gz=codigo_gz,
+                env_extra={
                     "BOT_ID": bot_id,
                     "HV_PROXY_ADDRESS": f"{self._my_address}:{self._my_proxy_port}",
                 },
             )
         except Exception as exc:
-            codigo_path.unlink(missing_ok=True)
             with self._lock:
                 self._bots.pop(bot_id, None)
-            logger.error("Error lanzando proceso bot %s: %s", bot_id, exc)
-            return SpawnResult(ok=False, error=f"Error lanzando proceso: {exc}")
+            # limpiar() usa unlink(missing_ok=True): seguro llamarlo aunque
+            # el fallo haya sido antes de escribir el fichero (descompresión)
+            # o después (lanzamiento del proceso) — no hace falta distinguir.
+            self._lanzador.limpiar(self.hypervisor_id, bot_id)
+            logger.error("Error desplegando bot %s: %s", bot_id, exc)
+            return SpawnResult(ok=False, error=f"Error desplegando bot: {exc}")
 
         with self._lock:
             self._bots[bot_id].alive = True
@@ -352,7 +400,7 @@ class Hypervisor:
                 logger.warning("No se pudo terminar proceso de %s: %s", bot_id, exc)
 
         try:
-            self._codigo_path(bot_id).unlink(missing_ok=True)
+            self._lanzador.limpiar(self.hypervisor_id, bot_id)
         except Exception as exc:
             logger.warning("No se pudo eliminar código de %s: %s", bot_id, exc)
 
