@@ -1,18 +1,30 @@
+# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo.py
 """
 gestor_mundo.py
 ---------------
-Gestor central del mundo. Responsabilidades:
+Gestor central del MECANISMO del mundo (ya no de su estado).
 
-  - Mantener el estado gold (celdas + sectores + elementos globales)
+Responsabilidades tras el refactor a Logica_Mundo:
   - Ejecutar el ciclo de tick en tres fases (FASE 0 / 1 / 2)
   - Gestionar el ciclo de vida de los sectores (crear, registrar, cambiar modo)
-  - Emitir snapshots periódicos a disco con snapshot_id compartido
+  - Emitir snapshots periódicos propios (topología de sectores) y pedir a
+    Logica_Mundo que guarde el suyo con el mismo snapshot_id compartido
   - Coordinar la pausa forzosa del sistema para guardados profundos
-  - Gestionar elementos globales (ciclo día-noche, ciclo lunar, etc.)
+
+Lo que YA NO hace (migrado a Logica_Mundo):
+  - Mantener _gold_cells / _elements / _bot_positions
+  - Resolver acciones de bots (handle_action)
+  - Avanzar elementos globales (ciclo día-noche, lunar, etc.)
+  - Gestionar eventos globales
+
+Para todo lo anterior, este módulo habla con Logica_Mundo a través de
+un cliente gRPC (self._logica_client) — ver logica_mundo_client.py
+(pendiente de escribir).
 
 Variables de entorno relevantes:
   GRID_WIDTH, GRID_HEIGHT, SECTOR_SIZE
   GESTOR_MUNDO_HOST, GESTOR_MUNDO_WORKERS
+  GESTOR_BOTS_ADDRESS, LOGICA_MUNDO_ADDRESS
   TICK_TIMEOUT_MS, TICKS_ANTES_DE_DORMIR
   UNITY_FRAME_EVERY_N_TICKS
   MAX_VISION_DISTANCE, SOUND_MAP_CELL_SIZE
@@ -29,24 +41,19 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import grpc
 from numpy import uint64
 
-from typing import Optional
-
 # Imports generados por protoc — ajustar paths según Proto_Generated
 from Config.settings import DEFAULT_TICK_RATE
-from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
 )
-
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2_grpc as bots_grpc,
 )
-
 from Infraestructura.Gestores.Mundo.Sector.sector import SectorMode
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2 as bots_pb,
@@ -84,40 +91,6 @@ class SectorInfo:
     ticks_sin_actividad: int = 0  # para anti-thrashing
 
 
-@dataclass
-class ActionResult:
-    __slots__ = ("ok", "payload", "error", "world_tick")
-
-    def __init__(self, ok, payload, error, world_tick=0):
-        self.ok = ok
-        self.payload = payload
-        self.error = error
-        self.world_tick = world_tick
-
-    def __repr__(self):
-        return f"ActionResult(ok={self.ok}, error={self.error!r})"
-
-
-# ─────────────────────────────────────────────────────────────
-#  Elementos globales base
-# ─────────────────────────────────────────────────────────────
-
-
-class ElementoGlobal:
-    """Clase base para elementos globales (ciclos temporales, etc.)."""
-
-    def tick(self, tick_id: int) -> dict:
-        """Avanza el estado un tick. Devuelve dict con cambios para sectores."""
-        raise NotImplementedError
-
-    def to_snapshot(self) -> dict:
-        raise NotImplementedError
-
-    @classmethod
-    def from_snapshot(cls, data: dict) -> "ElementoGlobal":
-        raise NotImplementedError
-
-
 # ─────────────────────────────────────────────────────────────
 #  GestorMundo
 # ─────────────────────────────────────────────────────────────
@@ -125,8 +98,14 @@ class ElementoGlobal:
 
 class GestorMundo:
 
-    def __init__(self):
-
+    def __init__(self, logica_client):
+        """
+        logica_client : cliente gRPC hacia Logica_Mundo (ver
+                        logica_mundo_client.py, pendiente). Se inyecta
+                        en vez de construirse aquí para poder testear
+                        GestorMundo con un doble sin infraestructura real
+                        — mismo patrón que ya usa ShutdownCoordinator.
+        """
         # ─────────────────────────────────────────────────────────────
         #  Configuración desde entorno
         # ─────────────────────────────────────────────────────────────
@@ -150,15 +129,9 @@ class GestorMundo:
         # Sectores indexados por (col, row)
         self._sectores: dict[tuple[int, int], SectorInfo] = {}
 
-        # Estado gold de celdas: dict[tuple[x,y], list[int64]] (posicion, lista de id_elemento)
-        # Solo celdas no vacías. Cargado desde snapshot o construido al inicio.
-        self._gold_cells: dict[tuple[int, int], list[uint64]] = {}
-
-        # id → elemento (incluye bots)
-        self._elements: dict[uint64, Elemento] = {}
-
-        # bot_id → posición (fuente de verdad exclusiva)
-        self._bot_positions: dict[str, tuple[int, int]] = {}
+        # Cliente hacia Logica_Mundo — única fuente de verdad del estado
+        # gold. Gestor_Mundo ya no mantiene copia propia.
+        self._logica_client = logica_client
 
         # Control de tick
         self._tick_id: uint64 = 0
@@ -171,20 +144,16 @@ class GestorMundo:
         self._tick_rate: int = DEFAULT_TICK_RATE
         self._tick_interval: float = 0.0  # calculado desde _tick_rate
 
-        # Canal hacia Gestor_Bots
+        # Canal hacia Gestor_Bots (para FreezeAll/ResumeAll/ResetBudgets —
+        # órdenes administrativas que siguen coordinándose desde aquí,
+        # ya que son parte del ciclo de tick, no del estado del mundo)
         self._bots_channel: Optional[grpc.aio.Channel] = None
         self._bots_stub = None
 
-        # Elementos globales
-        self._elementos_globales: dict[uint64, ElementoGlobal] = {
-            # Añadir más elementos globales aquí
-        }
-
-        # Lock para operaciones sobre estado gold
-        self._gold_lock: asyncio.Lock = asyncio.Lock()
-
-        self._active_events: dict[str, Any] = {}
-        self._speed_factor: float = 1.0
+        # Lock — ya no protege _gold_cells (que no existe aquí), pero se
+        # mantiene para serializar la consolidación de _fase_2 frente a
+        # freeze()/save_snapshot() concurrentes, igual que antes.
+        self._consolidacion_lock: asyncio.Lock = asyncio.Lock()
 
         # sonidos
         self._pending_sounds = {}
@@ -228,7 +197,9 @@ class GestorMundo:
         )
 
     async def _init_fresh(self) -> None:
-        """Partida nueva: crea todos los sectores y carga el gold inicial vacío."""
+        """Partida nueva: crea todos los sectores. El gold inicial vacío
+        ya existe por defecto en Logica_Mundo (no hace falta inicializarlo
+        aquí — es su propio estado, no el nuestro)."""
         logger.info("Inicio limpio. Creando %d×%d sectores.", self.COLS, self.ROWS)
         for col in range(self.COLS):
             for row in range(self.ROWS):
@@ -239,7 +210,15 @@ class GestorMundo:
                 await self._set_sector_mode(info, SectorMode.INACTIVO)
 
     async def _restore_from_snapshot(self) -> None:
-        """Restaura desde el último snapshot disponible en disco."""
+        """
+        Restaura desde el último snapshot disponible en disco.
+
+        Solo restaura AQUÍ la topología propia (sectores, tick_id).
+        El estado gold se restaura pidiendo a Logica_Mundo que cargue
+        su propio snapshot con el mismo snapshot_id — ambos snapshots
+        se guardaron juntos (ver _save_snapshot), así que están
+        garantizados a corresponder al mismo instante.
+        """
         snapshot_path = self._latest_snapshot_path()
         if snapshot_path is None:
             logger.warning("No se encontró snapshot. Iniciando limpio.")
@@ -254,15 +233,7 @@ class GestorMundo:
         self._tick_id = data["tick_id"]
         self._snapshot_id = data["snapshot_id"]
 
-        # Restaurar elementos globales
-        # TODO: hacer el registro de clases dinámico cuando haya más elementos
-        eg_data = data.get("elementos_globales", {})
-        for elem in self._elementos_globales.values():
-            name = elem.__class__.__name__
-            if name in eg_data:
-                elem.__dict__.update(elem.from_snapshot(eg_data[name]).__dict__)
-
-        # Restaurar sectores
+        # Restaurar sectores (topología propia)
         for s in data["sectores"]:
             col, row = s["col"], s["row"]
             info = SectorInfo(
@@ -274,13 +245,10 @@ class GestorMundo:
             self._sectores[(col, row)] = info
             await self._connect_sector(info)
 
-        # Restaurar gold cells
-        self._gold_cells = {
-            tuple(map(int, k.split(","))): bytes.fromhex(v)
-            for k, v in data.get("gold_cells", {}).items()
-        }
+        # Pedir a Logica_Mundo que restaure su estado con el mismo id
+        await self._logica_client.load_state(self._snapshot_id)
 
-        # Enviar estado gold a cada sector
+        # Enviar estado gold (ahora en Logica_Mundo) a cada sector
         await self._distribute_gold_to_sectors()
 
     # ─────────────────────────────────────────────
@@ -349,7 +317,16 @@ class GestorMundo:
         await asyncio.gather(*tareas, return_exceptions=True)
 
     async def _enviar_ghost_zone(self, sector: SectorInfo) -> None:
-        ghost_cells = self._calcular_ghost_zone(sector)
+        """
+        Pide a Logica_Mundo las celdas del borde ampliado del sector
+        (excluyendo la región propia) y se las envía como ghost zone.
+
+        Antes esto se resolvía leyendo self._gold_cells directamente;
+        ahora es una única llamada RPC por sector por tick — coste
+        aceptable porque escala con nº de sectores, no con nº de bots
+        (ver discusión de escalabilidad).
+        """
+        ghost_cells = await self._calcular_ghost_zone(sector)
         if not ghost_cells:
             return
         req = sector_pb.SetGhostZoneRequest(
@@ -428,9 +405,10 @@ class GestorMundo:
 
     async def _fase_2(self) -> None:
         """
-        Recoge deltas de sectores ACTIVOS, consolida el estado gold,
-        resuelve migraciones, procesa sonidos para el siguiente tick,
-        envía frame a Unity cada N ticks, señaliza reset de presupuestos.
+        Recoge deltas de sectores ACTIVOS, entrega las celdas cambiadas
+        a Logica_Mundo para que consolide su estado, resuelve
+        migraciones, procesa sonidos para el siguiente tick, envía
+        frame a Unity cada N ticks, señaliza reset de presupuestos.
         """
         activos = [s for s in self._sectores.values() if s.mode == SectorMode.ACTIVO]
 
@@ -442,7 +420,12 @@ class GestorMundo:
         self._pending_sounds: dict[tuple[int, int], list] = {}
         bots_migrando: list[tuple[SectorInfo, sector_pb.MigratingBot]] = []
 
-        async with self._gold_lock:
+        # Todas las celdas cambiadas de todos los sectores de este tick,
+        # para entregarlas a Logica_Mundo en una sola llamada batcheada
+        # en vez de una llamada por sector — reduce round-trips.
+        celdas_cambiadas: list = []
+
+        async with self._consolidacion_lock:
             for sector, resultado in zip(activos, resultados):
                 if isinstance(resultado, Exception):
                     logger.error(
@@ -461,13 +444,9 @@ class GestorMundo:
                     )
                     continue
 
-                # Actualizar gold con celdas cambiadas
-                for cell in resultado.changed_cells:
-                    key = (cell.pos.x, cell.pos.y)
-                    if cell.element:
-                        self._gold_cells[key] = cell.element
-                    else:
-                        self._gold_cells.pop(key, None)
+                # Acumular celdas cambiadas — se entregan a Logica_Mundo
+                # tal cual (proto Cell), sin interpretarlas aquí.
+                celdas_cambiadas.extend(resultado.changed_cells)
 
                 # Acumular bots que migran
                 for bot in resultado.outgoing_bots:
@@ -481,16 +460,23 @@ class GestorMundo:
                 if self._delta_tiene_actividad(resultado):
                     sector.ticks_sin_actividad = 0
 
+            # Entregar las celdas cambiadas a Logica_Mundo para que
+            # consolide su estado (sustituye la escritura directa en
+            # self._gold_cells que hacía la versión anterior).
+            if celdas_cambiadas:
+                await self._logica_client.actualizar_celdas(celdas_cambiadas)
+
             # Resolver migraciones
             await self._resolver_migraciones(bots_migrando)
 
             # Actualizar modos de sector (anti-thrashing)
             await self._actualizar_modos_sector()
 
-            # Avanzar elementos globales
-            cambios_globales = {}
-            for elem in self._elementos_globales:
-                cambios_globales.update(elem.tick(self._tick_id))
+            # Avanzar elementos globales — ahora vive en Logica_Mundo,
+            # que devuelve los cambios agregados de este tick.
+            cambios_globales = await self._logica_client.avanzar_elementos_globales(
+                self._tick_id
+            )
             # TODO: distribuir cambios_globales a sectores que lo necesiten
 
         # Enviar frame a Unity
@@ -551,12 +537,14 @@ class GestorMundo:
         """
         Determina qué sectores reciben este sonido usando el mapa low-res
         y los acumula en _pending_sounds para la FASE 0 del siguiente tick.
+
+        No requiere el estado gold — es geometría pura sobre coordenadas
+        de sector, por eso se queda aquí (mecánica de tick) y no en
+        Logica_Mundo.
         """
-        # Coordenadas en el mapa low-res
         lx = sound.origin.x // self.SOUND_MAP_CELL_SIZE
         ly = sound.origin.y // self.SOUND_MAP_CELL_SIZE
 
-        # Radio máximo en celdas low-res
         from Core.Mundo.mapa_config import MAX_SOUND_DISTANCE
 
         radio_lr = math.ceil(MAX_SOUND_DISTANCE / self.SOUND_MAP_CELL_SIZE)
@@ -630,13 +618,11 @@ class GestorMundo:
         self._state = SystemState.PAUSING
         self._pause_event.clear()
 
-        # Ordenar a Gestor_Bots que congele todos los HVs
         try:
             await self._bots_stub.FreezeAll(bots_pb.FreezeAllRequest())
         except grpc.aio.AioRpcError as e:
             logger.error("Error al congelar Gestor_Bots: %s", e)
 
-        # Ordenar a todos los sectores activos que pausen
         tareas = []
         for info in self._sectores.values():
             if info.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO):
@@ -661,10 +647,9 @@ class GestorMundo:
         logger.info("RESUME (tick %d)", self._tick_id)
         self._state = SystemState.RESUMING
 
-        # Restaurar modos de sector según estado gold
+        # Restaurar modos de sector con el gold actual (en Logica_Mundo)
         await self._distribute_gold_to_sectors()
 
-        # Ordenar a Gestor_Bots que reanude
         try:
             await self._bots_stub.ResumeAll(bots_pb.ResumeAllRequest())
         except grpc.aio.AioRpcError as e:
@@ -692,15 +677,17 @@ class GestorMundo:
 
     async def _save_snapshot(self) -> None:
         """
-        Guarda el estado gold del Gestor_Mundo a disco.
-        No pausa el sistema — solo copia el gold en un momento dado.
+        Guarda la topología propia (sectores, tick_id) a disco, y pide a
+        Logica_Mundo que guarde su estado con el MISMO snapshot_id —
+        así ambos snapshots quedan correlacionados y se pueden restaurar
+        juntos sin ambigüedad.
         """
         import json
 
         snapshot_id = f"{self._tick_id:010d}"
         path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
 
-        async with self._gold_lock:
+        async with self._consolidacion_lock:
             data = {
                 "tick_id": self._tick_id,
                 "snapshot_id": snapshot_id,
@@ -714,31 +701,60 @@ class GestorMundo:
                     }
                     for info in self._sectores.values()
                 ],
-                "gold_cells": {
-                    f"{x},{y}": v.hex() for (x, y), v in self._gold_cells.items()
-                },
-                "elementos_globales": {
-                    elem.__class__.__name__: elem.to_snapshot()
-                    for elem in self._elementos_globales.values()
-                },
             }
 
-        path.write_text(__import__("json").dumps(data))
+        path.write_text(json.dumps(data))
+
+        # Logica_Mundo guarda su propio estado (gold, IDs, eventos...)
+        # con el mismo identificador.
+        await self._logica_client.save_snapshot(snapshot_id)
+
         self._snapshot_id = snapshot_id
         logger.info("Snapshot guardado: %s", path)
 
     async def _deep_save(self) -> None:
         """
         Guardado profundo: pausa el sistema, guarda snapshot coordinado
-        (mundo + sectores + bots con el mismo snapshot_id), reanuda.
+        (mundo + logica_mundo + sectores + bots con el mismo snapshot_id), reanuda.
+
+        Importante: si el sistema ya estaba pausado por el usuario ANTES de
+        que saltara este guardado automático, no debemos reanudarlo al
+        terminar — solo restauramos el estado que había antes de que
+        _deep_save tomara el control.
         """
         logger.info("Guardado profundo iniciado (tick %d)", self._tick_id)
+
         estaba_corriendo = self._state == SystemState.RUNNING
+
         await self.freeze()
         try:
             snapshot_id = f"{self._tick_id:010d}_deep"
             self._snapshot_id = snapshot_id
-            await self._save_snapshot()
+
+            # _save_snapshot ya incluye la llamada a Logica_Mundo, pero
+            # aquí forzamos el snapshot_id "_deep" en vez del periódico —
+            # por eso se guarda inline en vez de reusar _save_snapshot().
+            import json
+
+            path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
+            async with self._consolidacion_lock:
+                data = {
+                    "tick_id": self._tick_id,
+                    "snapshot_id": snapshot_id,
+                    "fecha": datetime.datetime.now().isoformat(),
+                    "sectores": [
+                        {
+                            "col": info.col,
+                            "row": info.row,
+                            "address": info.address,
+                            "mode": info.mode.value,
+                        }
+                        for info in self._sectores.values()
+                    ],
+                }
+            path.write_text(json.dumps(data))
+            await self._logica_client.save_snapshot(snapshot_id)
+
             try:
                 await self._bots_stub.SaveSnapshot(
                     bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
@@ -786,7 +802,7 @@ class GestorMundo:
     # ─────────────────────────────────────────────
 
     async def _distribute_gold_to_sectors(self) -> None:
-        """Envía el estado gold completo a cada sector (arranque o restauración)."""
+        """Envía el estado gold completo (obtenido de Logica_Mundo) a cada sector."""
         tareas = []
         for info in self._sectores.values():
             if info.stub is not None:
@@ -794,7 +810,19 @@ class GestorMundo:
         await asyncio.gather(*tareas, return_exceptions=True)
 
     async def _load_sector_state(self, info: SectorInfo) -> None:
-        cells = self._celdas_de_sector(info)
+        """
+        Pide a Logica_Mundo las celdas de la región de este sector
+        (sin exclusión — queremos todo el rectángulo propio) y se las
+        envía. Antes se leía self._gold_cells directamente.
+        """
+        x0 = info.col * self.SECTOR_SIZE
+        y0 = info.row * self.SECTOR_SIZE
+        x1 = x0 + self.SECTOR_SIZE
+        y1 = y0 + self.SECTOR_SIZE
+
+        cells = await self._logica_client.obtener_celdas_en_region(
+            min_pos=(x0, y0), max_pos=(x1, y1)
+        )
         req = sector_pb.LoadStateRequest(cells=cells)
         try:
             resp = await info.stub.LoadState(req)
@@ -811,8 +839,11 @@ class GestorMundo:
 
     async def _enviar_frame_unity(self) -> None:
         """
-        TODO: implementar con el protocolo de Unity decidido.
-        Por ahora no-op.
+        Ya no aplica aquí — la representación para Unity la resuelve
+        Logica_Mundo a petición de Comunicacion_Remoto/Vista_Foco, no
+        empujada por Gestor_Mundo en cada tick. Se mantiene el hook por
+        si en el futuro hace falta notificar "hay un frame nuevo
+        disponible" sin enviar los datos en sí.
         """
         pass
 
@@ -830,51 +861,27 @@ class GestorMundo:
     #  Helpers de geometría
     # ─────────────────────────────────────────────
 
-    def get_celda(self, x: int, y: int) -> Optional[bytes]:
+    async def _calcular_ghost_zone(self, info: SectorInfo) -> list:
         """
-        Devuelve el contenido serializado de la celda (x, y), o None si está vacía.
-        Abstrae el sistema de sectores — el caller no necesita saber en qué sector está.
+        Pide a Logica_Mundo las celdas del borde ampliado del sector,
+        excluyendo la región propia — sustituye la lectura directa de
+        self._gold_cells que hacía la versión anterior.
         """
-        return self._gold_cells.get((x, y))
+        x0 = info.col * self.SECTOR_SIZE
+        y0 = info.row * self.SECTOR_SIZE
+        x1 = x0 + self.SECTOR_SIZE
+        y1 = y0 + self.SECTOR_SIZE
+        gx0 = x0 - self.MAX_VISION_DISTANCE
+        gy0 = y0 - self.MAX_VISION_DISTANCE
+        gx1 = x1 + self.MAX_VISION_DISTANCE
+        gy1 = y1 + self.MAX_VISION_DISTANCE
 
-    async def handle_action(
-        self, bot_id: uint64, action_type: str, payload: bytes
-    ) -> ActionResult:
-        from Infraestructura.Gestores.Mundo.api_acciones import ACCIONES, AccionContext
-
-        entrada = ACCIONES.get(action_type)
-        if entrada is None:
-            logger.warning(
-                "handle_action: acción desconocida '%s' (bot %s)", action_type, bot_id
-            )
-            return ActionResult(ok=False, error=f"Acción desconocida: {action_type}")
-
-        fn = entrada.get("funcion")
-        if fn is None:
-            logger.warning(
-                "handle_action: acción '%s' no tiene funcion (bot %s)",
-                action_type,
-                bot_id,
-            )
-            return ActionResult(
-                ok=False, error=f"Acción '{action_type}' no ejecutable por el Mundo."
-            )
-
-        ctx = AccionContext(
-            bot_id=bot_id,
-            payload=payload,
-            gold_cells=self._gold_cells,
-            elements=self._elements,
-            bot_positions=self._bot_positions,
+        return await self._logica_client.obtener_celdas_en_region(
+            min_pos=(gx0, gy0),
+            max_pos=(gx1, gy1),
+            excluir_min=(x0, y0),
+            excluir_max=(x1, y1),
         )
-
-        try:
-            return await fn(ctx)
-        except Exception as exc:
-            logger.error(
-                "Error en handle_action '%s' para bot %s: %s", action_type, bot_id, exc
-            )
-            return ActionResult(ok=False, error=str(exc))
 
     def _sector_para_posicion(self, x: int, y: int) -> Optional[SectorInfo]:
         col = x // self.SECTOR_SIZE
@@ -891,53 +898,6 @@ class GestorMundo:
                 if vecino:
                     resultado.append(vecino)
         return resultado
-
-    def _celdas_de_sector(self, info: SectorInfo) -> list:
-        """Extrae del gold las celdas que pertenecen a este sector."""
-        x0 = info.col * self.SECTOR_SIZE
-        y0 = info.row * self.SECTOR_SIZE
-        x1 = x0 + self.SECTOR_SIZE
-        y1 = y0 + self.SECTOR_SIZE
-        result = []
-        for (x, y), element in self._gold_cells.items():
-            if x0 <= x < x1 and y0 <= y < y1:
-                result.append(
-                    common_pb.Cell(
-                        pos=common_pb.Position(x=x, y=y),
-                        element=element,
-                    )
-                )
-        return result
-
-    def _calcular_ghost_zone(self, info: SectorInfo) -> list:
-        """
-        Devuelve las celdas del gold que están en la ghost zone del sector:
-        celdas de sectores vecinos dentro de MAX_VISION_DISTANCE del borde.
-        """
-        x0 = info.col * self.SECTOR_SIZE
-        y0 = info.row * self.SECTOR_SIZE
-        x1 = x0 + self.SECTOR_SIZE
-        y1 = y0 + self.SECTOR_SIZE
-        gx0 = x0 - self.MAX_VISION_DISTANCE
-        gy0 = y0 - self.MAX_VISION_DISTANCE
-        gx1 = x1 + self.MAX_VISION_DISTANCE
-        gy1 = y1 + self.MAX_VISION_DISTANCE
-
-        result = []
-        for (x, y), element in self._gold_cells.items():
-            # Celdas fuera del sector propio pero dentro del borde ampliado
-            if (
-                gx0 <= x < gx1
-                and gy0 <= y < gy1
-                and not (x0 <= x < x1 and y0 <= y < y1)
-            ):
-                result.append(
-                    common_pb.Cell(
-                        pos=common_pb.Position(x=x, y=y),
-                        element=element,
-                    )
-                )
-        return result
 
     # ─────────────────────────────────────────────
     #  Conexiones gRPC a sectores

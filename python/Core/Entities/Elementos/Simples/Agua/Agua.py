@@ -8,7 +8,6 @@ from Core.Entities.Comportamiento.Material.divisible import Divisible
 from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Comportamiento.Material.tangible import Tangible
 from Core.Entities.Comportamiento.Material.transformable import Transformable
-from Core.Entities.Comportamiento.Material.transparente import Transparente
 from Core.Entities.Comportamiento.Salud.comestible import Comestible
 from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Elementos.Simples.Agua.recetas_con import recetas_con_agua
@@ -29,7 +28,6 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Liquido,
     Tangible,
     Transformable,
-    Transparente,
     Comestible,
     Hidratante,
     Termico,

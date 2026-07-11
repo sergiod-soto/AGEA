@@ -201,7 +201,7 @@ class Hypervisor:
             return
 
         try:
-            from Infraestructura.Gestores.Mundo.api_acciones import ACCIONES
+            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import ACCIONES
         except ImportError as exc:
             logger.error("No se pudo importar ACCIONES: %s.", exc)
             self._delegated = {}
@@ -253,7 +253,7 @@ class Hypervisor:
                     ok=False, payload=b"", error=f"Bot {bot_id!r} no encontrado."
                 )
 
-        from Infraestructura.Gestores.Mundo.api_acciones import AccionContext
+        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import AccionContext
 
         ctx = AccionContext(
             bot_id=bot_id,

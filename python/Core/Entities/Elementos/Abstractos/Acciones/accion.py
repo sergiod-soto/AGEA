@@ -14,8 +14,8 @@ class Accion(Elemento_Abstracto):
     - ejecutar()
     """
 
-    def __init__(self, nombre: str, **kwargs):
-        super().__init__(Accion, **kwargs)
+    def __init__(self, tipo: type, nombre: str, **kwargs):
+        super().__init__(tipo, **kwargs)
         self.nombre = nombre
 
     @abstractmethod

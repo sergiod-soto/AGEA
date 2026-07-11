@@ -41,7 +41,7 @@ def _get_action_costs() -> dict[str, int]:
     Se llama una vez al primer uso y se cachea en el módulo.
     """
     try:
-        from Infraestructura.Gestores.Mundo.api_acciones import ACCIONES
+        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import ACCIONES
 
         return {name: entry["coste"] for name, entry in ACCIONES.items()}
     except Exception as exc:

@@ -1,8 +1,3 @@
-from enum import Enum
-import math
-import random
-from typing import Callable
-
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
 from Core.Entities.Comportamiento.Fisico.enterrable import Enterrable

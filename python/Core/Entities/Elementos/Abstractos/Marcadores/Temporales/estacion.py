@@ -1,4 +1,4 @@
-from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import Marcador_Temporal
 from Core.Entities.Comportamiento.comportamiento import Comportamiento as C
 
 
@@ -6,6 +6,6 @@ comportamientos = C.declarar_comportamientos(
 
 )
 
-class Estacion(Elemento_Abstracto):
+class Estacion(Marcador_Temporal):
     def __init__(self,**kwargs):
         super().__init__(Estacion, **kwargs)

@@ -40,6 +40,13 @@ GROUPS = [
         ],
     ),
     (
+        "Comunicacion",
+        "Comunicacion",
+        [
+            "logica_mundo_service.proto",
+        ],
+    ),
+    (
         "Sectores",
         "Sectores",
         [

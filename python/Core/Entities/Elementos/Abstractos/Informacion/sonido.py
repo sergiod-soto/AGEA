@@ -220,7 +220,7 @@ class Sonido(Elemento_Abstracto):
         _señal_raw: np.ndarray,  # señal sin normalizar, para fusionar
         **kwargs,
     ):
-        super().__init__(SonidoBase, **kwargs)
+        super().__init__(Sonido, **kwargs)
         self.vector: np.ndarray = vector
         self.pcm: np.ndarray = pcm
         self.duracion: float = duracion

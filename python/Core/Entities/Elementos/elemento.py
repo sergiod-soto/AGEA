@@ -1,5 +1,7 @@
 from abc import ABC
 
+from numpy import uint64
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Mundo.mundo import Mundo
 
@@ -19,6 +21,7 @@ class Elemento(Comportamiento):
         self,
         tipo: type,
         capa: int,
+        id: uint64,
         fuerza_sector_activo: bool,
         fuerza_vecinos_activos=bool,
         **kwargs
@@ -26,6 +29,7 @@ class Elemento(Comportamiento):
         super().__init__(**kwargs)
         self.capa = capa
         self.tipo = tipo
+        self.id = id
         self.fuerza_sector_activo = fuerza_sector_activo
         self.fuerza_vecinos_activos = fuerza_vecinos_activos
 

@@ -27,12 +27,13 @@ class Condicion(Elemento_Abstracto):
 
     def __init__(
         self,
+        tipo: type,
         evaluar: Callable[..., bool],
         evento: str = None,
         nombre: str = None,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(tipo, **kwargs)
         self._evaluar = evaluar
         self.activa: bool = False
         self.nombre = nombre

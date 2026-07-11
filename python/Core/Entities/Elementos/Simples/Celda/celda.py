@@ -1,17 +1,16 @@
 # Core/Entities/Elementos/Simples/Celda/celda.py
-from Core.Entities.Comportamiento.Terreno.terreno import Terreno
-from Core.Entities.Elementos.Simples.Bot.Bot import Bot
+from numpy import uint64
+
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Core.Entities.Elementos.elemento import Elemento
 
 
 class Celda(Elemento_Simple):
     def __init__(
         self,
         casilla: tuple[int, int],
-        suelo: Terreno,
-        bot: Bot = None,
-        resto: list[Elemento] = [],
+        suelo: uint64,
+        bot: uint64 = None,
+        resto: list[uint64] | None = None,
         capa: int = 0,
     ):
         super().__init__(
@@ -23,6 +22,6 @@ class Celda(Elemento_Simple):
         )
         self.suelo = suelo
         self.bot = bot
-        self.resto = resto
+        self.resto = resto if resto is not None else []
 
     # TODO: terminar de definir Celda

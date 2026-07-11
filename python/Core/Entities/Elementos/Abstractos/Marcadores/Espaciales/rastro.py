@@ -8,4 +8,4 @@ comportamientos = C.declarar_comportamientos(
 
 class Rastro(Marcador):
     def __init__(self,**kwargs):
-        super().__init__(**kwargs)
+        super().__init__(Rastro, **kwargs)

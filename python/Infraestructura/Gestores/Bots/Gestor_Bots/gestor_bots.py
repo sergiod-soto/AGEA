@@ -63,7 +63,7 @@ class Gestor_Bots:
 
         try:
             from Infraestructura.Gestores.Bots.Gestor_Bots.acciones_delegadas import ACCIONES_DELEGADAS
-            from Infraestructura.Gestores.Mundo.api_acciones import ACCIONES
+            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import ACCIONES
 
             nombres = [name for name in ACCIONES_DELEGADAS if name in ACCIONES]
             nombres_invalidos = set(ACCIONES_DELEGADAS) - set(nombres)

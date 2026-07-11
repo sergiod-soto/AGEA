@@ -15,19 +15,29 @@ message Ack {
 // ============================================================
 
 // Posición absoluta en el grid global.
-// Sustituye a GridPos (renombrada) y a las Position locales de
-// gestor_mundo_service y sector_service.
 message Position {
   int32 x = 1;
   int32 y = 2;
 }
 
-// Celda del grid. type_id es el nombre de clase del elemento
-// ("Bot", "Piedra", …) necesario para el registry del Mundo.
+// Celda del grid.
+//
+// CAMBIO (antes: un único campo `element`): una celda puede tener hasta
+// 3 elementos simultáneos en distintos "slots" — suelo, bot, y una lista
+// de "resto" (objetos sueltos, etc.). Cada campo son los bytes de la
+// serialización Elemento → dict → bytes de ese elemento concreto, o
+// vacío (b"") si el slot no está ocupado. El `id` de cada elemento va
+// incluido dentro de su propio blob serializado (no es un campo aparte
+// aquí), así que quien deserializa puede extraerlo directamente.
+//
+// Antes de este cambio, mirar.py ya asumía esta forma de 3 slots aunque
+// el proto solo tuviera un campo `element` — este cambio hace que el
+// contrato refleje lo que el código ya daba por hecho.
 message Cell {
-  Position pos     = 1;
-  string   type_id = 2;
-  bytes    element = 3;
+  Position       pos   = 1;
+  bytes          suelo = 2;   // vacío si no hay elemento en este slot
+  bytes          bot   = 3;   // vacío si no hay bot en esta celda
+  repeated bytes resto = 4;   // lista de elementos sueltos, puede ser vacía
 }
 
 // ============================================================
@@ -35,10 +45,10 @@ message Cell {
 // ============================================================
 
 message BotConfig {
-  string bot_id    = 1;
-  int32  budget    = 2;
-  bytes  codigo_gz = 3;   // gzip del código Python compilado
-  map<string, string> metadata = 4;
+  string              bot_id    = 1;
+  int32               budget    = 2;
+  bytes               codigo_gz = 3;   // gzip del código Python compilado
+  map<string, string> metadata  = 4;
 }
 
 message BotInfo {
@@ -68,7 +78,6 @@ message BotList {
 }
 
 // Estado de un bot para migración entre sectores o hibernación.
-// Movido desde sector_service (se usa también en gestor_mundo).
 message BotSnapshot {
   string   bot_id = 1;
   Position pos    = 2;
@@ -137,8 +146,6 @@ message BudgetEntry {
 
 // ============================================================
 //  Sonido cross-border
-//  Movido desde sector_service: gestor_mundo lo necesita para
-//  enrutar sonidos entre sectores vecinos.
 // ============================================================
 
 message SoundEvent {
@@ -149,7 +156,6 @@ message SoundEvent {
 
 // ============================================================
 //  Heartbeat — tipos de estado de hijos
-//  Usados en las respuestas de heartbeat de los gestores.
 // ============================================================
 
 message HeartbeatRequest {}
@@ -167,17 +173,10 @@ message SectorStatus {
 
 // ============================================================
 //  Shutdown coordinado
-//  Usado por main.py → todos los componentes.
 // ============================================================
 
 message ShutdownRequest {
-  // Igual al session_id de la partida.
-  // Si un componente recibe un Shutdown con el mismo shutdown_id
-  // que ya está procesando, lo ignora silenciosamente.
   string shutdown_id = 1;
-  // "user"               → cierre manual
-  // "spot_interruption"  → AWS reclamando la instancia
-  // "component_failure"  → fail-fast por caída de otro componente
   string reason      = 2;
 }
 
