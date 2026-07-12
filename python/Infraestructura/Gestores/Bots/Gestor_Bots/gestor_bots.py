@@ -1,5 +1,11 @@
+# Infraestructura/Gestores/Bots/Gestor_Bots/gestor_bots.py
 """
 gestor_bots.py — Lógica pura del Gestor de Hypervisores.
+
+Cambio respecto a la versión anterior: las acciones de bots ya no se
+reenvían al Mundo (GestorMundo) — se resuelven directamente contra
+Logica_Mundo, que es quien ahora tiene el estado gold y ejecuta
+ACCIONES sin salto de red adicional (ver logica_mundo.py).
 """
 
 from __future__ import annotations
@@ -7,34 +13,31 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-from dataclasses import dataclass
 from typing import Optional
 
-from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import BotInfo, BotStats
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Infraestructura.Gestores.tipos_comunes import (
+    ActionResult,
+    BotInfo,
+    BotStats,
+    HypervisorInfo,
+    HypervisorList,
+)
+
+from Infraestructura.Gestores.tipos_comunes import ActionResult, BotInfo, BotStats
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class HypervisorInfo:
-    hypervisor_id: str
-    address: str
-    port: int
-    proxy_port: int
-    capacity: int
-    current_load: int = 0
-    online: bool = True
-
-
-@dataclass
-class HypervisorList:
-    hypervisors: list[HypervisorInfo]
-
-
 class Gestor_Bots:
 
-    def __init__(self, mundo_client=None, bots_por_hypervisor: int = 100):
+    def __init__(self, logica_client=None, bots_por_hypervisor: int = 100):
+        """
+        logica_client : cliente hacia Logica_Mundo (LogicaMundoClient),
+                        usado para resolver acciones de bots. Antes era
+                        `mundo_client` (GestorMundoClient) — renombrado
+                        para reflejar que ya no habla con el Mundo, sino
+                        con Logica_Mundo directamente.
+        """
         if bots_por_hypervisor <= 0:
             raise ValueError(
                 f"bots_por_hypervisor debe ser > 0, recibido: {bots_por_hypervisor}"
@@ -46,7 +49,7 @@ class Gestor_Bots:
         self._hypervisor_clients: dict[str, object] = {}
         self._bots: dict[str, BotStats] = {}
         self._bot_counter: int = 0
-        self.mundo_client = mundo_client
+        self.logica_client = logica_client
         self._delegated_names_cache: list[str] | None = None
 
         logger.info(
@@ -62,8 +65,12 @@ class Gestor_Bots:
             return self._delegated_names_cache
 
         try:
-            from Infraestructura.Gestores.Bots.Gestor_Bots.acciones_delegadas import ACCIONES_DELEGADAS
-            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import ACCIONES
+            from Infraestructura.Gestores.Bots.Gestor_Bots.acciones_delegadas import (
+                ACCIONES_DELEGADAS,
+            )
+            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
+                ACCIONES,
+            )
 
             nombres = [name for name in ACCIONES_DELEGADAS if name in ACCIONES]
             nombres_invalidos = set(ACCIONES_DELEGADAS) - set(nombres)
@@ -237,6 +244,12 @@ class Gestor_Bots:
         )
 
     async def kill_bot(self, bot_id: str) -> None:
+        """
+        Mata el proceso/script de un bot en su Hypervisor y limpia el
+        registro interno. Usado tanto por el Flujo A (Gestor_Bots.
+        MatarScriptBot, tras decisión del Mundo) como por órdenes
+        administrativas directas.
+        """
         async with self._lock:
             stats = self._bots.get(bot_id)
             if stats is None:
@@ -257,39 +270,58 @@ class Gestor_Bots:
             if hv and hv.current_load > 0:
                 hv.current_load -= 1
 
-    async def notify_bot_death_async(self, bot_id: str, cause: str, tick: int) -> None:
-        async with self._lock:
-            stats = self._bots.pop(bot_id, None)
-            if stats is not None:
-                hv = self._hypervisors.get(stats.hypervisor_id)
-                if hv and hv.current_load > 0:
-                    hv.current_load -= 1
-
-        if self.mundo_client is not None:
-            try:
-                await self.mundo_client.notify_bot_death(bot_id, cause, tick)
-            except Exception as exc:
-                logger.error(
-                    "Error notificando muerte de bot %s al Mundo: %s", bot_id, exc
-                )
+    async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
+        """
+        Flujo B: el Hypervisor detectó que el script de un bot se ha
+        roto (no compila, excepción no controlada, etc.) y notifica
+        que el avatar se ha quedado sin piloto. Gestor_Bots actúa de
+        puente hacia Logica_Mundo, sin lógica propia sobre el proceso
+        (el HV ya gestiona su propio script; aquí solo se limpia el
+        avatar en el mundo).
+        """
+        if self.logica_client is None:
+            return True, ""
+        try:
+            return await self.logica_client.eliminar_avatar_bot(bot_id)
+        except Exception as exc:
+            logger.error(
+                "Error eliminando avatar de %s en Logica_Mundo: %s", bot_id, exc
+            )
+            return False, str(exc)
 
     # ------------------------------------------------------------------
-    # Acciones → Mundo
+    # Acciones → Logica_Mundo
     # ------------------------------------------------------------------
 
-    async def forward_action_to_mundo(
+    async def resolver_accion_bot(
         self,
         bot_id: str,
         hypervisor_id: str,
         action_type: str,
         payload: bytes,
     ) -> ActionResult:
-        if self.mundo_client is None:
+        """
+        Pide a Logica_Mundo que resuelva una acción de un bot.
+
+        Antes: forward_action_to_mundo(), que reenviaba al GestorMundo
+        (que a su vez ejecutaba handle_action contra su propio estado).
+        Ahora Logica_Mundo resuelve directamente — Gestor_Bots solo hace
+        de intermediario entre el Hypervisor y Logica_Mundo, sin lógica
+        propia sobre el resultado.
+
+        hypervisor_id se mantiene en la firma por compatibilidad con
+        quien llama (world_proxy_servicer vía forward_to_gestor), aunque
+        ya no se usa aquí — Logica_Mundo no necesita saber de qué HV
+        vino la acción.
+        """
+        if self.logica_client is None:
             return ActionResult(ok=True, payload=b"", error="")
         try:
-            return await self.mundo_client.forward_action(bot_id, action_type, payload)
+            return await self.logica_client.resolver_accion(
+                bot_id, action_type, payload
+            )
         except Exception as exc:
-            logger.error("Error forwarding action al Mundo: %s", exc)
+            logger.error("Error resolviendo acción en Logica_Mundo: %s", exc)
             return ActionResult(ok=False, payload=b"", error=str(exc))
 
     # ------------------------------------------------------------------

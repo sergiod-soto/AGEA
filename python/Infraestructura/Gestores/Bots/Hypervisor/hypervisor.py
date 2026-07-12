@@ -1,5 +1,21 @@
+# Infraestructura/Gestores/Bots/Hypervisor/hypervisor.py
 """
 hypervisor.py — Lógica pura del Hypervisor.
+
+Vigilancia de procesos (Flujo B de muerte de bots):
+  Cada bot corre como un subprocess.Popen independiente. Al lanzarlo,
+  se arranca un hilo daemon dedicado (_watch_bot_process) bloqueado en
+  proceso.wait() — sin coste de CPU, solo espera de sistema operativo.
+  Cuando el proceso termina, el hilo distingue:
+    - Terminación deliberada (kill_bot ya quitó el bot de self._bots
+      antes de que el proceso muriera) → no hace nada, ya se resolvió.
+    - Crash real (el bot seguía registrado) → notifica al Gestor vía
+      gestor_client.notificar_avatar_sin_piloto(bot_id), que a su vez
+      pide a Logica_Mundo eliminar el avatar del bot en el gold.
+  Se eligió un hilo por bot (en vez de un único hilo con sondeo
+  periódico) para detección inmediata sin latencia de intervalo, y
+  porque el modelo ya es "un proceso por bot" — un hilo más por bot es
+  simétrico con eso, no una complejidad añadida distinta.
 """
 
 from __future__ import annotations
@@ -17,7 +33,13 @@ from typing import Optional
 
 import psutil
 
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Infraestructura.Gestores.tipos_comunes import (
+    ActionResult,
+    BotInfo,
+    BotList,
+    BotStats,
+    BotStatusHV,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,51 +107,6 @@ class LanzadorProcesosBot:
         self.codigo_path(hypervisor_id, bot_id).unlink(missing_ok=True)
 
 
-@dataclass
-class BotInfo:
-    __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
-
-    def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
-        self.bot_id = bot_id
-        self.hypervisor_id = hypervisor_id
-        self.proxy_address = proxy_address
-        self.ok = ok
-        self.error = error
-
-    def __repr__(self):
-        return f"BotInfo(bot_id={self.bot_id!r}, ok={self.ok}, error={self.error!r})"
-
-
-@dataclass
-class BotStats:
-    __slots__ = ("bot_id", "hypervisor_id", "points_left", "alive", "uptime_s")
-
-    def __init__(self, bot_id, hypervisor_id, points_left, alive, uptime_s=0.0):
-        self.bot_id = bot_id
-        self.hypervisor_id = hypervisor_id
-        self.points_left = points_left
-        self.alive = alive
-        self.uptime_s = uptime_s
-
-
-@dataclass
-class BotStatus:
-    __slots__ = ("bot_id", "alive", "budget")
-
-    def __init__(self, bot_id, alive, budget):
-        self.bot_id = bot_id
-        self.alive = alive
-        self.budget = budget
-
-
-@dataclass
-class BotList:
-    __slots__ = ("bots",)
-
-    def __init__(self, bots):
-        self.bots = bots
-
-
 class Hypervisor:
     """
     Proxy transparente entre los Bots y el Mundo.
@@ -137,8 +114,10 @@ class Hypervisor:
     Parámetros
     ----------
     hypervisor_id      : str
-    gestor_client      : GestorBotsClient
-    gestor_mundo_client: GestorMundoClient
+    gestor_client      : GestorBotsClient (síncrono — ver comentario en
+                         gestor_bots_client.py sobre por qué el HV usa
+                         la versión síncrona, no la async)
+    gestor_mundo_client: GestorMundoClientSync
     capacity           : int
     my_address         : str
     my_port            : int
@@ -201,7 +180,9 @@ class Hypervisor:
             return
 
         try:
-            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import ACCIONES
+            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
+                ACCIONES,
+            )
         except ImportError as exc:
             logger.error("No se pudo importar ACCIONES: %s.", exc)
             self._delegated = {}
@@ -253,7 +234,9 @@ class Hypervisor:
                     ok=False, payload=b"", error=f"Bot {bot_id!r} no encontrado."
                 )
 
-        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import AccionContext
+        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
+            AccionContext,
+        )
 
         ctx = AccionContext(
             bot_id=bot_id,
@@ -346,8 +329,65 @@ class Hypervisor:
             self._bots[bot_id].alive = True
             self._procesos[bot_id] = proceso
 
+        # Arranca el vigilante de este proceso — ver docstring del
+        # módulo y _watch_bot_process para el porqué de este diseño.
+        threading.Thread(
+            target=self._watch_bot_process,
+            args=(bot_id, proceso),
+            daemon=True,
+            name=f"bot-watcher-{bot_id}",
+        ).start()
+
         logger.info("Bot %s spawneado (budget=%d).", bot_id, budget)
         return SpawnResult(ok=True)
+
+    def _watch_bot_process(self, bot_id: str, proceso: subprocess.Popen) -> None:
+        """
+        Corre en un hilo daemon dedicado, uno por bot, bloqueado en
+        proceso.wait() — sin coste de CPU mientras el proceso sigue vivo.
+
+        Cuando el proceso termina (por cualquier motivo: fin normal,
+        excepción no controlada, señal, etc.), este hilo se despierta y
+        decide si fue:
+          - Terminación deliberada: kill_bot() ya quitó bot_id de
+            self._bots ANTES de llamar a proceso.terminate() — cuando
+            este hilo despierta, ya no encuentra el bot registrado, así
+            que no hace nada más (kill_bot ya limpió todo).
+          - Crash real: bot_id seguía en self._bots — el proceso murió
+            por su cuenta. Se limpia el registro local y se notifica al
+            Gestor (Flujo B: avatar sin piloto) para que Logica_Mundo
+            elimine el elemento correspondiente en el gold.
+        """
+        proceso.wait()
+
+        with self._lock:
+            crash = bot_id in self._bots
+            if crash:
+                self._bots.pop(bot_id, None)
+                self._procesos.pop(bot_id, None)
+
+        if not crash:
+            # Terminación esperada — kill_bot() ya se encargó de todo.
+            return
+
+        logger.warning(
+            "Bot %s: proceso terminado inesperadamente (código=%s) — "
+            "notificando avatar sin piloto.",
+            bot_id,
+            proceso.returncode,
+        )
+
+        try:
+            self._lanzador.limpiar(self.hypervisor_id, bot_id)
+        except Exception as exc:
+            logger.warning(
+                "No se pudo eliminar código de %s tras crash: %s", bot_id, exc
+            )
+
+        try:
+            self.gestor_client.notificar_avatar_sin_piloto(bot_id)
+        except Exception as exc:
+            logger.error("Error notificando avatar sin piloto para %s: %s", bot_id, exc)
 
     def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
         with self._lock:
@@ -361,12 +401,12 @@ class Hypervisor:
                 alive=rec.alive,
             )
 
-    def get_bot_status(self, bot_id: str) -> Optional[BotStatus]:
+    def get_bot_status(self, bot_id: str) -> Optional[BotStatusHV]:
         with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
                 return None
-            return BotStatus(bot_id=rec.bot_id, alive=rec.alive, budget=rec.budget)
+            return BotStatusHV(bot_id=rec.bot_id, alive=rec.alive, budget=rec.budget)
 
     def list_bots(self) -> BotList:
         with self._lock:
@@ -386,6 +426,16 @@ class Hypervisor:
         return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"
 
     def kill_bot(self, bot_id: str) -> None:
+        """
+        Termina deliberadamente un bot (orden administrativa, o Flujo A
+        vía Gestor_Bots.kill_bot tras matar_bot en Logica_Mundo).
+
+        Quita el bot de self._bots ANTES de llamar a terminate() — este
+        orden importa: es lo que permite a _watch_bot_process() (el
+        hilo vigilante de este mismo proceso) distinguir esta
+        terminación deliberada de un crash real, sin necesitar ningún
+        flag adicional.
+        """
         with self._lock:
             if bot_id not in self._bots:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)

@@ -43,6 +43,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 from Core.Entities.Elementos.registry import reconstruir_elemento
+from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
+    GestorBotsClientAsync,
+)
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 
 logger = logging.getLogger(__name__)
@@ -105,7 +108,7 @@ class ElementoGlobal:
 
 class LogicaMundo:
 
-    def __init__(self):
+    def __init__(self, gestor_bots_client: "GestorBotsClientAsync | None" = None):
         # ─────────────────────────────────────────────────────
         #  Configuración desde entorno
         # ─────────────────────────────────────────────────────
@@ -132,6 +135,13 @@ class LogicaMundo:
         self._elementos_globales: dict[str, ElementoGlobal] = {
             # Añadir más elementos globales aquí
         }
+
+        # Cliente hacia Gestor_Bots — usado solo para notificar muertes
+        # de bots decididas por la lógica del mundo (matar_bot). Se
+        # inyecta (puede ser None si aún no está disponible al arrancar),
+        # mismo patrón que el resto de clientes inter-componente del
+        # proyecto.
+        self._gestor_bots_client = gestor_bots_client
 
         # Lock único para todas las operaciones que tocan el estado gold.
         # Se mantiene deliberadamente ligero (dict lookups + serialización
@@ -288,24 +298,32 @@ class LogicaMundo:
             return True, ""
 
     async def eliminar_elemento(
-        self, pos: tuple[int, int], type_id: str
+        self, pos: tuple[int, int], element_id: int
     ) -> tuple[bool, str]:
+        """
+        Elimina el elemento con `element_id` de la celda en `pos`.
+
+        Determina el slot (suelo/bot/resto) comparando directamente
+        contra el id, en vez de depender de un type_id como categoría
+        aparte — evita que quien llama tenga que saber de antemano en
+        qué slot está el elemento.
+        """
         async with self._lock:
             celda = self._gold_cells.get(pos)
             if celda is None:
                 return False, f"No hay celda en {pos}."
 
-            if type_id == "suelo":
-                eid, celda.suelo = celda.suelo, None
-            elif type_id == "bot":
-                eid, celda.bot = celda.bot, None
-                if eid is not None:
-                    self._bot_positions.pop(str(eid), None)
+            if celda.suelo == element_id:
+                celda.suelo = None
+            elif celda.bot == element_id:
+                celda.bot = None
+                self._bot_positions.pop(str(element_id), None)
+            elif element_id in celda.resto:
+                celda.resto.remove(element_id)
             else:
-                return False, f"Tipo de eliminación no soportado: '{type_id}'."
+                return False, f"Elemento {element_id} no encontrado en {pos}."
 
-            if eid is not None:
-                self._elements.pop(eid, None)
+            self._elements.pop(element_id, None)
 
             # Limpiar la celda del dict si quedó vacía — evita que
             # _gold_cells crezca indefinidamente con celdas fantasma.
@@ -370,6 +388,96 @@ class LogicaMundo:
                 exc,
             )
             return ActionResult(ok=False, error=str(exc))
+
+    async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
+        """
+        Elimina el avatar de un bot dado solo su bot_id — resuelve
+        internamente su posición (_bot_positions) y el id de elemento
+        en esa celda, sin que quien llama necesite conocerlos.
+
+        Usado por dos caminos:
+          - matar_bot() (Flujo A: el Mundo decide la muerte).
+          - Funciones/eliminar_avatar_bot.py del servicer (Flujo B: el
+            HV detecta que el script se quedó sin piloto y solo pide
+            eliminar el avatar, sin pasar por matar_bot).
+        """
+        pos = self._bot_positions.get(bot_id)
+        if pos is None:
+            return False, f"Bot {bot_id!r} no encontrado en bot_positions."
+
+        async with self._lock:
+            celda = self._gold_cells.get(pos)
+            if celda is None or celda.bot is None:
+                return False, f"No hay avatar de bot en {pos}."
+            element_id = celda.bot
+
+        return await self.eliminar_elemento(pos, element_id)
+
+    async def matar_bot(
+        self, bot_id: str, cause: str, tick_id: int
+    ) -> tuple[bool, str]:
+        """
+        Punto de entrada para cuando la lógica del mundo decide que un
+        bot muere (combate, inanición, etc.).
+
+        Hace dos cosas, en este orden:
+          1. Elimina el avatar del bot del gold (local, sin red) —
+             reutiliza eliminar_avatar_bot() en vez de duplicar la
+             búsqueda de posición/element_id.
+          2. Notifica a Gestor_Bots para que mate el proceso/script
+             correspondiente en su Hypervisor (sí implica red, hacia
+             fuera de este proceso) — vía matar_script_bot(), que es
+             el RPC dedicado solo a "matar script", sin tocar el avatar
+             (eso ya se hizo en el paso 1).
+
+        Este es el Flujo A (Mundo decide). El Flujo B (HV detecta script
+        roto) entra por un camino distinto y NO pasa por aquí, porque
+        el HV ya gestiona su propio proceso sin necesitar que nadie se
+        lo pida.
+        """
+        ok, error = await self.eliminar_avatar_bot(bot_id)
+        if not ok:
+            logger.error(
+                "matar_bot: no se pudo eliminar avatar de %s: %s", bot_id, error
+            )
+            return False, error
+
+        if self._gestor_bots_client is None:
+            logger.warning(
+                "matar_bot: sin gestor_bots_client configurado — "
+                "el script del bot %s no será terminado.",
+                bot_id,
+            )
+            return True, ""
+
+        try:
+            await self._gestor_bots_client.matar_script_bot(bot_id)
+        except Exception as exc:
+            logger.error(
+                "matar_bot: error pidiendo matar script de %s: %s", bot_id, exc
+            )
+            return False, str(exc)
+
+        logger.info("Bot %s eliminado (causa=%s, tick=%d).", bot_id, cause, tick_id)
+        return True, ""
+
+    async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
+        """
+        Elimina el avatar de un bot dado solo su bot_id (sin conocer
+        posición ni element_id de antemano) — usado por el Flujo B
+        (el HV detecta que el script se quedó sin piloto).
+        """
+        pos = self._bot_positions.get(bot_id)
+        if pos is None:
+            return False, f"Bot {bot_id!r} no encontrado en bot_positions."
+
+        async with self._lock:
+            celda = self._gold_cells.get(pos)
+            if celda is None or celda.bot is None:
+                return False, f"No hay avatar de bot en {pos}."
+            element_id = celda.bot
+
+        return await self.eliminar_elemento(pos, element_id)
 
     # ─────────────────────────────────────────────────────────
     #  Eventos globales

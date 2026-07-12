@@ -31,12 +31,13 @@ class GestorBotsServiceStub(object):
     GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
-    - main.py        → Heartbeat, Shutdown
-    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    - main.py          → Heartbeat, Shutdown
+    - Logica_Mundo     → SpawnBot, KillBot, MatarScriptBot,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
-    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardActionHV, ListHypervisors
+    - Hypervisores     → RegisterHypervisor, UpdateHypervisorLoad,
+    ForwardAction, ListHypervisors,
+    NotificarAvatarSinPiloto
     ============================================================
 
     """
@@ -67,14 +68,19 @@ class GestorBotsServiceStub(object):
                 request_serializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
-        self.NotifyBotDeath = channel.unary_unary(
-                '/gestor.GestorBotsService/NotifyBotDeath',
-                request_serializer=Bots_dot_gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
         self.BroadcastBudgets = channel.unary_unary(
                 '/gestor.GestorBotsService/BroadcastBudgets',
                 request_serializer=Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.MatarScriptBot = channel.unary_unary(
+                '/gestor.GestorBotsService/MatarScriptBot',
+                request_serializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.NotificarAvatarSinPiloto = channel.unary_unary(
+                '/gestor.GestorBotsService/NotificarAvatarSinPiloto',
+                request_serializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.SaveSnapshot = channel.unary_unary(
@@ -117,9 +123,9 @@ class GestorBotsServiceStub(object):
                 request_serializer=Bots_dot_gestor__bots__service__pb2.ListHypervisorsRequest.SerializeToString,
                 response_deserializer=common__pb2.HypervisorList.FromString,
                 _registered_method=True)
-        self.ForwardActionHV = channel.unary_unary(
-                '/gestor.GestorBotsService/ForwardActionHV',
-                request_serializer=Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.SerializeToString,
+        self.ForwardAction = channel.unary_unary(
+                '/gestor.GestorBotsService/ForwardAction',
+                request_serializer=Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
                 response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
 
@@ -129,12 +135,13 @@ class GestorBotsServiceServicer(object):
     GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
-    - main.py        → Heartbeat, Shutdown
-    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    - main.py          → Heartbeat, Shutdown
+    - Logica_Mundo     → SpawnBot, KillBot, MatarScriptBot,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
-    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardActionHV, ListHypervisors
+    - Hypervisores     → RegisterHypervisor, UpdateHypervisorLoad,
+    ForwardAction, ListHypervisors,
+    NotificarAvatarSinPiloto
     ============================================================
 
     """
@@ -153,7 +160,7 @@ class GestorBotsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SpawnBot(self, request, context):
-        """----- Ciclo de vida de bots (llamado por el Mundo) -----
+        """----- Ciclo de vida de bots (llamado por Logica_Mundo) -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -165,14 +172,27 @@ class GestorBotsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def NotifyBotDeath(self, request, context):
+    def BroadcastBudgets(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def BroadcastBudgets(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+    def MatarScriptBot(self, request, context):
+        """----- Muerte de bots — dos orígenes, dos RPCs independientes -----
+        Flujo A: Logica_Mundo decidió la muerte (combate/inanición) y ya
+        eliminó el avatar del gold. Solo pide matar el proceso/script.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def NotificarAvatarSinPiloto(self, request, context):
+        """Flujo B: el propio Hypervisor detecta que el script de un bot se
+        ha roto (no compila, excepción no controlada, etc.) y notifica que
+        el avatar se ha quedado sin piloto — Gestor_Bots solo hace de
+        puente hacia Logica_Mundo para que elimine ese avatar.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -229,8 +249,8 @@ class GestorBotsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ForwardActionHV(self, request, context):
-        """----- Reenvío de acciones al Mundo -----
+    def ForwardAction(self, request, context):
+        """----- Reenvío de acciones -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -259,14 +279,19 @@ def add_GestorBotsServiceServicer_to_server(servicer, server):
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
-            'NotifyBotDeath': grpc.unary_unary_rpc_method_handler(
-                    servicer.NotifyBotDeath,
-                    request_deserializer=Bots_dot_gestor__bots__service__pb2.BotDeathNotification.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
-            ),
             'BroadcastBudgets': grpc.unary_unary_rpc_method_handler(
                     servicer.BroadcastBudgets,
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'MatarScriptBot': grpc.unary_unary_rpc_method_handler(
+                    servicer.MatarScriptBot,
+                    request_deserializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'NotificarAvatarSinPiloto': grpc.unary_unary_rpc_method_handler(
+                    servicer.NotificarAvatarSinPiloto,
+                    request_deserializer=Bots_dot_gestor__bots__service__pb2.BotIdRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'SaveSnapshot': grpc.unary_unary_rpc_method_handler(
@@ -309,9 +334,9 @@ def add_GestorBotsServiceServicer_to_server(servicer, server):
                     request_deserializer=Bots_dot_gestor__bots__service__pb2.ListHypervisorsRequest.FromString,
                     response_serializer=common__pb2.HypervisorList.SerializeToString,
             ),
-            'ForwardActionHV': grpc.unary_unary_rpc_method_handler(
-                    servicer.ForwardActionHV,
-                    request_deserializer=Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.FromString,
+            'ForwardAction': grpc.unary_unary_rpc_method_handler(
+                    servicer.ForwardAction,
+                    request_deserializer=Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.FromString,
                     response_serializer=common__pb2.ActionResult.SerializeToString,
             ),
     }
@@ -327,12 +352,13 @@ class GestorBotsService(object):
     GestorBotsService — expuesto por el Gestor de Bots.
 
     Clientes:
-    - main.py        → Heartbeat, Shutdown
-    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
+    - main.py          → Heartbeat, Shutdown
+    - Logica_Mundo     → SpawnBot, KillBot, MatarScriptBot,
     BroadcastBudgets, SaveSnapshot, LoadState,
     FreezeAll, ResumeAll, ResetBudgets
-    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-    ForwardActionHV, ListHypervisors
+    - Hypervisores     → RegisterHypervisor, UpdateHypervisorLoad,
+    ForwardAction, ListHypervisors,
+    NotificarAvatarSinPiloto
     ============================================================
 
     """
@@ -446,33 +472,6 @@ class GestorBotsService(object):
             _registered_method=True)
 
     @staticmethod
-    def NotifyBotDeath(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor.GestorBotsService/NotifyBotDeath',
-            Bots_dot_gestor__bots__service__pb2.BotDeathNotification.SerializeToString,
-            common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def BroadcastBudgets(request,
             target,
             options=(),
@@ -488,6 +487,60 @@ class GestorBotsService(object):
             target,
             '/gestor.GestorBotsService/BroadcastBudgets',
             Bots_dot_gestor__bots__service__pb2.BroadcastBudgetsRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def MatarScriptBot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorBotsService/MatarScriptBot',
+            Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NotificarAvatarSinPiloto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor.GestorBotsService/NotificarAvatarSinPiloto',
+            Bots_dot_gestor__bots__service__pb2.BotIdRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -716,7 +769,7 @@ class GestorBotsService(object):
             _registered_method=True)
 
     @staticmethod
-    def ForwardActionHV(request,
+    def ForwardAction(request,
             target,
             options=(),
             channel_credentials=None,
@@ -729,8 +782,8 @@ class GestorBotsService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/gestor.GestorBotsService/ForwardActionHV',
-            Bots_dot_gestor__bots__service__pb2.ForwardActionHVRequest.SerializeToString,
+            '/gestor.GestorBotsService/ForwardAction',
+            Bots_dot_gestor__bots__service__pb2.ForwardActionRequest.SerializeToString,
             common__pb2.ActionResult.FromString,
             options,
             channel_credentials,

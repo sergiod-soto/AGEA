@@ -1,4 +1,9 @@
 # Gestores/Mundo/Gestor_Mundo/gestor_mundo_servicer.py
+"""
+gestor_mundo_servicer.py — recortado tras el refactor a Logica_Mundo.
+Solo quedan los RPCs de mecánica de tick que gestor_mundo.py implementa.
+"""
+
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     gestor_mundo_service_pb2_grpc as pb_grpc,
 )
@@ -11,12 +16,6 @@ class GestorMundoServicer(pb_grpc.GestorMundoServiceServicer):
     def __init__(self, gestor: GestorMundo) -> None:
         self._gestor = gestor
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
-
-    async def GetWorldMap(self, request, context):
-        async for chunk in self._dispatch["GetWorldMap"].handle(
-            self._gestor, request, context
-        ):
-            yield chunk
 
     async def GetGlobalState(self, request, context):
         return await self._dispatch["GetGlobalState"].handle(
@@ -36,41 +35,6 @@ class GestorMundoServicer(pb_grpc.GestorMundoServiceServicer):
 
     async def TriggerDeepSave(self, request, context):
         return await self._dispatch["TriggerDeepSave"].handle(
-            self._gestor, request, context
-        )
-
-    async def SpawnGlobalEvent(self, request, context):
-        return await self._dispatch["SpawnGlobalEvent"].handle(
-            self._gestor, request, context
-        )
-
-    async def DespawnGlobalEvent(self, request, context):
-        return await self._dispatch["DespawnGlobalEvent"].handle(
-            self._gestor, request, context
-        )
-
-    async def GetActiveEvents(self, request, context):
-        return await self._dispatch["GetActiveEvents"].handle(
-            self._gestor, request, context
-        )
-
-    async def ModifyElement(self, request, context):
-        return await self._dispatch["ModifyElement"].handle(
-            self._gestor, request, context
-        )
-
-    async def CreateElement(self, request, context):
-        return await self._dispatch["CreateElement"].handle(
-            self._gestor, request, context
-        )
-
-    async def DeleteElement(self, request, context):
-        return await self._dispatch["DeleteElement"].handle(
-            self._gestor, request, context
-        )
-
-    async def ForwardActionGestorMundo(self, request, context):
-        return await self._dispatch["ForwardAction"].handle(
             self._gestor, request, context
         )
 

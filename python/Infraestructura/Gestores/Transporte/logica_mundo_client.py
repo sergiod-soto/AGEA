@@ -131,10 +131,15 @@ class LogicaMundoClient:
             return False, str(exc)
 
     async def eliminar_elemento(
-        self, pos: tuple[int, int], timeout: float | None = None
+        self,
+        pos: tuple[int, int],
+        element_id: int,
+        timeout: float | None = None,
     ) -> tuple[bool, str]:
         await self._ensure_channel()
-        req = pb.EliminarElementoRequest(pos=self._pos_to_pb(pos))
+        req = pb.EliminarElementoRequest(
+            pos=self._pos_to_pb(pos), element_id=element_id
+        )
         try:
             resp = await self._stub.EliminarElemento(req, timeout=self._t(timeout))
             return resp.ok, resp.error
@@ -168,6 +173,23 @@ class LogicaMundoClient:
         except grpc.aio.AioRpcError as exc:
             logger.error("ResolverAccion falló: %s", exc)
             return ActionResult(ok=False, error=str(exc))
+
+    async def eliminar_avatar_bot(
+        self, bot_id: str, timeout: float | None = None
+    ) -> tuple[bool, str]:
+        """
+        Usado por Gestor_Bots.eliminar_avatar_bot() (Flujo B: el HV
+        detectó un script roto). Solo necesita bot_id — Logica_Mundo
+        resuelve posición y element_id internamente.
+        """
+        await self._ensure_channel()
+        req = pb.EliminarAvatarBotRequest(bot_id=bot_id)
+        try:
+            resp = await self._stub.EliminarAvatarBot(req, timeout=self._t(timeout))
+            return resp.ok, resp.error
+        except grpc.aio.AioRpcError as exc:
+            logger.error("EliminarAvatarBot falló: %s", exc)
+            return False, str(exc)
 
     # ------------------------------------------------------------------
     # Eventos globales

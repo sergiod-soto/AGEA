@@ -5,22 +5,25 @@ import "common.proto";
 // ============================================================
 //  GestorMundoService — expuesto por el Gestor del Mundo.
 //
+//  Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
+//  del ciclo de tick (sectores, snapshots de topología, pausa/resume,
+//  cadencia). Todo lo que era estado/identidad/eventos globales vive
+//  ahora en LogicaMundoService.
+//
 //  Clientes:
-//    - main.py       → Heartbeat, Shutdown, GetWorldMap,
-//                      GetGlobalState, GetSnapshotInfo,
-//                      Pause, Resume, SetTickRate,
-//                      TriggerDeepSave, eventos globales,
-//                      modificación en caliente
-//    - GestorBots    → ForwardActionGestorMundo
+//    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
+//                              TriggerDeepSave, GetGlobalState,
+//                              GetSnapshotInfo (reenviadas desde
+//                              Comunicaciones_Local vía el puente
+//                              Ejecutar)
 // ============================================================
 
 service GestorMundoService {
-  // ----- Infraestructura (main.py) -----
+  // ----- Infraestructura -----
   rpc Heartbeat          (common.HeartbeatRequest)       returns (GestorMundoHeartbeatResponse);
   rpc Shutdown           (common.ShutdownRequest)        returns (common.ShutdownResponse);
 
   // ----- Consulta del mundo -----
-  rpc GetWorldMap        (GetWorldMapRequest)             returns (stream GetWorldMapResponse);
   rpc GetGlobalState     (GetGlobalStateRequest)          returns (GetGlobalStateResponse);
   rpc GetSnapshotInfo    (GetSnapshotInfoRequest)         returns (GetSnapshotInfoResponse);
 
@@ -29,43 +32,16 @@ service GestorMundoService {
   rpc Resume             (ResumeRequest)                  returns (common.Ack);
   rpc SetTickRate        (SetTickRateRequest)             returns (common.Ack);
   rpc TriggerDeepSave    (TriggerDeepSaveRequest)         returns (TriggerDeepSaveResponse);
-
-  // ----- Eventos globales -----
-  rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)        returns (SpawnGlobalEventResponse);
-  rpc DespawnGlobalEvent (DespawnGlobalEventRequest)      returns (common.Ack);
-  rpc GetActiveEvents    (GetActiveEventsRequest)         returns (GetActiveEventsResponse);
-
-  // ----- Modificación en caliente (solo dev, requiere pausa) -----
-  rpc ModifyElement      (ModifyElementRequest)           returns (common.Ack);
-  rpc CreateElement      (CreateElementRequest)           returns (common.Ack);
-  rpc DeleteElement      (DeleteElementRequest)           returns (common.Ack);
-
-  // ----- Acciones de bots (enviadas por GestorBots) -----
-  rpc ForwardActionGestorMundo (ForwardActionGestorMundoRequest) returns (ForwardActionGestorMundoResponse);
 }
 
 // ============================================================
 //  Heartbeat
 // ============================================================
 
-// El gestor incluye el estado de todos sus sectores.
-// main.py detecta así caídas de sectores sin contactarlos directamente.
 message GestorMundoHeartbeatResponse {
-  bool   ok    = 1;
-  string error = 2;
+  bool                         ok              = 1;
+  string                       error           = 2;
   repeated common.SectorStatus sector_statuses = 3;
-}
-
-// ============================================================
-//  GetWorldMap
-// ============================================================
-
-message GetWorldMapRequest {
-  bool only_active_sectors = 1;
-}
-
-message GetWorldMapResponse {
-  repeated common.Cell cells = 1;
 }
 
 // ============================================================
@@ -80,10 +56,10 @@ message GlobalElementState {
 }
 
 message GetGlobalStateResponse {
-  bool   ok          = 1;
-  string error       = 2;
-  int64  tick_id     = 3;
-  string snapshot_id = 4;
+  bool                        ok                 = 1;
+  string                      error              = 2;
+  int64                       tick_id            = 3;
+  string                      snapshot_id        = 4;
   repeated GlobalElementState elementos_globales = 5;
 }
 
@@ -107,6 +83,7 @@ message GetSnapshotInfoResponse {
 // ============================================================
 
 message PauseRequest  {}
+
 message ResumeRequest {}
 
 message SetTickRateRequest {
@@ -123,75 +100,4 @@ message TriggerDeepSaveResponse {
   bool   ok          = 1;
   string error       = 2;
   string snapshot_id = 3;
-}
-
-// ============================================================
-//  Eventos globales
-// ============================================================
-
-message GlobalEvent {
-  string          event_id = 1;
-  string          type     = 2;
-  common.Position pos      = 3;   // vacío si el evento no tiene posición
-  bytes           payload  = 4;
-}
-
-message SpawnGlobalEventRequest {
-  GlobalEvent event = 1;
-}
-
-message SpawnGlobalEventResponse {
-  bool   ok       = 1;
-  string error    = 2;
-  string event_id = 3;
-}
-
-message DespawnGlobalEventRequest {
-  string event_id = 1;
-  string reason   = 2;   // "completed" | "cancelled" | "expired"
-}
-
-message GetActiveEventsRequest {}
-
-message GetActiveEventsResponse {
-  bool   ok    = 1;
-  string error = 2;
-  repeated GlobalEvent events = 3;
-}
-
-// ============================================================
-//  Modificación en caliente (solo dev, requiere pausa)
-// ============================================================
-
-message ModifyElementRequest {
-  common.Position pos     = 1;
-  string          type_id = 2;
-  bytes           patch   = 3;
-}
-
-message CreateElementRequest {
-  common.Position pos     = 1;
-  string          type_id = 2;
-  bytes           element = 3;
-}
-
-message DeleteElementRequest {
-  common.Position pos = 1;
-}
-
-// ============================================================
-//  ForwardAction (GestorBots → GestorMundo)
-// ============================================================
-
-message ForwardActionGestorMundoRequest {
-  string bot_id      = 1;
-  string action_type = 2;
-  bytes  payload     = 3;
-}
-
-message ForwardActionGestorMundoResponse {
-  bool   ok      = 1;
-  string error   = 2;
-  bytes  payload = 3;
-  int64  tick_id = 4;
 }

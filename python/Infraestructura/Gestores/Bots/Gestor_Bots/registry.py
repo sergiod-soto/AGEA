@@ -1,6 +1,7 @@
-# Gestores/Bots/Gestor_Bots/registry.py
+# Infraestructura/Gestores/Bots/Gestor_Bots/registry.py
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
-    notify_bot_death,
+    matar_script_bot,
+    notificar_avatar_sin_piloto,
 )
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
     broadcast_budgets_async,
@@ -19,7 +20,8 @@ from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
 FUNCIONES = [
     spawn_bot,
     kill_bot,
-    notify_bot_death,
+    matar_script_bot,
+    notificar_avatar_sin_piloto,
     broadcast_budgets_async,
     reset_budgets,
     freeze_all,

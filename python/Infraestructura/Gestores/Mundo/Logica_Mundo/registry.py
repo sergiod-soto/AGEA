@@ -1,0 +1,40 @@
+# Infraestructura/Gestores/Mundo/Logica_Mundo/registry.py
+"""
+Gestores/Mundo/Logica_Mundo/registry.py
+"""
+
+from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
+    asignar_id,
+    actualizar_celdas,
+    avanzar_elementos_globales,
+    consultar_representacion,
+    crear_elemento,
+    despawn_global_event,
+    eliminar_avatar_bot,
+    eliminar_elemento,
+    get_active_events,
+    load_state,
+    modificar_elemento,
+    obtener_celdas_en_region,
+    resolver_accion,
+    save_snapshot,
+    spawn_global_event,
+)
+
+FUNCIONES = [
+    asignar_id,
+    crear_elemento,
+    modificar_elemento,
+    eliminar_elemento,
+    eliminar_avatar_bot,
+    resolver_accion,
+    spawn_global_event,
+    despawn_global_event,
+    get_active_events,
+    obtener_celdas_en_region,
+    actualizar_celdas,
+    consultar_representacion,
+    avanzar_elementos_globales,
+    save_snapshot,
+    load_state,
+]

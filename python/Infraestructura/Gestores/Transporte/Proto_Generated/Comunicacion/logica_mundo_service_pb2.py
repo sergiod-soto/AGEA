@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'Comunicacion/logica_mundo_service.proto\x12\x0clogica_mundo\x1a\x0c\x63ommon.proto\"9\n\x1cLogicaMundoHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x12\n\x10\x41signarIdRequest\"\x1f\n\x11\x41signarIdResponse\x12\n\n\x02id\x18\x01 \x01(\x04\"W\n\x14\x43rearElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\x0f\n\x07\x65lement\x18\x03 \x01(\x0c\"Y\n\x18ModificarElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\r\n\x05patch\x18\x03 \x01(\x0c\"8\n\x17\x45liminarElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\"M\n\x15ResolverAccionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"]\n\x0bGlobalEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x1d\n\x03pos\x18\x03 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\"C\n\x17SpawnGlobalEventRequest\x12(\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x19.logica_mundo.GlobalEvent\"G\n\x18SpawnGlobalEventResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\"=\n\x19\x44\x65spawnGlobalEventRequest\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"\x18\n\x16GetActiveEventsRequest\"_\n\x17GetActiveEventsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12)\n\x06\x65vents\x18\x03 \x03(\x0b\x32\x19.logica_mundo.GlobalEvent\"\xc3\x01\n\x1cObtenerCeldasEnRegionRequest\x12\x1d\n\x03min\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x1d\n\x03max\x18\x02 \x01(\x0b\x32\x10.common.Position\x12%\n\x0b\x65xcluir_min\x18\x03 \x01(\x0b\x32\x10.common.Position\x12%\n\x0b\x65xcluir_max\x18\x04 \x01(\x0b\x32\x10.common.Position\x12\x17\n\x0ftiene_exclusion\x18\x05 \x01(\x08\"W\n\x1dObtenerCeldasEnRegionResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x1b\n\x05\x63\x65lls\x18\x03 \x03(\x0b\x32\x0c.common.Cell\">\n\x17\x41\x63tualizarCeldasRequest\x12#\n\rchanged_cells\x18\x01 \x03(\x0b\x32\x0c.common.Cell\"}\n\x1e\x43onsultarRepresentacionRequest\x12\x1d\n\x03min\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x1d\n\x03max\x18\x02 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07incluir\x18\x03 \x03(\t\x12\x0c\n\x04modo\x18\x04 \x01(\t\"K\n\x1f\x43onsultarRepresentacionResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\r\n\x05\x64\x61tos\x18\x03 \x01(\x0c\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\"\'\n\x10LoadStateRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t2\xe7\t\n\x12LogicaMundoService\x12Q\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a*.logica_mundo.LogicaMundoHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12L\n\tAsignarId\x12\x1e.logica_mundo.AsignarIdRequest\x1a\x1f.logica_mundo.AsignarIdResponse\x12@\n\rCrearElemento\x12\".logica_mundo.CrearElementoRequest\x1a\x0b.common.Ack\x12H\n\x11ModificarElemento\x12&.logica_mundo.ModificarElementoRequest\x1a\x0b.common.Ack\x12\x46\n\x10\x45liminarElemento\x12%.logica_mundo.EliminarElementoRequest\x1a\x0b.common.Ack\x12K\n\x0eResolverAccion\x12#.logica_mundo.ResolverAccionRequest\x1a\x14.common.ActionResult\x12\x61\n\x10SpawnGlobalEvent\x12%.logica_mundo.SpawnGlobalEventRequest\x1a&.logica_mundo.SpawnGlobalEventResponse\x12J\n\x12\x44\x65spawnGlobalEvent\x12\'.logica_mundo.DespawnGlobalEventRequest\x1a\x0b.common.Ack\x12^\n\x0fGetActiveEvents\x12$.logica_mundo.GetActiveEventsRequest\x1a%.logica_mundo.GetActiveEventsResponse\x12p\n\x15ObtenerCeldasEnRegion\x12*.logica_mundo.ObtenerCeldasEnRegionRequest\x1a+.logica_mundo.ObtenerCeldasEnRegionResponse\x12\x46\n\x10\x41\x63tualizarCeldas\x12%.logica_mundo.ActualizarCeldasRequest\x1a\x0b.common.Ack\x12v\n\x17\x43onsultarRepresentacion\x12,.logica_mundo.ConsultarRepresentacionRequest\x1a-.logica_mundo.ConsultarRepresentacionResponse\x12U\n\x0cSaveSnapshot\x12!.logica_mundo.SaveSnapshotRequest\x1a\".logica_mundo.SaveSnapshotResponse\x12\x38\n\tLoadState\x12\x1e.logica_mundo.LoadStateRequest\x1a\x0b.common.Ackb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'Comunicacion/logica_mundo_service.proto\x12\x0clogica_mundo\x1a\x0c\x63ommon.proto\"9\n\x1cLogicaMundoHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x12\n\x10\x41signarIdRequest\"\x1f\n\x11\x41signarIdResponse\x12\n\n\x02id\x18\x01 \x01(\x04\"W\n\x14\x43rearElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\x0f\n\x07\x65lement\x18\x03 \x01(\x0c\"Y\n\x18ModificarElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07type_id\x18\x02 \x01(\t\x12\r\n\x05patch\x18\x03 \x01(\x0c\"L\n\x17\x45liminarElementoRequest\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x12\n\nelement_id\x18\x02 \x01(\x04\"M\n\x15ResolverAccionRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x13\n\x0b\x61\x63tion_type\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"*\n\x18\x45liminarAvatarBotRequest\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\"]\n\x0bGlobalEvent\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x1d\n\x03pos\x18\x03 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07payload\x18\x04 \x01(\x0c\"C\n\x17SpawnGlobalEventRequest\x12(\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x19.logica_mundo.GlobalEvent\"G\n\x18SpawnGlobalEventResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\"=\n\x19\x44\x65spawnGlobalEventRequest\x12\x10\n\x08\x65vent_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"\x18\n\x16GetActiveEventsRequest\"_\n\x17GetActiveEventsResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12)\n\x06\x65vents\x18\x03 \x03(\x0b\x32\x19.logica_mundo.GlobalEvent\"2\n\x1f\x41vanzarElementosGlobalesRequest\x12\x0f\n\x07tick_id\x18\x01 \x01(\x03\"N\n AvanzarElementosGlobalesResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07\x63\x61mbios\x18\x03 \x01(\x0c\"\xc3\x01\n\x1cObtenerCeldasEnRegionRequest\x12\x1d\n\x03min\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x1d\n\x03max\x18\x02 \x01(\x0b\x32\x10.common.Position\x12%\n\x0b\x65xcluir_min\x18\x03 \x01(\x0b\x32\x10.common.Position\x12%\n\x0b\x65xcluir_max\x18\x04 \x01(\x0b\x32\x10.common.Position\x12\x17\n\x0ftiene_exclusion\x18\x05 \x01(\x08\"W\n\x1dObtenerCeldasEnRegionResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x1b\n\x05\x63\x65lls\x18\x03 \x03(\x0b\x32\x0c.common.Cell\">\n\x17\x41\x63tualizarCeldasRequest\x12#\n\rchanged_cells\x18\x01 \x03(\x0b\x32\x0c.common.Cell\"}\n\x1e\x43onsultarRepresentacionRequest\x12\x1d\n\x03min\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x1d\n\x03max\x18\x02 \x01(\x0b\x32\x10.common.Position\x12\x0f\n\x07incluir\x18\x03 \x03(\t\x12\x0c\n\x04modo\x18\x04 \x01(\t\"K\n\x1f\x43onsultarRepresentacionResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\r\n\x05\x64\x61tos\x18\x03 \x01(\x0c\"*\n\x13SaveSnapshotRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t\"F\n\x14SaveSnapshotResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\"\'\n\x10LoadStateRequest\x12\x13\n\x0bsnapshot_id\x18\x01 \x01(\t2\xac\x0b\n\x12LogicaMundoService\x12Q\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a*.logica_mundo.LogicaMundoHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12L\n\tAsignarId\x12\x1e.logica_mundo.AsignarIdRequest\x1a\x1f.logica_mundo.AsignarIdResponse\x12@\n\rCrearElemento\x12\".logica_mundo.CrearElementoRequest\x1a\x0b.common.Ack\x12H\n\x11ModificarElemento\x12&.logica_mundo.ModificarElementoRequest\x1a\x0b.common.Ack\x12\x46\n\x10\x45liminarElemento\x12%.logica_mundo.EliminarElementoRequest\x1a\x0b.common.Ack\x12K\n\x0eResolverAccion\x12#.logica_mundo.ResolverAccionRequest\x1a\x14.common.ActionResult\x12H\n\x11\x45liminarAvatarBot\x12&.logica_mundo.EliminarAvatarBotRequest\x1a\x0b.common.Ack\x12\x61\n\x10SpawnGlobalEvent\x12%.logica_mundo.SpawnGlobalEventRequest\x1a&.logica_mundo.SpawnGlobalEventResponse\x12J\n\x12\x44\x65spawnGlobalEvent\x12\'.logica_mundo.DespawnGlobalEventRequest\x1a\x0b.common.Ack\x12^\n\x0fGetActiveEvents\x12$.logica_mundo.GetActiveEventsRequest\x1a%.logica_mundo.GetActiveEventsResponse\x12p\n\x15ObtenerCeldasEnRegion\x12*.logica_mundo.ObtenerCeldasEnRegionRequest\x1a+.logica_mundo.ObtenerCeldasEnRegionResponse\x12\x46\n\x10\x41\x63tualizarCeldas\x12%.logica_mundo.ActualizarCeldasRequest\x1a\x0b.common.Ack\x12v\n\x17\x43onsultarRepresentacion\x12,.logica_mundo.ConsultarRepresentacionRequest\x1a-.logica_mundo.ConsultarRepresentacionResponse\x12U\n\x0cSaveSnapshot\x12!.logica_mundo.SaveSnapshotRequest\x1a\".logica_mundo.SaveSnapshotResponse\x12\x38\n\tLoadState\x12\x1e.logica_mundo.LoadStateRequest\x1a\x0b.common.Ack\x12y\n\x18\x41vanzarElementosGlobales\x12-.logica_mundo.AvanzarElementosGlobalesRequest\x1a..logica_mundo.AvanzarElementosGlobalesResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -43,37 +43,43 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_MODIFICARELEMENTOREQUEST']._serialized_start=272
   _globals['_MODIFICARELEMENTOREQUEST']._serialized_end=361
   _globals['_ELIMINARELEMENTOREQUEST']._serialized_start=363
-  _globals['_ELIMINARELEMENTOREQUEST']._serialized_end=419
-  _globals['_RESOLVERACCIONREQUEST']._serialized_start=421
-  _globals['_RESOLVERACCIONREQUEST']._serialized_end=498
-  _globals['_GLOBALEVENT']._serialized_start=500
-  _globals['_GLOBALEVENT']._serialized_end=593
-  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_start=595
-  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_end=662
-  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_start=664
-  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_end=735
-  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_start=737
-  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_end=798
-  _globals['_GETACTIVEEVENTSREQUEST']._serialized_start=800
-  _globals['_GETACTIVEEVENTSREQUEST']._serialized_end=824
-  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_start=826
-  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_end=921
-  _globals['_OBTENERCELDASENREGIONREQUEST']._serialized_start=924
-  _globals['_OBTENERCELDASENREGIONREQUEST']._serialized_end=1119
-  _globals['_OBTENERCELDASENREGIONRESPONSE']._serialized_start=1121
-  _globals['_OBTENERCELDASENREGIONRESPONSE']._serialized_end=1208
-  _globals['_ACTUALIZARCELDASREQUEST']._serialized_start=1210
-  _globals['_ACTUALIZARCELDASREQUEST']._serialized_end=1272
-  _globals['_CONSULTARREPRESENTACIONREQUEST']._serialized_start=1274
-  _globals['_CONSULTARREPRESENTACIONREQUEST']._serialized_end=1399
-  _globals['_CONSULTARREPRESENTACIONRESPONSE']._serialized_start=1401
-  _globals['_CONSULTARREPRESENTACIONRESPONSE']._serialized_end=1476
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=1478
-  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=1520
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=1522
-  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=1592
-  _globals['_LOADSTATEREQUEST']._serialized_start=1594
-  _globals['_LOADSTATEREQUEST']._serialized_end=1633
-  _globals['_LOGICAMUNDOSERVICE']._serialized_start=1636
-  _globals['_LOGICAMUNDOSERVICE']._serialized_end=2891
+  _globals['_ELIMINARELEMENTOREQUEST']._serialized_end=439
+  _globals['_RESOLVERACCIONREQUEST']._serialized_start=441
+  _globals['_RESOLVERACCIONREQUEST']._serialized_end=518
+  _globals['_ELIMINARAVATARBOTREQUEST']._serialized_start=520
+  _globals['_ELIMINARAVATARBOTREQUEST']._serialized_end=562
+  _globals['_GLOBALEVENT']._serialized_start=564
+  _globals['_GLOBALEVENT']._serialized_end=657
+  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_start=659
+  _globals['_SPAWNGLOBALEVENTREQUEST']._serialized_end=726
+  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_start=728
+  _globals['_SPAWNGLOBALEVENTRESPONSE']._serialized_end=799
+  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_start=801
+  _globals['_DESPAWNGLOBALEVENTREQUEST']._serialized_end=862
+  _globals['_GETACTIVEEVENTSREQUEST']._serialized_start=864
+  _globals['_GETACTIVEEVENTSREQUEST']._serialized_end=888
+  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_start=890
+  _globals['_GETACTIVEEVENTSRESPONSE']._serialized_end=985
+  _globals['_AVANZARELEMENTOSGLOBALESREQUEST']._serialized_start=987
+  _globals['_AVANZARELEMENTOSGLOBALESREQUEST']._serialized_end=1037
+  _globals['_AVANZARELEMENTOSGLOBALESRESPONSE']._serialized_start=1039
+  _globals['_AVANZARELEMENTOSGLOBALESRESPONSE']._serialized_end=1117
+  _globals['_OBTENERCELDASENREGIONREQUEST']._serialized_start=1120
+  _globals['_OBTENERCELDASENREGIONREQUEST']._serialized_end=1315
+  _globals['_OBTENERCELDASENREGIONRESPONSE']._serialized_start=1317
+  _globals['_OBTENERCELDASENREGIONRESPONSE']._serialized_end=1404
+  _globals['_ACTUALIZARCELDASREQUEST']._serialized_start=1406
+  _globals['_ACTUALIZARCELDASREQUEST']._serialized_end=1468
+  _globals['_CONSULTARREPRESENTACIONREQUEST']._serialized_start=1470
+  _globals['_CONSULTARREPRESENTACIONREQUEST']._serialized_end=1595
+  _globals['_CONSULTARREPRESENTACIONRESPONSE']._serialized_start=1597
+  _globals['_CONSULTARREPRESENTACIONRESPONSE']._serialized_end=1672
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_start=1674
+  _globals['_SAVESNAPSHOTREQUEST']._serialized_end=1716
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_start=1718
+  _globals['_SAVESNAPSHOTRESPONSE']._serialized_end=1788
+  _globals['_LOADSTATEREQUEST']._serialized_start=1790
+  _globals['_LOADSTATEREQUEST']._serialized_end=1829
+  _globals['_LOGICAMUNDOSERVICE']._serialized_start=1832
+  _globals['_LOGICAMUNDOSERVICE']._serialized_end=3284
 # @@protoc_insertion_point(module_scope)

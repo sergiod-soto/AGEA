@@ -30,13 +30,17 @@ class GestorMundoServiceStub(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
+    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
+    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
+    cadencia). Todo lo que era estado/identidad/eventos globales vive
+    ahora en LogicaMundoService.
+
     Clientes:
-    - main.py       → Heartbeat, Shutdown, GetWorldMap,
-    GetGlobalState, GetSnapshotInfo,
-    Pause, Resume, SetTickRate,
-    TriggerDeepSave, eventos globales,
-    modificación en caliente
-    - GestorBots    → ForwardActionGestorMundo
+    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
+    TriggerDeepSave, GetGlobalState,
+    GetSnapshotInfo (reenviadas desde
+    Comunicaciones_Local vía el puente
+    Ejecutar)
     ============================================================
 
     """
@@ -56,11 +60,6 @@ class GestorMundoServiceStub(object):
                 '/gestor_mundo.GestorMundoService/Shutdown',
                 request_serializer=common__pb2.ShutdownRequest.SerializeToString,
                 response_deserializer=common__pb2.ShutdownResponse.FromString,
-                _registered_method=True)
-        self.GetWorldMap = channel.unary_stream(
-                '/gestor_mundo.GestorMundoService/GetWorldMap',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.GetWorldMapRequest.SerializeToString,
-                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetWorldMapResponse.FromString,
                 _registered_method=True)
         self.GetGlobalState = channel.unary_unary(
                 '/gestor_mundo.GestorMundoService/GetGlobalState',
@@ -92,60 +91,29 @@ class GestorMundoServiceStub(object):
                 request_serializer=Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveRequest.SerializeToString,
                 response_deserializer=Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveResponse.FromString,
                 _registered_method=True)
-        self.SpawnGlobalEvent = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/SpawnGlobalEvent',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventRequest.SerializeToString,
-                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventResponse.FromString,
-                _registered_method=True)
-        self.DespawnGlobalEvent = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/DespawnGlobalEvent',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.DespawnGlobalEventRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
-        self.GetActiveEvents = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/GetActiveEvents',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsRequest.SerializeToString,
-                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsResponse.FromString,
-                _registered_method=True)
-        self.ModifyElement = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/ModifyElement',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.ModifyElementRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
-        self.CreateElement = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/CreateElement',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.CreateElementRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
-        self.DeleteElement = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/DeleteElement',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.DeleteElementRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
-                _registered_method=True)
-        self.ForwardActionGestorMundo = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/ForwardActionGestorMundo',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoRequest.SerializeToString,
-                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoResponse.FromString,
-                _registered_method=True)
 
 
 class GestorMundoServiceServicer(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
+    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
+    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
+    cadencia). Todo lo que era estado/identidad/eventos globales vive
+    ahora en LogicaMundoService.
+
     Clientes:
-    - main.py       → Heartbeat, Shutdown, GetWorldMap,
-    GetGlobalState, GetSnapshotInfo,
-    Pause, Resume, SetTickRate,
-    TriggerDeepSave, eventos globales,
-    modificación en caliente
-    - GestorBots    → ForwardActionGestorMundo
+    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
+    TriggerDeepSave, GetGlobalState,
+    GetSnapshotInfo (reenviadas desde
+    Comunicaciones_Local vía el puente
+    Ejecutar)
     ============================================================
 
     """
 
     def Heartbeat(self, request, context):
-        """----- Infraestructura (main.py) -----
+        """----- Infraestructura -----
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -157,15 +125,9 @@ class GestorMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def GetWorldMap(self, request, context):
+    def GetGlobalState(self, request, context):
         """----- Consulta del mundo -----
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetGlobalState(self, request, context):
-        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -201,51 +163,6 @@ class GestorMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SpawnGlobalEvent(self, request, context):
-        """----- Eventos globales -----
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def DespawnGlobalEvent(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetActiveEvents(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ModifyElement(self, request, context):
-        """----- Modificación en caliente (solo dev, requiere pausa) -----
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def CreateElement(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def DeleteElement(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ForwardActionGestorMundo(self, request, context):
-        """----- Acciones de bots (enviadas por GestorBots) -----
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_GestorMundoServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -258,11 +175,6 @@ def add_GestorMundoServiceServicer_to_server(servicer, server):
                     servicer.Shutdown,
                     request_deserializer=common__pb2.ShutdownRequest.FromString,
                     response_serializer=common__pb2.ShutdownResponse.SerializeToString,
-            ),
-            'GetWorldMap': grpc.unary_stream_rpc_method_handler(
-                    servicer.GetWorldMap,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetWorldMapRequest.FromString,
-                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.GetWorldMapResponse.SerializeToString,
             ),
             'GetGlobalState': grpc.unary_unary_rpc_method_handler(
                     servicer.GetGlobalState,
@@ -294,41 +206,6 @@ def add_GestorMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveRequest.FromString,
                     response_serializer=Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveResponse.SerializeToString,
             ),
-            'SpawnGlobalEvent': grpc.unary_unary_rpc_method_handler(
-                    servicer.SpawnGlobalEvent,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventRequest.FromString,
-                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventResponse.SerializeToString,
-            ),
-            'DespawnGlobalEvent': grpc.unary_unary_rpc_method_handler(
-                    servicer.DespawnGlobalEvent,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.DespawnGlobalEventRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
-            ),
-            'GetActiveEvents': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetActiveEvents,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsRequest.FromString,
-                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsResponse.SerializeToString,
-            ),
-            'ModifyElement': grpc.unary_unary_rpc_method_handler(
-                    servicer.ModifyElement,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.ModifyElementRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
-            ),
-            'CreateElement': grpc.unary_unary_rpc_method_handler(
-                    servicer.CreateElement,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.CreateElementRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
-            ),
-            'DeleteElement': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteElement,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.DeleteElementRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
-            ),
-            'ForwardActionGestorMundo': grpc.unary_unary_rpc_method_handler(
-                    servicer.ForwardActionGestorMundo,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoRequest.FromString,
-                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoResponse.SerializeToString,
-            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'gestor_mundo.GestorMundoService', rpc_method_handlers)
@@ -341,13 +218,17 @@ class GestorMundoService(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
+    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
+    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
+    cadencia). Todo lo que era estado/identidad/eventos globales vive
+    ahora en LogicaMundoService.
+
     Clientes:
-    - main.py       → Heartbeat, Shutdown, GetWorldMap,
-    GetGlobalState, GetSnapshotInfo,
-    Pause, Resume, SetTickRate,
-    TriggerDeepSave, eventos globales,
-    modificación en caliente
-    - GestorBots    → ForwardActionGestorMundo
+    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
+    TriggerDeepSave, GetGlobalState,
+    GetSnapshotInfo (reenviadas desde
+    Comunicaciones_Local vía el puente
+    Ejecutar)
     ============================================================
 
     """
@@ -396,33 +277,6 @@ class GestorMundoService(object):
             '/gestor_mundo.GestorMundoService/Shutdown',
             common__pb2.ShutdownRequest.SerializeToString,
             common__pb2.ShutdownResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetWorldMap(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/GetWorldMap',
-            Sectores_dot_gestor__mundo__service__pb2.GetWorldMapRequest.SerializeToString,
-            Sectores_dot_gestor__mundo__service__pb2.GetWorldMapResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -585,195 +439,6 @@ class GestorMundoService(object):
             '/gestor_mundo.GestorMundoService/TriggerDeepSave',
             Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveRequest.SerializeToString,
             Sectores_dot_gestor__mundo__service__pb2.TriggerDeepSaveResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def SpawnGlobalEvent(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/SpawnGlobalEvent',
-            Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventRequest.SerializeToString,
-            Sectores_dot_gestor__mundo__service__pb2.SpawnGlobalEventResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def DespawnGlobalEvent(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/DespawnGlobalEvent',
-            Sectores_dot_gestor__mundo__service__pb2.DespawnGlobalEventRequest.SerializeToString,
-            common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetActiveEvents(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/GetActiveEvents',
-            Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsRequest.SerializeToString,
-            Sectores_dot_gestor__mundo__service__pb2.GetActiveEventsResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ModifyElement(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/ModifyElement',
-            Sectores_dot_gestor__mundo__service__pb2.ModifyElementRequest.SerializeToString,
-            common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def CreateElement(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/CreateElement',
-            Sectores_dot_gestor__mundo__service__pb2.CreateElementRequest.SerializeToString,
-            common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def DeleteElement(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/DeleteElement',
-            Sectores_dot_gestor__mundo__service__pb2.DeleteElementRequest.SerializeToString,
-            common__pb2.Ack.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ForwardActionGestorMundo(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/ForwardActionGestorMundo',
-            Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoRequest.SerializeToString,
-            Sectores_dot_gestor__mundo__service__pb2.ForwardActionGestorMundoResponse.FromString,
             options,
             channel_credentials,
             insecure,

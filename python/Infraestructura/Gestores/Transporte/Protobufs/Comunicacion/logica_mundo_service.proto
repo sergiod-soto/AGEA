@@ -34,19 +34,15 @@ service LogicaMundoService {
   rpc AsignarId (AsignarIdRequest) returns (AsignarIdResponse);
 
   // ----- Elementos — alta / edición / baja -----
-  // Antes vivían en GestorMundoService (CreateElement/ModifyElement/DeleteElement).
-  // Se mudan aquí porque son "qué existe", no "cuándo se computa".
   rpc CrearElemento     (CrearElementoRequest)     returns (common.Ack);
   rpc ModificarElemento (ModificarElementoRequest) returns (common.Ack);
   rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
 
   // ----- Acciones de bots -----
-  // Sustituye a GestorMundo.handle_action(). Gestor_Bots llama aquí
-  // directamente (ya no pasa por Gestor_Mundo).
   rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
+  rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
 
   // ----- Eventos globales -----
-  // Antes en GestorMundoService; se mudan por el mismo motivo que los elementos.
   rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
   rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
@@ -118,7 +114,8 @@ message ModificarElementoRequest {
 }
 
 message EliminarElementoRequest {
-  common.Position pos = 1;
+  common.Position pos        = 1;
+  uint64          element_id = 2;
 }
 
 // ============================================================
@@ -129,6 +126,10 @@ message ResolverAccionRequest {
   string bot_id      = 1;
   string action_type = 2;
   bytes  payload     = 3;
+}
+
+message EliminarAvatarBotRequest {
+  string bot_id = 1;
 }
 
 // ============================================================

@@ -43,6 +43,7 @@ GROUPS = [
         "Comunicacion",
         "Comunicacion",
         [
+            "comunicacion_remota_service.proto",
             "logica_mundo_service.proto",
         ],
     ),

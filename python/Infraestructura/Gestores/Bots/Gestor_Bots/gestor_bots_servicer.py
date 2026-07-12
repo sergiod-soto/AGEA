@@ -28,8 +28,13 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
     async def KillBot(self, request, context):
         return await self._dispatch["KillBot"].handle(self._gestor, request, context)
 
-    async def NotifyBotDeath(self, request, context):
-        return await self._dispatch["NotifyBotDeath"].handle(
+    async def MatarScriptBot(self, request, context):
+        return await self._dispatch["MatarScriptBot"].handle(
+            self._gestor, request, context
+        )
+
+    async def NotificarAvatarSinPiloto(self, request, context):
+        return await self._dispatch["NotificarAvatarSinPiloto"].handle(
             self._gestor, request, context
         )
 

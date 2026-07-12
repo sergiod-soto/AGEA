@@ -1,3 +1,4 @@
+// Infraestructura/Transporte/Protobufs/Bots/gestor_bots_service.proto
 syntax = "proto3";
 package gestor;
 import "common.proto";
@@ -6,12 +7,13 @@ import "common.proto";
 //  GestorBotsService — expuesto por el Gestor de Bots.
 //
 //  Clientes:
-//    - main.py        → Heartbeat, Shutdown
-//    - El Mundo       → SpawnBot, KillBot, NotifyBotDeath,
-//                       BroadcastBudgets, SaveSnapshot, LoadState,
-//                       FreezeAll, ResumeAll, ResetBudgets
-//    - Hypervisores   → RegisterHypervisor, UpdateHypervisorLoad,
-//                       ForwardActionHV, ListHypervisors
+//    - main.py          → Heartbeat, Shutdown
+//    - Logica_Mundo     → SpawnBot, KillBot, MatarScriptBot,
+//                         BroadcastBudgets, SaveSnapshot, LoadState,
+//                         FreezeAll, ResumeAll, ResetBudgets
+//    - Hypervisores     → RegisterHypervisor, UpdateHypervisorLoad,
+//                         ForwardAction, ListHypervisors,
+//                         NotificarAvatarSinPiloto
 // ============================================================
 
 service GestorBotsService {
@@ -19,11 +21,20 @@ service GestorBotsService {
   rpc Heartbeat           (common.HeartbeatRequest)   returns (GestorBotsHeartbeatResponse);
   rpc Shutdown            (common.ShutdownRequest)    returns (common.ShutdownResponse);
 
-  // ----- Ciclo de vida de bots (llamado por el Mundo) -----
+  // ----- Ciclo de vida de bots (llamado por Logica_Mundo) -----
   rpc SpawnBot            (SpawnBotRequest)            returns (common.BotInfo);
   rpc KillBot             (BotIdRequest)               returns (common.Ack);
-  rpc NotifyBotDeath      (BotDeathNotification)       returns (common.Ack);
   rpc BroadcastBudgets    (BroadcastBudgetsRequest)    returns (common.Ack);
+
+  // ----- Muerte de bots — dos orígenes, dos RPCs independientes -----
+  // Flujo A: Logica_Mundo decidió la muerte (combate/inanición) y ya
+  // eliminó el avatar del gold. Solo pide matar el proceso/script.
+  rpc MatarScriptBot           (BotIdRequest) returns (common.Ack);
+  // Flujo B: el propio Hypervisor detecta que el script de un bot se
+  // ha roto (no compila, excepción no controlada, etc.) y notifica que
+  // el avatar se ha quedado sin piloto — Gestor_Bots solo hace de
+  // puente hacia Logica_Mundo para que elimine ese avatar.
+  rpc NotificarAvatarSinPiloto (BotIdRequest) returns (common.Ack);
 
   // ----- Persistencia -----
   rpc SaveSnapshot        (SaveSnapshotRequest)        returns (SaveSnapshotResponse);
@@ -41,19 +52,17 @@ service GestorBotsService {
   rpc UpdateHypervisorLoad(UpdateLoadRequest)           returns (common.Ack);
   rpc ListHypervisors     (ListHypervisorsRequest)      returns (common.HypervisorList);
 
-  // ----- Reenvío de acciones al Mundo -----
-  rpc ForwardActionHV     (ForwardActionHVRequest)      returns (common.ActionResult);
+  // ----- Reenvío de acciones -----
+  rpc ForwardAction       (ForwardActionRequest)        returns (common.ActionResult);
 }
 
 // ============================================================
 //  Heartbeat
 // ============================================================
 
-// El gestor incluye el estado de todos sus HVs registrados.
-// main.py detecta así caídas de HVs sin necesidad de contactarlos.
 message GestorBotsHeartbeatResponse {
-  bool   ok    = 1;
-  string error = 2;
+  bool                     ok          = 1;
+  string                   error       = 2;
   repeated common.HVStatus hv_statuses = 3;
 }
 
@@ -67,12 +76,6 @@ message SpawnBotRequest {
 
 message BotIdRequest {
   string bot_id = 1;
-}
-
-message BotDeathNotification {
-  string bot_id = 1;
-  string cause  = 2;   // "combat" | "starvation"
-  int64  tick   = 3;
 }
 
 message BroadcastBudgetsRequest {
@@ -94,8 +97,6 @@ message SaveSnapshotResponse {
   string snapshot_id = 3;
 }
 
-// snapshot_id identifica el estado a restaurar en S3.
-// Sustituye al antiguo campo path (ruta local) que no es válido en AWS.
 message LoadStateRequest {
   string snapshot_id = 1;
 }
@@ -105,6 +106,7 @@ message LoadStateRequest {
 // ============================================================
 
 message FreezeAllRequest {}
+
 message ResumeAllRequest {}
 
 // ============================================================
@@ -142,7 +144,7 @@ message ListHypervisorsRequest {}
 //  Mensajes — reenvío de acciones
 // ============================================================
 
-message ForwardActionHVRequest {
+message ForwardActionRequest {
   string bot_id        = 1;
   string hypervisor_id = 2;
   string action_type   = 3;

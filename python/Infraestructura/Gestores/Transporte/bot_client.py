@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Transporte/bot_client.py
 """
 bot_client.py — Cliente gRPC del WorldProxyService.
 
@@ -41,11 +42,14 @@ from typing import Optional
 
 import grpc
 
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Infraestructura.Gestores.tipos_comunes import ActionResult, BotStatusPropio
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     world_proxy_service_pb2_grpc,
 )
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import common_pb2, world_proxy_service_pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    common_pb2,
+    world_proxy_service_pb2,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,18 +74,6 @@ class ObserveResult:
 
     def __bool__(self):
         return self.ok
-
-
-@dataclass
-class BotStatus:
-    bot_id: str
-    x: int
-    y: int
-    rotation: float
-    health: float
-    points_left: int
-    world_tick: int
-    alive: bool
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +301,7 @@ class BotClient:
     # Estado propio (0 puntos, consulta local al Hypervisor)
     # ------------------------------------------------------------------
 
-    def get_status(self, timeout: float | None = None) -> Optional[BotStatus]:
+    def get_status(self, timeout: float | None = None) -> Optional[BotStatusPropio]:
         """
         Consulta el estado del bot (puntos restantes, vivo/muerto).
         Coste: 0 puntos. No sube al Gestor ni al Mundo.
@@ -323,7 +315,7 @@ class BotClient:
                 metadata=self._metadata,
                 timeout=self._t(timeout),
             )
-            return BotStatus(
+            return BotStatusPropio(
                 bot_id=pb.bot_id,
                 x=pb.position.x,
                 y=pb.position.y,

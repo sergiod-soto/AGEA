@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Transporte/gestor_bots_client.py
 """
 gestor_bots_client.py — Cliente gRPC del GestorBotsService.
 
@@ -8,6 +9,14 @@ Cambio respecto a la versión anterior:
 
   El Hypervisor llama a este método en register_with_gestor() y pasa
   la lista a set_delegated_actions() para construir su tabla de interceptación.
+
+  Se añade notificar_avatar_sin_piloto(): usado cuando el propio HV
+  detecta que el script de un bot se ha roto (no compila, excepción no
+  controlada, etc.) — notifica a Gestor_Bots para que Logica_Mundo
+  elimine el avatar correspondiente (Flujo B, ver logica_mundo.py y
+  gestor_bots.py.eliminar_avatar_bot). El HV NO llama a kill_bot()
+  sobre sí mismo para este caso: gestiona su propio proceso localmente,
+  esta llamada es solo para limpiar el estado en el Mundo.
 """
 
 from __future__ import annotations
@@ -18,8 +27,12 @@ from typing import Optional
 
 import grpc
 
-from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import BotInfo
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import ActionResult
+from Infraestructura.Gestores.tipos_comunes import (
+    ActionResult,
+    BotInfo,
+    HypervisorInfo,
+    HypervisorList,
+)
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2,
@@ -30,31 +43,8 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Tipos de retorno
+# Tipos de retorno propios de este cliente
 # ---------------------------------------------------------------------------
-
-
-class HypervisorInfo:
-    __slots__ = (
-        "hypervisor_id",
-        "address",
-        "port",
-        "proxy_port",
-        "capacity",
-        "current_load",
-        "online",
-    )
-
-    def __init__(
-        self, hypervisor_id, address, port, proxy_port, capacity, current_load, online
-    ):
-        self.hypervisor_id = hypervisor_id
-        self.address = address
-        self.port = port
-        self.proxy_port = proxy_port
-        self.capacity = capacity
-        self.current_load = current_load
-        self.online = online
 
 
 @dataclass
@@ -166,6 +156,25 @@ class GestorBotsClient:
             self._handle_grpc_error("KillBot", exc)
             return False
 
+    def notificar_avatar_sin_piloto(
+        self, bot_id: str, timeout: float | None = None
+    ) -> bool:
+        """
+        Flujo B: llamado por el Hypervisor cuando detecta que el script
+        de un bot se ha roto (no compila, excepción no controlada, o
+        cualquier fallo que detenga su ejecución). El HV no mata su
+        propio proceso a través de este método — eso lo gestiona
+        localmente. Aquí solo se notifica para que Logica_Mundo elimine
+        el avatar correspondiente en el gold.
+        """
+        request = gestor_bots_service_pb2.BotIdRequest(bot_id=bot_id)
+        try:
+            pb = self._stub.NotificarAvatarSinPiloto(request, timeout=self._t(timeout))
+            return pb.ok
+        except grpc.RpcError as exc:
+            self._handle_grpc_error("NotificarAvatarSinPiloto", exc)
+            return False
+
     def update_fitness(
         self,
         bot_id: str,
@@ -271,25 +280,27 @@ class GestorBotsClient:
             self._handle_grpc_error("UpdateHypervisorLoad", exc)
             return False
 
-    def list_hypervisors(self, timeout: float | None = None) -> list[HypervisorInfo]:
+    def list_hypervisors(self, timeout: float | None = None) -> HypervisorList:
         request = gestor_bots_service_pb2.ListHypervisorsRequest()
         try:
             pb = self._stub.ListHypervisors(request, timeout=self._t(timeout))
-            return [
-                HypervisorInfo(
-                    hv.hypervisor_id,
-                    hv.address,
-                    hv.port,
-                    hv.proxy_port,
-                    hv.capacity,
-                    hv.current_load,
-                    hv.online,
-                )
-                for hv in pb.hypervisors
-            ]
+            return HypervisorList(
+                hypervisors=[
+                    HypervisorInfo(
+                        hypervisor_id=hv.hypervisor_id,
+                        address=hv.address,
+                        port=hv.port,
+                        proxy_port=hv.proxy_port,
+                        capacity=hv.capacity,
+                        current_load=hv.current_load,
+                        online=hv.online,
+                    )
+                    for hv in pb.hypervisors
+                ]
+            )
         except grpc.RpcError as exc:
             self._handle_grpc_error("ListHypervisors", exc)
-            return []
+            return HypervisorList(hypervisors=[])
 
     # ------------------------------------------------------------------
     # Reenvío de acciones al Mundo

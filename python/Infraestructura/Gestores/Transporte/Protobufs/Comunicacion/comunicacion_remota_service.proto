@@ -1,0 +1,43 @@
+// Infraestructura/Transporte/Protobufs/Comunicacion/comunicacion_remota_service.proto
+syntax = "proto3";
+package comunicacion_remota;
+import "common.proto";
+
+// ============================================================
+//  ComunicacionRemotaService — único punto de entrada desde
+//  Comunicaciones_Local hacia AWS.
+//
+//  Un único RPC genérico (Ejecutar) parametrizado por componente
+//  destino + nombre de operación; el payload es el mensaje Request
+//  específico de esa operación (ya definido en el .proto del servicio
+//  real: LogicaMundoService / GestorMundoService / GestorBotsService),
+//  serializado a bytes. La respuesta contiene el mensaje Response
+//  específico, también serializado.
+//
+//  ok/error de EjecutarResponse son del PUENTE (¿se reconoció la
+//  operación y se ejecutó sin excepción?) — el resultado real de la
+//  operación viaja codificado dentro de `payload`, con su propio
+//  ok/error interno (el de cada Response concreto).
+// ============================================================
+
+service ComunicacionRemotaService {
+  rpc Ejecutar (EjecutarRequest) returns (EjecutarResponse);
+}
+
+enum ComponenteDestino {
+  LOGICA_MUNDO = 0;
+  GESTOR_MUNDO = 1;
+  GESTOR_BOTS  = 2;
+}
+
+message EjecutarRequest {
+  ComponenteDestino componente = 1;
+  string            operacion  = 2;
+  bytes             payload    = 3;
+}
+
+message EjecutarResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;
+}

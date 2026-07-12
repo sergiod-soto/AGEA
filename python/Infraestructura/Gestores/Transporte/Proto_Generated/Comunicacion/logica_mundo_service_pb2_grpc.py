@@ -88,6 +88,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ResolverAccionRequest.SerializeToString,
                 response_deserializer=common__pb2.ActionResult.FromString,
                 _registered_method=True)
+        self.EliminarAvatarBot = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/EliminarAvatarBot',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.EliminarAvatarBotRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
         self.SpawnGlobalEvent = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/SpawnGlobalEvent',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.SpawnGlobalEventRequest.SerializeToString,
@@ -127,6 +132,11 @@ class LogicaMundoServiceStub(object):
                 '/logica_mundo.LogicaMundoService/LoadState',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.LoadStateRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.AvanzarElementosGlobales = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/AvanzarElementosGlobales',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesResponse.FromString,
                 _registered_method=True)
 
 
@@ -177,8 +187,6 @@ class LogicaMundoServiceServicer(object):
 
     def CrearElemento(self, request, context):
         """----- Elementos — alta / edición / baja -----
-        Antes vivían en GestorMundoService (CreateElement/ModifyElement/DeleteElement).
-        Se mudan aquí porque son "qué existe", no "cuándo se computa".
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -198,16 +206,19 @@ class LogicaMundoServiceServicer(object):
 
     def ResolverAccion(self, request, context):
         """----- Acciones de bots -----
-        Sustituye a GestorMundo.handle_action(). Gestor_Bots llama aquí
-        directamente (ya no pasa por Gestor_Mundo).
         """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def EliminarAvatarBot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SpawnGlobalEvent(self, request, context):
         """----- Eventos globales -----
-        Antes en GestorMundoService; se mudan por el mismo motivo que los elementos.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -274,6 +285,12 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AvanzarElementosGlobales(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_LogicaMundoServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -311,6 +328,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ResolverAccion,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ResolverAccionRequest.FromString,
                     response_serializer=common__pb2.ActionResult.SerializeToString,
+            ),
+            'EliminarAvatarBot': grpc.unary_unary_rpc_method_handler(
+                    servicer.EliminarAvatarBot,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EliminarAvatarBotRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'SpawnGlobalEvent': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnGlobalEvent,
@@ -351,6 +373,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.LoadState,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.LoadStateRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'AvanzarElementosGlobales': grpc.unary_unary_rpc_method_handler(
+                    servicer.AvanzarElementosGlobales,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -571,6 +598,33 @@ class LogicaMundoService(object):
             _registered_method=True)
 
     @staticmethod
+    def EliminarAvatarBot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/EliminarAvatarBot',
+            Comunicacion_dot_logica__mundo__service__pb2.EliminarAvatarBotRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def SpawnGlobalEvent(request,
             target,
             options=(),
@@ -776,6 +830,33 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/LoadState',
             Comunicacion_dot_logica__mundo__service__pb2.LoadStateRequest.SerializeToString,
             common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AvanzarElementosGlobales(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/AvanzarElementosGlobales',
+            Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.AvanzarElementosGlobalesResponse.FromString,
             options,
             channel_credentials,
             insecure,

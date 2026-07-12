@@ -43,7 +43,10 @@ async def serve() -> None:
     port = int(os.getenv("GESTOR_BOTS_PORT", 50051))
     workers = int(os.getenv("GESTOR_BOTS_WORKERS", 10))
     bots_por_hv = int(os.getenv("BOTS_POR_HYPERVISOR", 100))
-    mundo_address = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
+    # Antes: GESTOR_MUNDO_ADDRESS / GestorMundoClient. Las acciones de
+    # bots y el resto de operaciones sobre estado ahora se resuelven
+    # contra Logica_Mundo directamente (ver gestor_bots.py).
+    logica_mundo_address = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
     log_level_name = os.getenv("LOG_LEVEL", "INFO")
     log_level = getattr(logging, log_level_name)
 
@@ -73,14 +76,14 @@ async def serve() -> None:
         logger.warning("HypervisorClient no disponible.")
         hypervisor_client_factory = None
 
-    from Infraestructura.Gestores.Transporte.gestor_mundo_client import (
-        GestorMundoClient,
+    from Infraestructura.Gestores.Transporte.logica_mundo_client import (
+        LogicaMundoClient,
     )
 
-    mundo_client = GestorMundoClient(mundo_address)
+    logica_client = LogicaMundoClient(logica_mundo_address)
 
     gestor = Gestor_Bots(
-        mundo_client=mundo_client,
+        logica_client=logica_client,
         bots_por_hypervisor=bots_por_hv,
     )
     servicer = Gestor_Bots_Servicer(
@@ -121,7 +124,7 @@ async def serve() -> None:
     registrar_signals(loop, _shutdown)
 
     await stop_event.wait()
-    await mundo_client.close()
+    await logica_client.close()
     await server.stop(grace=5)
     logger.info("Gestor_Bots apagado.")
 

@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Transporte/hypervisor_client.py
 """
 hypervisor_client.py — Cliente async gRPC del HypervisorService.
 Usado exclusivamente por el Gestor para dar órdenes a un Hypervisor concreto.
@@ -11,11 +12,11 @@ from typing import Optional
 import grpc
 import grpc.aio
 
-from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import (
+from Infraestructura.Gestores.tipos_comunes import (
     BotInfo,
     BotList,
     BotStats,
-    BotStatus,
+    BotStatusHV,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
@@ -128,11 +129,11 @@ class HypervisorClient:
 
     async def get_bot_status(
         self, bot_id: str, timeout: float | None = None
-    ) -> Optional[BotStatus]:
+    ) -> Optional[BotStatusHV]:
         request = hypervisor_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
             pb = await self._stub.GetBotStatus(request, timeout=self._t(timeout))
-            return BotStatus(pb.bot_id, pb.alive, pb.budget)
+            return BotStatusHV(pb.bot_id, pb.alive, pb.budget)
         except grpc.aio.AioRpcError as exc:
             if exc.code() == grpc.StatusCode.NOT_FOUND:
                 return None
