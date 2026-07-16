@@ -1,3 +1,4 @@
+# Infraestructura/Gestores/Bots/Gestor_Bots/gestor_bots_servicer.py
 """
 gestor_bots_servicer.py
 """
@@ -21,6 +22,9 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         self._gestor = gestor
         self._hv_client_factory = hypervisor_client_factory
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
+
+    async def Heartbeat(self, request, context):
+        return await self._dispatch["Heartbeat"].handle(self._gestor, request, context)
 
     async def SpawnBot(self, request, context):
         return await self._dispatch["SpawnBot"].handle(self._gestor, request, context)

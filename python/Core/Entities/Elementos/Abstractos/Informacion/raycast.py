@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Stats.Informacion.informacion import Informacion
+from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 
 
 class Raycast(Informacion):

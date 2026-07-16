@@ -2,6 +2,12 @@
 """
 hypervisor.py — Lógica pura del Hypervisor.
 
+CAMBIO: se retira gestor_mundo_client / forward_to_mundo(). Nada los
+usaba — world_proxy_servicer._spend_and_forward() solo llama a
+forward_to_gestor() en la rama no-delegada; forward_to_mundo() (y su
+cliente síncrono, gestor_mundo_client_sync.py) quedaban muertos desde
+que se retiró ForwardActionGestorMundo del proto de GestorMundoService.
+
 Vigilancia de procesos (Flujo B de muerte de bots):
   Cada bot corre como un subprocess.Popen independiente. Al lanzarlo,
   se arranca un hilo daemon dedicado (_watch_bot_process) bloqueado en
@@ -92,11 +98,6 @@ class LanzadorProcesosBot:
         codigo_path.parent.mkdir(parents=True, exist_ok=True)
         codigo_path.write_bytes(gzip.decompress(codigo_gz))
 
-        # sys.executable, no el string literal "python": garantiza usar
-        # el mismo intérprete que corre este proceso. "python" a secas
-        # puede no existir en el PATH (p. ej. sistemas donde el binario
-        # se llama "python3"), o apuntar a un intérprete distinto al del
-        # venv activo.
         return subprocess.Popen(
             [sys.executable, str(codigo_path)],
             env={**os.environ, **env_extra},
@@ -117,7 +118,6 @@ class Hypervisor:
     gestor_client      : GestorBotsClient (síncrono — ver comentario en
                          gestor_bots_client.py sobre por qué el HV usa
                          la versión síncrona, no la async)
-    gestor_mundo_client: GestorMundoClientSync
     capacity           : int
     my_address         : str
     my_port            : int
@@ -128,7 +128,6 @@ class Hypervisor:
         self,
         hypervisor_id: str,
         gestor_client,
-        gestor_mundo_client,
         capacity: int = 32,
         my_address: str = "localhost",
         my_port: int = 50052,
@@ -137,7 +136,6 @@ class Hypervisor:
     ):
         self.hypervisor_id = hypervisor_id
         self.gestor_client = gestor_client
-        self.gestor_mundo_client = gestor_mundo_client
         self.capacity = capacity
         self._my_address = my_address
         self._my_port = my_port
@@ -147,9 +145,6 @@ class Hypervisor:
         self._bots: dict[str, BotRecord] = {}
         self._procesos: dict[str, subprocess.Popen] = {}
 
-        # Real por defecto (escribe a disco, lanza subprocess.Popen real).
-        # Los tests inyectan una versión falsa para no tocar el sistema
-        # de ficheros ni lanzar procesos — ver LanzadorProcesosBot arriba.
         self._lanzador = lanzador_procesos or LanzadorProcesosBot()
 
         self._frozen = False
@@ -170,10 +165,6 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     def set_delegated_actions(self, action_names: list[str]) -> None:
-        """
-        Recibe los nombres de acciones delegadas desde el Gestor_Bots
-        y construye el mapa nombre → callable desde ACCIONES.
-        """
         if not action_names:
             logger.info("HV %s: sin acciones delegadas.", self.hypervisor_id)
             self._delegated = {}
@@ -214,12 +205,6 @@ class Hypervisor:
     def execute_delegated(
         self, bot_id: str, action_name: str, payload: bytes
     ) -> ActionResult:
-        """
-        Ejecuta una acción interceptada por el HV.
-        El AccionContext no tiene gold_cells ni elements — la función
-        debe funcionar con solo bot_id y payload.
-        Si la función necesita datos del Mundo, debe usar gestor_mundo_client.
-        """
         fn = self._delegated.get(action_name)
         if fn is None:
             return ActionResult(
@@ -241,8 +226,6 @@ class Hypervisor:
         ctx = AccionContext(
             bot_id=bot_id,
             payload=payload,
-            # gold_cells, elements, bot_positions = None → la función
-            # sabe que está en contexto HV y usa gestor_mundo_client si necesita.
         )
 
         try:
@@ -318,9 +301,6 @@ class Hypervisor:
         except Exception as exc:
             with self._lock:
                 self._bots.pop(bot_id, None)
-            # limpiar() usa unlink(missing_ok=True): seguro llamarlo aunque
-            # el fallo haya sido antes de escribir el fichero (descompresión)
-            # o después (lanzamiento del proceso) — no hace falta distinguir.
             self._lanzador.limpiar(self.hypervisor_id, bot_id)
             logger.error("Error desplegando bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error desplegando bot: {exc}")
@@ -329,8 +309,6 @@ class Hypervisor:
             self._bots[bot_id].alive = True
             self._procesos[bot_id] = proceso
 
-        # Arranca el vigilante de este proceso — ver docstring del
-        # módulo y _watch_bot_process para el porqué de este diseño.
         threading.Thread(
             target=self._watch_bot_process,
             args=(bot_id, proceso),
@@ -342,22 +320,6 @@ class Hypervisor:
         return SpawnResult(ok=True)
 
     def _watch_bot_process(self, bot_id: str, proceso: subprocess.Popen) -> None:
-        """
-        Corre en un hilo daemon dedicado, uno por bot, bloqueado en
-        proceso.wait() — sin coste de CPU mientras el proceso sigue vivo.
-
-        Cuando el proceso termina (por cualquier motivo: fin normal,
-        excepción no controlada, señal, etc.), este hilo se despierta y
-        decide si fue:
-          - Terminación deliberada: kill_bot() ya quitó bot_id de
-            self._bots ANTES de llamar a proceso.terminate() — cuando
-            este hilo despierta, ya no encuentra el bot registrado, así
-            que no hace nada más (kill_bot ya limpió todo).
-          - Crash real: bot_id seguía en self._bots — el proceso murió
-            por su cuenta. Se limpia el registro local y se notifica al
-            Gestor (Flujo B: avatar sin piloto) para que Logica_Mundo
-            elimine el elemento correspondiente en el gold.
-        """
         proceso.wait()
 
         with self._lock:
@@ -367,7 +329,6 @@ class Hypervisor:
                 self._procesos.pop(bot_id, None)
 
         if not crash:
-            # Terminación esperada — kill_bot() ya se encargó de todo.
             return
 
         logger.warning(
@@ -426,16 +387,6 @@ class Hypervisor:
         return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"
 
     def kill_bot(self, bot_id: str) -> None:
-        """
-        Termina deliberadamente un bot (orden administrativa, o Flujo A
-        vía Gestor_Bots.kill_bot tras matar_bot en Logica_Mundo).
-
-        Quita el bot de self._bots ANTES de llamar a terminate() — este
-        orden importa: es lo que permite a _watch_bot_process() (el
-        hilo vigilante de este mismo proceso) distinguir esta
-        terminación deliberada de un crash real, sin necesitar ningún
-        flag adicional.
-        """
         with self._lock:
             if bot_id not in self._bots:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)
@@ -503,18 +454,8 @@ class Hypervisor:
         )
 
     # ------------------------------------------------------------------
-    # Proxy al Mundo
+    # Proxy al Gestor
     # ------------------------------------------------------------------
-
-    def forward_to_mundo(
-        self, bot_id: str, action_type: str, payload: bytes
-    ) -> ActionResult:
-        """Redirige una acción no delegada al gestor_mundo."""
-        return self.gestor_mundo_client.forward_action(
-            bot_id=bot_id,
-            action_type=action_type,
-            payload=payload,
-        )
 
     def forward_to_gestor(
         self, bot_id: str, action_type: str, payload: bytes
@@ -538,8 +479,8 @@ class Hypervisor:
         mem = psutil.virtual_memory()
         base = {
             "mem_percent": mem.percent,
-            "mem_used_mb": round(mem.used / 1024 / 1024),
-            "mem_total_mb": round(mem.total / 1024 / 1024),
+            "mem_used_mb": round(mem.used / 1024 / 1024, 2),
+            "mem_total_mb": round(mem.total / 1024 / 1024, 2),
             "bot_count": len(self._bots),
         }
 
@@ -576,7 +517,6 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     def freeze(self) -> None:
-        """Marca el HV como congelado — los bots no pueden gastar puntos."""
         with self._lock:
             self._frozen = True
         logger.info("Hypervisor %s congelado.", self.hypervisor_id)
@@ -587,11 +527,6 @@ class Hypervisor:
         logger.info("Hypervisor %s reanudado.", self.hypervisor_id)
 
     def save_snapshot(self, snapshot_id: str) -> None:
-        """
-        Guarda el estado del HV a disco.
-        El HV es responsable de su propio estado — al restaurar
-        lee este fichero sin necesitar al gestor.
-        """
         import json
         from pathlib import Path
 

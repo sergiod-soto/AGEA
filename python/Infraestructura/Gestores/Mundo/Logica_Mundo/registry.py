@@ -1,7 +1,5 @@
 # Infraestructura/Gestores/Mundo/Logica_Mundo/registry.py
-"""
-Gestores/Mundo/Logica_Mundo/registry.py
-"""
+
 
 from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
     asignar_id,
@@ -13,6 +11,8 @@ from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
     eliminar_avatar_bot,
     eliminar_elemento,
     get_active_events,
+    get_elementos_globales,
+    heartbeat,
     load_state,
     modificar_elemento,
     obtener_celdas_en_region,
@@ -37,4 +37,6 @@ FUNCIONES = [
     avanzar_elementos_globales,
     save_snapshot,
     load_state,
+    heartbeat,
+    get_elementos_globales,
 ]

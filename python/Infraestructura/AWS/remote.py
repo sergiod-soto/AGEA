@@ -1,10 +1,14 @@
+# Infraestructura/AWS/remote.py
 """
 Arranque y ciclo de vida de una sesión en AWS (modo remoto).
 
 Responsabilidades:
   - Determinar si la sesión es nueva o reanudación desde hibernación.
   - Actualizar el Security Group con la IP local actual.
-  - Lanzar instancias Spot y esperar que estén operativas.
+  - Lanzar instancias Spot POR FASES (siguiendo topologia.py), de forma
+    que cada fase pueda incluir las direcciones reales de las fases
+    anteriores — antes se lanzaba todo de golpe y ningún componente
+    recibía la dirección de otro.
   - Monitorizar los gestores (heartbeat) y coordinar el shutdown
     si cualquier componente cae o el usuario cierra la sesión.
 
@@ -21,8 +25,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from Config.settings import LOG_DIR, LOG_PULL_INTERVAL_SEGUNDOS
+from Infraestructura.Gestores.Bootstrap.topologia import (
+    HEALTHCHECK_INFO,
+    ComponenteSpec,
+    construir_topologia,
+    resolver_env_extra,
+)
 from Infraestructura.Gestores.Log.log_servicer import LogServicer
 from Infraestructura.Gestores.Log.log_poller import LogPoller
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2,
     log_pull_service_pb2_grpc,
@@ -48,76 +59,32 @@ logger = logging.getLogger("remoto")
 
 
 # ─────────────────────────────────────────────────────────────
-#  Mapping tipo de componente → módulos gRPC
-# ─────────────────────────────────────────────────────────────
-
-_STUB_INFO: dict[str, dict] = {
-    "gestor_bots": {
-        "stub_module": "Gestores.Transporte.Proto_Generated.Bots.gestor_bots_service_pb2_grpc",
-        "stub_class": "GestorBotsServiceStub",
-        "hc_req_module": "Gestores.Transporte.Proto_Generated.Bots.gestor_bots_service_pb2",
-        "hc_req_class": "ListHypervisorsRequest",
-        "hc_method": "ListHypervisors",
-    },
-    "gestor_mundo": {
-        "stub_module": "Gestores.Transporte.Proto_Generated.Sectores.gestor_mundo_service_pb2_grpc",
-        "stub_class": "GestorMundoServiceStub",
-        "hc_req_module": "Gestores.Transporte.Proto_Generated.Sectores.gestor_mundo_service_pb2",
-        "hc_req_class": "GetGlobalStateRequest",
-        "hc_method": "GetGlobalState",
-    },
-    "hypervisor": {
-        "stub_module": "Gestores.Transporte.Proto_Generated.Bots.hypervisor_service_pb2_grpc",
-        "stub_class": "HypervisorServiceStub",
-        "hc_req_module": "Gestores.Transporte.Proto_Generated.Bots.hypervisor_service_pb2",
-        "hc_req_class": "ListBotsRequest",
-        "hc_method": "ListBots",
-    },
-    "sector": {
-        "stub_module": "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2_grpc",
-        "stub_class": "SectorServiceStub",
-        "hc_req_module": "Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2",
-        "hc_req_class": "GetStateRequest",
-        "hc_method": "GetState",
-    },
-}
-
-
-def _tipo(comp_id: str) -> str:
-    """Infiere el tipo de componente a partir de su ID."""
-    if comp_id == "gestor_bots":
-        return "gestor_bots"
-    if comp_id == "gestor_mundo":
-        return "gestor_mundo"
-    if comp_id.startswith("hv_"):
-        return "hypervisor"
-    if comp_id.startswith("sector_"):
-        return "sector"
-    raise ValueError(f"No se puede inferir tipo de componente para: {comp_id!r}")
-
-
-# ─────────────────────────────────────────────────────────────
 #  Healthcheck remoto
 # ─────────────────────────────────────────────────────────────
 
 
-def _healthcheck_remoto(comp_id: str, ip: str, config: dict) -> bool:
+def _healthcheck_remoto(tipo: str, ip: str, config: dict) -> bool:
     """
-    Llama a un RPC real del componente hasta que responde o se agota el timeout.
-    El polling usa intervalos de 2s para dar tiempo al boot desde AMI.
+    Llama a un RPC real del componente hasta que responde o se agota el
+    timeout. El polling usa intervalos de 2s para dar tiempo al boot
+    desde AMI.
+
+    Recibe `tipo` directamente (de topologia.HEALTHCHECK_INFO) en vez
+    de inferirlo del comp_id por convención de nombre — más robusto,
+    y ya no depende de que "hv_" o "sector_" sean siempre el prefijo.
     """
     puerto = config["red"]["puerto_grpc_componentes"]
     timeout = config["timeouts"]["arranque_segundos"]
     address = f"{ip}:{puerto}"
-    info = _STUB_INFO[_tipo(comp_id)]
+    info = HEALTHCHECK_INFO[tipo]
 
     StubClass = getattr(
         importlib.import_module(info["stub_module"]), info["stub_class"]
     )
     Request = getattr(
-        importlib.import_module(info["hc_req_module"]), info["hc_req_class"]
+        importlib.import_module(info["request_module"]), info["request_class"]
     )
-    method = info["hc_method"]
+    method = info["method"]
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -125,12 +92,12 @@ def _healthcheck_remoto(comp_id: str, ip: str, config: dict) -> bool:
             with grpc.insecure_channel(address) as canal:
                 stub = StubClass(canal)
                 getattr(stub, method)(Request(), timeout=2)
-            logger.info("  ✓ %s (%s) listo", comp_id, address)
+            logger.info("  ✓ %s (%s) listo", tipo, address)
             return True
         except Exception:
             time.sleep(2)
 
-    logger.error("  ✗ Timeout esperando %s (%s)", comp_id, address)
+    logger.error("  ✗ Timeout esperando %s (%s)", tipo, address)
     return False
 
 
@@ -141,12 +108,13 @@ def _healthcheck_remoto(comp_id: str, ip: str, config: dict) -> bool:
 
 def _crear_stubs(
     ip_por_comp: dict[str, str],
+    tipo_por_comp: dict[str, str],
     config: dict,
 ) -> tuple[dict, dict, list[grpc.Channel]]:
     """
     Crea un canal gRPC persistente por componente, y sobre cada canal dos
     stubs: el del servicio principal (varía por tipo de componente) y el
-    de LogPullService (idéntico en los cuatro tipos — mismo .proto, mismo
+    de LogPullService (idéntico en todos los tipos — mismo .proto, mismo
     servidor y puerto que el servicio principal).
     """
     puerto = config["red"]["puerto_grpc_componentes"]
@@ -158,7 +126,7 @@ def _crear_stubs(
         canal = grpc.insecure_channel(f"{ip}:{puerto}")
         canales.append(canal)
 
-        info = _STUB_INFO[_tipo(comp_id)]
+        info = HEALTHCHECK_INFO[tipo_por_comp[comp_id]]
         StubClass = getattr(
             importlib.import_module(info["stub_module"]), info["stub_class"]
         )
@@ -178,19 +146,68 @@ def _make_shutdown_fn(stub, timeout: int):
 
 
 # ─────────────────────────────────────────────────────────────
+#  Arranque por fases
+# ─────────────────────────────────────────────────────────────
+
+
+def _lanzar_fase(
+    grupo: list[ComponenteSpec],
+    direcciones_resueltas: dict[str, str],
+    config: dict,
+    session_id: str,
+) -> dict[str, str]:
+    """
+    Lanza un grupo completo de topologia.construir_topologia(), con el
+    env_extra de cada componente ya resuelto contra las direcciones de
+    fases anteriores. Devuelve {comp_id: instance_id} de este grupo.
+    """
+    especificaciones = [
+        {
+            "componente": spec.tipo,
+            "comp_id": spec.nombre,
+            "env_extra": resolver_env_extra(spec, direcciones_resueltas),
+        }
+        for spec in grupo
+    ]
+    return lanzar_instancias(config, session_id, especificaciones)
+
+
+def _esperar_y_registrar_direcciones(
+    id_por_comp_fase: dict[str, str],
+    config: dict,
+    direcciones_resueltas: dict[str, str],
+) -> None:
+    """
+    Espera IPs públicas de esta fase y las añade a direcciones_resueltas
+    (mutando el dict) con el formato "host:puerto" que topologia.py
+    espera para construir el env_extra de la fase siguiente.
+    """
+    puerto = config["red"]["puerto_grpc_componentes"]
+    ip_por_comp = esperar_ips_publicas(
+        config, id_por_comp_fase, timeout=config["timeouts"]["arranque_segundos"]
+    )
+    for comp_id, ip in ip_por_comp.items():
+        direcciones_resueltas[comp_id] = f"{ip}:{puerto}"
+
+
+# ─────────────────────────────────────────────────────────────
 #  Arranque remoto
 # ─────────────────────────────────────────────────────────────
 
 
-def arrancar_remoto(config: dict, fresh: bool) -> None:
-    # Importados aquí para no acoplar este módulo a los stubs
-    # si se ejecuta en un entorno sin los protos generados.
-    from common_pb2 import HeartbeatRequest  # type: ignore
+def arrancar_remoto(config: dict) -> None:
+    """
+    fresh se lee de la variable de entorno FRESH (Config.settings.FRESH),
+    igual que ya hace el resto del sistema — antes se recibía como
+    argumento args.fresh, que argparse nunca definía (AttributeError
+    garantizado en cuanto se ejecutaba --modo remoto).
+    """
+    from Config.settings import FRESH
 
     timeout_shutdown = config["timeouts"]["shutdown_segundos"]
 
     # ── 1. Determinar sesión ──────────────────────────────────
-    session_id_anterior = None if fresh else leer_ultima_sesion(config)
+    session_id_anterior = None if FRESH else leer_ultima_sesion(config)
     session_id = session_id_anterior or nueva_session_id()
     modo = "reanudación" if session_id_anterior else "nueva"
     logger.info("Sesión %s: %s", modo, session_id)
@@ -199,38 +216,50 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     mi_ip = obtener_ip_publica()
     actualizar_security_group(config, mi_ip)
 
-    # ── 3. Lanzar instancias Spot ─────────────────────────────
-    logger.info("Lanzando instancias Spot...")
+    # ── 3. Lanzar instancias Spot POR FASES ───────────────────
+    # Cada fase espera la IP pública de la anterior antes de construir
+    # el user_data de la siguiente — así cada componente puede recibir
+    # ya la dirección real de los que le preceden (ver topologia.py).
+    logger.info("Lanzando instancias Spot por fases...")
+    grupos = construir_topologia()
+
+    id_por_comp: dict[str, str] = {}
+    tipo_por_comp: dict[str, str] = {}
+    direcciones_resueltas: dict[str, str] = {}
+
     try:
-        id_por_comp = lanzar_instancias(config, session_id)
-    except RuntimeError as e:
+        for grupo in grupos:
+            id_por_comp_fase = _lanzar_fase(
+                grupo, direcciones_resueltas, config, session_id
+            )
+            id_por_comp.update(id_por_comp_fase)
+            for spec in grupo:
+                tipo_por_comp[spec.nombre] = spec.tipo
+
+            _esperar_y_registrar_direcciones(
+                id_por_comp_fase, config, direcciones_resueltas
+            )
+
+    except (RuntimeError, TimeoutError) as e:
         logger.error("No se pudo arrancar la infraestructura: %s", e)
+        terminar_instancias(config, list(id_por_comp.values()))
         sys.exit(1)
 
     guardar_sesion_activa(config, session_id)
 
-    # ── 4. Esperar IPs públicas ───────────────────────────────
-    logger.info("Esperando IPs públicas...")
-    try:
-        ip_por_comp = esperar_ips_publicas(
-            config,
-            id_por_comp,
-            timeout=config["timeouts"]["arranque_segundos"],
-        )
-    except TimeoutError as e:
-        logger.error("%s", e)
-        terminar_instancias(config, list(id_por_comp.values()))
-        sys.exit(1)
-
-    # ── 5. Healthcheck de todos los componentes ───────────────
+    # ── 4. Healthcheck de todos los componentes ───────────────
+    # Ya se esperó la IP pública de cada fase; aquí se confirma que el
+    # servicio gRPC de cada componente responde de verdad (aceptar
+    # conexiones TCP no basta — el proceso puede seguir inicializando).
     logger.info("Esperando que los componentes estén listos...")
 
     def _check(item: tuple[str, str]) -> tuple[str, bool]:
-        comp_id, ip = item
-        return comp_id, _healthcheck_remoto(comp_id, ip, config)
+        comp_id, direccion = item
+        ip = direccion.rsplit(":", 1)[0]
+        return comp_id, _healthcheck_remoto(tipo_por_comp[comp_id], ip, config)
 
-    with ThreadPoolExecutor(max_workers=len(ip_por_comp)) as executor:
-        resultados = dict(executor.map(_check, ip_por_comp.items()))
+    with ThreadPoolExecutor(max_workers=len(direcciones_resueltas)) as executor:
+        resultados = dict(executor.map(_check, direcciones_resueltas.items()))
 
     fallidos = [c for c, ok in resultados.items() if not ok]
     if fallidos:
@@ -240,14 +269,14 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
 
     logger.info("Todos los componentes listos.")
 
-    # ── 6. Crear stubs persistentes ───────────────────────────
-    stubs, log_stubs, canales = _crear_stubs(ip_por_comp, config)
+    # ── 5. Crear stubs persistentes ───────────────────────────
+    ip_por_comp = {
+        comp_id: direccion.rsplit(":", 1)[0]
+        for comp_id, direccion in direcciones_resueltas.items()
+    }
+    stubs, log_stubs, canales = _crear_stubs(ip_por_comp, tipo_por_comp, config)
 
-    # ── 6.1 Recolección de logs (modelo pull) ─────────────────
-    # Cada componente remoto acumula sus logs en memoria y los expone vía
-    # PullLogs; aquí, en la máquina local, se pregunta periódicamente y se
-    # escriben a disco con LogServicer (misma estructura de carpetas que
-    # en modo local — ver log_categorias.py).
+    # ── 5.1 Recolección de logs (modelo pull) ─────────────────
     log_servicer = LogServicer(log_dir=LOG_DIR)
     log_poller = LogPoller(
         intervalo_segundos=LOG_PULL_INTERVAL_SEGUNDOS,
@@ -256,30 +285,23 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     for comp_id, log_stub in log_stubs.items():
         log_poller.registrar(
             comp_id,
-            # Valores por defecto en el lambda para capturar log_stub por
-            # closure correctamente — mismo problema (y misma solución)
-            # que _make_shutdown_fn más abajo: sin esto, todas las
-            # llamadas usarían el último stub del bucle.
             lambda req=log_pull_service_pb2.PullLogsRequest(), stub=log_stub: (
                 stub.PullLogs(req, timeout=5).records
             ),
         )
     log_poller.iniciar()
 
-    # ── 7. Si es reanudación, borrar hibernación de S3 ────────
-    # Se borra después de que los componentes están listos, no antes,
-    # para poder reintentar con los mismos datos si el arranque falla.
+    # ── 6. Si es reanudación, borrar hibernación de S3 ────────
     if session_id_anterior:
         borrar_sesion_hibernada(config, session_id_anterior)
 
-    # ── 8. Evento de cierre ───────────────────────────────────
-    # Señala al bucle principal que el shutdown ha terminado.
+    # ── 7. Evento de cierre ───────────────────────────────────
     shutdown_completado = threading.Event()
     exit_code = 0  # 0 = usuario, 1 = fallo
 
-    # ── 9. Shutdown coordinator ───────────────────────────────
-    hv_ids = [c for c in ip_por_comp if c.startswith("hv_")]
-    sector_ids = [c for c in ip_por_comp if c.startswith("sector_")]
+    # ── 8. Shutdown coordinator ───────────────────────────────
+    hv_ids = [c for c, t in tipo_por_comp.items() if t == "hypervisor"]
+    sector_ids = [c for c, t in tipo_por_comp.items() if t == "sector"]
 
     coord = ShutdownCoordinator(
         config=config,
@@ -289,6 +311,12 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
         shutdown_gestor_mundo=_make_shutdown_fn(
             stubs["gestor_mundo"], timeout_shutdown
         ),
+        shutdown_logica_mundo=_make_shutdown_fn(
+            stubs["logica_mundo"], timeout_shutdown
+        ),
+        shutdown_comunicaciones_remoto=_make_shutdown_fn(
+            stubs["comunicaciones_remoto"], timeout_shutdown
+        ),
         shutdown_hv={
             hv: _make_shutdown_fn(stubs[hv], timeout_shutdown) for hv in hv_ids
         },
@@ -297,9 +325,12 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
         },
     )
 
-    # ── 10. Monitor ───────────────────────────────────────────
-    # Solo los dos gestores entran en el monitor; ellos informan
-    # del estado de sus hijos (HVs / sectores) en la respuesta de heartbeat.
+    # ── 9. Monitor ────────────────────────────────────────────
+    def _heartbeat_o_falla(resp):
+        if not resp.ok:
+            raise RuntimeError(resp.error or "heartbeat respondió ok=False")
+        return resp
+
     def _on_fallo(comp_id: str) -> None:
         nonlocal exit_code
         exit_code = 1
@@ -311,15 +342,33 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     monitor = MonitorComponentes(config, on_fallo=_on_fallo)
     monitor.registrar(
         "gestor_bots",
-        lambda: stubs["gestor_bots"].Heartbeat(HeartbeatRequest(), timeout=5),
+        lambda: _heartbeat_o_falla(
+            stubs["gestor_bots"].Heartbeat(common_pb2.HeartbeatRequest(), timeout=5)
+        ),
     )
     monitor.registrar(
         "gestor_mundo",
-        lambda: stubs["gestor_mundo"].Heartbeat(HeartbeatRequest(), timeout=5),
+        lambda: _heartbeat_o_falla(
+            stubs["gestor_mundo"].Heartbeat(common_pb2.HeartbeatRequest(), timeout=5)
+        ),
+    )
+    monitor.registrar(
+        "logica_mundo",
+        lambda: _heartbeat_o_falla(
+            stubs["logica_mundo"].Heartbeat(common_pb2.HeartbeatRequest(), timeout=5)
+        ),
+    )
+    monitor.registrar(
+        "comunicaciones_remoto",
+        lambda: _heartbeat_o_falla(
+            stubs["comunicaciones_remoto"].Heartbeat(
+                common_pb2.HeartbeatRequest(), timeout=5
+            )
+        ),
     )
     monitor.iniciar()
 
-    # ── 11. Señales ───────────────────────────────────────────
+    # ── 10. Señales ───────────────────────────────────────────
     def _on_signal(sig, frame) -> None:
         logger.info("Señal %s recibida — iniciando shutdown.", sig)
         monitor.detener()
@@ -330,12 +379,10 @@ def arrancar_remoto(config: dict, fresh: bool) -> None:
     signal.signal(signal.SIGINT, _on_signal)
     signal.signal(signal.SIGTERM, _on_signal)
 
-    # ── 12. TODO: servidor WebSocket para Unity ───────────────
+    # ── 11. TODO: servidor WebSocket para Unity ───────────────
     # Se implementará en el siguiente bloque.
-    # El servidor correrá en un hilo daemon y recibirá peticiones
-    # de arranque/parada/estado desde Unity.
 
-    # ── 13. Bucle principal ───────────────────────────────────
+    # ── 12. Bucle principal ───────────────────────────────────
     logger.info("Sesión activa. Ctrl+C para cerrar.")
     shutdown_completado.wait()
 

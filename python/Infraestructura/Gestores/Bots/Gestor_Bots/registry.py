@@ -1,5 +1,6 @@
 # Infraestructura/Gestores/Bots/Gestor_Bots/registry.py
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
+    heartbeat,
     matar_script_bot,
     notificar_avatar_sin_piloto,
 )
@@ -31,4 +32,5 @@ FUNCIONES = [
     update_hypervisor_load,
     list_hypervisors,
     forward_action,
+    heartbeat,
 ]

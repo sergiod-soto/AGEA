@@ -26,7 +26,9 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 
+from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
+
 
 # ---------------------------------------------------------------------------
 # Constantes del sistema — modificar aquí afecta a todo
@@ -54,7 +56,7 @@ class Armonico:
 # ---------------------------------------------------------------------------
 
 
-class SonidoBase(Elemento_Abstracto):
+class SonidoBase(Informacion):
     """
     Construye un sonido armónico a armónico antes de "sellarlo" con build().
 

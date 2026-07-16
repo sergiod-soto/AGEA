@@ -8,6 +8,7 @@ Usado por:
   - Gestor_Bots    → resolver_accion (reenvío de acciones de bots)
   - Comunicacion_Remoto (local) → consultar_representacion, eventos
                       globales, alta/edición/baja de elementos
+  - Comunicaciones_Remoto → heartbeat() (ver comunicaciones_remoto_servicer.py)
 
 Mismo patrón que gestor_mundo_client.py / hypervisor_client.py: canal
 único, reconexión perezosa, conversión de tipos Python nativos
@@ -17,6 +18,7 @@ tenga que conocer el formato de transporte.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Optional
 
@@ -35,14 +37,6 @@ logger = logging.getLogger(__name__)
 
 
 class LogicaMundoClient:
-    """
-    Cliente async gRPC de LogicaMundoService.
-
-    Parámetros
-    ----------
-    address : str   "host:puerto"
-    timeout : float segundos de espera por RPC (default 10 s)
-    """
 
     def __init__(self, address: str, timeout: float = 10.0):
         self._address = address
@@ -51,9 +45,6 @@ class LogicaMundoClient:
         self._stub = None
 
     async def _ensure_channel(self) -> None:
-        """Conexión perezosa — se abre en la primera llamada, no en __init__,
-        igual que GestorMundoClient. Evita fallos de arranque si Logica_Mundo
-        tarda unos segundos más en estar listo que quien lo consume."""
         if self._channel is None:
             self._channel = grpc.aio.insecure_channel(self._address)
             self._stub = pb_grpc.LogicaMundoServiceStub(self._channel)
@@ -74,6 +65,23 @@ class LogicaMundoClient:
     @staticmethod
     def _pos_from_pb(pos: common_pb.Position) -> tuple[int, int]:
         return (pos.x, pos.y)
+
+    # ------------------------------------------------------------------
+    # Infraestructura
+    # ------------------------------------------------------------------
+
+    async def heartbeat(
+        self, timeout: float | None = None
+    ) -> "pb.LogicaMundoHeartbeatResponse":
+        """
+        Llama al RPC Heartbeat real de LogicaMundoService. Usado por
+        Comunicaciones_Remoto para detectar si este subordinado sigue
+        vivo (ver comunicaciones_remoto_servicer.py::Heartbeat).
+        """
+        await self._ensure_channel()
+        return await self._stub.Heartbeat(
+            common_pb.HeartbeatRequest(), timeout=self._t(timeout)
+        )
 
     # ------------------------------------------------------------------
     # Identidad
@@ -177,11 +185,6 @@ class LogicaMundoClient:
     async def eliminar_avatar_bot(
         self, bot_id: str, timeout: float | None = None
     ) -> tuple[bool, str]:
-        """
-        Usado por Gestor_Bots.eliminar_avatar_bot() (Flujo B: el HV
-        detectó un script roto). Solo necesita bot_id — Logica_Mundo
-        resuelve posición y element_id internamente.
-        """
         await self._ensure_channel()
         req = pb.EliminarAvatarBotRequest(bot_id=bot_id)
         try:
@@ -242,6 +245,18 @@ class LogicaMundoClient:
             logger.error("GetActiveEvents falló: %s", exc)
             return []
 
+    async def get_elementos_globales(
+        self, timeout: float | None = None
+    ) -> "pb.GetElementosGlobalesResponse":
+        await self._ensure_channel()
+        try:
+            return await self._stub.GetElementosGlobales(
+                pb.GetElementosGlobalesRequest(), timeout=self._t(timeout)
+            )
+        except grpc.aio.AioRpcError as exc:
+            logger.error("GetElementosGlobales falló: %s", exc)
+            return pb.GetElementosGlobalesResponse(ok=False, error=str(exc))
+
     # ------------------------------------------------------------------
     # Soporte al ciclo de tick de Gestor_Mundo
     # ------------------------------------------------------------------
@@ -254,8 +269,6 @@ class LogicaMundoClient:
         excluir_max: Optional[tuple[int, int]] = None,
         timeout: float | None = None,
     ) -> list:
-        """Devuelve una lista de common_pb2.Cell — Gestor_Mundo las usa
-        tal cual (proto), sin interpretarlas."""
         await self._ensure_channel()
 
         tiene_exclusion = excluir_min is not None and excluir_max is not None
@@ -281,8 +294,6 @@ class LogicaMundoClient:
     async def actualizar_celdas(
         self, changed_cells: list, timeout: float | None = None
     ) -> bool:
-        """changed_cells: lista de common_pb2.Cell tal como llegan de
-        sector.GetDelta — se reenvían sin traducir."""
         await self._ensure_channel()
         req = pb.ActualizarCeldasRequest(changed_cells=changed_cells)
         try:
@@ -332,10 +343,45 @@ class LogicaMundoClient:
     async def avanzar_elementos_globales(
         self, tick_id: int, timeout: float | None = None
     ) -> dict:
+        """
+        Pide a Logica_Mundo que avance el tick de todos sus elementos
+        globales (ciclo día/noche, lunar, clima...) — ver
+        LogicaMundo.avanzar_elementos_globales() y su Funciones/
+        avanzar_elementos_globales.py, que ya estaban implementados en
+        el lado servidor; solo faltaba este método en el cliente.
 
-        raise NotImplementedError(
-            "Falta el RPC AvanzarElementosGlobales en logica_mundo_service.proto"
-        )
+        Devuelve el dict de cambios agregados (deserializado desde el
+        JSON que viaja en resp.cambios). Gestor_Mundo lo llama en su
+        _fase_2 pero de momento no hace nada con el resultado más allá
+        de recibirlo (ver TODO "distribuir cambios_globales a sectores
+        que lo necesiten" en gestor_mundo.py) — eso queda fuera del
+        alcance de este método, que solo transporta el dato.
+
+        En caso de error (red o resp.ok=False) devuelve {} en vez de
+        propagar la excepción, igual que el resto de métodos "blandos"
+        de este cliente (obtener_celdas_en_region, consultar_
+        representacion) — un fallo aquí no debe tirar el tick completo
+        de Gestor_Mundo, que ya sigue adelante con el resto de fases
+        aunque esta llamada falle.
+        """
+        await self._ensure_channel()
+        req = pb.AvanzarElementosGlobalesRequest(tick_id=tick_id)
+        try:
+            resp = await self._stub.AvanzarElementosGlobales(
+                req, timeout=self._t(timeout)
+            )
+            if not resp.ok:
+                logger.warning(
+                    "AvanzarElementosGlobales respondió error: %s", resp.error
+                )
+                return {}
+            return json.loads(resp.cambios.decode()) if resp.cambios else {}
+        except grpc.aio.AioRpcError as exc:
+            logger.error("AvanzarElementosGlobales falló: %s", exc)
+            return {}
+        except json.JSONDecodeError as exc:
+            logger.error("AvanzarElementosGlobales: cambios no es JSON válido: %s", exc)
+            return {}
 
     # ------------------------------------------------------------------
     # Persistencia

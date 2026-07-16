@@ -1,12 +1,13 @@
-from Core.Entities.Comportamiento.Energetico.termico import Termico
+# Core/Entities/Elementos/Abstractos/Recetas/lista_recetas.py
+
 from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
-from Core.Entities.Elementos.Simples.Comidas.Ingredientes.harina import Harina
-from Core.Entities.Elementos.Simples.Comidas.Ingredientes.ingrediente import Ingrediente
-from Core.Entities.Elementos.Simples.Comidas.Ingredientes.masa_pan import Masa_Pan
+from Core.Entities.Elementos.Simples.Comida.Ingredientes.harina import Harina
+from Core.Entities.Elementos.Simples.Comida.Ingredientes.ingrediente import Ingrediente
+from Core.Entities.Elementos.Simples.Comida.Ingredientes.masa_pan import Masa_Pan
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 
@@ -23,7 +24,9 @@ class Lista_Recetas:
             # ----------------------------------------------------------------------------
 
             def condicion1_funcion(agua: Agua):
-                agua.tiene_comportamiento(Liquido) and agua.temperatura_propia < 40
+                return (
+                    agua.tiene_comportamiento(Liquido) and agua.temperatura_propia < 40
+                )
 
             condicion1 = Condicion(
                 evaluar=condicion1_funcion,

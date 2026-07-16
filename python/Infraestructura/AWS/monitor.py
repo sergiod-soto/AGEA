@@ -1,3 +1,4 @@
+# Infraestructura/AWS/monitor.py
 """
 Monitor de heartbeats por polling (main.py → componentes).
 

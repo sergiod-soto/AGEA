@@ -21,11 +21,11 @@ ROOT = pathlib.Path(__file__).parent
 PROTO_DIR = ROOT / "Infraestructura" / "Gestores" / "Transporte" / "Protobufs"
 OUT_DIR = ROOT / "Infraestructura" / "Gestores" / "Transporte" / "Proto_Generated"
 
-# Grupos: (subcarpeta_proto, subcarpeta_salida, [ficheros])
+""" Grupos: (subcarpeta_proto, subcarpeta_salida, [ficheros]) """
 GROUPS = [
     (
         "",  # raiz
-        "",
+        "",  # raiz
         [
             "common.proto",
         ],

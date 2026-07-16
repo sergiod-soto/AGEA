@@ -5,101 +5,53 @@ import "common.proto";
 
 // ============================================================
 //  LogicaMundoService — expuesto por Logica_Mundo (remoto).
-//
-//  Es la única fuente de verdad de: estado gold (celdas + elementos),
-//  identidad (IDs), eventos globales y resolución de acciones de bots.
-//
-//  Clientes:
-//    - Gestor_Bots   → ResolverAccion (reenvío de acciones de bots)
-//    - Gestor_Mundo  → ObtenerCeldasEnRegion / ActualizarCeldas
-//                      (sustituyen el antiguo acceso directo a
-//                      self._gold_cells que tenía GestorMundo)
-//    - Comunicacion_Remoto (local) → ConsultarRepresentacion
-//                      (para Vista_Foco / Unity), y los comandos de
-//                      eventos globales / edición en caliente que antes
-//                      entraban a GestorMundoService
-//    - main.py / bootstrap → Heartbeat, Shutdown (via common.proto)
 // ============================================================
 
 service LogicaMundoService {
-  // ----- Infraestructura -----
   rpc Heartbeat (common.HeartbeatRequest) returns (LogicaMundoHeartbeatResponse);
   rpc Shutdown  (common.ShutdownRequest)  returns (common.ShutdownResponse);
 
-  // ----- Identidad -----
-  // Genera un ID nuevo y único para un elemento (incluye bots).
-  // Sustituye al contador que hoy vive disperso (controlador.py / bots.py
-  // gestionan apellidos, no IDs de elemento — esto es un concepto nuevo
-  // centralizado aquí).
   rpc AsignarId (AsignarIdRequest) returns (AsignarIdResponse);
 
-  // ----- Elementos — alta / edición / baja -----
   rpc CrearElemento     (CrearElementoRequest)     returns (common.Ack);
   rpc ModificarElemento (ModificarElementoRequest) returns (common.Ack);
   rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
 
-  // ----- Acciones de bots -----
   rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
   rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
 
-  // ----- Eventos globales -----
   rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
   rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
 
-  // ----- Soporte al ciclo de tick de Gestor_Mundo -----
-  // Gestor_Mundo ya NO mantiene _gold_cells. Para construir ghost zones
-  // y para la carga inicial/restauración de cada sector, pide aquí el
-  // recorte de celdas que necesita por región.
+  // NUEVO: elementos globales (ciclo día/noche, lunar, clima...) — antes
+  // vivía como GetGlobalState en GestorMundoService; migrado aquí porque
+  // el estado de esos elementos vive en Logica_Mundo, no en Gestor_Mundo
+  // (decisión "elementos_globales: B"). tick_id/snapshot_id, que antes
+  // acompañaban esta respuesta, se consultan aparte vía
+  // GestorMundoService.GetSnapshotInfo — no se duplican aquí.
+  rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
+
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
-
-  // Gestor_Mundo, tras consolidar los deltas de sectores en su _fase_2,
-  // entrega aquí las celdas cambiadas para que Logica_Mundo actualice
-  // su estado — sustituye la escritura directa en self._gold_cells.
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
-
-  // ----- Representación (Vista_Foco / Unity, vía Comunicacion_Remoto) -----
-  // Único punto de entrada para consultas de visualización. Aplica el
-  // recorte por región Y el filtro por comportamiento/capa en el mismo
-  // proceso donde vive el estado, para no mover más datos de los
-  // estrictamente necesarios fuera de AWS.
-  //
-  // ABIERTO: el campo `datos` es bytes opaco. El formato concreto de
-  // serialización (JSON, protobuf anidado, etc.) para cada `modo`
-  // (p.ej. "heatmap" vs "snapshot_elementos") queda pendiente de definir
-  // cuando se escriba vision_unity.py — aquí solo se fija el contrato
-  // de transporte, no el formato interno.
   rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
 
-  // ----- Persistencia -----
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
 
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
 }
 
-// ============================================================
-//  Heartbeat
-// ============================================================
-
 message LogicaMundoHeartbeatResponse {
   bool   ok    = 1;
   string error = 2;
 }
-
-// ============================================================
-//  Identidad
-// ============================================================
 
 message AsignarIdRequest {}
 
 message AsignarIdResponse {
   uint64 id = 1;
 }
-
-// ============================================================
-//  Elementos
-// ============================================================
 
 message CrearElementoRequest {
   common.Position pos     = 1;
@@ -118,10 +70,6 @@ message EliminarElementoRequest {
   uint64          element_id = 2;
 }
 
-// ============================================================
-//  Acciones de bots
-// ============================================================
-
 message ResolverAccionRequest {
   string bot_id      = 1;
   string action_type = 2;
@@ -132,15 +80,10 @@ message EliminarAvatarBotRequest {
   string bot_id = 1;
 }
 
-// ============================================================
-//  Eventos globales
-//  (mismas formas que tenía gestor_mundo_service.proto)
-// ============================================================
-
 message GlobalEvent {
   string          event_id = 1;
   string          type     = 2;
-  common.Position pos      = 3;   // vacío si el evento no tiene posición
+  common.Position pos      = 3;
   bytes           payload  = 4;
 }
 
@@ -156,7 +99,7 @@ message SpawnGlobalEventResponse {
 
 message DespawnGlobalEventRequest {
   string event_id = 1;
-  string reason   = 2;   // "completed" | "cancelled" | "expired"
+  string reason   = 2;
 }
 
 message GetActiveEventsRequest {}
@@ -167,30 +110,33 @@ message GetActiveEventsResponse {
   repeated GlobalEvent events = 3;
 }
 
+// NUEVO — ver rpc GetElementosGlobales arriba.
+message GetElementosGlobalesRequest {}
+
+message ElementoGlobalState {
+  string name  = 1;
+  bytes  state = 2;   // JSON de elem.to_snapshot()
+}
+
+message GetElementosGlobalesResponse {
+  bool                         ok                 = 1;
+  string                       error              = 2;
+  repeated ElementoGlobalState elementos_globales = 3;
+}
+
 message AvanzarElementosGlobalesRequest {
   int64 tick_id = 1;
 }
 
 message AvanzarElementosGlobalesResponse {
-  bool   ok    = 1;
-  string error = 2;
-  // JSON serializado del dict de cambios. Igual que ConsultarRepresentacion,
-  // el formato interno de "cambios" queda abierto hasta que se implemente
-  // el primer ElementoGlobal real y se sepa qué necesita consumir Gestor_Mundo.
-  bytes cambios = 3;
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  cambios = 3;
 }
 
-// ============================================================
-//  Soporte al ciclo de tick de Gestor_Mundo
-// ============================================================
-
-// Región rectangular inclusiva-exclusiva: [min, max)
 message ObtenerCeldasEnRegionRequest {
-  common.Position min = 1;
-  common.Position max = 2;
-  // Si true, excluye del resultado la región "propia" indicada — usado
-  // para ghost zones (queremos el borde ampliado SIN la región del sector).
-  // Si no se necesita exclusión (p.ej. carga inicial), dejar en blanco.
+  common.Position min             = 1;
+  common.Position max             = 2;
   common.Position excluir_min     = 3;
   common.Position excluir_max     = 4;
   bool            tiene_exclusion = 5;
@@ -206,20 +152,11 @@ message ActualizarCeldasRequest {
   repeated common.Cell changed_cells = 1;
 }
 
-// ============================================================
-//  Representación (Vista_Foco / Unity)
-// ============================================================
-
 message ConsultarRepresentacionRequest {
-  common.Position min = 1;
-  common.Position max = 2;
-  // Lista de nombres de comportamiento a incluir (p.ej. "Color", "Bot").
-  // Composable: Vista_Foco decide la combinación, Logica_Mundo la resuelve
-  // de forma genérica contra get_comportamiento(nombre) de cada elemento.
+  common.Position min     = 1;
+  common.Position max     = 2;
   repeated string incluir = 3;
-  // Modo de agregación/representación (p.ej. "elementos" | "heatmap").
-  // Ver nota ABIERTO en la definición del RPC sobre el formato de `datos`.
-  string modo = 4;
+  string          modo    = 4;
 }
 
 message ConsultarRepresentacionResponse {
@@ -227,10 +164,6 @@ message ConsultarRepresentacionResponse {
   string error = 2;
   bytes  datos = 3;
 }
-
-// ============================================================
-//  Persistencia
-// ============================================================
 
 message SaveSnapshotRequest {
   string snapshot_id = 1;

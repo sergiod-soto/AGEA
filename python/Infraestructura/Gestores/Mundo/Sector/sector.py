@@ -65,18 +65,22 @@ class SectorMode(Enum):
 
 class CeldaStore:
     """
-    Almacén de celdas en memoria como objetos Python deserializados.
+    Almacén de celdas del sector.
 
-    Internamente: dict[(x, y), dict[int64, Elemento]]
-    (Se accede con posicion → ID)
+    ACTUALIZADO: guarda el mensaje common.Cell proto TAL CUAL, sin
+    deserializarlo a objetos Python — el Sector no necesita interpretar
+    el contenido de sus 3 slots (suelo/bot/resto), solo transportarlo:
+    lo recibe de Gestor_Mundo en LoadState/AddMigratingBot y lo devuelve
+    en GetState/GetDelta sin tocarlo. Quien SÍ interpreta cada slot
+    (deserializando a Elemento) es Logica_Mundo (ver logica_mundo.py:
+    _cell_a_celda / _celda_a_cell), que es donde vive el estado
+    gold real.
 
-
-    La serialización proto ↔ objeto se delega al registry de elementos
-    (a implementar en un script separado cuando el registry esté disponible).
+    Internamente: dict[(x, y), common.Cell]
     """
 
     def __init__(self):
-        self._celdas: dict[tuple[int, int], dict[int64, Any]] = {}
+        self._celdas: dict[tuple[int, int], dict] = {}
 
     def get(self, x: int, y: int) -> Optional[Any]:
         return self._celdas.get((x, y))
@@ -96,25 +100,17 @@ class CeldaStore:
         return key in self._celdas
 
     def from_proto_cell(self, cell) -> None:
-        """
-        Deserializa una Cell proto y la almacena.
-        TODO: usar el registry de elementos cuando esté disponible.
-              Por ahora guarda el proto en crudo para no perder datos.
-        """
+        """Almacena el Cell proto recibido, indexado por su posición."""
         key = (cell.pos.x, cell.pos.y)
         self._celdas[key] = cell
 
     def to_proto_cells(self, proto_cell_class, proto_position_class) -> list:
-        """
-        Serializa todas las celdas a lista de Cell proto.
-        TODO: usar el registry de elementos cuando esté disponible.
-        """
+        """Devuelve las Cell proto almacenadas, tal cual (ya lo son)."""
         result = []
         for (x, y), elemento in self._celdas.items():
             if hasattr(elemento, "SerializeToString"):
                 result.append(elemento)
             else:
-                # TODO: elemento.to_proto() cuando el registry esté disponible
                 pass
         return result
 

@@ -1,30 +1,41 @@
+# Infraestructura/AWS/shutdown.py
 """
 Coordinador de shutdown para el modo remoto (AWS).
 
 Flujo:
-  1. Envía Shutdown a gestor_bots y gestor_mundo en paralelo.
-     Cada gestor propaga a sus hijos (HVs / sectores).
-  2. Si un gestor no confirma en timeout → fallback directo a sus hijos.
-  3. Tras agotar confirmaciones (o timeouts), termina todas las instancias EC2.
+  1. Envía Shutdown a gestor_bots, gestor_mundo, logica_mundo y
+     comunicaciones_remoto en paralelo. Cada gestor propaga a sus hijos
+     (HVs / sectores) — logica_mundo y comunicaciones_remoto no tienen
+     hijos propios, así que no hay fallback de grupo para ellos.
+  2. Si gestor_bots/gestor_mundo no confirman en timeout → fallback
+     directo a sus hijos.
+  3. Tras agotar confirmaciones (o timeouts), termina todas las
+     instancias EC2.
 
 El shutdown_id (= session_id) garantiza que duplicados sean ignorados
 por los componentes que ya están procesando el cierre.
+
+Corregido: _hacer_request() (código muerto, nunca invocado) usaba una
+variable `reason` que no era parámetro ni local — se elimina en vez de
+arreglar, ya que _shutdown() ya construye el request directamente sin
+necesitarlo. Import de common_pb2 corregido a la ruta real del paquete.
 """
 
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeout
-from typing import Callable
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+    TimeoutError as FuturesTimeout,
+)
+from typing import Callable, Optional
 
 import grpc
 
 from Infraestructura.AWS.aws import terminar_instancias
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 
 logger = logging.getLogger(__name__)
-
-# Importados en tiempo de ejecución para no acoplar este módulo
-# a los stubs generados si no están disponibles en el entorno local.
-# Se inyectan como callables desde main.py (ver ShutdownCoordinator.__init__).
 
 
 class ShutdownCoordinator:
@@ -35,35 +46,22 @@ class ShutdownCoordinator:
     - Facilitar testing sin infraestructura real.
     - Desacoplar este módulo de los imports de los stubs generados.
 
-    Ejemplo de uso desde main.py:
-
-        coord = ShutdownCoordinator(
-            config=config,
-            session_id=session_id,
-            instance_ids=instance_ids,
-            shutdown_gestor_bots=lambda req: gestor_bots_stub.Shutdown(req, timeout=...),
-            shutdown_gestor_mundo=lambda req: gestor_mundo_stub.Shutdown(req, timeout=...),
-            shutdown_hv={
-                "hv_0": lambda req: hv_stubs["hv_0"].Shutdown(req, timeout=...),
-                ...
-            },
-            shutdown_sector={
-                "sector_0": lambda req: sector_stubs["sector_0"].Shutdown(req, timeout=...),
-                ...
-            },
-        )
-        coord.ejecutar(reason="user")
+    shutdown_logica_mundo y shutdown_comunicaciones_remoto son
+    opcionales (None por defecto) para no romper llamadas existentes
+    que aún no los pasen — pero remote.py ya los provee siempre.
     """
 
     def __init__(
         self,
         config: dict,
         session_id: str,
-        instance_ids: dict[str, str],          # {componente_id: instance_id}
+        instance_ids: dict[str, str],  # {componente_id: instance_id}
         shutdown_gestor_bots: Callable,
         shutdown_gestor_mundo: Callable,
-        shutdown_hv: dict[str, Callable],       # {hv_id: callable}
-        shutdown_sector: dict[str, Callable],   # {sector_id: callable}
+        shutdown_hv: dict[str, Callable],  # {hv_id: callable}
+        shutdown_sector: dict[str, Callable],  # {sector_id: callable}
+        shutdown_logica_mundo: Optional[Callable] = None,
+        shutdown_comunicaciones_remoto: Optional[Callable] = None,
     ):
         self._config = config
         self._session_id = session_id
@@ -72,6 +70,8 @@ class ShutdownCoordinator:
         self._shutdown_gestor_mundo = shutdown_gestor_mundo
         self._shutdown_hv = shutdown_hv
         self._shutdown_sector = shutdown_sector
+        self._shutdown_logica_mundo = shutdown_logica_mundo
+        self._shutdown_comunicaciones_remoto = shutdown_comunicaciones_remoto
 
         self._timeout_shutdown: int = config["timeouts"]["shutdown_segundos"]
 
@@ -101,19 +101,22 @@ class ShutdownCoordinator:
     # Implementación
     # ------------------------------------------------------------------
 
-    def _hacer_request(self):
-        """Construye el ShutdownRequest. Importado aquí para no acoplar
-        este módulo a los stubs si no están generados en el entorno local."""
-        from common_pb2 import ShutdownRequest  # type: ignore
-        return ShutdownRequest(shutdown_id=self._session_id, reason=reason)
-
     def _shutdown(self, reason: str):
-        from common_pb2 import ShutdownRequest  # type: ignore
-        req = ShutdownRequest(shutdown_id=self._session_id, reason=reason)
+        req = common_pb2.ShutdownRequest(shutdown_id=self._session_id, reason=reason)
 
-        # Fase 1: gestores en paralelo
-        gestor_bots_ok  = self._llamar_con_timeout("gestor_bots",  self._shutdown_gestor_bots,  req)
-        gestor_mundo_ok = self._llamar_con_timeout("gestor_mundo", self._shutdown_gestor_mundo, req)
+        # Fase 1: componentes sin hijos, todos en paralelo
+        gestor_bots_ok = self._llamar_con_timeout(
+            "gestor_bots", self._shutdown_gestor_bots, req
+        )
+        gestor_mundo_ok = self._llamar_con_timeout(
+            "gestor_mundo", self._shutdown_gestor_mundo, req
+        )
+        if self._shutdown_logica_mundo is not None:
+            self._llamar_con_timeout("logica_mundo", self._shutdown_logica_mundo, req)
+        if self._shutdown_comunicaciones_remoto is not None:
+            self._llamar_con_timeout(
+                "comunicaciones_remoto", self._shutdown_comunicaciones_remoto, req
+            )
 
         # Fase 2 fallback: si un gestor no confirmó, cerramos sus hijos directamente
         if not gestor_bots_ok:
@@ -148,7 +151,9 @@ class ShutdownCoordinator:
                 logger.warning(f"{nombre}: shutdown respondió ok=False — {resp.error}")
                 return False
         except grpc.RpcError as e:
-            logger.warning(f"{nombre}: error gRPC durante shutdown — {e.code()}: {e.details()}")
+            logger.warning(
+                f"{nombre}: error gRPC durante shutdown — {e.code()}: {e.details()}"
+            )
             return False
         except Exception as e:
             logger.warning(f"{nombre}: excepción inesperada durante shutdown — {e}")
@@ -172,11 +177,12 @@ class ShutdownCoordinator:
                     comp_id = futuros[futuro]
                     ok = futuro.result()
                     if not ok:
-                        logger.warning(f"{nombre_grupo}/{comp_id}: no confirmó shutdown")
+                        logger.warning(
+                            f"{nombre_grupo}/{comp_id}: no confirmó shutdown"
+                        )
             except FuturesTimeout:
                 pendientes = [
-                    comp_id for fut, comp_id in futuros.items()
-                    if not fut.done()
+                    comp_id for fut, comp_id in futuros.items() if not fut.done()
                 ]
                 logger.warning(
                     f"{nombre_grupo}: timeout esperando confirmaciones — "

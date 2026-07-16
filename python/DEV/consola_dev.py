@@ -1,6 +1,6 @@
 import code
 
-from Core.Mundo.mundo import Mundo
+from Core.Entities.Mundo.mundo import Mundo
 
 
 def abrir_consola(contexto_local=None):

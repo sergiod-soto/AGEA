@@ -1,6 +1,12 @@
 # Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo_server.py
 """
 gestor_mundo_server.py
+
+CORREGIDO: GestorMundo() se instanciaba sin el argumento obligatorio
+logica_client (TypeError garantizado). Se añade la construcción de
+LogicaMundoClient, mismo patrón que ya usan gestor_bots_server.py y
+comunicaciones_remoto_server.py — variable de entorno
+LOGICA_MUNDO_ADDRESS, cierre del cliente al apagar.
 """
 
 import argparse
@@ -36,23 +42,23 @@ GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
 GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
 GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 10))
 
-# Nombre fijo: ya registrado en log_categorias._CARPETA_POR_COMPONENTE
-# como "mundo" → carpeta Logs/Mundo/. En modo remoto, gestor_mundo corre
-# en su propia instancia EC2 (ver remote.py) igual que los demás
-# componentes, así que necesita el mismo tratamiento de logging pull.
 _COMPONENT_ID = "mundo"
 
 
 async def serve(fresh: bool, log_level: int) -> None:
-    # Logging: única fuente de verdad para el logger raíz (sin
-    # logging.basicConfig() en paralelo — ver mismo razonamiento en
-    # sector_server.py / gestor_bots_server.py / hypervisor_server.py).
     if MODO == "local":
         setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)
     else:
         log_handler = setup_buffered_logging(component=_COMPONENT_ID, level=log_level)
 
-    gestor = GestorMundo()
+    logica_mundo_address = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
+    from Infraestructura.Gestores.Transporte.logica_mundo_client import (
+        LogicaMundoClient,
+    )
+
+    logica_client = LogicaMundoClient(logica_mundo_address)
+
+    gestor = GestorMundo(logica_client=logica_client)
     servicer = GestorMundoServicer(gestor)
 
     server = grpc.aio.server(
@@ -64,8 +70,6 @@ async def serve(fresh: bool, log_level: int) -> None:
     pb_grpc.add_GestorMundoServiceServicer_to_server(servicer, server)
 
     if MODO != "local":
-        # Mismo servidor y puerto que GestorMundoService — no se abre
-        # ningún puerto adicional para logs.
         log_pull_service_pb2_grpc.add_LogPullServiceServicer_to_server(
             LogPullServicerAsync(log_handler), server
         )
@@ -99,6 +103,7 @@ async def serve(fresh: bool, log_level: int) -> None:
 
     logger.info("Apagando servidor gRPC...")
     await server.stop(grace=5)
+    await logica_client.close()
     logger.info("GestorMundo detenido.")
 
 
@@ -123,11 +128,6 @@ def main() -> None:
     args = parser.parse_args()
     log_level = getattr(logging, args.log_level)
 
-    # Sin logging.basicConfig() aquí: serve() configura el logger raíz vía
-    # setup_local_logging/setup_buffered_logging. Tenerlos duplicados hacía
-    # que basicConfig() añadiera un StreamHandler antes de tiempo, y el
-    # guard "if not root.handlers" de esas funciones quedaba siempre en
-    # falso — el fichero de log nunca llegaba a añadirse (bug ya cazado).
     try:
         asyncio.run(serve(fresh=FRESH, log_level=log_level))
     except KeyboardInterrupt:

@@ -3,7 +3,6 @@ from abc import ABC
 from numpy import uint64
 
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
-from Core.Mundo.mundo import Mundo
 
 
 class Elemento(Comportamiento):
@@ -15,7 +14,7 @@ class Elemento(Comportamiento):
     pueden interactuar entre ellos en funcion de su presencia en las proximidades
     """
 
-    mundo: Mundo = None
+    mundo = None
 
     def __init__(
         self,
@@ -91,4 +90,4 @@ class Elemento(Comportamiento):
                 setattr(self, k, None)
 
         # Avisa al mundo para que elimine la referencia
-        Mundo.eliminar_elemento(self)
+        self.mundo.eliminar_elemento(self)

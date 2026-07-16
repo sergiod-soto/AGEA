@@ -1,4 +1,10 @@
+# Core/Entitites/Elementos/Simples/Bot/bot.py
+
+# el elemento bot se encuentra en etapa muy temprana e incompleta
+
 from typing import Tuple
+from Core.Entities.Comportamiento.Stats.stat import Stat
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
 from Core.Entities.Comportamiento.Fisico.flotable import Flotable
@@ -41,7 +47,6 @@ from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
 from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
 from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Exceptions.exceptions import NumAtributosIncorrecto
 
 comportamientos = Comportamiento.declarar_comportamientos(
@@ -106,84 +111,60 @@ def generarApellidos(ape1, ape2):
 
 
 class Bot(Elemento_Simple, comportamientos, stats, informacion):
+    """
+    ----------------------------------------------------------------------------
 
-    #   ----------------------------------------------------------------------------
-    #
-    #
-    #
-    #   ---- STATS COMPLEJOS -------------------------------------------------------
-    #   self.stats["tamanho"]            -   ↑(atk, def, vida, energia)        ↓(velocidad, sigilo)
-    #   self.stats["grasa"] = 0  #       -   ↑(energia)                         ↓(velocidad, regeneracion)
-    #   self.stats["movilidad"]          -   ↑(atk, velocidad, regeneracion)   ↓(energia)
-    #   self.stats["percepcion"]         -   ↑(deteccion)                      ↓(regeneracion)
-    #   self.stats["armadura"]           -   ↑(def)                            ↓(regeneracion, atk, sigilo)
-    #   self.stats["metabolismo"]        -   ↑(curacion, regeneracion,
-    #                                          velocidad)                      ↓(vida, edad_adulta)
-    #   self.stats["agresividad"]        -   ↑(atk)                            ↓(sigilo)
-    #   self.stats["longevidad"]         -   ↑(edad_adulta, vida)              ↓(curacion, regeneracion, velocidad)
-    #   self.stats["temperatura_optima"] -   ↑(curacion, regeneracion)         ↓(energia, edad_adulta)
-    #   ----------------------------------------------------------------------------
-    #
-    #
-    #
-    #   ---- MODIFICADORES ---------------------------------------------------------
-    # self.stats["heridas"] = (0    #       -   ↑()             ↓(vida, energia)# )
-    # self.stats["focus"] = 0       #       -   ↑(percepcion)   ↓()
-    # self.stats["hambre"] = 0      #       -   ↑()             ↓(energia)
-    #   ----------------------------------------------------------------------------
-    #
-    #
-    #
-    #
-    # self.stats["vida"] = -1  # tamanho, metabolismo, longevidad
-    # self.stats["energia"] = -1  # tamanho, grasa, movilidad
-    # self.stats["curacion"]  # metabolismo, longevidad
-    # self.stats["regeneracion"] = -1  # grasa, movilidad, percepcion,
-    # #                                # armadura, longevidad
-    # self.stats["velocidad"] = -1  # tamanho, grasa,
-    # #                             # movilidad, metabolismo, longevidad
-    # self.stats["atk"] = -1  # tamanho, movilidad, armadura, agresividad
-    # self.stats["def"] = -1  # tamanho, armadura
-    # self.stats["deteccion"] = -1  # percepcion
-    # self.stats["sigilo"] = -1  # tamanho, armadura
-    # self.stats["edad_adulta"] = -1  #
-    #
-    # self.stats["tamanho"] = stats["tamanho"]
-    # self.stats["movilidad"] = stats["movilidad"]
-    # self.stats["percepcion"] = stats["percepcion"]
-    # self.stats["armadura"] = stats["armadura"]
-    # self.stats["metabolismo"] = stats["metabolismo"]
-    # self.stats["agresividad"] = stats["agresividad"]
-    # self.stats["longevidad"] = stats["longevidad"]
-    #
 
-    # class Stats:
 
-    #     def to_JSON(self):
-    #         json = {}
-    #         for clave in self.stats:
-    #             json[clave] = self.stats[clave]
-    #         return json
+    ---- STATS COMPLEJOS -------------------------------------------------------
+    self.stats["tamanho"]            -   ↑(atk, def, vida, energia)        ↓(velocidad, sigilo)
+    self.stats["grasa"] = 0  #       -   ↑(energia)                        ↓(velocidad, regeneracion)
+    self.stats["movilidad"]          -   ↑(atk, velocidad, regeneracion)   ↓(energia)
+    self.stats["percepcion"]         -   ↑(deteccion)                      ↓(regeneracion)
+    self.stats["armadura"]           -   ↑(def)                            ↓(regeneracion, atk, sigilo)
+    self.stats["metabolismo"]        -   ↑(curacion, regeneracion,
+                                           velocidad)                      ↓(vida, edad_adulta)
+    self.stats["agresividad"]        -   ↑(atk)                            ↓(sigilo)
+    self.stats["longevidad"]         -   ↑(edad_adulta, vida)              ↓(curacion, regeneracion, velocidad)
+    self.stats["temperatura_optima"] -   ↑(curacion, regeneracion)         ↓(energia, edad_adulta)
+    ----------------------------------------------------------------------------
 
-    #     def serialize(self):
 
-    #         json = "{"
 
-    #         keys = list(self.stats.keys())
-    #         for clave in keys:
-    #             valor = self.stats[clave]
-    #             if isinstance(valor, str):
-    #                 valor = f'"{valor}"'
-    #             json += f'"{clave}": {valor}'
+    ---- MODIFICADORES ---------------------------------------------------------
+    self.stats["heridas"] = (0    #       -   ↑()             ↓(vida, energia)# )
+    self.stats["focus"] = 0       #       -   ↑(percepcion)   ↓()
+    self.stats["hambre"] = 0      #       -   ↑()             ↓(energia)
+    ----------------------------------------------------------------------------
 
-    #             if clave != keys[-1]:  # si no es la última clave
-    #                 json += ","
-    #         json += "}"
-    #         return json
+
+
+
+    self.stats["vida"] = -1  # tamanho, metabolismo, longevidad
+    self.stats["energia"] = -1  # tamanho, grasa, movilidad
+    self.stats["curacion"]  # metabolismo, longevidad
+    self.stats["regeneracion"] = -1  # grasa, movilidad, percepcion,
+    #                                # armadura, longevidad
+    self.stats["velocidad"] = -1  # tamanho, grasa,
+    #                             # movilidad, metabolismo, longevidad
+    self.stats["atk"] = -1  # tamanho, movilidad, armadura, agresividad
+    self.stats["def"] = -1  # tamanho, armadura
+    self.stats["deteccion"] = -1  # percepcion
+    self.stats["sigilo"] = -1  # tamanho, armadura
+    self.stats["edad_adulta"] = -1  #
+
+    self.stats["tamanho"] = stats["tamanho"]
+    self.stats["movilidad"] = stats["movilidad"]
+    self.stats["percepcion"] = stats["percepcion"]
+    self.stats["armadura"] = stats["armadura"]
+    self.stats["metabolismo"] = stats["metabolismo"]
+    self.stats["agresividad"] = stats["agresividad"]
+    self.stats["longevidad"] = stats["longevidad"]
+    """
 
     def __init__(
         self,
-        padres: Tuple[str, str] | None,
+        id,
         tamanho: int,
         casilla,
         rotacion: float,
@@ -191,63 +172,15 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     ):
         super().__init__(
             Bot,
-            tamanho,
-            casilla,
-            capa,
-            rotacion,
+            id=id,
+            tamanho=tamanho,
+            casilla=casilla,
+            capa=capa,
+            rotacion=rotacion,
         )
 
-        if (padres is not None) and (len(padres) != 2):
-            raise ValueError("padres debe ser una tupla con exactamente 2 Bots o None")
-
-        #
-        #
-        #
-        visibilidad = 1
-        #
-        #
-
-        self.padres = padres
-
-        if padres["padre"] == None:
-            if padres["madre"] == None:
-                apellido = self.inicializar_apellido()
-                self.apellidos = [
-                    apellido,
-                    apellido,
-                    apellido,
-                    apellido,
-                ]
-                padres["padre"] = ""
-                padres["madre"] = ""
-            else:
-                self.apellidos = padres["madre"].apellido
-        else:
-            if padres["madre"] == None:
-                self.apellidos = padres["padre"].apellido
-            else:
-                self.apellidos = generarApellidos(padres["padre"], padres["madre"])
-                self.padres = {
-                    "padre": padres["padre"],
-                    "madre": padres["madre"],
-                }
-
-        self.casilla = casilla
-
-        #
-        #
-        #
-        # ---- inicializacion de stats   -----------------------------------------
-        try:
-            self.stats = self.Stats(stats)
-        except NumAtributosIncorrecto:
-            print("ERROR CON LOS STATS")
-
-    # def inicializar_apellido(self):
-    #     return obtener_siguiente_apellido()
-
     def set_casilla(self, new_casilla: Tuple[int, int]):
-        self.stats = new_casilla
+        self.casilla = new_casilla
 
     def set_rotacion(self, rotacion):
         self.rotacion = rotacion
@@ -255,36 +188,22 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     def serializar_adn(self):
         return self.adn
 
-    def serializar_apellidos(self):
-        apellidos = []
-        for apellido in self.apellidos:
-            apellidos.append(apellido)
-        return apellidos
-
-    def serializar_padres(self):
-        return {
-            "padre": self.padres["padre"] if self.padres else None,
-            "madre": self.padres["madre"] if self.padres else None,
-        }
+    
 
     def serialize_all(self):
         return {
             "id": self.id,
             "tamanho": self.serialize_tamanho(),
-            "distancia_visible": self.serialize_distancia_visible(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),
-            "apellidos": self.serializar_apellidos(),
             "adn": self.serializar_adn(),
-            "stats": self.stats.serialize(),
-            "padres": self.serializar_padres(),
+            "stats": Stat.serializar(self)
         }
 
     def serialize_position(self):
         return {
             "id": self.id,
             "tamanho": self.serialize_tamanho(),
-            "distancia_visible": self.serialize_distancia_visible(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),
         }

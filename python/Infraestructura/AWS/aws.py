@@ -1,6 +1,23 @@
+# Infraestructura/AWS/aws.py
 """
 Operaciones AWS para la gestión del ciclo de vida de la infraestructura.
 Todas las funciones que hablan con AWS están aquí; el resto del código no usa boto3 directamente.
+
+CORREGIDO respecto a la versión anterior: lanzar_instancias() estaba
+desincronizado con remote.py (que ya llama con 3 argumentos posicionales
+config/session_id/especificaciones, generados a partir de
+topologia.construir_topologia()). La versión vieja:
+  - Tenía firma de 2 argumentos → TypeError al ser llamada desde remote.py.
+  - Usaba config["instancias"][x]["cantidad"], que ya no existe en
+    config.yaml (se deriva de GRID_WIDTH/HEIGHT/SECTOR_SIZE y
+    HYPERVISOR_COUNT vía topologia.py).
+  - No propagaba env_extra al user_data → ningún componente remoto real
+    recibía direcciones de otros componentes (el bug que topologia.py
+    se creó para resolver, reintroducido aquí sin querer).
+Esta versión recibe una lista de especificaciones ya resueltas por
+remote.py (una por componente, con su env_extra ya calculado) y se
+limita a traducir cada una a una instancia EC2 Spot — sin lógica de
+topología propia, que vive en topologia.py.
 """
 
 import logging
@@ -22,6 +39,7 @@ _DESCRIPCION_SG = "orquestador-local"
 # Red
 # ---------------------------------------------------------------------------
 
+
 def obtener_ip_publica() -> str:
     resp = requests.get("https://checkip.amazonaws.com", timeout=5)
     resp.raise_for_status()
@@ -42,23 +60,28 @@ def actualizar_security_group(config: dict, mi_ip: str):
 
     # Revocar reglas anteriores del orquestador
     reglas_anteriores = [
-        r for r in sg.get("IpPermissions", [])
+        r
+        for r in sg.get("IpPermissions", [])
         if any(
             rango.get("Description") == _DESCRIPCION_SG
             for rango in r.get("IpRanges", [])
         )
     ]
     if reglas_anteriores:
-        ec2.revoke_security_group_ingress(GroupId=sg_id, IpPermissions=reglas_anteriores)
+        ec2.revoke_security_group_ingress(
+            GroupId=sg_id, IpPermissions=reglas_anteriores
+        )
 
     ec2.authorize_security_group_ingress(
         GroupId=sg_id,
-        IpPermissions=[{
-            "IpProtocol": "tcp",
-            "FromPort": puerto,
-            "ToPort": puerto,
-            "IpRanges": [{"CidrIp": f"{mi_ip}/32", "Description": _DESCRIPCION_SG}],
-        }],
+        IpPermissions=[
+            {
+                "IpProtocol": "tcp",
+                "FromPort": puerto,
+                "ToPort": puerto,
+                "IpRanges": [{"CidrIp": f"{mi_ip}/32", "Description": _DESCRIPCION_SG}],
+            }
+        ],
     )
     logger.info(f"Security Group actualizado: {mi_ip} → puerto {puerto}")
 
@@ -67,15 +90,33 @@ def actualizar_security_group(config: dict, mi_ip: str):
 # Instancias
 # ---------------------------------------------------------------------------
 
-def _user_data(componente: str, componente_id: str, session_id: str, config: dict) -> str:
+
+def _user_data(
+    componente: str,
+    componente_id: str,
+    session_id: str,
+    config: dict,
+    env_extra: dict[str, str],
+) -> str:
     """
     Script que ejecuta cada instancia al arrancar.
-    Redirige stdout/stderr a un log para poder inspeccionar si algo falla.
+
+    env_extra son las variables de entorno que topologia.resolver_env_extra()
+    calculó para este componente concreto (direcciones de otros componentes
+    ya arrancados, SECTOR_COL/ROW, HYPERVISOR_ID...) — se exportan ANTES de
+    lanzar main.py, que las lee vía os.getenv() en cada _server.py.
+
+    Los valores se citan entre comillas dobles por si alguna dirección
+    contuviera caracteres especiales (no debería, pero es defensivo y barato).
     """
     bucket = config["aws"]["bucket"]
+    exports = "\n".join(
+        f'export {clave}="{valor}"' for clave, valor in env_extra.items()
+    )
     return (
         "#!/bin/bash\n"
         "cd /home/ubuntu/proyecto\n"
+        f"{exports}\n"
         f"python main.py"
         f" --modo produccion"
         f" --componente {componente}"
@@ -86,12 +127,25 @@ def _user_data(componente: str, componente_id: str, session_id: str, config: dic
     )
 
 
-def lanzar_instancias(config: dict, session_id: str) -> dict[str, str]:
+def lanzar_instancias(
+    config: dict,
+    session_id: str,
+    especificaciones: list[dict],
+) -> dict[str, str]:
     """
-    Lanza todas las instancias Spot necesarias para la sesión.
-    Si alguna falla, termina las que ya se lanzaron antes de propagar el error.
+    Lanza instancias Spot para el conjunto de componentes indicado.
 
-    Devuelve: {componente_id: instance_id}
+    especificaciones: lista de dicts con forma
+        {"componente": <tipo>, "comp_id": <nombre único>, "env_extra": {...}}
+    tal como los construye remote.py._lanzar_fase() a partir de un grupo de
+    topologia.construir_topologia().
+
+    Si alguna instancia falla al lanzarse, termina las que ya se lanzaron
+    EN ESTA LLAMADA antes de propagar el error (remote.py se encarga de
+    terminar también las de fases anteriores, que ya tiene acumuladas en
+    id_por_comp).
+
+    Devuelve: {comp_id: instance_id}
     """
     ec2 = boto3.client("ec2", region_name=config["aws"]["region"])
     ami_id = config["aws"]["ami_id"]
@@ -100,42 +154,41 @@ def lanzar_instancias(config: dict, session_id: str) -> dict[str, str]:
 
     lanzadas: dict[str, str] = {}
 
-    def _lanzar(componente: str, tipo: str, comp_id: str):
-        resp = ec2.run_instances(
-            ImageId=ami_id,
-            InstanceType=tipo,
-            MinCount=1,
-            MaxCount=1,
-            SecurityGroupIds=[sg_id],
-            UserData=_user_data(componente, comp_id, session_id, config),
-            InstanceMarketOptions={"MarketType": "spot"},
-            TagSpecifications=[{
-                "ResourceType": "instance",
-                "Tags": [
-                    {"Key": "Name",          "Value": f"ia-{comp_id}"},
-                    {"Key": "sesion",        "Value": session_id},
-                    {"Key": "componente_id", "Value": comp_id},
-                ],
-            }],
-        )
-        instance_id = resp["Instances"][0]["InstanceId"]
-        lanzadas[comp_id] = instance_id
-        logger.info(f"Instancia lanzada: {comp_id} → {instance_id}")
-
     try:
-        _lanzar("gestor_bots",  inst_cfg["gestor_bots"]["tipo"],  "gestor_bots")
-        _lanzar("gestor_mundo", inst_cfg["gestor_mundo"]["tipo"], "gestor_mundo")
+        for spec in especificaciones:
+            componente = spec["componente"]
+            comp_id = spec["comp_id"]
+            env_extra = spec["env_extra"]
+            tipo_instancia = inst_cfg[componente]["tipo"]
 
-        for i in range(inst_cfg["hypervisor"]["cantidad"]):
-            _lanzar("hypervisor", inst_cfg["hypervisor"]["tipo"], f"hv_{i}")
-
-        for i in range(inst_cfg["sector"]["cantidad"]):
-            _lanzar("sector", inst_cfg["sector"]["tipo"], f"sector_{i}")
+            resp = ec2.run_instances(
+                ImageId=ami_id,
+                InstanceType=tipo_instancia,
+                MinCount=1,
+                MaxCount=1,
+                SecurityGroupIds=[sg_id],
+                UserData=_user_data(componente, comp_id, session_id, config, env_extra),
+                InstanceMarketOptions={"MarketType": "spot"},
+                TagSpecifications=[
+                    {
+                        "ResourceType": "instance",
+                        "Tags": [
+                            {"Key": "Name", "Value": f"ia-{comp_id}"},
+                            {"Key": "sesion", "Value": session_id},
+                            {"Key": "componente_id", "Value": comp_id},
+                        ],
+                    }
+                ],
+            )
+            instance_id = resp["Instances"][0]["InstanceId"]
+            lanzadas[comp_id] = instance_id
+            logger.info(f"Instancia lanzada: {comp_id} → {instance_id}")
 
     except ClientError as e:
-        # Limpiar instancias ya lanzadas antes de propagar el error
         if lanzadas:
-            logger.error("Fallo al lanzar instancias; terminando las que se lanzaron.")
+            logger.error(
+                "Fallo al lanzar instancias; terminando las que se lanzaron en esta fase."
+            )
             terminar_instancias(config, list(lanzadas.values()))
         raise RuntimeError(f"No se pudo lanzar la infraestructura: {e}") from e
 
@@ -196,6 +249,7 @@ def terminar_instancias(config: dict, instance_ids: list[str]):
 # ---------------------------------------------------------------------------
 # Sesiones en S3
 # ---------------------------------------------------------------------------
+
 
 def nueva_session_id() -> str:
     return str(uuid.uuid4())

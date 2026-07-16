@@ -5,6 +5,10 @@ logica_mundo_servicer.py — Servicer gRPC de LogicaMundoService.
 Sigue el mismo patrón de dispatch por NAME que gestor_bots_servicer.py /
 gestor_mundo_servicer.py / sector_servicer.py: cada RPC delega en su
 módulo de Funciones/, resuelto por nombre en self._dispatch.
+
+Añadidos en este cambio: Heartbeat (item pendiente "monitor.py solo
+vigilaba gestor_bots/gestor_mundo") y GetElementosGlobales (migrado
+desde GestorMundoService, ver decisión "elementos_globales: B").
 """
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
@@ -19,6 +23,9 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
     def __init__(self, logica: LogicaMundo) -> None:
         self._logica = logica
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
+
+    async def Heartbeat(self, request, context):
+        return await self._dispatch["Heartbeat"].handle(self._logica, request, context)
 
     async def AsignarId(self, request, context):
         return await self._dispatch["AsignarId"].handle(self._logica, request, context)
@@ -55,6 +62,11 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     async def GetActiveEvents(self, request, context):
         return await self._dispatch["GetActiveEvents"].handle(
+            self._logica, request, context
+        )
+
+    async def GetElementosGlobales(self, request, context):
+        return await self._dispatch["GetElementosGlobales"].handle(
             self._logica, request, context
         )
 

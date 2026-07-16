@@ -2,7 +2,7 @@ from functools import partial
 
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Core.Mundo import datos
+from Core.Entities.Mundo import datos
 
 
 class Serie_Estados:

@@ -15,6 +15,7 @@ class Elemento_Simple(Elemento):
     def __init__(
         self,
         tipo,
+        id,
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
@@ -26,6 +27,7 @@ class Elemento_Simple(Elemento):
         super().__init__(
             tipo=tipo,
             capa=capa,
+            id=id,
             fuerza_sector_activo=fuerza_sector_activo,
             fuerza_vecinos_activos=fuerza_vecinos_activos,
             **kwargs,

@@ -35,6 +35,7 @@ from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Arbol import Arbol
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 from Core.Entities.Elementos.Simples.Cadaver.cadaver import Cadaver
+from Core.Entities.Elementos.Simples.Celda.celda import Celda
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne import Carne
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_fresca import Carne_Fresca
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_seca import Carne_Seca
@@ -45,7 +46,6 @@ from Core.Entities.Elementos.Simples.Comida.comida import Comida
 from Core.Entities.Elementos.Simples.Etereo.etereo import Etereo
 from Core.Entities.Elementos.Simples.Etereo.mensaje import Mensaje
 from Core.Entities.Elementos.Simples.Recipiente.recipiente import Recipiente
-from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import Celda
 
 ELEMENTOS: dict[str, type] = {
     "Accion": Accion,

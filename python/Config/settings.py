@@ -46,3 +46,4 @@ MODO: str = os.getenv("MODO", "local")
 # ── Intervalo de polling de logs en modo remoto (segundos) ────────────────────
 # main.py, en modo remoto, pregunta a cada componente cada este intervalo.
 LOG_PULL_INTERVAL_SEGUNDOS: int = int(os.getenv("LOG_PULL_INTERVAL_SEGUNDOS", 5))
+

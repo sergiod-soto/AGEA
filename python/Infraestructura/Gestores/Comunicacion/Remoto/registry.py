@@ -13,7 +13,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
     eliminar_elemento,
     freeze_all,
     get_active_events,
-    get_global_state,
+    get_elementos_globales,
     get_snapshot_info,
     list_hypervisors,
     modificar_elemento,
@@ -35,12 +35,12 @@ FUNCIONES = [
     crear_elemento,
     modificar_elemento,
     eliminar_elemento,
+    get_elementos_globales,
     # Gestor_Mundo
     pause,
     resume,
     set_tick_rate,
     trigger_deep_save,
-    get_global_state,
     get_snapshot_info,
     # Gestor_Bots
     list_hypervisors,

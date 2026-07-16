@@ -7,8 +7,8 @@ resuelve ahora contra LogicaMundoService — ver Logica_Mundo/registry.py.
 """
 
 from Infraestructura.Gestores.Mundo.Gestor_Mundo.Funciones import (
-    get_global_state,
     get_snapshot_info,
+    heartbeat,
     pause,
     resume,
     set_tick_rate,
@@ -16,10 +16,10 @@ from Infraestructura.Gestores.Mundo.Gestor_Mundo.Funciones import (
 )
 
 FUNCIONES = [
-    get_global_state,
     get_snapshot_info,
     pause,
     resume,
     trigger_deep_save,
     set_tick_rate,
+    heartbeat,
 ]

@@ -1,4 +1,4 @@
-from Core.Mundo import datos
+from Core.Entities.Mundo import datos
 from Dev.Serie_Estados import Serie_Estados
 
 SE = Serie_Estados()

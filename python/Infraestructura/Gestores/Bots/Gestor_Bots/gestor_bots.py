@@ -2,10 +2,12 @@
 """
 gestor_bots.py — Lógica pura del Gestor de Hypervisores.
 
-Cambio respecto a la versión anterior: las acciones de bots ya no se
-reenvían al Mundo (GestorMundo) — se resuelven directamente contra
-Logica_Mundo, que es quien ahora tiene el estado gold y ejecuta
-ACCIONES sin salto de red adicional (ver logica_mundo.py).
+NUEVO (detección de HVs caídos): cada HypervisorInfo lleva un
+last_seen actualizado en cada UpdateHypervisorLoad (que el HV ya
+empuja cada 30s, ver hypervisor_server.py::_heartbeat). Gestor_Bots
+NO pinguea activamente a los HVs — es más barato comprobar staleness
+de un dato que ya recibe pasivamente. Ver hypervisores_caidos(),
+usado por Funciones/heartbeat.py para rellenar hv_statuses.
 """
 
 from __future__ import annotations
@@ -13,6 +15,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+import os
+import time
 from typing import Optional
 
 from Infraestructura.Gestores.tipos_comunes import (
@@ -23,21 +27,20 @@ from Infraestructura.Gestores.tipos_comunes import (
     HypervisorList,
 )
 
-from Infraestructura.Gestores.tipos_comunes import ActionResult, BotInfo, BotStats
-
 logger = logging.getLogger(__name__)
+
+# Umbral de staleness: si un HV no ha empujado carga en más de esto
+# (segundos), se considera caído (spot terminado sin previo aviso).
+# 90s = 3× el intervalo de push del HV (30s, hardcodeado en
+# hypervisor_server.py) — mismo margen "3 fallos" que ya usa
+# MonitorComponentes vía heartbeat_perdidos_max, aplicado aquí a un
+# mecanismo pasivo en vez de polling activo.
+UMBRAL_HV_CAIDO_SEGUNDOS = float(os.getenv("UMBRAL_HV_CAIDO_SEGUNDOS", 90))
 
 
 class Gestor_Bots:
 
     def __init__(self, logica_client=None, bots_por_hypervisor: int = 100):
-        """
-        logica_client : cliente hacia Logica_Mundo (LogicaMundoClient),
-                        usado para resolver acciones de bots. Antes era
-                        `mundo_client` (GestorMundoClient) — renombrado
-                        para reflejar que ya no habla con el Mundo, sino
-                        con Logica_Mundo directamente.
-        """
         if bots_por_hypervisor <= 0:
             raise ValueError(
                 f"bots_por_hypervisor debe ser > 0, recibido: {bots_por_hypervisor}"
@@ -137,6 +140,7 @@ class Gestor_Bots:
                 port=port,
                 proxy_port=proxy_port,
                 capacity=capacity,
+                last_seen=time.monotonic(),
             )
             logger.info(
                 "Hypervisor registrado: %s en %s:%d (proxy:%d, cap:%d)",
@@ -160,10 +164,30 @@ class Gestor_Bots:
                 logger.warning("update_load de HV desconocido: %s", hypervisor_id)
                 return
             hv.current_load = current_load
+            # Cada push de carga es también la señal de "sigo vivo" —
+            # ver UMBRAL_HV_CAIDO_SEGUNDOS / hypervisores_caidos().
+            hv.last_seen = time.monotonic()
 
     async def list_hypervisors(self) -> HypervisorList:
         async with self._lock:
             return HypervisorList(hypervisors=list(self._hypervisors.values()))
+
+    async def hypervisores_caidos(self) -> list[str]:
+        """
+        Devuelve los hypervisor_id cuyo último UpdateHypervisorLoad
+        supera UMBRAL_HV_CAIDO_SEGUNDOS — spot probablemente terminado.
+
+        No confirma nada por red (no pinguea al HV): staleness de un
+        dato que ya se recibe pasivamente es más barato que un ping
+        activo, y el HV ya empuja carga cada 30s por su cuenta.
+        """
+        ahora = time.monotonic()
+        async with self._lock:
+            return [
+                hv_id
+                for hv_id, hv in self._hypervisors.items()
+                if (ahora - hv.last_seen) > UMBRAL_HV_CAIDO_SEGUNDOS
+            ]
 
     # ------------------------------------------------------------------
     # Gestión de Bots
@@ -244,12 +268,6 @@ class Gestor_Bots:
         )
 
     async def kill_bot(self, bot_id: str) -> None:
-        """
-        Mata el proceso/script de un bot en su Hypervisor y limpia el
-        registro interno. Usado tanto por el Flujo A (Gestor_Bots.
-        MatarScriptBot, tras decisión del Mundo) como por órdenes
-        administrativas directas.
-        """
         async with self._lock:
             stats = self._bots.get(bot_id)
             if stats is None:
@@ -271,14 +289,6 @@ class Gestor_Bots:
                 hv.current_load -= 1
 
     async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
-        """
-        Flujo B: el Hypervisor detectó que el script de un bot se ha
-        roto (no compila, excepción no controlada, etc.) y notifica
-        que el avatar se ha quedado sin piloto. Gestor_Bots actúa de
-        puente hacia Logica_Mundo, sin lógica propia sobre el proceso
-        (el HV ya gestiona su propio script; aquí solo se limpia el
-        avatar en el mundo).
-        """
         if self.logica_client is None:
             return True, ""
         try:
@@ -300,20 +310,6 @@ class Gestor_Bots:
         action_type: str,
         payload: bytes,
     ) -> ActionResult:
-        """
-        Pide a Logica_Mundo que resuelva una acción de un bot.
-
-        Antes: forward_action_to_mundo(), que reenviaba al GestorMundo
-        (que a su vez ejecutaba handle_action contra su propio estado).
-        Ahora Logica_Mundo resuelve directamente — Gestor_Bots solo hace
-        de intermediario entre el Hypervisor y Logica_Mundo, sin lógica
-        propia sobre el resultado.
-
-        hypervisor_id se mantiene en la firma por compatibilidad con
-        quien llama (world_proxy_servicer vía forward_to_gestor), aunque
-        ya no se usa aquí — Logica_Mundo no necesita saber de qué HV
-        vino la acción.
-        """
         if self.logica_client is None:
             return ActionResult(ok=True, payload=b"", error="")
         try:

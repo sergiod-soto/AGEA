@@ -1,7 +1,12 @@
-# Gestores/Mundo/Gestor_Mundo/gestor_mundo_servicer.py
+# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo_servicer.py
 """
-gestor_mundo_servicer.py — recortado tras el refactor a Logica_Mundo.
-Solo quedan los RPCs de mecánica de tick que gestor_mundo.py implementa.
+gestor_mundo_servicer.py
+
+GetGlobalState se retiró (ver decisión "elementos_globales: B" — los
+elementos globales se consultan ahora vía
+LogicaMundoService.GetElementosGlobales). Se añade Heartbeat, para que
+MonitorComponentes (remote.py) pueda vigilar este componente igual que
+ya vigilaba a gestor_bots.
 """
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
@@ -17,10 +22,8 @@ class GestorMundoServicer(pb_grpc.GestorMundoServiceServicer):
         self._gestor = gestor
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
 
-    async def GetGlobalState(self, request, context):
-        return await self._dispatch["GetGlobalState"].handle(
-            self._gestor, request, context
-        )
+    async def Heartbeat(self, request, context):
+        return await self._dispatch["Heartbeat"].handle(self._gestor, request, context)
 
     async def GetSnapshotInfo(self, request, context):
         return await self._dispatch["GetSnapshotInfo"].handle(

@@ -11,10 +11,12 @@ instancias:
     tipo: t3.small
   hypervisor:
     tipo: t3.medium
-    cantidad: 2
   sector:
     tipo: t3.small
-    cantidad: 4
+  logica_mundo: 
+    tipo: t3.small
+  comunicaciones_remoto:
+    tipo: t3.small
 
 bots:
   max_por_hypervisor: 100

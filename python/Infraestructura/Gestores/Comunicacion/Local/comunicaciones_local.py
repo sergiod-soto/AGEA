@@ -228,11 +228,15 @@ class ComunicacionesLocal:
         resp.ParseFromString(raw)
         return resp
 
-    async def get_global_state(self) -> "mundo_pb.GetGlobalStateResponse":
+    async def obtener_elementos_globales(
+        self,
+    ) -> "logica_pb.GetElementosGlobalesResponse":
         raw = await self._ejecutar(
-            bridge_pb.GESTOR_MUNDO, "GetGlobalState", mundo_pb.GetGlobalStateRequest()
+            bridge_pb.LOGICA_MUNDO,
+            "GetElementosGlobales",
+            logica_pb.GetElementosGlobalesRequest(),
         )
-        resp = mundo_pb.GetGlobalStateResponse()
+        resp = logica_pb.GetElementosGlobalesResponse()
         resp.ParseFromString(raw)
         return resp
 

@@ -1,6 +1,9 @@
 # Infraestructura/Gestores/Bots/Hypervisor/hypervisor_server.py
 """
 hypervisor_server.py
+
+Se retira GestorMundoClientSync (y su import/creación/cierre) — el
+Hypervisor ya no habla con Gestor_Mundo directamente (ver hypervisor.py).
 """
 
 from __future__ import annotations
@@ -21,9 +24,6 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2_grpc,
-)
-from Infraestructura.Gestores.Transporte.gestor_mundo_client_sync import (
-    GestorMundoClientSync,
 )
 
 sys.path.insert(0, str(Path(__file__).parents[4]))
@@ -62,16 +62,11 @@ def build_servers(
     capacity: int,
     workers: int,
     gestor_address: str,
-    gestor_mundo_address: str,
 ) -> tuple[grpc.Server, grpc.Server, Hypervisor, GestorBotsClient]:
     gestor_client = GestorBotsClient(gestor_address)
-    # Cliente síncrono hacia el Mundo (ver gestor_mundo_client_sync.py
-    # para el porqué: el Hypervisor no corre ningún event loop asyncio).
-    gestor_mundo_client = GestorMundoClientSync(gestor_mundo_address)
     hv = Hypervisor(
         hypervisor_id=hv_id,
         gestor_client=gestor_client,
-        gestor_mundo_client=gestor_mundo_client,
         capacity=capacity,
         my_address=my_address,
         my_port=my_port,
@@ -98,8 +93,6 @@ def build_servers(
 
 
 def serve():
-    # Variables alineadas con lo que inyecta main.py
-    gestor_mundo_address = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
     hv_id = os.getenv("HYPERVISOR_ID", "hv_00")
     my_address = os.getenv("HYPERVISOR_HOST", "localhost")
     my_port = int(os.getenv("HYPERVISOR_PORT", 50300))
@@ -109,11 +102,6 @@ def serve():
     gestor_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
     log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
 
-    # Logging: única fuente de verdad (sin logging.basicConfig() en
-    # paralelo — decisión ya tomada para los otros _server.py, mismo
-    # motivo aquí). En local escribe directo a fichero; en remoto acumula
-    # en memoria y expone PullLogs sobre el MISMO servidor y puerto que
-    # HypervisorService (management_server) — no se abre un puerto nuevo.
     if MODO == "local":
         setup_local_logging(component=hv_id, log_dir=LOG_DIR, level=log_level)
     else:
@@ -127,7 +115,6 @@ def serve():
         capacity=capacity,
         workers=workers,
         gestor_address=gestor_address,
-        gestor_mundo_address=gestor_mundo_address,
     )
 
     if MODO != "local":
@@ -163,9 +150,6 @@ def serve():
         management_server.stop(grace=5)
         proxy_server.stop(grace=5)
         gestor_client.close()
-        # Antes no se cerraba explícitamente: se añade aquí por
-        # consistencia (mismo criterio que gestor_client.close()).
-        hv.gestor_mundo_client.close()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _shutdown)

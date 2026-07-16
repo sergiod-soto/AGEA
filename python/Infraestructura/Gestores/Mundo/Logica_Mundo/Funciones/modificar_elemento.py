@@ -13,7 +13,6 @@ import logging
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
 
 logger = logging.getLogger(__name__)
-
 NAME = "ModificarElemento"
 
 
