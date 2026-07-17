@@ -254,8 +254,8 @@ class GestorMundo:
         """
         Ordena a todos los sectores ACTIVOS que computen en paralelo.
 
-        NUEVO: cada excepción/timeout incrementa sector.fallos_consecutivos;
-        cada éxito lo resetea a 0 — ver fallos_consecutivos_criticos().
+        cada excepción/timeout incrementa sector.fallos_consecutivos;
+        cada éxito lo resetea a 0.
         """
         activos = [s for s in self._sectores.values() if s.mode == SectorMode.ACTIVO]
         tareas = [self._start_tick_sector(s) for s in activos]
@@ -435,7 +435,6 @@ class GestorMundo:
         if info and info.mode == SectorMode.INACTIVO:
             asyncio.create_task(self._set_sector_mode(info, SectorMode.ACTIVO))
 
-    # NUEVO — detección de sectores caídos, para Funciones/heartbeat.py
     def sectores_caidos(self) -> list[str]:
         """
         Devuelve los identificadores "col_row" de sectores con

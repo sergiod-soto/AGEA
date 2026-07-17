@@ -39,7 +39,7 @@ class Serie_Estados:
     #   anhade nuevo estado
     def add(self, funciones):
         """Añade un nuevo estado (lista de funciones o tuplas)"""
-        print("➕ Añadiendo estado")
+        print("(➕) Añadiendo estado")
 
         estado = self.Estado(funciones)
         self.estados.append(estado)
