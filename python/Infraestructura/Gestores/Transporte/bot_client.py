@@ -2,7 +2,6 @@
 """
 bot_client.py — Cliente gRPC del WorldProxyService.
 
-Carpeta: Hypervisores/Transporte/bot_client.py
 
 El bot lo instancia con la dirección proxy recibida al hacer spawn.
 El bot_id se inyecta automáticamente en el header de cada llamada.
@@ -13,6 +12,16 @@ Para añadir soporte a una acción nueva:
 
 El método act() genérico siempre funciona para cualquier acción,
 aunque no tenga método de conveniencia.
+
+ELIMINADO (a petición explícita): get_status(). Los bots van a llevar
+su propio estado (puntos, vivo/muerto...) por su cuenta, así que la
+consulta al HV por red deja de tener sentido. Además, nunca funcionó
+de verdad: world_proxy_service.proto jamás declaró
+`rpc GetStatus (...)` dentro de WorldProxyService (solo existían los
+mensajes GetStatusRequest/BotStatusResponse, marcados en el propio
+.proto como "TODO: definir e integrar") — por eso WorldProxyServiceStub
+(generado) nunca tuvo un método GetStatus real, y llamarlo aquí
+lanzaba AttributeError antes incluso de intentar la red.
 
 Uso básico
 ----------
@@ -27,7 +36,6 @@ Uso básico
     hits   = client.observe(center_angle=0.0, fov=1.57, num_rays=5)
     result = client.move(dx=1, dy=0)
     result = client.reproduce()
-    status = client.get_status()
 
     client.close()
 """
@@ -42,12 +50,12 @@ from typing import Optional
 
 import grpc
 
-from Infraestructura.Gestores.tipos_comunes import ActionResult, BotStatusPropio
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
+from Infraestructura.Gestores.tipos_comunes import ActionResult
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     world_proxy_service_pb2_grpc,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
-    common_pb2,
     world_proxy_service_pb2,
 )
 
@@ -296,37 +304,3 @@ class BotClient:
         El payload del resultado indicará el bot_id del hijo si se aprueba.
         """
         return self.act("reproduce", b"", timeout)
-
-    # ------------------------------------------------------------------
-    # Estado propio (0 puntos, consulta local al Hypervisor)
-    # ------------------------------------------------------------------
-
-    def get_status(self, timeout: float | None = None) -> Optional[BotStatusPropio]:
-        """
-        Consulta el estado del bot (puntos restantes, vivo/muerto).
-        Coste: 0 puntos. No sube al Gestor ni al Mundo.
-
-        Devuelve None si hay error de red o el bot no existe en el HV.
-        """
-        request = world_proxy_service_pb2.GetStatusRequest()
-        try:
-            pb = self._stub.GetStatus(
-                request,
-                metadata=self._metadata,
-                timeout=self._t(timeout),
-            )
-            return BotStatusPropio(
-                bot_id=pb.bot_id,
-                x=pb.position.x,
-                y=pb.position.y,
-                rotation=pb.rotation,
-                health=pb.health,
-                points_left=pb.points_left,
-                world_tick=pb.world_tick,
-                alive=pb.alive,
-            )
-        except grpc.RpcError as exc:
-            if exc.code() == grpc.StatusCode.NOT_FOUND:
-                return None
-            self._handle_rpc_error("GetStatus", exc)
-            return None

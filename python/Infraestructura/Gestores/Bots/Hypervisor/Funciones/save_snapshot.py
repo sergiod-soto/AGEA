@@ -6,9 +6,9 @@ logger = logging.getLogger(__name__)
 NAME = "SaveSnapshot"
 
 
-def handle(hv, request, context):
+async def handle(hv, request, context):
     try:
-        hv.save_snapshot(request.snapshot_id)
+        await hv.save_snapshot(request.snapshot_id)
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en SaveSnapshot")

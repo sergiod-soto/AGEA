@@ -6,10 +6,11 @@ logger = logging.getLogger(__name__)
 NAME = "Resume"
 
 
-def handle(hv, request, context):
+async def handle(hv, request, context):
     try:
-        hv.resume()
+        await hv.resume()
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en Resume")
         return common_pb2.Ack(ok=False, error=str(e))
+

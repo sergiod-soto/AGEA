@@ -1,6 +1,5 @@
 # Infraestructura/Gestores/Mundo/Logica_Mundo/registry.py
 
-
 from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
     asignar_id,
     actualizar_celdas,
@@ -18,6 +17,7 @@ from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
     obtener_celdas_en_region,
     resolver_accion,
     save_snapshot,
+    shutdown,  
     spawn_global_event,
 )
 
@@ -39,4 +39,5 @@ FUNCIONES = [
     load_state,
     heartbeat,
     get_elementos_globales,
+    shutdown,
 ]

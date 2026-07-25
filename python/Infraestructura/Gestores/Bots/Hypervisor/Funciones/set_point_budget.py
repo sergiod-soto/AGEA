@@ -6,10 +6,10 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "SetPointBudget"
 
-def handle(hv: Hypervisor, request, context):
+async def handle(hv: Hypervisor, request, context):
     logger.debug("SetPointBudget: bot=%s puntos=%d", request.bot_id, request.points)
     try:
-        hv.set_point_budget(request.bot_id, request.points)
+        await hv.set_point_budget(request.bot_id, request.points)
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en SetPointBudget")

@@ -4,7 +4,7 @@ from Config.parametros_simulacion import TICKS_POR_DIA
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
 )
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.reloj import Reloj
+from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
 
 
 class Ciclo_Lunar(Marcador_Temporal):

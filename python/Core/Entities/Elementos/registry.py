@@ -22,7 +22,6 @@ from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.rastro import Rast
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_lunar import (
     Ciclo_Lunar,
 )
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.clima import Clima
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
 )
@@ -32,10 +31,10 @@ from Core.Entities.Elementos.Abstractos.Puzzle.puzzle import Puzzle
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
-from Core.Entities.Elementos.Simples.Arbol import Arbol
+from Core.Entities.Elementos.Simples.Arbol.arbol import Arbol
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 from Core.Entities.Elementos.Simples.Cadaver.cadaver import Cadaver
-from Core.Entities.Elementos.Simples.Celda.celda import Celda
+from Core.Entities.Mundo.Celda.celda import Celda
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne import Carne
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_fresca import Carne_Fresca
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_seca import Carne_Seca
@@ -59,7 +58,7 @@ ELEMENTOS: dict[str, type] = {
     "Agujero": Agujero,
     "Rastro": Rastro,
     "Ciclo_Lunar": Ciclo_Lunar,
-    "Clima": Clima,
+    # "Clima": Clima,
     "Marcador_Temporal": Marcador_Temporal,
     "Puzzle": Puzzle,
     "Premio": Premio,

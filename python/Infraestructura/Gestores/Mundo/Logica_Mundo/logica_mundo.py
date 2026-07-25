@@ -13,6 +13,12 @@ from typing import Any, Optional
 from numpy import uint64
 
 from Core.Entities.Elementos.registry import reconstruir_elemento
+from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
+    CrearElemento,
+    EliminarElemento,
+    MoverElemento,
+    Mutacion,
+)
 from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
     GestorBotsClientAsync,
 )
@@ -57,9 +63,9 @@ class LogicaMundo:
         self.SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots_logica"))
 
         self._gold_cells: dict[tuple[int, int], Celda] = {}
-        self._elements: dict[int, Any] = {}
+        self._elements: dict[uint64, Any] = {}
         self._bot_positions: dict[str, tuple[int, int]] = {}
-        self._id_counter: int = 0
+        self._id_counter: uint64 = uint64(0)
 
         self._active_events: dict[str, GlobalEvent] = {}
         self._event_counter: int = 0
@@ -72,11 +78,131 @@ class LogicaMundo:
 
         logger.info("LogicaMundo inicializado.")
 
+    async def aplicar_delta_sector(self, mutaciones: list[Mutacion]) -> None:
+        """Aplica, en orden y bajo un único lock, todas las mutaciones que un
+        Sector devolvió en su TickDelta."""
+        async with self._lock:
+            for m in mutaciones:
+                if isinstance(m, CrearElemento):
+                    self._aplicar_crear_sin_lock(m)
+                elif isinstance(m, EliminarElemento):
+                    self._aplicar_eliminar_sin_lock(m)
+                elif isinstance(m, MoverElemento):
+                    self._aplicar_mover_sin_lock(m)
+                else:
+                    logger.warning(
+                        "aplicar_delta_sector: tipo de mutación desconocido: %r", m
+                    )
+
+    def _aplicar_crear_sin_lock(self, m: CrearElemento) -> None:
+        """Asigna id real (reutilizando el mismo contador que asignar_id) y
+        registra el elemento nuevo. Solo debe llamarse ya dentro de self._lock."""
+        self._id_counter += 1
+        eid = self._id_counter
+        m.elemento.id = eid  # el objeto llega sin id — se le asigna aquí
+        self._elements[eid] = m.elemento
+
+        celda = self._gold_cells.setdefault(m.pos, Celda())
+        if m.tipo_slot == "suelo":
+            celda.suelo = eid
+        elif m.tipo_slot == "bot":
+            celda.bot = eid
+            self._bot_positions[str(eid)] = m.pos
+        else:
+            celda.resto.append(eid)
+
+        logger.debug(
+            "Elemento %s creado en %s (marcador_local=%s)",
+            eid,
+            m.pos,
+            m.marcador_local,
+        )
+
+    def _aplicar_eliminar_sin_lock(self, m: EliminarElemento) -> None:
+        """Solo debe llamarse ya dentro de self._lock."""
+        celda = self._gold_cells.get(m.pos)
+        if celda is None:
+            logger.warning(
+                "aplicar_delta_sector: no hay celda en %s para eliminar %s",
+                m.pos,
+                m.id_elemento,
+            )
+            return
+
+        if celda.suelo == m.id_elemento:
+            celda.suelo = None
+        elif celda.bot == m.id_elemento:
+            celda.bot = None
+            self._bot_positions.pop(str(m.id_elemento), None)
+        elif m.id_elemento in celda.resto:
+            celda.resto.remove(m.id_elemento)
+        else:
+            logger.warning(
+                "aplicar_delta_sector: elemento %s no encontrado en %s",
+                m.id_elemento,
+                m.pos,
+            )
+            return
+
+        self._elements.pop(m.id_elemento, None)
+        if celda.suelo is None and celda.bot is None and not celda.resto:
+            self._gold_cells.pop(m.pos, None)
+
+    def _aplicar_mover_sin_lock(self, m: MoverElemento) -> None:
+        """Mueve un elemento de pos_origen a pos_destino, conservando su id.
+        pos_destino puede caer en la región de otro sector: aquí no importa,
+        porque _gold_cells es único y global — la noción de "a qué sector
+        pertenece" solo existe al construir el siguiente delta de ENTRADA
+        (obtener_celdas_en_región ya filtra por región). Solo debe llamarse
+        ya dentro de self._lock."""
+        celda_origen = self._gold_cells.get(m.pos_origen)
+        if celda_origen is None:
+            logger.warning(
+                "aplicar_delta_sector: no hay celda en %s para mover %s",
+                m.pos_origen,
+                m.id_elemento,
+            )
+            return
+
+        tipo_slot = None
+        if celda_origen.suelo == m.id_elemento:
+            celda_origen.suelo = None
+            tipo_slot = "suelo"
+        elif celda_origen.bot == m.id_elemento:
+            celda_origen.bot = None
+            tipo_slot = "bot"
+        elif m.id_elemento in celda_origen.resto:
+            celda_origen.resto.remove(m.id_elemento)
+            tipo_slot = "resto"
+        else:
+            logger.warning(
+                "aplicar_delta_sector: elemento %s no encontrado en %s",
+                m.id_elemento,
+                m.pos_origen,
+            )
+            return
+
+        if (
+            celda_origen.suelo is None
+            and celda_origen.bot is None
+            and not celda_origen.resto
+        ):
+            self._gold_cells.pop(m.pos_origen, None)
+
+        celda_destino = self._gold_cells.setdefault(m.pos_destino, Celda())
+        if tipo_slot == "suelo":
+            celda_destino.suelo = m.id_elemento
+        elif tipo_slot == "bot":
+            celda_destino.bot = m.id_elemento
+            self._bot_positions[str(m.id_elemento)] = m.pos_destino
+        else:
+            celda_destino.resto.append(m.id_elemento)
+
     # ---- Traducción Cell (proto) <-> Celda (interno) ----
 
-    def _slot_bytes_a_id(self, blob: bytes) -> Optional[int]:
+    def _slot_bytes_a_id(self, blob: bytes) -> uint64:
         if not blob:
-            return None
+            raise ValueError(f"No existe suelo")
         data = json.loads(blob.decode())
         elemento = reconstruir_elemento(data)
         eid = getattr(elemento, "id", None)
@@ -87,7 +213,7 @@ class LogicaMundo:
         self._elements[eid] = elemento
         return eid
 
-    def _id_a_slot_bytes(self, eid: Optional[int]) -> bytes:
+    def _id_a_slot_bytes(self, eid: Optional[uint64]) -> bytes:
         if eid is None:
             return b""
         elemento = self._elements.get(eid)
@@ -113,8 +239,8 @@ class LogicaMundo:
         )
 
         x, y = pos
-        return common_pb.Cell(
-            pos=common_pb.Position(x=x, y=y),
+        return common_pb.Cell(  # type: ignore
+            pos=common_pb.Position(x=x, y=y),  # type: ignore
             suelo=self._id_a_slot_bytes(celda.suelo),
             bot=self._id_a_slot_bytes(celda.bot),
             resto=[self._id_a_slot_bytes(eid) for eid in celda.resto],
@@ -122,7 +248,7 @@ class LogicaMundo:
 
     # ---- Identidad ----
 
-    async def asignar_id(self) -> int:
+    async def asignar_id(self) -> uint64:
         async with self._lock:
             self._id_counter += 1
             return self._id_counter
@@ -175,7 +301,7 @@ class LogicaMundo:
             return True, ""
 
     async def eliminar_elemento(
-        self, pos: tuple[int, int], element_id: int
+        self, pos: tuple[int, int], element_id: uint64
     ) -> tuple[bool, str]:
         async with self._lock:
             celda = self._gold_cells.get(pos)
@@ -352,8 +478,8 @@ class LogicaMundo:
 
         tiene_exclusion = excluir_min is not None and excluir_max is not None
         if tiene_exclusion:
-            ex0, ey0 = excluir_min
-            ex1, ey1 = excluir_max
+            ex0, ey0 = excluir_min  # type: ignore
+            ex1, ey1 = excluir_max  # type: ignore
 
         async with self._lock:
             resultado = []
@@ -430,12 +556,12 @@ class LogicaMundo:
             data = {
                 "snapshot_id": snapshot_id,
                 "fecha": datetime.datetime.now().isoformat(),
-                "id_counter": self._id_counter,
+                "id_counter": int(self._id_counter),  
                 "gold_cells": {
                     f"{x},{y}": {
-                        "suelo": celda.suelo,
-                        "bot": celda.bot,
-                        "resto": celda.resto,
+                        "suelo": int(celda.suelo) if celda.suelo is not None else None,
+                        "bot": int(celda.bot) if celda.bot is not None else None,
+                        "resto": [int(eid) for eid in celda.resto],
                     }
                     for (x, y), celda in self._gold_cells.items()
                 },

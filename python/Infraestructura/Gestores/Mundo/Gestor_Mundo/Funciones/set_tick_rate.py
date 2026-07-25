@@ -7,7 +7,7 @@ NAME = "SetTickRate"
 
 async def handle(gestor, request, context):
     try:
-        gestor.set_tick_rate(request.ticks_per_second)
+        await gestor.set_tick_rate(request.ticks_per_second)
         return common_pb2.Ack(ok=True)
     except Exception as e:
         logger.exception("Error en SetTickRate")

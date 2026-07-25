@@ -10,35 +10,21 @@ import "common.proto";
 service LogicaMundoService {
   rpc Heartbeat (common.HeartbeatRequest) returns (LogicaMundoHeartbeatResponse);
   rpc Shutdown  (common.ShutdownRequest)  returns (common.ShutdownResponse);
-
   rpc AsignarId (AsignarIdRequest) returns (AsignarIdResponse);
-
   rpc CrearElemento     (CrearElementoRequest)     returns (common.Ack);
   rpc ModificarElemento (ModificarElementoRequest) returns (common.Ack);
   rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
-
   rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
   rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
-
   rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
   rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
-
-  // NUEVO: elementos globales (ciclo día/noche, lunar, clima...) — antes
-  // vivía como GetGlobalState en GestorMundoService; migrado aquí porque
-  // el estado de esos elementos vive en Logica_Mundo, no en Gestor_Mundo
-  // (decisión "elementos_globales: B"). tick_id/snapshot_id, que antes
-  // acompañaban esta respuesta, se consultan aparte vía
-  // GestorMundoService.GetSnapshotInfo — no se duplican aquí.
   rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
-
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
   rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
-
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
-
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
 }
 

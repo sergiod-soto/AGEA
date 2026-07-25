@@ -32,7 +32,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from numpy import int64
+
+from Core.Entities.Elementos.registry import reconstruir_elemento
+from Infraestructura.Gestores.Mundo.Sector.mutaciones import Mutacion
+from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
+
+import json
+
+from Infraestructura.Gestores.Transporte.Proto_Generated import (
+    common_pb2 as common_pb,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,66 +72,74 @@ class SectorMode(Enum):
 # ─────────────────────────────────────────────
 
 
+@dataclass
+class CeldaSector:
+    """Igual que Celda en logica_mundo.py, pero con objetos Elemento reales
+    en vez de ids — es la copia de trabajo que usa el Sector durante el
+    tick, no el estado gold (ese vive solo en Logica_Mundo)."""
+
+    suelo: Optional[Any] = None
+    bot: Optional[Any] = None
+    resto: list = field(default_factory=list)
+
+
 class CeldaStore:
-    """
-    Almacén de celdas del sector.
-
-    ACTUALIZADO: guarda el mensaje common.Cell proto TAL CUAL, sin
-    deserializarlo a objetos Python — el Sector no necesita interpretar
-    el contenido de sus 3 slots (suelo/bot/resto), solo transportarlo:
-    lo recibe de Gestor_Mundo en LoadState/AddMigratingBot y lo devuelve
-    en GetState/GetDelta sin tocarlo. Quien SÍ interpreta cada slot
-    (deserializando a Elemento) es Logica_Mundo (ver logica_mundo.py:
-    _cell_a_celda / _celda_a_cell), que es donde vive el estado
-    gold real.
-
-    Internamente: dict[(x, y), common.Cell]
-    """
+    """Almacén de celdas deserializadas del sector, reconstruido en cada
+    LoadState a partir del delta de entrada — sin persistencia propia."""
 
     def __init__(self):
-        self._celdas: dict[tuple[int, int], dict] = {}
+        self._celdas: dict[tuple[int, int], CeldaSector] = {}
 
-    def get(self, x: int, y: int) -> Optional[Any]:
+    def get(self, x: int, y: int) -> Optional[CeldaSector]:
         return self._celdas.get((x, y))
-
-    def set(
-        self, x: int, y: int, elemento: dict[tuple[int, int], dict[int64, Any]]
-    ) -> None:
-        self._celdas[(x, y)] = elemento
-
-    def delete(self, x: int, y: int) -> None:
-        self._celdas.pop((x, y), None)
 
     def items(self):
         return self._celdas.items()
 
-    def __contains__(self, key: tuple[int, int]) -> bool:
-        return key in self._celdas
-
     def from_proto_cell(self, cell) -> None:
-        """Almacena el Cell proto recibido, indexado por su posición."""
-        key = (cell.pos.x, cell.pos.y)
-        self._celdas[key] = cell
+        """Deserializa un Cell proto (suelo/bot/resto en bytes) a una
+        CeldaSector con objetos Elemento reales, y la indexa por posición.
+        Los elementos ya existentes llegan con su id real de siempre —
+        reconstruir_elemento no necesita asignar nada aquí."""
+        pos = (cell.pos.x, cell.pos.y)
+        self._celdas[pos] = CeldaSector(
+            suelo=self._deserializar_slot(cell.suelo),
+            bot=self._deserializar_slot(cell.bot),
+            resto=[
+                e
+                for e in (self._deserializar_slot(b) for b in cell.resto)
+                if e is not None
+            ],
+        )
 
-    def to_proto_cells(self, proto_cell_class, proto_position_class) -> list:
-        """Devuelve las Cell proto almacenadas, tal cual (ya lo son)."""
+    def to_proto_cells(self) -> list:
+        """Reserializa las celdas (con objetos Elemento reales) de vuelta a
+        Cell proto. Usado por GetState (y por tanto por el healthcheck)."""
         result = []
-        for (x, y), elemento in self._celdas.items():
-            if hasattr(elemento, "SerializeToString"):
-                result.append(elemento)
-            else:
-                pass
+        for (x, y), celda in self._celdas.items():
+            result.append(
+                common_pb.Cell(
+                    pos=common_pb.Position(x=x, y=y),
+                    suelo=self._serializar_slot(celda.suelo),
+                    bot=self._serializar_slot(celda.bot),
+                    resto=[self._serializar_slot(e) for e in celda.resto],
+                )
+            )
         return result
 
-    def changed_since(
-        self, tick_id: int, proto_cell_class, proto_position_class
-    ) -> list:
-        """
-        Devuelve solo las celdas que cambiaron desde tick_id.
-        TODO: implementar tracking de dirty cells por tick.
-              Por ahora devuelve todas (conservador pero correcto).
-        """
-        return self.to_proto_cells(proto_cell_class, proto_position_class)
+    @staticmethod
+    def _serializar_slot(elemento) -> bytes:
+        if elemento is None:
+            return b""
+        return json.dumps(elemento.serializar()).encode()
+
+    @staticmethod
+    def _deserializar_slot(blob: bytes):
+        if not blob:
+            return None
+        import json
+
+        return reconstruir_elemento(json.loads(blob.decode()))
 
 
 # ─────────────────────────────────────────────
@@ -131,14 +148,27 @@ class CeldaStore:
 
 
 @dataclass
+class ElementoNuevo:
+    marcador_local: str  # p. ej. "s3_2_nuevo_0" o simplemente "nuevo_0"
+    pos: tuple[int, int]
+    type_id: str  # "suelo" | "bot" | "resto"
+    payload: bytes  # el elemento serializado, sin id todavía
+
+
+@dataclass
 class TickDelta:
-    """Resultado de la computación de un tick."""
+    """Resultado de la computación de un tick en un Sector."""
 
     tick_id: int
-    changed_cells: list = field(default_factory=list)  # Cell proto
-    outgoing_bots: list = field(default_factory=list)  # MigratingBot proto
-    dead_bot_ids: list = field(default_factory=list)  # str
-    emitted_sounds: list = field(default_factory=list)  # SoundEvent proto
+
+    # Todo lo que un elemento pidió crear/eliminar/mover durante su tick(),
+    # en el orden en que se pidió. Logica_Mundo es quien las aplica de
+    # verdad sobre el estado real del mundo.
+    mutaciones: list[Mutacion] = field(default_factory=list)
+
+    # Sonidos cross-border emitidos durante el tick. Viaja aparte (mensaje
+    # separado), no se mezcla con `mutaciones`.
+    emitted_sounds: list = field(default_factory=list)
 
 
 # ─────────────────────────────────────────────
@@ -233,13 +263,7 @@ class Sector:
         """
         Devuelve el estado completo del sector (para GetState del servicer).
         """
-        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
-            Cell,
-            Position,
-            BotSnapshot,
-        )
-
-        cells = self._celdas.to_proto_cells(Cell, Position)
+        cells = self._celdas.to_proto_cells()
         bots = list(self._bots.values())
         return cells, bots
 
@@ -288,10 +312,9 @@ class Sector:
     # ─────────────────────────────────────────
 
     def compute_tick(self, tick_id: int) -> TickDelta:
-        """
-        Ejecuta la computación completa del tick.
-        Solo llamado si el sector está en modo ACTIVO.
-        """
+        """Ejecuta tick() de cada elemento propio del sector (solo si el
+        sector está ACTIVO), acumulando lo que piden en un único TickContext,
+        y devuelve el TickDelta resultante para Logica_Mundo."""
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
 
@@ -299,22 +322,41 @@ class Sector:
             self._last_delta = delta
             return delta
 
-        self._procesar_sonidos(delta)
-        self._tick_elementos(delta)
-        self._detectar_migraciones(delta)
+        ctx = TickContext(
+            celdas_inicio_tick=self._celdas,
+            ghost=self._ghost,
+            x0=self._x0,
+            y0=self._y0,
+            x1=self._x1,
+            y1=self._y1,
+        )
 
-        self._sounds_pendientes = []
+        self._procesar_sonidos(ctx)
+
+        # Se recorre una instantánea de las posiciones (list(...)) porque
+        # ctx.get_celda ya garantiza lecturas de inicio-de-tick — no hace
+        # falta congelar nada más: ningún tick() de este bucle ve el efecto
+        # de otro tick() del mismo bucle, por diseño de TickContext.
+        for (x, y), celda in list(self._celdas.items()):
+            for elemento in (celda.suelo, celda.bot, *celda.resto):
+                if elemento is None:
+                    continue
+                # TODO: firma exacta a definir junto a Core/Mundo.
+                elemento.tick((x, y), ctx)
+
+        delta.mutaciones = ctx.obtener_mutaciones()
+        delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
 
         self._last_delta = delta
         return delta
 
-    def _procesar_sonidos(self, delta: TickDelta) -> None:
-        """
-        Aplica los efectos de los sonidos cross-border recibidos.
-        TODO: implementar cuando la API de sonido esté definida.
-        """
+    def _procesar_sonidos(self, ctx: TickContext) -> None:
+        """Aplica los efectos de los sonidos cross-border recibidos.
+        TODO: implementar cuando la API de sonido esté definida — probablemente
+        también a través de ctx, si un sonido puede disparar mutaciones."""
         for sound in self._sounds_pendientes:
             pass
+        self._sounds_pendientes = []
 
     def _tick_elementos(self, delta: TickDelta) -> None:
         """
@@ -334,7 +376,7 @@ class Sector:
         for (x, y), elemento in list(self._celdas.items()):
             if not hasattr(elemento, "fuerza_sector_activo"):
                 continue
-            if not elemento.fuerza_sector_activo:
+            if not elemento.fuerza_sector_activo:  # type: ignore
                 continue
             # TODO: resultado = elemento.tick(contexto_vision)
 

@@ -13,6 +13,7 @@ from Infraestructura.Gestores.Mundo.Gestor_Mundo.Funciones import (
     resume,
     set_tick_rate,
     trigger_deep_save,
+    shutdown,
 )
 
 FUNCIONES = [
@@ -22,4 +23,5 @@ FUNCIONES = [
     trigger_deep_save,
     set_tick_rate,
     heartbeat,
+    shutdown,
 ]

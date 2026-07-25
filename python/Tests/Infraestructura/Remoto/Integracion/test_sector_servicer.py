@@ -97,6 +97,38 @@ async def test_get_delta_con_tick_id_distinto_falla(cliente_sector):
 
 
 @pytest.mark.integration
+async def test_set_ghost_zone_via_grpc(cliente_sector):
+    stub, sector = cliente_sector
+    cell = common_pb2.Cell(pos=common_pb2.Position(x=50, y=50))
+
+    resp = await stub.SetGhostZone(
+        pb.SetGhostZoneRequest(tick_id=1, ghost_cells=[cell])
+    )
+
+    assert resp.ok is True
+    assert (50, 50) in sector._ghost
+
+
+@pytest.mark.integration
+async def test_set_sounds_via_grpc(cliente_sector):
+    stub, _ = cliente_sector
+
+    resp = await stub.SetSounds(pb.SetSoundsRequest(tick_id=1, sounds=[]))
+
+    assert resp.ok is True
+
+
+@pytest.mark.integration
+async def test_save_snapshot_via_grpc(cliente_sector):
+    stub, _ = cliente_sector
+
+    resp = await stub.SaveSnapshot(pb.SaveSnapshotRequest(snapshot_id="snap_1"))
+
+    assert resp.ok is True
+    assert resp.snapshot_id == "snap_1"
+
+
+@pytest.mark.integration
 async def test_add_migrating_bot_via_grpc(cliente_sector):
     stub, sector = cliente_sector
     bot = common_pb2.BotSnapshot(

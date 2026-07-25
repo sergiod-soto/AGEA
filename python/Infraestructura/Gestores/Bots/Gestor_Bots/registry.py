@@ -1,11 +1,12 @@
 # Infraestructura/Gestores/Bots/Gestor_Bots/registry.py
+
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
     heartbeat,
     matar_script_bot,
     notificar_avatar_sin_piloto,
 )
 from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
-    broadcast_budgets_async,
+    broadcast_budgets,
     forward_action,
     freeze_all,
     kill_bot,
@@ -14,6 +15,7 @@ from Infraestructura.Gestores.Bots.Gestor_Bots.Funciones import (
     reset_budgets,
     resume_all,
     save_snapshot,
+    shutdown,
     spawn_bot,
     update_hypervisor_load,
 )
@@ -23,7 +25,7 @@ FUNCIONES = [
     kill_bot,
     matar_script_bot,
     notificar_avatar_sin_piloto,
-    broadcast_budgets_async,
+    broadcast_budgets,
     reset_budgets,
     freeze_all,
     resume_all,
@@ -33,4 +35,5 @@ FUNCIONES = [
     list_hypervisors,
     forward_action,
     heartbeat,
+    shutdown,
 ]

@@ -1,17 +1,12 @@
+# Infraestructura/Gestores/Bots/Hypervisor/world_proxy_servicer.py
 """
 world_proxy_servicer.py — Proxy gRPC entre Bots y Mundo.
 
-Cambio respecto a la versión anterior:
-  _spend_and_forward() comprueba primero si la acción está delegada.
-  Si lo está, el HV la ejecuta localmente y el Mundo nunca se entera.
-  Si no lo está, el flujo es idéntico al anterior (forward_to_gestor).
-
-Flujo completo por acción:
+Flujo completo por acción (vía Act):
   1. Extraer bot-id del header gRPC.
   2. Obtener coste de ACCIONES (fuente de verdad).
   3. try_spend_points → rechazar sin red si no hay puntos.
-  4a. Si delegada  → execute_delegated()  (local, sin red)
-  4b. Si no        → forward_to_gestor()  (Gestor → Mundo)
+  4. forward_to_gestor()  (Gestor → Mundo)
   5. Devolver ActionResult al bot.
 """
 
@@ -26,9 +21,6 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     world_proxy_service_pb2_grpc,
 )
 from Infraestructura.Gestores.Bots.Hypervisor.hypervisor import Hypervisor
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
-    world_proxy_service_pb2,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -95,19 +87,19 @@ class WorldProxyServicer(world_proxy_service_pb2_grpc.WorldProxyServiceServicer)
             error=f"Puntos insuficientes (restantes: {remaining})",
         )
 
-    def _spend_and_forward(
+    async def _spend_and_forward(
         self,
         context,
         action_type: str,
         payload: bytes,
     ) -> common_pb2.ActionResult:
         """
-        Núcleo compartido por todos los RPCs de acción.
+        Núcleo compartido por Act() para cualquier action_name.
 
         1. Identificar bot.
         2. Gastar puntos (local, sin red).
-        3a. Acción delegada  → ejecutar en HV, devolver resultado.
-        3b. Acción no delegada → reenviar al Gestor → Mundo.
+        3. Reenviar al Gestor → Mundo (única vía: ver ELIMINADO en la
+           cabecera del fichero sobre por qué ya no hay rama delegada).
         """
         # 1. Identificar bot
         bot_id = self._extract_bot_id(context)
@@ -116,26 +108,14 @@ class WorldProxyServicer(world_proxy_service_pb2_grpc.WorldProxyServiceServicer)
 
         # 2. Coste y control de puntos
         cost = _costs().get(action_type, 0)
-        ok, remaining = self._hv.try_spend_points(bot_id, cost)
+        ok, remaining = await self._hv.try_spend_points(bot_id, cost)
         if not ok:
             return self._reject_no_points(bot_id, remaining)
 
-        # 3a. Acción delegada: el HV la resuelve localmente
-        if self._hv.is_delegated(action_type):
-            logger.debug(
-                "Bot %s — acción '%s' interceptada por HV (local).", bot_id, action_type
-            )
-            result = self._hv.execute_delegated(bot_id, action_type, payload)
-            return common_pb2.ActionResult(
-                ok=result.ok,
-                payload=result.payload,
-                error=result.error,
-            )
-
-        # 3b. Acción no delegada: reenviar al Gestor → Mundo
+        # 3. Reenviar al Gestor → Mundo
         logger.debug("Bot %s — acción '%s' reenviada al Mundo.", bot_id, action_type)
         try:
-            result = self._hv.forward_to_gestor(bot_id, action_type, payload)
+            result = await self._hv.forward_to_gestor(bot_id, action_type, payload)
         except Exception as exc:
             # Puntos ya descontados — trade-off aceptable (ver comentario original)
             logger.error(
@@ -159,44 +139,14 @@ class WorldProxyServicer(world_proxy_service_pb2_grpc.WorldProxyServiceServicer)
     # RPCs
     # ------------------------------------------------------------------
 
-    def Rotar(self, request, context):
-        import struct
-
-        payload = struct.pack("<f", request.angle)
-        return self._spend_and_forward(context, "rotate", payload)
-
-    def Interact(self, request, context):
-        import json
-
-        payload = json.dumps(
-            {
-                "kind": request.kind,
-                "target_id": request.target_id,
-                "payload": request.payload.hex(),
-            }
-        ).encode()
-        return self._spend_and_forward(context, "interact", payload)
-
-    def GetStatus(self, request, context):
-        """Consulta local — coste 0, nunca sale del HV."""
-        bot_id = self._extract_bot_id(context)
-        if bot_id is None:
-            context.set_code(grpc.StatusCode.UNAUTHENTICATED)
-            context.set_details("Header 'bot-id' ausente.")
-            return world_proxy_service_pb2.BotStatusResponse()
-
-        status = self._hv.get_bot_status(bot_id)
-        if status is None:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details(f"Bot {bot_id!r} no encontrado.")
-            return world_proxy_service_pb2.BotStatusResponse()
-
-        return world_proxy_service_pb2.BotStatusResponse(
-            bot_id=bot_id,
-            position=common_pb2.Vector2(x=0.0, y=0.0),
-            rotation=0.0,
-            health=1.0,
-            points_left=status.budget,
-            world_tick=0,
-            alive=status.alive,
+    async def Act(self, request, context):
+        """
+        Único punto de entrada de acciones del bot — el único RPC que
+        declara world_proxy_service.proto. request.action_name debe
+        coincidir con una clave registrada en api_acciones.ACCIONES;
+        request.payload es su contenido específico, en bytes opacos
+        para este servicer (cada acción interpreta su propio payload).
+        """
+        return await self._spend_and_forward(
+            context, request.action_name, request.payload
         )

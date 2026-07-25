@@ -1,19 +1,5 @@
 # Infraestructura/Gestores/Mundo/Sector/sector_server.py
-"""
-sector_server.py
-----------------
-Arranca el servidor gRPC del Sector.
-Carpeta: Gestores/Mundo/Sector/
-Uso:
-    python -m Gestores.Mundo.Sector.sector_server
-Variables de entorno relevantes:
-    SECTOR_COL, SECTOR_ROW
-    SECTOR_HOST, SECTOR_BASE_PORT   (puerto = BASE_PORT + col * ROWS + row)
-    SECTOR_WORKERS
-    LOG_LEVEL
-    MODO ("local" o "remoto"/"produccion" — decide logging directo a
-          fichero vs. buffer + PullLogs; ver Config/settings.py)
-"""
+
 
 import asyncio
 import logging
@@ -49,13 +35,9 @@ logger = logging.getLogger(__name__)
 SECTOR_COL = int(os.getenv("SECTOR_COL", 0))
 SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_HOST = os.getenv("SECTOR_HOST", "[::]")
-SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 50100))
+# CORREGIDO: se lee directamente, ya no se recalcula con ROWS.
+SECTOR_PORT = int(os.getenv("SECTOR_PORT", 50100))
 SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
-ROWS = int(os.getenv("ROWS", 10))
-
-
-def _sector_port() -> int:
-    return SECTOR_BASE_PORT + SECTOR_COL * ROWS + SECTOR_ROW
 
 
 def _component_id() -> str:
@@ -94,7 +76,7 @@ async def serve(log_level: int) -> None:
             LogPullServicerAsync(log_handler), server
         )
 
-    address = f"{SECTOR_HOST}:{_sector_port()}"
+    address = f"{SECTOR_HOST}:{SECTOR_PORT}"
     server.add_insecure_port(address)
     await server.start()
 
@@ -137,11 +119,6 @@ def main() -> None:
     args = parser.parse_args()
     log_level = getattr(logging, args.log_level)
 
-    # Ya no hay logging.basicConfig() aquí: setup_local_logging /
-    # setup_buffered_logging (llamados dentro de serve()) son los únicos
-    # que configuran el logger raíz, para evitar que basicConfig() añada
-    # un StreamHandler antes de tiempo y bloquee silenciosamente el guard
-    # "if not root.handlers" de esas funciones.
     try:
         asyncio.run(serve(log_level=log_level))
     except KeyboardInterrupt:

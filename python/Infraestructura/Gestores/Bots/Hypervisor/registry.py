@@ -1,4 +1,7 @@
 # Gestores/Bots/Hypervisor/registry.py
+
+
+
 from Infraestructura.Gestores.Bots.Hypervisor.Funciones import (
     freeze,
     resume,

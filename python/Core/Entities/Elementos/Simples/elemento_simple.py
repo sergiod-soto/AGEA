@@ -1,3 +1,5 @@
+# Core/Entities/Simples/elemento_simple.py
+
 from Core.Entities.Elementos.elemento import Elemento
 
 

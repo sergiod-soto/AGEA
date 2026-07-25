@@ -22,7 +22,7 @@ import json
 import logging
 from typing import Optional
 
-import grpc.aio
+import grpc.aio  # type: ignore[import-untyped]
 
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb

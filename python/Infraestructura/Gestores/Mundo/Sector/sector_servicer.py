@@ -18,6 +18,10 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
         # Las operaciones de FASE 0 pueden llegar en paralelo
         self._fase0_lock = asyncio.Lock()
 
+    # ----- añadido: faltaba en el servicer, RPC declarado en el .proto -----
+    async def Shutdown(self, request, context):
+        return await self._dispatch["Shutdown"].handle(self._sector, request, context)
+
     async def SetSectorMode(self, request, context):
         return await self._dispatch["SetSectorMode"].handle(
             self._sector, request, context
@@ -54,3 +58,9 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
 
     async def SetSounds(self, request, context):
         return await self._dispatch["SetSounds"].handle(self._sector, request, context)
+
+    # NOTA: GetElementAttributes sigue sin implementar — está declarado en
+    # el .proto pero no es parte de "arrancar" (es una consulta de
+    # debug/dev sobre elementos, y hoy no hay elementos). Se deja
+    # pendiente a propósito, no es un descuido — confirmar si se quiere
+    # abordar ahora o más adelante.

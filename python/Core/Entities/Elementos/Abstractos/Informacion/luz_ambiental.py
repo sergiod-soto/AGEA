@@ -7,12 +7,11 @@ from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informaci
 class Luz_Ambiental(Informacion):
     """
     Intensidad de la luz ambiental.
-    
+
     Depende del ciclo solar, la densidad de nubes (y por
-    ello, la posicion), y el 
+    ello, la posicion), y el
     estado del ciclo lunar.
     """
-    
 
     def __init__(
         self,
@@ -21,7 +20,7 @@ class Luz_Ambiental(Informacion):
         super().__init__(Luz_Ambiental, **kwargs)
         self._factor = 1
 
-    def get_intensidad_luz_ambiental(self) -> float:
+    def get_intensidad_luz_ambiental(self, posicion: tuple[int, int]) -> float:
 
         def _clamp(valor, minimo, maximo) -> float:
             return max(minimo, min(valor, maximo))
@@ -42,4 +41,6 @@ class Luz_Ambiental(Informacion):
         else:
             luzLuna = self.get_intensidad_luna() * sin(math.pi * tLuna) ** self._factor
 
-        return _clamp((luzSolar + luzLuna) * factorNubes, 1, 100)
+        return _clamp(
+            (luzSolar + luzLuna) * factorNubes(posicion[0], posicion[1]), 1, 100
+        )

@@ -1,5 +1,7 @@
 # Gestores/Bots/Gestor_Bots/funciones/register_hypervisor.py
-from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import gestor_bots_service_pb2 as pb
+from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
+    gestor_bots_service_pb2 as pb,
+)
 from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
 import logging
 
@@ -26,8 +28,7 @@ async def handle(gestor, request, context):
             proxy_port=request.proxy_port,
             capacity=request.capacity,
         )
-        delegated = gestor.get_delegated_action_names()
-        return pb.RegisterHVAck(ok=True, delegated_actions=delegated)
+        return pb.RegisterHVAck(ok=True, delegated_actions=[])
     except Exception as e:
         logger.exception("Error en RegisterHypervisor")
         return pb.RegisterHVAck(ok=False, error=str(e))

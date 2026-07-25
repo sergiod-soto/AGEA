@@ -1,38 +1,32 @@
 # Infraestructura/Gestores/Bots/Hypervisor/hypervisor.py
 """
-hypervisor.py — Lógica pura del Hypervisor.
+Migrado a asyncio, para que Hypervisor sea consistente con el resto de
+componentes (todos asyncio salvo este, que era el único síncrono).
 
-CAMBIO: se retira gestor_mundo_client / forward_to_mundo(). Nada los
-usaba — world_proxy_servicer._spend_and_forward() solo llama a
-forward_to_gestor() en la rama no-delegada; forward_to_mundo() (y su
-cliente síncrono, gestor_mundo_client_sync.py) quedaban muertos desde
-que se retiró ForwardActionGestorMundo del proto de GestorMundoService.
+Cambios de fondo respecto a la versión síncrona:
+  - threading.Lock -> asyncio.Lock (todos los métodos que tocan estado
+    compartido pasan a ser async).
+  - subprocess.Popen -> asyncio.create_subprocess_exec
+    (LanzadorProcesosBot.lanzar ahora es async).
+  - El hilo daemon _watch_bot_process se sustituye por una asyncio.Task
+    que espera `await proceso.wait()` — no bloquea el loop de eventos,
+    no necesita un hilo aparte.
+  - gestor_client pasa a ser GestorBotsClientAsync (await en todas las
+    llamadas), en vez del cliente síncrono.
 
-Vigilancia de procesos (Flujo B de muerte de bots):
-  Cada bot corre como un subprocess.Popen independiente. Al lanzarlo,
-  se arranca un hilo daemon dedicado (_watch_bot_process) bloqueado en
-  proceso.wait() — sin coste de CPU, solo espera de sistema operativo.
-  Cuando el proceso termina, el hilo distingue:
-    - Terminación deliberada (kill_bot ya quitó el bot de self._bots
-      antes de que el proceso muriera) → no hace nada, ya se resolvió.
-    - Crash real (el bot seguía registrado) → notifica al Gestor vía
-      gestor_client.notificar_avatar_sin_piloto(bot_id), que a su vez
-      pide a Logica_Mundo eliminar el avatar del bot en el gold.
-  Se eligió un hilo por bot (en vez de un único hilo con sondeo
-  periódico) para detección inmediata sin latencia de intervalo, y
-  porque el modelo ya es "un proceso por bot" — un hilo más por bot es
-  simétrico con eso, no una complejidad añadida distinta.
+Limpieza: se retira _codigo_path (método muerto — nunca se llamaba;
+duplicaba LanzadorProcesosBot.codigo_path, que es la versión real en uso).
 """
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import gzip
+import json
 import logging
 import os
 import sys
-import subprocess
-import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -66,7 +60,6 @@ class SpawnResult:
     error: str = ""
 
 
-@dataclass
 class LanzadorProcesosBot:
     """
     Encapsula el despliegue real de un bot: descomprimir su código,
@@ -82,24 +75,31 @@ class LanzadorProcesosBot:
     def codigo_path(self, hypervisor_id: str, bot_id: str) -> Path:
         return self._codigo_dir / hypervisor_id / f"{bot_id}.py"
 
-    def lanzar(
+    async def lanzar(
         self,
         hypervisor_id: str,
         bot_id: str,
         codigo_gz: bytes,
         env_extra: dict,
-    ) -> subprocess.Popen:
+    ) -> asyncio.subprocess.Process:
         """
         Descomprime codigo_gz, lo escribe a disco y lanza el proceso.
         Deja que cualquier excepción se propague tal cual — spawn_bot
         decide qué hacer si falla (deshacer el registro del bot, etc.).
+
+        La descompresión + escritura a disco siguen siendo síncronas
+        (gzip.decompress, Path.write_bytes): son operaciones cortas de
+        un solo uso por bot — el bloqueo puntual del loop se considera
+        aceptable aquí, no vale la pena la complejidad de moverlas a un
+        executor para un fichero de código de bot, normalmente pequeño.
         """
         codigo_path = self.codigo_path(hypervisor_id, bot_id)
         codigo_path.parent.mkdir(parents=True, exist_ok=True)
         codigo_path.write_bytes(gzip.decompress(codigo_gz))
 
-        return subprocess.Popen(
-            [sys.executable, str(codigo_path)],
+        return await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(codigo_path),
             env={**os.environ, **env_extra},
         )
 
@@ -115,9 +115,8 @@ class Hypervisor:
     Parámetros
     ----------
     hypervisor_id      : str
-    gestor_client      : GestorBotsClient (síncrono — ver comentario en
-                         gestor_bots_client.py sobre por qué el HV usa
-                         la versión síncrona, no la async)
+    gestor_client      : GestorBotsClientAsync (migrado desde la versión
+                         síncrona — ver docstring del módulo)
     capacity           : int
     my_address         : str
     my_port            : int
@@ -141,16 +140,14 @@ class Hypervisor:
         self._my_port = my_port
         self._my_proxy_port = my_proxy_port
 
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
         self._bots: dict[str, BotRecord] = {}
-        self._procesos: dict[str, subprocess.Popen] = {}
+        self._procesos: dict[str, asyncio.subprocess.Process] = {}
+        self._watchers: dict[str, asyncio.Task] = {}
 
         self._lanzador = lanzador_procesos or LanzadorProcesosBot()
 
         self._frozen = False
-
-        # nombre → callable. Poblado en set_delegated_actions.
-        self._delegated: dict[str, callable] = {}
 
         logger.info(
             "Hypervisor %s inicializado (cap=%d, proxy=%s:%d)",
@@ -161,90 +158,11 @@ class Hypervisor:
         )
 
     # ------------------------------------------------------------------
-    # Acciones delegadas
-    # ------------------------------------------------------------------
-
-    def set_delegated_actions(self, action_names: list[str]) -> None:
-        if not action_names:
-            logger.info("HV %s: sin acciones delegadas.", self.hypervisor_id)
-            self._delegated = {}
-            return
-
-        try:
-            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
-                ACCIONES,
-            )
-        except ImportError as exc:
-            logger.error("No se pudo importar ACCIONES: %s.", exc)
-            self._delegated = {}
-            return
-
-        delegated = {}
-        for name in action_names:
-            entrada = ACCIONES.get(name)
-            if entrada is None:
-                logger.warning(
-                    "Acción delegada '%s' no encontrada en ACCIONES; ignorada.", name
-                )
-                continue
-            fn = entrada.get("funcion")
-            if fn is None:
-                logger.warning("Acción delegada '%s' no tiene funcion; ignorada.", name)
-                continue
-            delegated[name] = fn
-
-        self._delegated = delegated
-        logger.info(
-            "HV %s: acciones delegadas → %s", self.hypervisor_id, list(self._delegated)
-        )
-
-    def is_delegated(self, action_name: str) -> bool:
-        """True si la acción se ejecuta localmente en este HV."""
-        return action_name in self._delegated
-
-    def execute_delegated(
-        self, bot_id: str, action_name: str, payload: bytes
-    ) -> ActionResult:
-        fn = self._delegated.get(action_name)
-        if fn is None:
-            return ActionResult(
-                ok=False,
-                payload=b"",
-                error=f"Acción '{action_name}' no está delegada en este HV.",
-            )
-
-        with self._lock:
-            if bot_id not in self._bots:
-                return ActionResult(
-                    ok=False, payload=b"", error=f"Bot {bot_id!r} no encontrado."
-                )
-
-        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
-            AccionContext,
-        )
-
-        ctx = AccionContext(
-            bot_id=bot_id,
-            payload=payload,
-        )
-
-        try:
-            return fn(ctx)
-        except Exception as exc:
-            logger.error(
-                "Error ejecutando acción delegada '%s' para bot %s: %s",
-                action_name,
-                bot_id,
-                exc,
-            )
-            return ActionResult(ok=False, payload=b"", error=str(exc))
-
-    # ------------------------------------------------------------------
     # Registro en el Gestor
     # ------------------------------------------------------------------
 
-    def register_with_gestor(self) -> bool:
-        result = self.gestor_client.register_hypervisor(
+    async def register_with_gestor(self) -> bool:
+        result = await self.gestor_client.register_hypervisor(
             hypervisor_id=self.hypervisor_id,
             address=self._my_address,
             port=self._my_port,
@@ -252,7 +170,6 @@ class Hypervisor:
             capacity=self.capacity,
         )
         if result.ok:
-            self.set_delegated_actions(result.delegated_actions)
             logger.info("HV %s registrado correctamente.", self.hypervisor_id)
         else:
             logger.error(
@@ -260,16 +177,16 @@ class Hypervisor:
             )
         return result.ok
 
-    def report_load(self) -> None:
-        with self._lock:
+    async def report_load(self) -> None:
+        async with self._lock:
             load = len(self._bots)
-        self.gestor_client.update_hypervisor_load(self.hypervisor_id, load)
+        await self.gestor_client.update_hypervisor_load(self.hypervisor_id, load)
 
     # ------------------------------------------------------------------
     # Ciclo de vida de bots
     # ------------------------------------------------------------------
 
-    def spawn_bot(self, config: dict) -> SpawnResult:
+    async def spawn_bot(self, config: dict) -> SpawnResult:
         bot_id = config.get("bot_id", "")
         codigo_gz = config.get("codigo_gz", b"")
         budget = int(config.get("budget", DEFAULT_BUDGET))
@@ -277,7 +194,7 @@ class Hypervisor:
         if not bot_id:
             return SpawnResult(ok=False, error="bot_id vacío")
 
-        with self._lock:
+        async with self._lock:
             if len(self._bots) >= self.capacity:
                 return SpawnResult(ok=False, error="Hypervisor a plena capacidad")
             if bot_id in self._bots:
@@ -289,7 +206,7 @@ class Hypervisor:
             )
 
         try:
-            proceso = self._lanzador.lanzar(
+            proceso = await self._lanzador.lanzar(
                 hypervisor_id=self.hypervisor_id,
                 bot_id=bot_id,
                 codigo_gz=codigo_gz,
@@ -299,34 +216,38 @@ class Hypervisor:
                 },
             )
         except Exception as exc:
-            with self._lock:
+            async with self._lock:
                 self._bots.pop(bot_id, None)
             self._lanzador.limpiar(self.hypervisor_id, bot_id)
             logger.error("Error desplegando bot %s: %s", bot_id, exc)
             return SpawnResult(ok=False, error=f"Error desplegando bot: {exc}")
 
-        with self._lock:
+        async with self._lock:
             self._bots[bot_id].alive = True
             self._procesos[bot_id] = proceso
 
-        threading.Thread(
-            target=self._watch_bot_process,
-            args=(bot_id, proceso),
-            daemon=True,
+        # Antes: threading.Thread bloqueado en proceso.wait(). Ahora:
+        # una Task que espera de forma no bloqueante — no ocupa un hilo,
+        # el loop sigue atendiendo el resto de RPCs mientras tanto.
+        self._watchers[bot_id] = asyncio.create_task(
+            self._watch_bot_process(bot_id, proceso),
             name=f"bot-watcher-{bot_id}",
-        ).start()
+        )
 
         logger.info("Bot %s spawneado (budget=%d).", bot_id, budget)
         return SpawnResult(ok=True)
 
-    def _watch_bot_process(self, bot_id: str, proceso: subprocess.Popen) -> None:
-        proceso.wait()
+    async def _watch_bot_process(
+        self, bot_id: str, proceso: asyncio.subprocess.Process
+    ) -> None:
+        await proceso.wait()
 
-        with self._lock:
+        async with self._lock:
             crash = bot_id in self._bots
             if crash:
                 self._bots.pop(bot_id, None)
                 self._procesos.pop(bot_id, None)
+            self._watchers.pop(bot_id, None)
 
         if not crash:
             return
@@ -346,12 +267,12 @@ class Hypervisor:
             )
 
         try:
-            self.gestor_client.notificar_avatar_sin_piloto(bot_id)
+            await self.gestor_client.notificar_avatar_sin_piloto(bot_id)
         except Exception as exc:
             logger.error("Error notificando avatar sin piloto para %s: %s", bot_id, exc)
 
-    def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
-        with self._lock:
+    async def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
+        async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
                 return None
@@ -362,15 +283,15 @@ class Hypervisor:
                 alive=rec.alive,
             )
 
-    def get_bot_status(self, bot_id: str) -> Optional[BotStatusHV]:
-        with self._lock:
+    async def get_bot_status(self, bot_id: str) -> Optional[BotStatusHV]:
+        async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
                 return None
             return BotStatusHV(bot_id=rec.bot_id, alive=rec.alive, budget=rec.budget)
 
-    def list_bots(self) -> BotList:
-        with self._lock:
+    async def list_bots(self) -> BotList:
+        async with self._lock:
             return BotList(
                 bots=[
                     BotStats(
@@ -383,11 +304,8 @@ class Hypervisor:
                 ]
             )
 
-    def _codigo_path(self, bot_id: str) -> Path:
-        return Path("bots_codigo") / self.hypervisor_id / f"{bot_id}.py"
-
-    def kill_bot(self, bot_id: str) -> None:
-        with self._lock:
+    async def kill_bot(self, bot_id: str) -> None:
+        async with self._lock:
             if bot_id not in self._bots:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)
                 return
@@ -411,8 +329,8 @@ class Hypervisor:
     # Control de presupuesto
     # ------------------------------------------------------------------
 
-    def try_spend_points(self, bot_id: str, cost: int) -> tuple[bool, int]:
-        with self._lock:
+    async def try_spend_points(self, bot_id: str, cost: int) -> tuple[bool, int]:
+        async with self._lock:
             if self._frozen:
                 return False, 0
             rec = self._bots.get(bot_id)
@@ -432,16 +350,18 @@ class Hypervisor:
             rec.budget -= cost
             return True, rec.budget
 
-    def set_point_budget(self, bot_id: str, points: int) -> None:
-        with self._lock:
+    async def set_point_budget(self, bot_id: str, points: int) -> None:
+        async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
                 logger.warning("set_point_budget: bot desconocido %s", bot_id)
                 return
             rec.budget = rec.max_budget = points
 
-    def reset_budgets(self, bot_ids: list[str], new_budgets: dict[str, int]) -> None:
-        with self._lock:
+    async def reset_budgets(
+        self, bot_ids: list[str], new_budgets: dict[str, int]
+    ) -> None:
+        async with self._lock:
             for bot_id in bot_ids:
                 rec = self._bots.get(bot_id)
                 if rec is None:
@@ -457,11 +377,11 @@ class Hypervisor:
     # Proxy al Gestor
     # ------------------------------------------------------------------
 
-    def forward_to_gestor(
+    async def forward_to_gestor(
         self, bot_id: str, action_type: str, payload: bytes
     ) -> ActionResult:
         """Redirige una acción al gestor_bots (para acciones que pasan por él)."""
-        return self.gestor_client.forward_action(
+        return await self.gestor_client.forward_action(
             bot_id=bot_id,
             hypervisor_id=self.hypervisor_id,
             action_type=action_type,
@@ -473,6 +393,8 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     def get_system_load(self) -> dict:
+        # Sin cambios: psutil ya es síncrono y rápido (lectura de
+        # contadores del sistema) — no aporta nada envolverlo en async.
         def _is_aws() -> bool:
             return "AWS_BATCH_JOB_ID" in os.environ
 
@@ -516,25 +438,19 @@ class Hypervisor:
     # Gestion Hypervisores
     # ------------------------------------------------------------------
 
-    def freeze(self) -> None:
-        with self._lock:
+    async def freeze(self) -> None:
+        async with self._lock:
             self._frozen = True
         logger.info("Hypervisor %s congelado.", self.hypervisor_id)
 
-    def resume(self) -> None:
-        with self._lock:
+    async def resume(self) -> None:
+        async with self._lock:
             self._frozen = False
         logger.info("Hypervisor %s reanudado.", self.hypervisor_id)
 
-    def save_snapshot(self, snapshot_id: str) -> None:
-        import json
-        from pathlib import Path
-
-        state = {
-            "snapshot_id": snapshot_id,
-            "hypervisor_id": self.hypervisor_id,
-            "fecha": datetime.datetime.now().isoformat(),
-            "bots": [
+    async def save_snapshot(self, snapshot_id: str) -> None:
+        async with self._lock:
+            bots_snapshot = [
                 {
                     "bot_id": rec.bot_id,
                     "budget": rec.budget,
@@ -542,7 +458,13 @@ class Hypervisor:
                     "alive": rec.alive,
                 }
                 for rec in self._bots.values()
-            ],
+            ]
+
+        state = {
+            "snapshot_id": snapshot_id,
+            "hypervisor_id": self.hypervisor_id,
+            "fecha": datetime.datetime.now().isoformat(),
+            "bots": bots_snapshot,
         }
         path = Path("data/snapshots") / f"hv_{self.hypervisor_id}_{snapshot_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)

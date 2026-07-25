@@ -8,6 +8,13 @@ empuja cada 30s, ver hypervisor_server.py::_heartbeat). Gestor_Bots
 NO pinguea activamente a los HVs — es más barato comprobar staleness
 de un dato que ya recibe pasivamente. Ver hypervisores_caidos(),
 usado por Funciones/heartbeat.py para rellenar hv_statuses.
+
+ELIMINADO: get_delegated_action_names() y el mecanismo de acciones
+delegadas al que servía. El HV nunca tuvo acceso real al estado del
+mundo (vive solo en Logica_Mundo desde que se separó en su propio
+módulo), así que "delegar" una acción al HV nunca fue viable — ver el
+comentario extenso en hypervisor.py sobre por qué se retiró por
+completo, no solo se corrigió.
 """
 
 from __future__ import annotations
@@ -53,44 +60,10 @@ class Gestor_Bots:
         self._bots: dict[str, BotStats] = {}
         self._bot_counter: int = 0
         self.logica_client = logica_client
-        self._delegated_names_cache: list[str] | None = None
 
         logger.info(
             "Gestor_Bots inicializado (bots_por_hypervisor=%d).", bots_por_hypervisor
         )
-
-    # ------------------------------------------------------------------
-    # Acciones delegadas
-    # ------------------------------------------------------------------
-
-    def get_delegated_action_names(self) -> list[str]:
-        if self._delegated_names_cache is not None:
-            return self._delegated_names_cache
-
-        try:
-            from Infraestructura.Gestores.Bots.Gestor_Bots.acciones_delegadas import (
-                ACCIONES_DELEGADAS,
-            )
-            from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
-                ACCIONES,
-            )
-
-            nombres = [name for name in ACCIONES_DELEGADAS if name in ACCIONES]
-            nombres_invalidos = set(ACCIONES_DELEGADAS) - set(nombres)
-            if nombres_invalidos:
-                logger.warning(
-                    "Acciones delegadas no encontradas en ACCIONES: %s",
-                    nombres_invalidos,
-                )
-
-            logger.info("Acciones delegadas a HVs: %s", nombres)
-            self._delegated_names_cache = nombres
-
-        except Exception as exc:
-            logger.error("Error resolviendo acciones delegadas: %s.", exc)
-            self._delegated_names_cache = []
-
-        return self._delegated_names_cache
 
     # ------------------------------------------------------------------
     # Capacidad
@@ -324,7 +297,7 @@ class Gestor_Bots:
     # Presupuestos
     # ------------------------------------------------------------------
 
-    async def broadcast_budgets_async(
+    async def broadcast_budgets(
         self,
         default_budget: int,
         overrides: dict[str, int] | None = None,

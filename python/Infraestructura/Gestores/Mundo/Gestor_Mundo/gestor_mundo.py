@@ -1,16 +1,5 @@
 # Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo.py
-"""
-gestor_mundo.py
----------------
-Gestor central del MECANISMO del mundo (ya no de su estado).
 
-NUEVO en este cambio: cada SectorInfo lleva un contador de fallos
-consecutivos de comunicación (StartTick/GetDelta), reusado para
-detectar sectores caídos (spot terminado) sin necesitar pings
-adicionales — Gestor_Mundo ya habla con cada sector todos los ticks,
-así que basta con contar. Ver fallos_consecutivos_criticos() y
-Funciones/heartbeat.py.
-"""
 
 import asyncio
 import datetime
@@ -92,7 +81,7 @@ class GestorMundo:
 
         self._logica_client = logica_client
 
-        self._tick_id: uint64 = 0
+        self._tick_id: uint64 = uint64(0)
         self._snapshot_id: str = ""
 
         self._state: SystemState = SystemState.RUNNING
@@ -215,12 +204,12 @@ class GestorMundo:
         ghost_cells = await self._calcular_ghost_zone(sector)
         if not ghost_cells:
             return
-        req = sector_pb.SetGhostZoneRequest(
+        req = sector_pb.SetGhostZoneRequest(  # type: ignore
             tick_id=self._tick_id,
             ghost_cells=ghost_cells,
         )
         try:
-            resp = await sector.stub.SetGhostZone(req)
+            resp = await sector.stub.SetGhostZone(req)  # type: ignore
             if not resp.ok:
                 logger.warning(
                     "SetGhostZone falló en (%d,%d): %s",
@@ -237,12 +226,12 @@ class GestorMundo:
         sounds = self._pending_sounds.get((sector.col, sector.row), [])
         if not sounds:
             return
-        req = sector_pb.SetSoundsRequest(
+        req = sector_pb.SetSoundsRequest(  # type: ignore
             tick_id=self._tick_id,
             sounds=sounds,
         )
         try:
-            resp = await sector.stub.SetSounds(req)
+            resp = await sector.stub.SetSounds(req)  # type: ignore
             if not resp.ok:
                 logger.warning(
                     "SetSounds falló en (%d,%d): %s", sector.col, sector.row, resp.error
@@ -512,7 +501,7 @@ class GestorMundo:
 
         async with self._consolidacion_lock:
             data = {
-                "tick_id": self._tick_id,
+                "tick_id": int(self._tick_id),  # FIX: numpy.uint64 -> int nativo
                 "snapshot_id": snapshot_id,
                 "fecha": datetime.datetime.now().isoformat(),
                 "sectores": [
@@ -535,20 +524,20 @@ class GestorMundo:
 
     async def _deep_save(self) -> None:
         logger.info("Guardado profundo iniciado (tick %d)", self._tick_id)
-
+    
         estaba_corriendo = self._state == SystemState.RUNNING
-
+    
         await self.freeze()
         try:
             snapshot_id = f"{self._tick_id:010d}_deep"
             self._snapshot_id = snapshot_id
-
+    
             import json
-
+    
             path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
             async with self._consolidacion_lock:
                 data = {
-                    "tick_id": self._tick_id,
+                    "tick_id": int(self._tick_id),  # FIX: uint64 -> int
                     "snapshot_id": snapshot_id,
                     "fecha": datetime.datetime.now().isoformat(),
                     "sectores": [
@@ -563,14 +552,14 @@ class GestorMundo:
                 }
             path.write_text(json.dumps(data))
             await self._logica_client.save_snapshot(snapshot_id)
-
+    
             try:
                 await self._bots_stub.SaveSnapshot(
                     bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
                 )
             except grpc.aio.AioRpcError as e:
                 logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
-
+    
             tareas_sectores = []
             for info in self._sectores.values():
                 if info.stub is not None:
@@ -595,11 +584,12 @@ class GestorMundo:
                         info.row,
                         res.error,
                     )
-
+    
             logger.info("Guardado profundo completado. snapshot_id=%s", snapshot_id)
         finally:
             if estaba_corriendo:
                 await self.resume()
+
 
     def _latest_snapshot_path(self) -> Optional[Path]:
         snapshots = sorted(self.SNAPSHOT_DIR.glob("mundo_*.json"))

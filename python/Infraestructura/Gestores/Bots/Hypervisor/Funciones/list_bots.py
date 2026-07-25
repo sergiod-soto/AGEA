@@ -6,9 +6,9 @@ import logging
 logger = logging.getLogger(__name__)
 NAME = "ListBots"
 
-def handle(hv: Hypervisor, request, context):
+async def handle(hv: Hypervisor, request, context):
     try:
-        bot_list = hv.list_bots()
+        bot_list = await hv.list_bots()
         return common_pb2.BotList(bots=[
             common_pb2.BotStats(
                 bot_id=s.bot_id, hypervisor_id=s.hypervisor_id,

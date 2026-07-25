@@ -1,11 +1,12 @@
 # Core/Mundo/mundo.py
-from Core.Entities.Comportamiento.comportamiento import Comportamiento
-from Core.Entities.Elementos.Abstractos.Informacion.luz_ambiental import Luz_Ambiental
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_lunar import (
-    Ciclo_Lunar,
-)
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.clima import Clima
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.estacion import Estacion
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+from numpy import uint64
+
+from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Mundo.Celda.celda import Celda
 from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
 
@@ -19,20 +20,36 @@ Es un elemento abstracto para tener comportamientos.
 TODO: terminar. por ahora solo tiene el bus de eventos al que se suscriben ciertos Elementos
 """
 
-informacion_abstracta = Comportamiento.declarar_comportamientos(
-    Luz_Ambiental,
-)
 
-marcadores = Comportamiento.declarar_comportamientos(
-    Ciclo_Lunar,
-    Clima,
-    Estacion,
-)
+class Mundo:
+    """
+    Orden actualizacion metereologia:
+    - 1) radiacion
+    - 2) temperatura
+    - 3) presion
+    - 4) viento
+    - 5) humedad_absoluta
+    - 6) nubes
+    """
 
+    def __init__(self):
+        self.bus_eventos = BusEventos()
 
-class Mundo(informacion_abstracta, marcadores):
+        # malla terreno
+        self.ids = dict[
+            uint64, tuple[int, int]
+        ]  # id de las cosas que estan en la tierra. id -> posicion
+        self.malla_terreno = dict[tuple[int, int], Celda]  # posicion -> Celda con cosas
 
-    def __init__(self, tipo, **kwargs):
-        super().__init__(tipo, **kwargs)
-        self.bus = BusEventos()
-        Elemento.mundo = self
+        # malla atmosferica
+        self.malla_atmosfera = dict[
+            tuple[int, int], Celda_Atmosfera
+        ]  # posicion -> Celda_Atmosfera con cosas de la atmosfera
+
+    def eliminar_elemento(self, elemento: Elemento): ...  # TODO
+
+    def agregar_elemento(self, elemento: Elemento):
+        elemento.mundo = self
+        # TODO: resto de agregar_elemento() en mundo.py
+
+    def get_celda_atmosfera(self, posicion: tuple[int, int]): return self.malla_atmosfera

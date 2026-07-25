@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 NAME = "SpawnBot"
 
 
-def handle(hv: Hypervisor, request, context):
+async def handle(hv, request, context):
     cfg = request.config
     bot_config = {
         "bot_id": cfg.bot_id,
@@ -17,7 +17,7 @@ def handle(hv: Hypervisor, request, context):
     }
     logger.info("SpawnBot: bot_id=%s", cfg.bot_id)
     try:
-        result = hv.spawn_bot(bot_config)
+        result = await hv.spawn_bot(bot_config)
         return common_pb2.BotInfo(
             bot_id=str(cfg.bot_id),
             hypervisor_id=str(hv.hypervisor_id),

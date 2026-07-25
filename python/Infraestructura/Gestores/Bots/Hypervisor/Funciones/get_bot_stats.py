@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 NAME = "GetBotStats"
 
 
-def handle(hv: Hypervisor, request, context):
+async def handle(hv, request, context):
     try:
-        stats = hv.get_bot_stats(request.bot_id)
+        stats = await hv.get_bot_stats(request.bot_id)
     except Exception as e:
         logger.exception("Error en GetBotStats")
         return common_pb2.BotStats()

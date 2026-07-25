@@ -14,7 +14,7 @@ async def handle(gestor, request, context):
     viene de la config del gestor.
     """
     try:
-        await gestor.broadcast_budgets_async(
+        await gestor.broadcast_budgets(
             default_budget=gestor.bots_por_hypervisor,
             overrides=None,
         )

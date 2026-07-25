@@ -8,9 +8,9 @@ from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 logger = logging.getLogger(__name__)
 NAME = "GetBotStatus"
 
-def handle(hv: Hypervisor, request, context):
+async def handle(hv, request, context):
     try:
-        status = hv.get_bot_status(request.bot_id)
+        status = await hv.get_bot_status(request.bot_id)
     except Exception as e:
         logger.exception("Error en GetBotStatus")
         return common_pb2.BotStatus()

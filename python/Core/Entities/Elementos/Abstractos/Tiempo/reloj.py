@@ -2,6 +2,7 @@ from typing import Tuple
 
 from numpy import uint64
 
+from Config.parametros_simulacion import TICKS_POR_SEGUNDO
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
 )
@@ -9,6 +10,26 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Reloj(Marcador_Temporal):
+
+    segundos: uint64 = 0
+
+    def Segundo(self, cantidad) -> int:
+        return TICKS_POR_SEGUNDO * cantidad
+
+    def Minuto(self, cantidad) -> int:
+        return self.Segundo(cantidad) * 60
+
+    def Hora(self, cantidad) -> int:
+        return self.Minuto(cantidad) * 60
+
+    def Dia(self, cantidad) -> int:
+        return self.Hora(cantidad) * 24
+
+    def Mes(self, cantidad) -> int:
+        return self.Dia(cantidad) * 30
+
+    def Anho(self, cantidad) -> int:
+        return self.Mes(cantidad) * 12
 
     class Ciclo:
 
@@ -41,7 +62,6 @@ class Reloj(Marcador_Temporal):
 
     def __init__(self, **kwargs):
         super().__init__(Reloj, **kwargs)
-        self.segundos: uint64 = 0
 
     def avanzar_un_segundo(self) -> None:
         self.segundos += 1

@@ -276,17 +276,15 @@ class Comportamiento:
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
 
-    def serializar(self):
-        """
-        Serializa automaticamente los atributos de clase en un dict.
+    def serializar(self, cls=None):
 
-        No necesariamente puede serializar todos los atributos, en algunos
-        casos es necesario trabajo extra personalizado. En ese caso,
-        hay que definir el metodo serializar() en la propia clase, llamando
-        primero a super().serializar() y añadiendole luego las entradas necesarias.
-        """
-
-        return dict(vars(self))
+        cls = cls or type(self)
+        atributos = Comportamiento._params_propios(cls)
+        return {
+            nombre: getattr(self, nombre)
+            for nombre in atributos
+            if hasattr(self, nombre)
+        }
 
     def deserializar(self, data: dict):
         """

@@ -4,18 +4,23 @@ gestor_bots_client_async.py — Cliente async gRPC hacia Gestor_Bots.
 
 Existe por separado de gestor_bots_client.py (síncrono) porque ambos
 tienen consumidores con modelos de concurrencia distintos:
-  - gestor_bots_client.py (síncrono)  → usado por Hypervisor, que corre
-    sobre grpc.server (ThreadPoolExecutor), no asyncio.
-  - Este cliente (async)              → usado por Logica_Mundo y por
-    Comunicaciones_Remoto, ambos enteramente asyncio (grpc.aio.server).
-    Una llamada síncrona bloqueante dentro de un método async
-    bloquearía el event loop durante esa llamada de red — de ahí la
-    necesidad de esta versión.
+  - gestor_bots_client.py (síncrono)  → ya no lo usa Hypervisor (migrado
+    a asyncio) — queda como cliente síncrono disponible por si algún
+    otro consumidor síncrono lo necesitara en el futuro.
+  - Este cliente (async)              → usado por Logica_Mundo,
+    Comunicaciones_Remoto, e Hypervisor (tras la migración a asyncio),
+    todos enteramente asyncio.
 
-Ampliado con las operaciones de monitorización/administración que
-Comunicaciones_Remoto reenvía cuando Comunicaciones_Local se lo pide
-(destino GESTOR_BOTS del puente Ejecutar): list_hypervisors,
-broadcast_budgets, freeze_all, resume_all, save_snapshot.
+AMPLIADO: se añaden register_hypervisor, update_hypervisor_load,
+notificar_avatar_sin_piloto y forward_action — los métodos que
+Hypervisor necesita y que faltaban aquí (antes solo estaban en la
+versión síncrona, porque Hypervisor no usaba este cliente todavía).
+Las firmas replican exactamente las de gestor_bots_client.py para no
+introducir ninguna diferencia de comportamiento entre ambas versiones.
+
+RegistroHVResult se importa desde gestor_bots_client.py en vez de
+duplicar la dataclass — es un tipo de dato puro, sin lógica síncrona,
+así que no hay motivo para tener dos definiciones de lo mismo.
 """
 
 from __future__ import annotations
@@ -25,7 +30,12 @@ from typing import Optional
 
 import grpc.aio
 
-from Infraestructura.Gestores.tipos_comunes import HypervisorInfo, HypervisorList
+from Infraestructura.Gestores.tipos_comunes import (
+    ActionResult,
+    HypervisorInfo,
+    HypervisorList,
+)
+from Infraestructura.Gestores.Transporte.gestor_bots_client import RegistroHVResult
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
     gestor_bots_service_pb2_grpc,
@@ -91,6 +101,124 @@ class GestorBotsClientAsync:
         except grpc.aio.AioRpcError as exc:
             logger.error("MatarScriptBot falló para bot %s: %s", bot_id, exc)
             return False
+
+    # ------------------------------------------------------------------
+    # Añadido: Flujo B (el HV detecta que el script se rompió)
+    # ------------------------------------------------------------------
+
+    async def notificar_avatar_sin_piloto(
+        self, bot_id: str, timeout: float | None = None
+    ) -> bool:
+        """
+        Flujo B: llamado por Hypervisor cuando detecta que el script de
+        un bot se ha roto (no compila, excepción no controlada, o el
+        proceso terminó inesperadamente — ver Hypervisor._watch_bot_process).
+        El HV no mata su propio proceso a través de este método — eso ya
+        lo gestiona localmente. Aquí solo se notifica para que
+        Logica_Mundo elimine el avatar correspondiente en el gold.
+        """
+        await self._ensure_channel()
+        request = gestor_bots_service_pb2.BotIdRequest(bot_id=bot_id)
+        try:
+            resp = await self._stub.NotificarAvatarSinPiloto(
+                request, timeout=self._t(timeout)
+            )
+            return resp.ok
+        except grpc.aio.AioRpcError as exc:
+            logger.error("NotificarAvatarSinPiloto falló para bot %s: %s", bot_id, exc)
+            return False
+
+    # ------------------------------------------------------------------
+    # Añadido: Registro de Hypervisores
+    # ------------------------------------------------------------------
+
+    async def register_hypervisor(
+        self,
+        hypervisor_id: str,
+        address: str,
+        port: int,
+        proxy_port: int,
+        capacity: int,
+        timeout: float | None = None,
+    ) -> RegistroHVResult:
+        """
+        El Hypervisor se anuncia al Gestor al arrancar. Ver
+        RegistroHVResult en gestor_bots_client.py — delegated_actions se
+        mantiene en la respuesta por compatibilidad con el proto, aunque
+        Hypervisor ya no lo usa (mecanismo de acciones delegadas retirado).
+        """
+        await self._ensure_channel()
+        request = gestor_bots_service_pb2.RegisterHypervisorRequest(
+            hypervisor_id=hypervisor_id,
+            address=address,
+            port=port,
+            proxy_port=proxy_port,
+            capacity=capacity,
+        )
+        try:
+            resp = await self._stub.RegisterHypervisor(
+                request, timeout=self._t(timeout)
+            )
+            if resp.ok:
+                logger.info("HV %s registrado.", hypervisor_id)
+            else:
+                logger.warning(
+                    "Registro de %s rechazado: %s", hypervisor_id, resp.error
+                )
+            return RegistroHVResult(
+                ok=resp.ok,
+                error=resp.error,
+                delegated_actions=list(resp.delegated_actions),
+            )
+        except grpc.aio.AioRpcError as exc:
+            logger.error("RegisterHypervisor falló para %s: %s", hypervisor_id, exc)
+            return RegistroHVResult(ok=False, error=str(exc))
+
+    async def update_hypervisor_load(
+        self,
+        hypervisor_id: str,
+        current_load: int,
+        timeout: float | None = None,
+    ) -> bool:
+        await self._ensure_channel()
+        request = gestor_bots_service_pb2.UpdateLoadRequest(
+            hypervisor_id=hypervisor_id,
+            current_load=current_load,
+        )
+        try:
+            resp = await self._stub.UpdateHypervisorLoad(
+                request, timeout=self._t(timeout)
+            )
+            return resp.ok
+        except grpc.aio.AioRpcError as exc:
+            logger.error("UpdateHypervisorLoad falló para %s: %s", hypervisor_id, exc)
+            return False
+
+    # ------------------------------------------------------------------
+    # Añadido: Reenvío de acciones al Mundo (usado por Hypervisor)
+    # ------------------------------------------------------------------
+
+    async def forward_action(
+        self,
+        bot_id: str,
+        hypervisor_id: str,
+        action_type: str,
+        payload: bytes = b"",
+        timeout: float | None = None,
+    ) -> ActionResult:
+        await self._ensure_channel()
+        request = gestor_bots_service_pb2.ForwardActionRequest(
+            bot_id=bot_id,
+            hypervisor_id=hypervisor_id,
+            action_type=action_type,
+            payload=payload,
+        )
+        try:
+            resp = await self._stub.ForwardAction(request, timeout=self._t(timeout))
+            return ActionResult(resp.ok, resp.payload, resp.error, resp.world_tick)
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ForwardAction falló para bot %s: %s", bot_id, exc)
+            return ActionResult(ok=False, payload=b"", error=str(exc))
 
     # ------------------------------------------------------------------
     # Monitorización / administración (usado por Comunicaciones_Remoto)

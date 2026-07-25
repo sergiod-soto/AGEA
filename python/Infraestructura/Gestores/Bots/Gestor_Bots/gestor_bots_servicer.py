@@ -1,7 +1,5 @@
 # Infraestructura/Gestores/Bots/Gestor_Bots/gestor_bots_servicer.py
-"""
-gestor_bots_servicer.py
-"""
+
 
 from __future__ import annotations
 
@@ -23,6 +21,10 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         self._hv_client_factory = hypervisor_client_factory
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
 
+    # ----- añadido: faltaba en el servicer, RPC declarado en el .proto -----
+    async def Shutdown(self, request, context):
+        return await self._dispatch["Shutdown"].handle(self._gestor, request, context)
+
     async def Heartbeat(self, request, context):
         return await self._dispatch["Heartbeat"].handle(self._gestor, request, context)
 
@@ -43,7 +45,8 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         )
 
     async def BroadcastBudgets(self, request, context):
-        return await self._dispatch["BroadcastBudgetsAsync"].handle(
+        # CORREGIDO: antes "BroadcastBudgetsAsync" — ver docstring arriba.
+        return await self._dispatch["BroadcastBudgets"].handle(
             self._gestor, request, context
         )
 
@@ -62,9 +65,6 @@ class Gestor_Bots_Servicer(pb_grpc.GestorBotsServiceServicer):
         return await self._dispatch["SaveSnapshot"].handle(
             self._gestor, request, context
         )
-
-    async def LoadState(self, request, context):
-        return await self._dispatch["LoadState"].handle(self._gestor, request, context)
 
     async def RegisterHypervisor(self, request, context):
         ack = await self._dispatch["RegisterHypervisor"].handle(
