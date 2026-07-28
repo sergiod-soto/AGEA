@@ -1,0 +1,37 @@
+# Core/Entities/Elementos/elemento_test.py
+
+from Core.Entities.Comportamiento.Fisico.peso import Peso
+from Core.Entities.Comportamiento.comportamiento_test import Comportamiento_Test
+from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
+
+comportamientos = Comportamiento.declarar_comportamientos(
+    Comportamiento_Test,
+    Peso,
+)
+
+
+class Elemento_Test(Elemento_Simple, comportamientos):
+
+    def __init__(
+        self,
+        casilla: tuple[int, int],
+        id,
+        # Peso:
+        peso: float,
+        **kwargs
+    ):
+        if peso < 0:
+            peso = 0
+        super().__init__(
+            tipo=Elemento_Test,
+            id=id,
+            tamanho=1,
+            casilla=casilla,
+            capa=1,
+            fuerza_sector_activo=False,
+            fuerza_vecinos_activos=False,
+            # Peso:
+            peso=peso,
+            **kwargs
+        )

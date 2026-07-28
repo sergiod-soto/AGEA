@@ -6,9 +6,3 @@ al modificar un nodo del ADN -> recompilado parcial
 hay que separar ann y pesos de ADN
 
 
-#
-def terreno_a_clima(x, y, N):
-    return (x // N, y // N)
-
-def clima_a_terreno(cx, cy, N):
-    return [(cx*N + dx, cy*N + dy) for dx in range(N) for dy in range(N)]

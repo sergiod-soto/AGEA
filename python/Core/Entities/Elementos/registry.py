@@ -6,9 +6,13 @@ elementos serializados (ver Elemento.serializar/deserializar).
 Para añadir un elemento nuevo: importarlo aquí y añadirlo a ELEMENTOS.
 """
 
+from typing import TYPE_CHECKING
+
 from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
 from Core.Entities.Comportamiento.Stats.Informacion.informacion import Informacion
 from Core.Entities.Comportamiento.Terreno.piedra import Piedra
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
+from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
@@ -45,57 +49,135 @@ from Core.Entities.Elementos.Simples.Comida.comida import Comida
 from Core.Entities.Elementos.Simples.Etereo.etereo import Etereo
 from Core.Entities.Elementos.Simples.Etereo.mensaje import Mensaje
 from Core.Entities.Elementos.Simples.Recipiente.recipiente import Recipiente
+from Core.Entities.Elementos.elemento_test import Elemento_Test
+from Core.Entities.Elementos.elemento import Elemento
+
+import logging
+
+if TYPE_CHECKING:
+    from Core.Entities.Mundo.mundo import Mundo
+
+logger = logging.getLogger(__name__)
 
 ELEMENTOS: dict[str, type] = {
+    # A
     "Accion": Accion,
-    "Mezclar": Mezclar,
-    "Condicion": Condicion,
-    "Informacion": Informacion,
-    "Raycast": Raycast,
-    "Sonido": Sonido,
-    "Marcador": Marcador,
-    "Marcador_Espacial": Marcador_Espacial,
     "Agujero": Agujero,
-    "Rastro": Rastro,
-    "Ciclo_Lunar": Ciclo_Lunar,
-    # "Clima": Clima,
-    "Marcador_Temporal": Marcador_Temporal,
-    "Puzzle": Puzzle,
-    "Premio": Premio,
-    "Receta": Receta,
-    "Elemento_Abstracto": Elemento_Abstracto,
     "Agua": Agua,
     "Arbol": Arbol,
+    # B
     "Bot": Bot,
+    # C
     "Cadaver": Cadaver,
-    "Celda": Celda,
-    "Comida": Comida,
     "Carne": Carne,
-    "Carne_Seca": Carne_Seca,
     "Carne_Fresca": Carne_Fresca,
-    "Fruta": Fruta,
-    "Ingrediente": Ingrediente,
-    "Masa_Pan": Masa_Pan,
-    "Harina": Harina,
+    "Carne_Seca": Carne_Seca,
+    "Celda": Celda,
+    "Ciclo_Lunar": Ciclo_Lunar,
+    # "Clima": Clima,
+    "Comida": Comida,
+    "Condicion": Condicion,
+    # D
+    # E
+    "Elemento_Abstracto": Elemento_Abstracto,
+    "Elemento_Test": Elemento_Test,
     "Etereo": Etereo,
+    # F
+    "Fruta": Fruta,
+    # G
+    # H
+    "Harina": Harina,
+    # I
+    "Informacion": Informacion,
+    "Ingrediente": Ingrediente,
+    # J
+    # K
+    # L
+    # M
+    "Marcador": Marcador,
+    "Marcador_Espacial": Marcador_Espacial,
+    "Marcador_Temporal": Marcador_Temporal,
+    "Masa_Pan": Masa_Pan,
     "Mensaje": Mensaje,
+    "Mezclar": Mezclar,
+    # N
+    # O
+    # P
     "Piedra": Piedra,
+    "Premio": Premio,
+    "Puzzle": Puzzle,
+    # Q
+    # R
+    "Rastro": Rastro,
+    "Raycast": Raycast,
+    "Receta": Receta,
     "Recipiente": Recipiente,
+    # S
+    "Sonido": Sonido,
+    # T
+    # U
+    # V
+    # W
+    # X
+    # Y
+    # Z
 }
 
 
-def reconstruir_elemento(data: dict):
-    """
-    Reconstruye una instancia completa a partir de su forma serializada
-    (ver Elemento.serializar), sin pasar por __init__ — que exige
-    argumentos de creación (padres/tamanho/casilla...) que no aplican
-    al restaurar un elemento ya existente.
-    """
+def reconstruir_elemento(data: dict, mundo: "Mundo | None" = None):
     nombre_clase = data.get("__clase__")
     clase = ELEMENTOS.get(nombre_clase)
     if clase is None:
         raise ValueError(f"Clase de elemento desconocida: '{nombre_clase}'")
 
     obj = clase.__new__(clase)
-    obj.deserializar(data)
+
+    guardados = set(data.get("comportamientos", {}).keys())
+    actuales = {c.__name__ for c in obj._get_comportamientos()}
+
+    for nombre in actuales - guardados:
+        comportamiento = COMPORTAMIENTOS.get(nombre)
+        if comportamiento is None:
+            raise ValueError(f"Comportamiento desconocido: '{nombre}'")
+        # Puede haber desaparecido ya en cascada al quitar otro
+        # comportamiento del que dependía (ver Comportamiento._sin_comportamiento)
+        if isinstance(obj, comportamiento):
+            Comportamiento.quitar(obj, comportamiento)
+
+    for nombre in guardados - actuales:
+        comportamiento = COMPORTAMIENTOS.get(nombre)
+        if comportamiento is None:
+            raise ValueError(f"Comportamiento desconocido: '{nombre}'")
+        valores = data["comportamientos"].get(nombre, {})
+        # Puede haber aparecido ya en cascada al añadir otro que lo trae
+        # consigo por herencia (p.ej. añadir Peso ya trae Fisico)
+        if not isinstance(obj, comportamiento):
+            Comportamiento.anhadir(obj, comportamiento, **valores)
+
+    obj.deserializar(data, mundo)
     return obj
+
+
+def _todas_las_subclases(cls: type) -> set[type]:
+    directas = set(cls.__subclasses__())
+    return directas | {
+        nieta for hija in directas for nieta in _todas_las_subclases(hija)
+    }
+
+
+def _avisar_si_falta_registrar():
+
+    reales = set(_todas_las_subclases(Elemento))
+    registradas = set(ELEMENTOS.values())
+    faltantes = reales - registradas
+    if faltantes:
+        nombres = ", ".join(sorted(c.__name__ for c in faltantes))
+        logger.warning(
+            "ELEMENTOS: hay clase(s) Elemento definidas pero sin registrar "
+            "(no se podrán reconstruir desde snapshot/red hasta que se "
+            "añadan): %s",
+            nombres,
+        )
+
+
+_avisar_si_falta_registrar()

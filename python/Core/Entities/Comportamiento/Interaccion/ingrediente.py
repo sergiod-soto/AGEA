@@ -21,6 +21,7 @@ class Ingrediente(Interaccion):
         super().__init__(**kwargs)
         self.recetas_de: list[Receta] = recetas_de
 
+
     def incluir_en_receta(self, receta: Receta) -> None:
         if receta.nombre in self.recetas_de:
             return

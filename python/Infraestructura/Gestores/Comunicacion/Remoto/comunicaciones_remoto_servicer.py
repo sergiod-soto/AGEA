@@ -1,28 +1,5 @@
 # Infraestructura/Gestores/Comunicacion/Remoto/comunicaciones_remoto_servicer.py
-"""
-comunicaciones_remoto_servicer.py — Servicer gRPC de
-ComunicacionRemotaService.
 
-Heartbeat hace ping activo a Logica_Mundo/Gestor_Mundo/Gestor_Bots
-llamando al RPC Heartbeat real de cada uno. Solo se ejecuta cuando
-local llama a este propio Heartbeat (decisión B: sin bucle de fondo
-propio en este proceso).
-
-PROPAGACIÓN TOTAL: cualquier fallo en cualquier nivel de la jerarquía
-debe llegar hasta local y disparar el apagado completo del sistema —
-esto incluye tanto una excepción de red (timeout, conexión rechazada)
-como un heartbeat que responde pero con ok=False (p.ej. Gestor_Bots
-reportando que un HV concreto dejó de reportar carga, o Gestor_Mundo
-reportando que un sector lleva demasiados ticks sin responder). Antes
-esto se filtraba (un ok=False de un subordinado no contaba como
-"gestor_bots caído"); se corrige aquí para que SÍ cuente — un solo HV
-o sector caído provoca el apagado de toda la sesión.
-
-ok=False de esta propia función se traduce en excepción en local (ver
-_heartbeat_o_falla en remote.py), que es lo único que
-MonitorComponentes sabe interpretar como fallo — no hace falta tocar
-monitor.py.
-"""
 
 import asyncio
 import logging
@@ -104,3 +81,30 @@ class ComunicacionesRemotoServicer(pb_grpc.ComunicacionRemotaServiceServicer):
             componente, request.operacion, request.payload
         )
         return pb.EjecutarResponse(ok=ok, error=error, payload=payload)
+
+    async def ActualizarFoco(self, request, context):
+        """
+        Llamado por el master (vía Comunicaciones_Local) para fijar
+        la región/filtro que se está mostrando. Traducción directa
+        proto -> tuplas nativas; la lógica real vive en
+        ComunicacionesRemoto.actualizar_foco (síncrono, solo guarda
+        estado, no llama a Logica_Mundo aquí).
+        """
+        min_pos = (request.min.x, request.min.y)
+        max_pos = (request.max.x, request.max.y)
+        self._logica.actualizar_foco(
+            min_pos, max_pos, list(request.incluir), request.modo
+        )
+        return common_pb2.Ack(ok=True)
+
+    async def SuscribirseFoco(self, request, context):
+        """
+        Streaming compartido: cada cliente que llame a este RPC
+        (master o espectador) entra en la misma emisión — ver
+        FocoBroadcaster.suscribirse(), que es quien realmente vigila
+        el tick y reparte. Cuando el cliente se desconecta, gRPC
+        cancela esta corrutina; el `finally` de FocoBroadcaster.
+        suscribirse() se encarga de quitar la cola correspondiente.
+        """
+        async for actualizacion in self._logica.suscribirse_foco():
+            yield actualizacion

@@ -20,24 +20,21 @@ class Enterrable(Fisico):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._enterrable: bool = True
-        self._enterrado = False
+        self._des_enterrable: bool = True
+        self._enterrado: bool = False
+
+    @classmethod
+    def _campos_internos(cls):
+        return {"_des_enterrable", "_enterrado"}
 
     @abstractmethod
-    def check_enterrable(self) -> bool:
-        pass
+    def check_enterrable(self) -> bool: ...
 
     @abstractmethod
-    def check_desenterrable(self) -> bool:
-        pass
+    def check_desenterrable(self) -> bool: ...
 
     @abstractmethod
-    def enterrar(self):
-        pass
+    def enterrar(self) -> bool: ...
 
     @abstractmethod
-    def desenterrar(self):
-        pass
-
-
-Enterrable
+    def desenterrar(self) -> bool: ...

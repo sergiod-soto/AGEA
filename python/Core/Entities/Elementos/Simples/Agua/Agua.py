@@ -42,14 +42,20 @@ class Agua(Elemento_Simple, comportamientos):
 
     def __init__(
         self,
+        id,
         casilla: tuple[int, int],
         # Peso:
         peso: float,
+        rotacion=0,
+        fuerza_sector_activo=False,
+        fuerza_vecinos_activos=False,
+        **kwargs
     ):
         if peso < 0:
             peso = 0
         super().__init__(
             tipo=Agua,
+            id=id,
             tamanho=1,
             casilla=casilla,
             capa=1,
@@ -69,4 +75,10 @@ class Agua(Elemento_Simple, comportamientos):
             valor_hidratacion=1.0,  # TODO: definir _valor_hidratacion de Hidratante de agua
             # Combinable:
             cantidad_max_combinable=1000.0,
+            rotacion=rotacion,
+            fuerza_sector_activo=fuerza_sector_activo,
+            fuerza_vecinos_activos=fuerza_vecinos_activos,
+            **kwargs
         )
+
+   

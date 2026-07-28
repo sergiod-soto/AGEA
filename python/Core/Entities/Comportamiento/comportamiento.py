@@ -1,139 +1,27 @@
 # Core/Entities/comportamiento/comportamiento.py
-from abc import abstractmethod
+
+
 from dataclasses import dataclass
 import inspect
 
 
+class _NoSerializar:
+    """
+    Sentinel que un serialize_X() puede devolver para decir "este campo no
+    debe aparecer en el dict serializado". Es el mismo mecanismo de hooks
+    (serialize_X/deserialize_X) el que decide EXCLUIR un campo, no una
+    lista aparte de excepciones — así solo hay una vía para tratar campos
+    especiales, tanto a nivel de Comportamiento como de Elemento.
+    """
+
+    pass
+
+
+NO_SERIALIZAR = _NoSerializar()
+
+
 @dataclass(kw_only=True)
 class Comportamiento:
-    """
-    Metodos abstractos:
-
-    - serializar()
-    - deserializar()
-
-    Lista de argumentos de cada comportamiento:
-
-    - Empujable:
-        - coste_empujar: float
-        - empujable: bool
-
-    - Enterrable: -
-    - Flotable:
-        - flotable: bool
-    - Humedo:
-        - humedad_max: float
-        - humedad_actual: float
-    - Inflamable:
-        - temperatura_ignicion: float
-        - inflamable: bool
-        - ardiendo: bool
-    - Peso:
-        - peso: float
-    - Volumen:
-        - volumen: float
-    - Color:
-        - rgb_color: tuple[int, int, int]
-    - Luminoso:
-        - distancia_luz: float
-        - area_luz: int = 360
-    - Rastreable:
-        - condiciones_rastro: list[tuple[list[Condicion], float]]
-    - Sonoro: -
-    - Agarrable:
-        - agarrado_por: Elemento
-    - Consumible: -
-    - Contenedor:
-        - capacidad: float
-        - contenido: list[Elemento]
-    - Crafteable:
-        - receta: tuple[str, list[Elemento]]
-    - Destruible:
-        - durabilidad_max: float
-        - durabilidad_actual: float
-    - Equipable:
-        - provoca_equiparlo: dict[Elemento, Accion]
-        - equipado_por: Elemento
-    - Golpeable: -
-    - Ingrediente:
-        - recetas: dict[str, Crafteable]
-    - Interactuable: -
-    - Plantable:
-        - plantado: bool
-        - plantable: bool
-    - Recolectable:
-        - contenido: dict[str, tuple[Elemento, float]]
-    - Combinable:
-        - elemento_combinable: Elemento
-        - cantidad_max_combinable: float
-    - Divisible:
-        - cantidad_minima_divisible:float
-    - Erosionable:
-        - condiciones_erosion: list[tuple[list[Condicion], float]]
-        - durabilidad_max_erosion: float
-        - durabilidad_actual_erosion: float
-    - Gaseoso: -
-    - Liquido: -
-    - Solido: -
-    - Tangible: -
-    - Transformable:
-        - dict: dict[Condicion, Elemento]
-    - Transparente: -
-    - Comestible: -
-    - Hidratante:
-        - valor_hidratacion: float
-    - Medicinal:
-        - valor_medicinal: float
-    - Nutritivo:
-        - valor_nutritivo: float
-    - Regenerable:
-        - tasas_regeneracion: list[tuple[Stat, float]]
-    - Toxico:
-        - valor_toxico: float
-    - Intercambiable: -
-    - Caduco:
-        - duracion_max_caduco: int
-        - duracion_restante_caduco: int
-    - Estacional:
-        - acciones_por_estacion: dict[Estacion, list[Accion]]
-    - Latente:
-        - condiciones: list[Condicion]
-        - accion_latente: Accion
-    - Perecedero:.
-        - tiempo_maximo_perecedero: float
-        - condiciones_perecedero: list[tuple[list[Condicion], float]]
-        - tiempo_actual_perecedero: float
-    - Temporal: -
-
-    ________________________________________________________
-
-    STATS:
-
-    - Ataque: -
-    - Defensa: -
-    - Deteccion: -
-    - Edad_Adulta: -
-    - Edad: -
-    - Energia: -
-    - Regulacion_Temperatura: -
-    - Salud: -
-    - Sigilo: -
-    - Temperatura: -
-    - Velocidad: -
-
-    - Agresividad: -
-    - Armadura: -
-    - Grasa: -
-    - Longevidad: -
-    - Movilidad: -
-    - Percepcion: -
-    - Tamanho: -
-    - Temperatura_Optima: -
-
-    - Apellidos: -
-    - ID: -
-    - Posicion: -
-    """
 
     def __init__(self, **kwargs):
         self.comportamiento_activo = True
@@ -155,6 +43,72 @@ class Comportamiento:
                 inspect.Parameter.VAR_KEYWORD,  # **kwargs
             )
         }
+
+    @classmethod
+    def _campos_internos(cls) -> set[str]:
+        """
+        Nombres de atributos propios de esta clase que deben serializarse
+        aunque NO sean parámetros de su __init__ — p.ej. estado interno
+        (privado, con guion bajo) que se inicializa en el cuerpo del
+        constructor en vez de recibirse como argumento (self._enterrado,
+        self.comportamiento_activo...).
+
+        Por defecto vacío: la mayoría de comportamientos no lo necesitan,
+        porque todos sus datos ya son parámetros de __init__ (p.ej. Peso).
+        Una subclase la sobreescribe solo cuando tiene ese caso.
+        """
+        return set()
+
+    @classmethod
+    def _es_comportamiento_real(cls) -> bool:
+        """
+        True si esta clase debe tratarse como un comportamiento con
+        identidad propia (sus parámetros cuentan para decidir qué se
+        conserva/elimina en quitar()). Por defecto True para cualquier
+        subclase de Comportamiento; Elemento la sobreescribe a False para
+        excluirse a sí mismo y a toda su cadena (Elemento_Simple,
+        Elemento_Test...) sin que Comportamiento tenga que conocer a
+        Elemento (evita el import circular).
+        """
+        return True
+
+    @classmethod
+    def _campos_serializables(cls) -> set[str]:
+        """
+        Unión de ambas fuentes: lo que se recibe por __init__ + lo que se
+        declara explícitamente como interno. Es la fuente única de verdad
+        de "qué atributos pertenecen a este comportamiento", tanto para
+        Comportamiento.serializar() como para que Elemento sepa qué NO debe
+        tratar como atributo propio suyo.
+        """
+        return set(Comportamiento._params_propios(cls).keys()) | cls._campos_internos()
+
+    @staticmethod
+    def _sin_comportamiento(clase: type, comportamiento: type):
+        """
+        Devuelve una versión de `clase` sin `comportamiento`, reconstruyendo
+        recursivamente cualquier base compuesta (como las que genera
+        declarar_comportamientos, o las que anhadir() va encadenando) que lo
+        contenga. Si `clase` no tiene ninguna relación con `comportamiento`
+        (no está en su MRO), se devuelve TAL CUAL, sin recrear nada — así
+        Elemento_Simple, por ejemplo, nunca se toca.
+        """
+        if clase is comportamiento:
+            return None  # esta rama desaparece por completo
+        if not issubclass(clase, comportamiento):
+            return clase  # no relacionado, se conserva intacto
+
+        nuevas_bases = tuple(
+            nueva
+            for nueva in (
+                Comportamiento._sin_comportamiento(base, comportamiento)
+                for base in clase.__bases__
+            )
+            if nueva is not None
+        )
+        if not nuevas_bases:
+            nuevas_bases = (object,)
+        return type(clase.__name__, nuevas_bases, {})
 
     @staticmethod
     def anhadir(obj, comportamiento: type, **kwargs):
@@ -195,28 +149,44 @@ class Comportamiento:
     @staticmethod
     def quitar(obj, comportamiento: type):
         """
-        Eliminar Comportamiento de un Elemento
+        Eliminar Comportamiento de un Elemento — funciona tanto si
+        `comportamiento` es base directa de obj.__class__ (caso típico de
+        anhadir()) como si quedó anidado dentro de una clase compuesta
+        (declarar_comportamientos, o encadenamientos de anhadir()).
         """
-
         if not isinstance(obj, comportamiento):
             raise TypeError(
                 f"{obj.__class__.__name__} no tiene {comportamiento.__name__}"
             )
 
-        # Atributos de todos los comportamientos que se mantienen
+        presentes = [
+            c
+            for c in obj.__class__.__mro__
+            if issubclass(c, Comportamiento)
+            and c is not Comportamiento
+            and c._es_comportamiento_real()
+            and "__init__" in c.__dict__
+        ]
+
         campos_restantes = {
             nombre
-            for cls in obj.__class__.__mro__
-            if cls is not comportamiento and cls is not obj.__class__
-            for nombre in Comportamiento._params_propios(cls)
+            for c in presentes
+            if c is not comportamiento
+            for nombre in Comportamiento._params_propios(c)
         }
-
         for nombre in Comportamiento._params_propios(comportamiento):
             if nombre not in campos_restantes and hasattr(obj, nombre):
                 delattr(obj, nombre)
 
-        bases_sin = tuple(b for b in obj.__class__.__bases__ if b is not comportamiento)
-        obj.__class__ = type(obj.__class__.__name__, bases_sin, {})
+        nuevas_bases = tuple(
+            nueva
+            for nueva in (
+                Comportamiento._sin_comportamiento(base, comportamiento)
+                for base in obj.__class__.__bases__
+            )
+            if nueva is not None
+        )
+        obj.__class__ = type(obj.__class__.__name__, nuevas_bases, {})
 
     def comportamientos(self) -> list["Comportamiento"]:
         """
@@ -227,17 +197,6 @@ class Comportamiento:
             c
             for c in type(self).__mro__
             if issubclass(c, Comportamiento) and c is not Comportamiento
-        ]
-
-    def comportamientos_de(self, categoria) -> list["Comportamiento"]:
-        """
-        Retorna que comportamientos se han heredado de cierta categoria
-        """
-
-        return [
-            c
-            for c in type(self).__mro__
-            if issubclass(c, categoria) and c is not categoria
         ]
 
     def categorias(self) -> list["Comportamiento"]:
@@ -276,24 +235,35 @@ class Comportamiento:
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
 
-    def serializar(self, cls=None):
-
+    def serializar(self, cls=None) -> dict:
         cls = cls or type(self)
-        atributos = Comportamiento._params_propios(cls)
-        return {
-            nombre: getattr(self, nombre)
-            for nombre in atributos
-            if hasattr(self, nombre)
-        }
+        atributos = cls._campos_serializables()
+        resultado = {}
+        for nombre in atributos:
+            serializador = getattr(self, f"serialize_{nombre}", None)
+            if serializador:
+                valor = serializador()
+            elif hasattr(self, nombre):
+                valor = getattr(self, nombre)
+            else:
+                continue
+            if valor is NO_SERIALIZAR:
+                continue
+            resultado[nombre] = valor
+        return resultado
 
     def deserializar(self, data: dict):
         """
-        Da valores a los atributos de la clase automaticamente a partir de un dict.
+        Da valores a los atributos de la clase a partir de un dict.
 
-        Algunos valores no son deserializables automaticamente y deberan hacerse a mano.
-        En ese caso, la clase debe implementar este metodo, deserializando manualmente la variable
-        problematica en, por ejemplo, data y posteriormente llamando a super().deserializar(data)
+        Para cada clave, si existe un método deserialize_<clave> en la
+        instancia, se le delega la reconstrucción del valor (p.ej. deshacer
+        una transformación de formato hecha en serialize_<clave>). Si no
+        existe, se hace un setattr directo del valor tal cual llega.
         """
-
         for key, value in data.items():
-            setattr(self, key, value)
+            deserializador = getattr(self, f"deserialize_{key}", None)
+            if deserializador:
+                deserializador(value)
+            else:
+                setattr(self, key, value)

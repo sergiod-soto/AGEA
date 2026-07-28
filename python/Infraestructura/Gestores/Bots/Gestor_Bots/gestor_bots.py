@@ -1,21 +1,5 @@
 # Infraestructura/Gestores/Bots/Gestor_Bots/gestor_bots.py
-"""
-gestor_bots.py — Lógica pura del Gestor de Hypervisores.
 
-NUEVO (detección de HVs caídos): cada HypervisorInfo lleva un
-last_seen actualizado en cada UpdateHypervisorLoad (que el HV ya
-empuja cada 30s, ver hypervisor_server.py::_heartbeat). Gestor_Bots
-NO pinguea activamente a los HVs — es más barato comprobar staleness
-de un dato que ya recibe pasivamente. Ver hypervisores_caidos(),
-usado por Funciones/heartbeat.py para rellenar hv_statuses.
-
-ELIMINADO: get_delegated_action_names() y el mecanismo de acciones
-delegadas al que servía. El HV nunca tuvo acceso real al estado del
-mundo (vive solo en Logica_Mundo desde que se separó en su propio
-módulo), así que "delegar" una acción al HV nunca fue viable — ver el
-comentario extenso en hypervisor.py sobre por qué se retiró por
-completo, no solo se corrigió.
-"""
 
 from __future__ import annotations
 
@@ -202,11 +186,7 @@ class Gestor_Bots:
 
         if client is None:
             logger.error("No hay cliente para HV %s", hv_id)
-            async with self._lock:
-                hv = self._hypervisors.get(hv_id)
-                if hv:
-                    hv.current_load -= 1
-                self._bots.pop(bot_id, None)
+            await self._revertir_registro(hv_id, bot_id)
             return BotInfo(
                 bot_id=bot_id,
                 hypervisor_id="",
@@ -219,11 +199,7 @@ class Gestor_Bots:
             result = await client.spawn_bot(bot_config)
         except Exception as exc:
             logger.error("Error spawn_bot en HV %s: %s", hv_id, exc)
-            async with self._lock:
-                hv = self._hypervisors.get(hv_id)
-                if hv:
-                    hv.current_load -= 1
-                self._bots.pop(bot_id, None)
+            await self._revertir_registro(hv_id, bot_id)
             return BotInfo(
                 bot_id=bot_id,
                 hypervisor_id="",
@@ -232,12 +208,29 @@ class Gestor_Bots:
                 error=str(exc),
             )
 
+        # El HV respondió sin excepción, pero puede rechazar el spawn a
+        # nivel de negocio (ok=False) — mismo efecto que una excepción:
+        # el bot no llegó a existir de verdad en el HV, así que hay que
+        # revertir el estado igual que en los otros dos casos de fallo.
+        if not result.ok:
+            logger.error(
+                "HV %s rechazó spawn_bot de %s: %s", hv_id, bot_id, result.error
+            )
+            await self._revertir_registro(hv_id, bot_id)
+            return BotInfo(
+                bot_id=bot_id,
+                hypervisor_id="",
+                proxy_address="",
+                ok=False,
+                error=result.error,
+            )
+
         return BotInfo(
             bot_id=bot_id,
             hypervisor_id=hv_id,
             proxy_address=proxy_address,
-            ok=result.ok,
-            error=result.error,
+            ok=True,
+            error="",
         )
 
     async def kill_bot(self, bot_id: str) -> None:
@@ -373,6 +366,21 @@ class Gestor_Bots:
     # ------------------------------------------------------------------
     # Helpers privados
     # ------------------------------------------------------------------
+
+    async def _revertir_registro(self, hv_id: str, bot_id: str) -> None:
+        """
+        Deshace el estado que spawn_bot reserva de forma optimista
+        (current_load incrementado + BotStats registrado) cuando el
+        intento de arranque en el HV termina en fallo, sea por
+        excepción de transporte, ausencia de cliente, o rechazo de
+        negocio (result.ok=False). Los tres casos significan lo mismo:
+        el bot no llegó a existir realmente en el HV.
+        """
+        async with self._lock:
+            hv = self._hypervisors.get(hv_id)
+            if hv:
+                hv.current_load -= 1
+            self._bots.pop(bot_id, None)
 
     def _select_hypervisor(self) -> Optional[HypervisorInfo]:
         """Debe llamarse con self._lock adquirido."""

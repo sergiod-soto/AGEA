@@ -20,6 +20,10 @@ class Humedo(Fisico):
         self.humedad_max = humedad_max
         self.humedad_actual: float = humedad_max
 
+    @classmethod
+    def _campos_internos(cls):
+        return {"humedad_actual"}
+    
     @abstractmethod
     def humedecer(self, cantidad):
         pass

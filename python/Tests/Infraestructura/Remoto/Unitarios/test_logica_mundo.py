@@ -1,7 +1,9 @@
 # Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py
 """
 test_logica_mundo.py — Pruebas unitarias de LogicaMundo: crear/
-modificar/eliminar elemento, eliminar_avatar_bot, snapshot roundtrip.
+modificar/eliminar elemento, eliminar_avatar_bot, snapshot roundtrip,
+y el tick_actual que usa Vista_Foco (ver comunicaciones_remoto.py /
+vista_foco.py) para detectar "hubo tick nuevo".
 
 Se usa un elemento mínimo real (Agua, ya definido en el proyecto y sin
 dependencias de comportamientos complejos) en vez de un mock, porque
@@ -12,6 +14,7 @@ justamente lo que más interesa comprobar aquí.
 
 import json
 
+from numpy import uint64
 import pytest
 
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
@@ -72,7 +75,7 @@ async def test_eliminar_elemento_vacia_celda_si_queda_sin_slots(logica: LogicaMu
     await logica.crear_elemento(
         pos=(1, 1), type_id="suelo", element=_elemento_agua_bytes(1)
     )
-    ok, _ = await logica.eliminar_elemento(pos=(1, 1), element_id=1)
+    ok, _ = await logica.eliminar_elemento(pos=(1, 1), element_id=uint64(1))
     assert ok is True
     assert (1, 1) not in logica._gold_cells, "la celda debe desaparecer si queda vacía"
 
@@ -82,7 +85,7 @@ async def test_eliminar_elemento_desconocido_falla(logica: LogicaMundo):
     await logica.crear_elemento(
         pos=(2, 2), type_id="suelo", element=_elemento_agua_bytes(1)
     )
-    ok, error = await logica.eliminar_elemento(pos=(2, 2), element_id=999)
+    ok, error = await logica.eliminar_elemento(pos=(2, 2), element_id=uint64(999))
     assert ok is False
     assert "no encontrado" in error.lower()
 
@@ -137,3 +140,37 @@ async def test_load_state_snapshot_inexistente_no_lanza(
     logica.SNAPSHOT_DIR = snapshot_dir_aislado
     await logica.load_state("no_existe_este_id")  # no debe lanzar, solo loguear warning
     assert logica._gold_cells == {}
+
+
+# ── tick_actual — NUEVO, lo necesita Vista_Foco (FocoBroadcaster) ──
+
+
+@pytest.mark.unit
+async def test_get_tick_actual_es_cero_antes_de_cualquier_avance(logica: LogicaMundo):
+    """
+    Estado inicial: nadie ha llamado a avanzar_elementos_globales
+    todavía — FocoBroadcaster debe poder distinguir esto de un tick
+    real ya procesado.
+    """
+    assert await logica.get_tick_actual() == 0
+
+
+@pytest.mark.unit
+async def test_avanzar_elementos_globales_guarda_el_tick_recibido(logica: LogicaMundo):
+    await logica.avanzar_elementos_globales(tick_id=5)
+
+    assert await logica.get_tick_actual() == 5
+
+
+@pytest.mark.unit
+async def test_avanzar_elementos_globales_repetido_actualiza_el_tick(
+    logica: LogicaMundo,
+):
+    """
+    No es un contador que solo suma: guarda el ÚLTIMO tick_id recibido,
+    tal cual, incluso si se llama varias veces seguidas.
+    """
+    await logica.avanzar_elementos_globales(tick_id=5)
+    await logica.avanzar_elementos_globales(tick_id=8)
+
+    assert await logica.get_tick_actual() == 8

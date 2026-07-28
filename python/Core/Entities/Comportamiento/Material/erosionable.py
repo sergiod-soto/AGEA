@@ -33,6 +33,8 @@ class Erosionable(Material):
             durabilidad_actual_erosion or durabilidad_max_erosion
         )
 
+
+
     def tick(self) -> None:
         super().tick()
         for condiciones, cantidad in self.condiciones_erosion:

@@ -12,12 +12,17 @@ real (LogicaMundoService / GestorMundoService / GestorBotsService),
 lo serializa, lo envía dentro de EjecutarRequest (ver
 comunicacion_remota_service.proto), y deserializa la respuesta al
 *Response tipado correspondiente.
+
+actualizar_foco / suscribirse_foco son la excepción: no pasan por
+EjecutarRequest porque no son un reenvío a un componente remoto —
+son RPCs propios de ComunicacionRemotaService (estado y streaming
+de Vista_Foco). Se llaman directamente sobre el mismo stub.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 import grpc.aio
 
@@ -297,3 +302,55 @@ class ComunicacionesLocal:
         resp = bots_pb.SaveSnapshotResponse()
         resp.ParseFromString(raw)
         return resp.ok, resp.error
+
+    # ------------------------------------------------------------------
+    # Vista_Foco — fijar el foco (master) y suscribirse a él (master
+    # y espectadores). No usan _ejecutar(): son RPCs propios de
+    # ComunicacionRemotaService, no reenvíos a un componente remoto.
+    # ------------------------------------------------------------------
+
+    async def actualizar_foco(
+        self,
+        min_pos: tuple[int, int],
+        max_pos: tuple[int, int],
+        incluir: list[str],
+        modo: str,
+    ) -> tuple[bool, str]:
+        """
+        Llamado por el master para fijar qué región/filtro debe verse.
+        Unario: confirma que el puente lo recibió, no espera datos del
+        mundo (esos llegan por el stream de suscribirse_foco).
+        """
+        await self._ensure_channel()
+        req = bridge_pb.FocoRequest(
+            min=common_pb.Position(x=min_pos[0], y=min_pos[1]),
+            max=common_pb.Position(x=max_pos[0], y=max_pos[1]),
+            incluir=incluir,
+            modo=modo,
+        )
+        try:
+            resp = await self._stub.ActualizarFoco(req, timeout=self._timeout)
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ActualizarFoco falló: %s", exc)
+            raise RuntimeError(str(exc)) from exc
+        return resp.ok, resp.error
+
+    async def suscribirse_foco(
+        self,
+    ) -> AsyncIterator["bridge_pb.ActualizacionFoco"]:
+        """
+        Streaming compartido: master y espectadores llaman a este
+        mismo método y reciben la misma emisión (ver FocoBroadcaster
+        en el lado remoto). El `async for` de quien llame a esto se
+        corta solo si el propio llamante deja de iterar o si el canal
+        se cae — no hay que cerrarlo a mano en el caso normal.
+        """
+        await self._ensure_channel()
+        try:
+            async for actualizacion in self._stub.SuscribirseFoco(
+                bridge_pb.SuscribirseFocoRequest()
+            ):
+                yield actualizacion
+        except grpc.aio.AioRpcError as exc:
+            logger.error("SuscribirseFoco falló: %s", exc)
+            raise RuntimeError(str(exc)) from exc

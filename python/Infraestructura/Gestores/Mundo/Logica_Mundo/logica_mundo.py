@@ -71,6 +71,7 @@ class LogicaMundo:
         self._event_counter: int = 0
 
         self._elementos_globales: dict[str, ElementoGlobal] = {}
+        self._tick_actual: int = 0
 
         self._gestor_bots_client = gestor_bots_client
 
@@ -443,14 +444,19 @@ class LogicaMundo:
         async with self._lock:
             return list(self._active_events.values())
 
-    # ---- Elementos globales (ciclo día/noche, lunar, clima...) ----
+        # ---- Elementos globales (ciclo día/noche, lunar, clima...) ----
 
     async def avanzar_elementos_globales(self, tick_id: int) -> dict:
         cambios: dict = {}
         async with self._lock:
+            self._tick_actual = tick_id  # NUEVO: se guarda para que Vista_Foco pueda detectar "tick nuevo"
             for elem in self._elementos_globales.values():
                 cambios.update(elem.tick(tick_id))
         return cambios
+
+    async def get_tick_actual(self) -> int:
+        async with self._lock:
+            return self._tick_actual
 
     async def get_elementos_globales(self) -> dict[str, dict]:
         """
@@ -556,7 +562,7 @@ class LogicaMundo:
             data = {
                 "snapshot_id": snapshot_id,
                 "fecha": datetime.datetime.now().isoformat(),
-                "id_counter": int(self._id_counter),  
+                "id_counter": int(self._id_counter),
                 "gold_cells": {
                     f"{x},{y}": {
                         "suelo": int(celda.suelo) if celda.suelo is not None else None,

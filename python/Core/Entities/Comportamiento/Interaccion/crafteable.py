@@ -16,5 +16,6 @@ class Crafteable(Interaccion):
     def __init__(self, receta: Receta, **kwargs):
         super().__init__(**kwargs)
         self.receta = receta
+        
         for ingrediente in self.receta.ingredientes:
             ingrediente.incluir_en_receta(self.receta)

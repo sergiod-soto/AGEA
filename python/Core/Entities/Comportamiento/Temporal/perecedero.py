@@ -34,8 +34,16 @@ class Perecedero(Temporal):
         )
         self.condiciones_perecedero = condiciones_perecedero
 
-        @abstractmethod
-        def tick(self) -> None: ...
+    @classmethod
+    def _campos_internos(cls):
+        return {
+            "tiempo_maximo_perecedero",
+            "condiciones_perecedero",
+            "tiempo_actual_perecedero",
+        }
 
-        @abstractmethod
-        def desaparecer(self) -> None: ...
+    @abstractmethod
+    def tick(self) -> None: ...
+
+    @abstractmethod
+    def desaparecer(self) -> None: ...

@@ -1,5 +1,6 @@
+# Core/Entities/Comportamiento/Fisico/peso.py
+
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
-from Exceptions.Bot.comportamientos_exceptions import Peso_Zero
 
 
 class Peso(Fisico):
@@ -20,3 +21,5 @@ class Peso(Fisico):
     def __init__(self, peso: float, **kwargs):
         super().__init__(**kwargs)
         self.peso = peso
+
+ 

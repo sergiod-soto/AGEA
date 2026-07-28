@@ -16,3 +16,4 @@ class Sonoro(Informativo):
     def __init__(self, sonidos: dict[str, list[Sonido]], **kwargs):
         super().__init__(**kwargs)
         self.sonidos = sonidos
+

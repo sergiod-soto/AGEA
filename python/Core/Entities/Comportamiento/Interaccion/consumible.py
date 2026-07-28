@@ -25,3 +25,5 @@ class Consumible(Interaccion):
 
     @abstractmethod
     def consumir(self, por: Elemento): ...
+
+    

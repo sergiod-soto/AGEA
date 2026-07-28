@@ -19,3 +19,4 @@ class Medicinal(Salud):
     def __init__(self, valor_medicinal: float, **kwargs):
         super().__init__(**kwargs)
         self.valor_medicinal = valor_medicinal
+

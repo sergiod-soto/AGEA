@@ -21,5 +21,6 @@ class Divisible(Material):
         super().__init__(**kwargs)
         self.cantidad_minima_divisible = cantidad_minima_divisible
 
+    
     @abstractmethod
     def dividir(self, cantidad: float) -> Elemento | None: ...

@@ -35,6 +35,10 @@ class Color(Comportamiento):
         ]  # rbg_base normalizado 0.0 - 1.0
         self.rgb_actual = [0.0, 0.0, 0.0]  # color que refleja
 
+    @classmethod
+    def _campos_internos(cls):
+        return {"modificador", "rgb_actual"}
+
     def iluminar_con_color(
         self,
         color_luz: tuple[float, float, float],
@@ -69,7 +73,7 @@ class Color(Comportamiento):
 
     def get_rgb_normalizado(self) -> tuple[float, float, float]:
         """
-        Retorna el RGB de la luz total reflejada, 
+        Retorna el RGB de la luz total reflejada,
         normalizada a 255 para representacion, no uso.
         """
 

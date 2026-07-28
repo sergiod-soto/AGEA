@@ -23,6 +23,14 @@ class Inflamable(Fisico):
         self._tiempo_total_quemado = 0.0
         self._hora_encendido = None
 
+    @classmethod
+    def _campos_internos(cls):
+        return {
+            "ardiendo",
+            "_tiempo_total_quemado",
+            "_hora_encendido",
+        }
+
     def encender(self):
         if not self.inflamable:
             return

@@ -2,5 +2,5 @@ from Core.Entities.Comportamiento.Stats.Simples.stat_simple import Stat_Simple
 
 
 class Sigilo(Stat_Simple):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -2,17 +2,24 @@
 """
 test_world_proxy_servicer.py — Pruebas unitarias de WorldProxyServicer
 
-
 Se llama a Act() directamente con un FakeContext (sin levantar un
 servidor real) — lo que se quiere validar aquí es la lógica de negocio
 (coste, reenvío), no la serialización de red; eso lo cubre
 test_world_proxy_servicer_grpc.py (Integración).
+
+ADAPTADO tras la migración de Hypervisor a asyncio: Act() es
+`async def` (hace `await` sobre try_spend_points/forward_to_gestor,
+que ahora son async) — los tests deben ser `async def` y usar
+`await servicer.Act(...)`, y FakeGestorClient.forward_action pasa a
+ser async porque Hypervisor.forward_to_gestor ahora hace `await
+self.gestor_client.forward_action(...)`.
 
 test_hypervisor_acciones_delegadas.py queda OBSOLETO por la corrección
 2 (probaba métodos de Hypervisor que ya no existen) y debe borrarse.
 """
 
 import struct
+from typing import AsyncGenerator
 
 import grpc
 import pytest
@@ -47,16 +54,20 @@ class FakeContext:
 
 
 class FakeProceso:
-    """Proceso que nunca termina por sí solo — basta para spawn_bot()."""
+    """Proceso que nunca termina por sí solo — basta para spawn_bot().
+    wait() async: ver mismo patrón en test_hypervisor.py."""
 
-    def wait(self):
-        import threading
+    async def wait(self):
+        import asyncio
 
-        threading.Event().wait()
+        await asyncio.Event().wait()
+
+    def terminate(self):
+        pass
 
 
 class FakeLanzador:
-    def lanzar(self, hypervisor_id, bot_id, codigo_gz, env_extra):
+    async def lanzar(self, hypervisor_id, bot_id, codigo_gz, env_extra):
         return FakeProceso()
 
     def limpiar(self, hypervisor_id, bot_id):
@@ -69,13 +80,13 @@ class FakeGestorClient:
         self.forward_action_resultado = ActionResult(ok=True, payload=b"", error="")
         self.forward_action_excepcion = None
 
-    def forward_action(self, bot_id, hypervisor_id, action_type, payload):
+    async def forward_action(self, bot_id, hypervisor_id, action_type, payload):
         self.forward_action_llamado_con = (bot_id, hypervisor_id, action_type, payload)
         if self.forward_action_excepcion:
             raise self.forward_action_excepcion
         return self.forward_action_resultado
 
-    def notificar_avatar_sin_piloto(self, bot_id):
+    async def notificar_avatar_sin_piloto(self, bot_id):
         pass
 
 
@@ -85,13 +96,16 @@ def gestor_client() -> FakeGestorClient:
 
 
 @pytest.fixture
-def hv(gestor_client) -> Hypervisor:
-    return Hypervisor(
+async def hv(gestor_client) -> AsyncGenerator[Hypervisor, None]:
+    instancia = Hypervisor(
         hypervisor_id="hv_test",
         gestor_client=gestor_client,
         capacity=5,
         lanzador_procesos=FakeLanzador(),
     )
+    yield instancia
+    for tarea in instancia._watchers.values():
+        tarea.cancel()
 
 
 @pytest.fixture
@@ -107,21 +121,21 @@ def _act_request(action_name: str, payload: bytes = b"") -> pb.ActRequest:
 
 
 @pytest.mark.unit
-def test_act_sin_bot_id_header_rechaza(servicer):
+async def test_act_sin_bot_id_header_rechaza(servicer):
     context = FakeContext(metadata=())
 
-    resp = servicer.Act(_act_request("mover"), context)
+    resp = await servicer.Act(_act_request("mover"), context)
 
     assert resp.ok is False
     assert context.code == grpc.StatusCode.UNAUTHENTICATED
 
 
 @pytest.mark.unit
-def test_act_sin_puntos_suficientes_rechaza(hv, servicer):
-    hv.spawn_bot({"bot_id": "bot_1", "budget": 0})
+async def test_act_sin_puntos_suficientes_rechaza(hv, servicer):
+    await hv.spawn_bot({"bot_id": "bot_1", "budget": 0})
     context = FakeContext(metadata=(("bot-id", "bot_1"),))
 
-    resp = servicer.Act(_act_request("mirar", struct.pack("<i", 5)), context)
+    resp = await servicer.Act(_act_request("mirar", struct.pack("<i", 5)), context)
 
     assert resp.ok is False
     assert "puntos insuficientes" in resp.error.lower()
@@ -131,14 +145,14 @@ def test_act_sin_puntos_suficientes_rechaza(hv, servicer):
 
 
 @pytest.mark.unit
-def test_act_accion_no_delegada_reenvia_al_gestor(hv, servicer, gestor_client):
-    hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
+async def test_act_accion_no_delegada_reenvia_al_gestor(hv, servicer, gestor_client):
+    await hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
     gestor_client.forward_action_resultado = ActionResult(
         ok=True, payload=b"resultado", error="", world_tick=7
     )
     context = FakeContext(metadata=(("bot-id", "bot_1"),))
 
-    resp = servicer.Act(_act_request("mover", b"payload_mover"), context)
+    resp = await servicer.Act(_act_request("mover", b"payload_mover"), context)
 
     assert resp.ok is True
     assert resp.payload == b"resultado"
@@ -153,12 +167,14 @@ def test_act_accion_no_delegada_reenvia_al_gestor(hv, servicer, gestor_client):
 
 
 @pytest.mark.unit
-def test_act_error_de_red_al_reenviar_devuelve_unavailable(hv, servicer, gestor_client):
-    hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
+async def test_act_error_de_red_al_reenviar_devuelve_unavailable(
+    hv, servicer, gestor_client
+):
+    await hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
     gestor_client.forward_action_excepcion = RuntimeError("gestor caído")
     context = FakeContext(metadata=(("bot-id", "bot_1"),))
 
-    resp = servicer.Act(_act_request("mover"), context)
+    resp = await servicer.Act(_act_request("mover"), context)
 
     assert resp.ok is False
     assert context.code == grpc.StatusCode.UNAVAILABLE
@@ -168,7 +184,7 @@ def test_act_error_de_red_al_reenviar_devuelve_unavailable(hv, servicer, gestor_
 
 
 @pytest.mark.unit
-def test_act_mirar_ya_no_se_delega_se_reenvia_como_cualquier_accion(
+async def test_act_mirar_ya_no_se_delega_se_reenvia_como_cualquier_accion(
     hv, servicer, gestor_client
 ):
     """
@@ -179,13 +195,13 @@ def test_act_mirar_ya_no_se_delega_se_reenvia_como_cualquier_accion(
     al Gestor → Mundo, donde Logica_Mundo sí tiene el estado real y sí
     la resuelve correctamente.
     """
-    hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
+    await hv.spawn_bot({"bot_id": "bot_1", "budget": 10})
     gestor_client.forward_action_resultado = ActionResult(
         ok=True, payload=b"[[0,0,0]]", error=""
     )
     context = FakeContext(metadata=(("bot-id", "bot_1"),))
 
-    resp = servicer.Act(_act_request("mirar", struct.pack("<i", 5)), context)
+    resp = await servicer.Act(_act_request("mirar", struct.pack("<i", 5)), context)
 
     assert resp.ok is True
     bot_id, hv_id, action_type, payload = gestor_client.forward_action_llamado_con

@@ -1,7 +1,6 @@
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
-from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.elemento import Elemento
 
 
@@ -22,6 +21,10 @@ class Empujable(Fisico):
 
         self.coste_empujar = coste_empujar  #   cuanta energia drena moverlo 1 ud.
         self.empujable: bool = True
+
+    @classmethod
+    def _campos_internos(cls):
+        return {"empujable"}
 
     def calcular_coste_empujar_en_cadena(self, direccion) -> float:
         """
@@ -48,7 +51,7 @@ class Empujable(Fisico):
                 return False
 
     @abstractmethod
-    def check_push(self, direccion) -> (Elemento | bool):
+    def check_push(self, direccion) -> Elemento | bool:
         """
         Intenta mover la entidad una celda en `direccion`.
         Devuelve un Elemento si choca contra algo, True si tendria exito o False si no puede.

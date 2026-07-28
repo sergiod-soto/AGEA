@@ -8,7 +8,7 @@ class Plantable(Interaccion):
     """
     Parametros:
 
-    - plantado: bool = False
+    -
 
     Metodos abstractos:
 
@@ -16,9 +16,13 @@ class Plantable(Interaccion):
     - desplantar(self, por: Elemento)
     """
 
-    def __init__(self, plantado: bool = False, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.plantado = plantado
+        self.plantado = False
+
+    @classmethod
+    def _campos_internos(cls):
+        return {"plantado"}
 
     @abstractmethod
     def plantar(self, agujero: Elemento): ...

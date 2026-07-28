@@ -21,6 +21,7 @@ class Combinable(Material):
         super().__init__(**kwargs)
         self.cantidad_max_combinable = cantidad_max_combinable or float("inf")
 
+
     @abstractmethod
     def combinar(self, elemento: Elemento) -> Elemento:
         """

@@ -18,4 +18,8 @@ class Estacional(Temporal):
         super().__init__(**kwargs)
         self.acciones_por_estacion = acciones_por_estacion
 
+    @classmethod
+    def _campos_internos(cls):
+        return {"acciones_por_estacion"}
+
     def on_cambio_estacion(estacion: Estacion) -> None: ...

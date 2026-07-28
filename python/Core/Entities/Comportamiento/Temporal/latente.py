@@ -20,16 +20,15 @@ class Latente(Temporal):
     - tick() -> None
     """
 
-    def __init__(
-        self,
-        condiciones: list[Condicion],
-        accion_latente: Accion,
-        **kwargs
-    ):
+    def __init__(self, condiciones: list[Condicion], accion_latente: Accion, **kwargs):
         super().__init__(**kwargs)
         self.condiciones = condiciones
         self.accion_latente = accion_latente
         self.activado_latente = True
 
-        @abstractmethod
-        def tick(self) -> None: ...
+    @classmethod
+    def _campos_internos(cls):
+        return {"activado_latente"}
+
+    @abstractmethod
+    def tick(self) -> None: ...

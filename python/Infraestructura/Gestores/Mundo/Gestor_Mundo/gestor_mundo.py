@@ -501,7 +501,7 @@ class GestorMundo:
 
         async with self._consolidacion_lock:
             data = {
-                "tick_id": int(self._tick_id),  # FIX: numpy.uint64 -> int nativo
+                "tick_id": int(self._tick_id), 
                 "snapshot_id": snapshot_id,
                 "fecha": datetime.datetime.now().isoformat(),
                 "sectores": [

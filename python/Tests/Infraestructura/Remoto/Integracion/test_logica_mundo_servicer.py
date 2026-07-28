@@ -166,6 +166,58 @@ async def test_get_elementos_globales_via_grpc_vacio_por_defecto(cliente_logica_
     assert list(resp.elementos_globales) == []
 
 
+@pytest.mark.integration
+async def test_get_elementos_globales_tick_actual_es_cero_antes_de_avanzar(
+    cliente_logica_mundo,
+):
+    """
+    NUEVO — tick_actual (campo añadido a GetElementosGlobalesResponse
+    para que Vista_Foco/FocoBroadcaster pueda detectar "hubo tick
+    nuevo"): antes de cualquier AvanzarElementosGlobales, debe llegar
+    como 0 — no como el valor por defecto "ausente" de proto3, que
+    también es 0, pero aquí lo comprobamos explícitamente para dejar
+    documentado el contrato.
+    """
+    client, _ = cliente_logica_mundo
+
+    resp = await client.get_elementos_globales()
+
+    assert resp.tick_actual == 0
+
+
+@pytest.mark.integration
+async def test_get_elementos_globales_tick_actual_refleja_el_ultimo_avance_via_grpc(
+    cliente_logica_mundo,
+):
+    """
+    NUEVO — el caso real que motivó el campo: tras llamar a
+    AvanzarElementosGlobales(tick_id=N) por la red, una llamada
+    POSTERIOR (y separada) a GetElementosGlobales debe devolver ese
+    mismo N en tick_actual. Esto es justo lo que FocoBroadcaster hace
+    en su bucle de vigilancia — dos llamadas RPC distintas, no una
+    combinada.
+    """
+    client, _ = cliente_logica_mundo
+
+    await client.avanzar_elementos_globales(tick_id=3)
+    resp = await client.get_elementos_globales()
+
+    assert resp.tick_actual == 3
+
+
+@pytest.mark.integration
+async def test_get_elementos_globales_tick_actual_refleja_solo_el_ultimo_avance(
+    cliente_logica_mundo,
+):
+    client, _ = cliente_logica_mundo
+
+    await client.avanzar_elementos_globales(tick_id=3)
+    await client.avanzar_elementos_globales(tick_id=4)
+    resp = await client.get_elementos_globales()
+
+    assert resp.tick_actual == 4
+
+
 # ── ActualizarCeldas / ConsultarRepresentacion ──────────────────────
 
 

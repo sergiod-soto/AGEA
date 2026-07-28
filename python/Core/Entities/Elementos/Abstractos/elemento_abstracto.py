@@ -1,3 +1,6 @@
+# Core/Entities/Elementos/Abstractos/elemento_abstracto.py
+
+
 from Core.Entities.Elementos.elemento import Elemento
 
 

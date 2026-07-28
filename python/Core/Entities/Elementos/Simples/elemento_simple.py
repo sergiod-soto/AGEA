@@ -1,4 +1,4 @@
-# Core/Entities/Simples/elemento_simple.py
+# Core/Entities/Elementos/Simples/elemento_simple.py
 
 from Core.Entities.Elementos.elemento import Elemento
 
@@ -38,14 +38,12 @@ class Elemento_Simple(Elemento):
         self.casilla = casilla
         self.rotacion = rotacion
 
-    def serialize_tamanho(self):
-        return self.tamanho
-
-    def serialize_capa(self):
-        return self.capa
-
     def serialize_casilla(self):
-        return str({"x": self.casilla[0], "y": self.casilla[1]})
+        return {"x": self.casilla[0], "y": self.casilla[1]}
 
+    def deserialize_casilla(self, value):
+        self.casilla = (value["x"], value["y"])
+
+    # 'rotacion' se normaliza a [0, 360) al serializar.
     def serialize_rotacion(self):
         return self.rotacion % 360

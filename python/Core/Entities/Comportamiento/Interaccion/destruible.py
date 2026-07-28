@@ -30,6 +30,7 @@ class Destruible(Interaccion):
         self.durabilidad_max = durabilidad_max
         self.durabilidad_actual = durabilidad_actual or durabilidad_max
 
+    
     @abstractmethod
     def danhar(self, danho: float): ...
 

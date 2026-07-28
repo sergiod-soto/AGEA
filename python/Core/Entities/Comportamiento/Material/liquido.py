@@ -16,3 +16,6 @@ class Liquido(Material):
     def __init__(self, disuelto: list[Elemento] = None, **kwargs):
         super().__init__(**kwargs)
         self.disuelto = disuelto or []
+
+
+    

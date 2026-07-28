@@ -30,6 +30,7 @@ class Equipable(Interaccion):
         self.provoca_equiparlo = provoca_equiparlo
         self.equipado_por = equipado_por
 
+    
     @abstractmethod
     def equipar(self, por: Elemento) -> bool: ...
 

@@ -32,3 +32,4 @@ class Agarrable(Interaccion):
     def soltar(self, por: Elemento):
         """Accion pasiva. Se indica que el elemento atributo tiene intencion de soltar este elemento"""
         ...
+

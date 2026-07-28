@@ -15,13 +15,15 @@ class Luminoso(Informativo):
     """
 
     def __init__(
-        self, distancia_luz: float, area_luz: float = 360, direccion: float = 0, **kwargs
+        self, distancia_luz: float, area_luz: float = 360, direccion_luz: float = 0, **kwargs
     ):
         super().__init__(**kwargs)
-        self.distancia = distancia_luz
+        self.distancia_luz = distancia_luz
         if area_luz < 0:
-            self.area = 0
-            self.direccion = 0
+            self.area_luz = 0
+            self.direccion_luz = 0
         else:
-            self.area = area_luz
-            self.direccion = direccion
+            self.area_luz = area_luz
+            self.direccion_luz = direccion_luz
+
+

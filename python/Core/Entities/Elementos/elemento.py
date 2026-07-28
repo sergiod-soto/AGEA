@@ -1,8 +1,10 @@
 # Core/Entities/Elemento/elemento.py
+
+from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
 from numpy import uint64
-from Core.Entities.Comportamiento.comportamiento import Comportamiento
+from Core.Entities.Comportamiento.comportamiento import Comportamiento, NO_SERIALIZAR
 
 if TYPE_CHECKING:
     from Core.Entities.Mundo.mundo import Mundo
@@ -23,7 +25,7 @@ class Elemento(ABC, Comportamiento):
         id: uint64,
         fuerza_sector_activo: bool,
         fuerza_vecinos_activos: bool,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.capa = capa
@@ -38,52 +40,85 @@ class Elemento(ABC, Comportamiento):
         return [
             c
             for c in self.__class__.__mro__
-            if c not in (Elemento, ABC, object) and issubclass(c, Comportamiento)
+            if issubclass(c, Comportamiento)
+            and c is not Comportamiento
+            and c._es_comportamiento_real()
+            and "__init__" in c.__dict__
         ]
 
     def _atributos_de_comportamientos(self) -> set[str]:
         """
-        Unión de los nombres de atributo que declara el __init__ PROPIO
-        (no heredado) de cada comportamiento presente en este elemento.
-
-        Reusa Comportamiento._params_propios(cls) — misma introspección
-        que ya usan Comportamiento.anhadir()/quitar(): mira la firma de
-        cls.__init__ tal como está definida en esa clase concreta (no en
-        sus padres), descartando *args/**kwargs.
+        Unión de los nombres de atributo que "pertenecen" a cada
+        comportamiento presente en este elemento — de su __init__ propio
+        o de _campos_internos (ver Comportamiento._campos_serializables).
         """
         return {
             nombre
             for c in self._get_comportamientos()
-            for nombre in self._params_propios(c)
+            for nombre in c._campos_serializables()
         }
+
+    @classmethod
+    def _es_comportamiento_real(cls) -> bool:
+        return False
+
+    # --- Campos especiales de Elemento (ver README de serialización) ---
+    # 'tipo' es la propia clase Python de self: no es JSON-serializable y
+    # además es redundante con type(self)/'__clase__'. Se excluye aquí y se
+    # restaura en deserializar() a partir de la clase real reconstruida.
+    def serialize_tipo(self):
+        return NO_SERIALIZAR
+
+    # 'mundo' es la referencia (opcional) al Mundo donde vive el elemento.
+    # Serializar el elemento NUNCA debe arrastrar el grafo completo del
+    # mundo con él, así que se excluye igual que 'tipo'. Se restaura a
+    # None en deserializar(): quien reinserte el elemento en un mundo es
+    # responsable de volver a asignarlo.
+    def serialize_mundo(self):
+        return NO_SERIALIZAR
 
     def _serializar_propios(self) -> dict:
         atributos_comportamientos = self._atributos_de_comportamientos()
 
-        return {
-            k: v
-            for k, v in vars(self).items()
-            if not k.startswith("_") and k not in atributos_comportamientos
-        }
+        resultado = {}
+        for k, v in vars(self).items():
+            if k.startswith("_") or k in atributos_comportamientos:
+                continue
+            serializador = getattr(self, f"serialize_{k}", None)
+            valor = serializador() if serializador else v
+            if valor is NO_SERIALIZAR:
+                continue
+            resultado[k] = valor
+        return resultado
 
     def serializar(self) -> dict:
         return {
+            "__clase__": type(self).__name__,
             **self._serializar_propios(),
             "comportamientos": {
-                c.__name__: c.serializar(self) for c in self._get_comportamientos()
+                c.__name__: c.serializar(self, c) for c in self._get_comportamientos()
             },
         }
 
-    def deserializar(self, data: dict):
+    def deserializar(self, data: dict, mundo: Mundo):
         # Deserializa atributos propios del elemento
         atributos_comportamientos = self._atributos_de_comportamientos()
 
         for k, v in data.items():
-            if (
-                k not in ("__clase__", "comportamientos")
-                and k not in atributos_comportamientos
-            ):
+            if k in ("__clase__", "comportamientos") or k in atributos_comportamientos:
+                continue
+            deserializador = getattr(self, f"deserialize_{k}", None)
+            if deserializador:
+                deserializador(v)
+            else:
                 setattr(self, k, v)
+
+        # Restaura los campos excluidos de la serialización (ver
+        # serialize_tipo/serialize_mundo más arriba). No vienen en 'data':
+        # hay que reponerlos explícitamente o el objeto reconstruido se
+        # quedaría sin estos atributos (AttributeError al primer uso).
+        self.tipo = type(self)
+        self.mundo = mundo
 
         # Delega a cada comportamiento su deserialización
         for c in self._get_comportamientos():
