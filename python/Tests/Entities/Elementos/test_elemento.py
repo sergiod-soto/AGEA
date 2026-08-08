@@ -38,7 +38,7 @@ def elemento_basico() -> Elemento_Test:
     reconstrucción). Trae Peso/Fisico/Comportamiento_Test de fábrica,
     como cualquier instancia declarada estáticamente.
     """
-    return Elemento_Test(casilla=(3, 4), id=1, peso=10.0)
+    return Elemento_Test(casilla=(3, 4), id_elemento=1, peso=10.0)
 
 
 class _MundoFalso:
@@ -59,7 +59,7 @@ class _MundoFalso:
 def test_serializar_incluye_clase(elemento_basico):
     """__clase__ debe existir y coincidir con el nombre real de la clase,
     porque reconstruir_elemento() lo usa para resolver en ELEMENTOS."""
-    data = elemento_basico.serializar()
+    data = elemento_basico.serializar(modo="guardado")
     assert data["__clase__"] == "Elemento_Test"
 
 
@@ -69,7 +69,7 @@ def test_serializar_excluye_tipo_y_mundo(elemento_basico):
     deben aparecer en el dict serializado: no son JSON-serializables
     (tipo) o arrastrarían el grafo completo del mundo (mundo).
     """
-    data = elemento_basico.serializar()
+    data = elemento_basico.serializar(modo="guardado")
     assert "tipo" not in data
     assert "mundo" not in data
 
@@ -84,8 +84,8 @@ def test_serialize_tipo_y_mundo_devuelven_sentinel(elemento_basico):
 def test_deserializar_restaura_tipo_como_clase_real():
     """Tras reconstruir, self.tipo debe ser exactamente type(self), no un
     valor heredado de 'data' (porque nunca estuvo en 'data')."""
-    original = Elemento_Test(casilla=(0, 0), id=1, peso=5.0)
-    data = original.serializar()
+    original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
+    data = original.serializar(modo="guardado")
 
     reconstruido = reconstruir_elemento(data)
 
@@ -96,8 +96,8 @@ def test_deserializar_restaura_tipo_como_clase_real():
 def test_deserializar_asigna_mundo_recibido_como_parametro():
     """mundo no viaja en el JSON: quien reconstruye decide qué mundo
     asignar, pasándolo explícitamente a reconstruir_elemento/deserializar."""
-    original = Elemento_Test(casilla=(0, 0), id=1, peso=5.0)
-    data = original.serializar()
+    original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
+    data = original.serializar(modo="guardado")
     mundo_falso = _MundoFalso()
 
     reconstruido = reconstruir_elemento(data, mundo=mundo_falso)
@@ -108,8 +108,8 @@ def test_deserializar_asigna_mundo_recibido_como_parametro():
 def test_deserializar_sin_mundo_lo_deja_en_none():
     """Si no se pasa mundo explícitamente, el default es None (elemento
     'huérfano', pendiente de que alguien lo reinserte en un Mundo)."""
-    original = Elemento_Test(casilla=(0, 0), id=1, peso=5.0)
-    data = original.serializar()
+    original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
+    data = original.serializar(modo="guardado")
 
     reconstruido = reconstruir_elemento(data)
 
@@ -126,15 +126,15 @@ def test_serialize_casilla_produce_dict_json_valido():
     Regresión del bug: antes devolvía str({"x":.., "y":..}) (repr de
     Python, no JSON). Ahora debe ser un dict real con claves x/y.
     """
-    elem = Elemento_Test(casilla=(7, 9), id=1, peso=1.0)
+    elem = Elemento_Test(casilla=(7, 9), id_elemento=1, peso=1.0)
     assert elem.serialize_casilla() == {"x": 7, "y": 9}
 
 
 def test_casilla_roundtrip_reconstruye_tupla():
     """El valor debe volver a ser una tupla (x, y) tras deserializar,
     no el dict intermedio usado para el transporte."""
-    original = Elemento_Test(casilla=(7, 9), id=1, peso=1.0)
-    data = original.serializar()
+    original = Elemento_Test(casilla=(7, 9), id_elemento=1, peso=1.0)
+    data = original.serializar(modo="guardado")
 
     reconstruido = reconstruir_elemento(data)
 
@@ -147,7 +147,7 @@ def test_rotacion_se_normaliza_a_0_360():
     el valor interno es negativo o mayor de una vuelta completa."""
     elem = Elemento_Test(
         casilla=(0, 0),
-        id=1,
+        id_elemento=1,
         peso=1.0,
         rotacion=370,
     )
@@ -155,7 +155,7 @@ def test_rotacion_se_normaliza_a_0_360():
 
     elem_negativo = Elemento_Test(
         casilla=(0, 0),
-        id=1,
+        id_elemento=1,
         peso=1.0,
         rotacion=-10,
     )
@@ -170,7 +170,7 @@ def test_rotacion_se_normaliza_a_0_360():
 def test_comportamiento_peso_se_serializa_bajo_su_propio_nombre(elemento_basico):
     """Cada comportamiento aporta sus atributos propios bajo su nombre de
     clase en 'comportamientos', vía Comportamiento.serializar (no vars(self))."""
-    data = elemento_basico.serializar()
+    data = elemento_basico.serializar(modo="guardado")
     assert data["comportamientos"]["Peso"] == {"peso": 10.0}
 
 
@@ -178,14 +178,14 @@ def test_comportamiento_categoria_sin_atributos_sale_vacio(elemento_basico):
     """Fisico no declara parámetros propios en su __init__ (solo agrupa
     por herencia), así que su entrada debe existir pero vacía — no debe
     fallar ni desaparecer solo por no tener datos propios."""
-    data = elemento_basico.serializar()
+    data = elemento_basico.serializar(modo="guardado")
     assert data["comportamientos"]["Fisico"] == {}
 
 
 def test_comportamiento_test_se_serializa_bajo_su_propio_nombre(elemento_basico):
     """Mismo mecanismo que Peso, para el segundo comportamiento propio
     de Elemento_Test: Comportamiento_Test."""
-    data = elemento_basico.serializar()
+    data = elemento_basico.serializar(modo="guardado")
     assert data["comportamientos"]["Comportamiento_Test"] == {
         "atributo_test": ATRIBUTO_TEST_DEFAULT
     }
@@ -199,15 +199,15 @@ def test_roundtrip_completo_conserva_todos_los_valores():
     """
     original = Elemento_Test(
         casilla=(2, 3),
-        id=42,
+        id_elemento=42,
         peso=7.5,
         rotacion=90,
     )
-    data = original.serializar()
+    data = original.serializar(modo="guardado")
 
     reconstruido = reconstruir_elemento(data)
 
-    assert reconstruido.id == original.id
+    assert reconstruido.id_elemento == original.id_elemento
     assert reconstruido.casilla == original.casilla
     assert reconstruido.tamanho == original.tamanho
     assert reconstruido.capa == original.capa
@@ -240,14 +240,14 @@ def test_quitar_comportamiento_dinamicamente_se_conserva_tras_roundtrip():
     a quitarlo, para no resucitar un comportamiento que el objeto original
     no tenía.
     """
-    original = Elemento_Test(casilla=(0, 0), id=1, peso=3.0)
+    original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=3.0)
     assert isinstance(original, Peso)
 
     Comportamiento.quitar(original, Peso)
     assert not isinstance(original, Peso)
     assert not hasattr(original, "peso")
 
-    data = original.serializar()
+    data = original.serializar(modo="guardado")
     assert "Peso" not in data["comportamientos"]
 
     reconstruido = reconstruir_elemento(data)
@@ -270,7 +270,7 @@ def test_anhadir_comportamiento_dinamicamente_se_conserva_tras_roundtrip(monkeyp
         Comportamiento_Dinamico_De_Prueba,
     )
 
-    original = Elemento_Test(casilla=(0, 0), id=1, peso=3.0)
+    original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=3.0)
     assert not isinstance(original, Comportamiento_Dinamico_De_Prueba)
 
     Comportamiento.anhadir(
@@ -278,7 +278,7 @@ def test_anhadir_comportamiento_dinamicamente_se_conserva_tras_roundtrip(monkeyp
     )
     assert isinstance(original, Comportamiento_Dinamico_De_Prueba)
 
-    data = original.serializar()
+    data = original.serializar(modo="guardado")
     assert data["comportamientos"]["Comportamiento_Dinamico_De_Prueba"] == {
         "valor_prueba": 12.5
     }

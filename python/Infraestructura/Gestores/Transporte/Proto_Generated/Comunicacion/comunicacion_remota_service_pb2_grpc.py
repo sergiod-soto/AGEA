@@ -4,6 +4,7 @@ import grpc
 import warnings
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import comunicacion_remota_service_pb2 as Comunicacion_dot_comunicacion__remota__service__pb2
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 GRPC_GENERATED_VERSION = '1.80.0'
 GRPC_VERSION = grpc.__version__
@@ -26,24 +27,7 @@ if _version_not_supported:
 
 
 class ComunicacionRemotaServiceStub(object):
-    """============================================================
-    ComunicacionRemotaService — único punto de entrada desde
-    Comunicaciones_Local hacia AWS.
-
-    Un único RPC genérico (Ejecutar) parametrizado por componente
-    destino + nombre de operación; el payload es el mensaje Request
-    específico de esa operación (ya definido en el .proto del servicio
-    real: LogicaMundoService / GestorMundoService / GestorBotsService),
-    serializado a bytes. La respuesta contiene el mensaje Response
-    específico, también serializado.
-
-    ok/error de EjecutarResponse son del PUENTE (¿se reconoció la
-    operación y se ejecutó sin excepción?) — el resultado real de la
-    operación viaja codificado dentro de `payload`, con su propio
-    ok/error interno (el de cada Response concreto).
-    ============================================================
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -51,34 +35,50 @@ class ComunicacionRemotaServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Heartbeat = channel.unary_unary(
+                '/comunicacion_remota.ComunicacionRemotaService/Heartbeat',
+                request_serializer=common__pb2.HeartbeatRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
         self.Ejecutar = channel.unary_unary(
                 '/comunicacion_remota.ComunicacionRemotaService/Ejecutar',
                 request_serializer=Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarResponse.FromString,
                 _registered_method=True)
+        self.ActualizarFoco = channel.unary_unary(
+                '/comunicacion_remota.ComunicacionRemotaService/ActualizarFoco',
+                request_serializer=Comunicacion_dot_comunicacion__remota__service__pb2.FocoRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.SuscribirseFoco = channel.unary_stream(
+                '/comunicacion_remota.ComunicacionRemotaService/SuscribirseFoco',
+                request_serializer=Comunicacion_dot_comunicacion__remota__service__pb2.SuscribirseFocoRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_comunicacion__remota__service__pb2.ActualizacionFoco.FromString,
+                _registered_method=True)
 
 
 class ComunicacionRemotaServiceServicer(object):
-    """============================================================
-    ComunicacionRemotaService — único punto de entrada desde
-    Comunicaciones_Local hacia AWS.
+    """Missing associated documentation comment in .proto file."""
 
-    Un único RPC genérico (Ejecutar) parametrizado por componente
-    destino + nombre de operación; el payload es el mensaje Request
-    específico de esa operación (ya definido en el .proto del servicio
-    real: LogicaMundoService / GestorMundoService / GestorBotsService),
-    serializado a bytes. La respuesta contiene el mensaje Response
-    específico, también serializado.
-
-    ok/error de EjecutarResponse son del PUENTE (¿se reconoció la
-    operación y se ejecutó sin excepción?) — el resultado real de la
-    operación viaja codificado dentro de `payload`, con su propio
-    ok/error interno (el de cada Response concreto).
-    ============================================================
-
-    """
+    def Heartbeat(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Ejecutar(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ActualizarFoco(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SuscribirseFoco(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -87,10 +87,25 @@ class ComunicacionRemotaServiceServicer(object):
 
 def add_ComunicacionRemotaServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Heartbeat': grpc.unary_unary_rpc_method_handler(
+                    servicer.Heartbeat,
+                    request_deserializer=common__pb2.HeartbeatRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
             'Ejecutar': grpc.unary_unary_rpc_method_handler(
                     servicer.Ejecutar,
                     request_deserializer=Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarRequest.FromString,
                     response_serializer=Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarResponse.SerializeToString,
+            ),
+            'ActualizarFoco': grpc.unary_unary_rpc_method_handler(
+                    servicer.ActualizarFoco,
+                    request_deserializer=Comunicacion_dot_comunicacion__remota__service__pb2.FocoRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'SuscribirseFoco': grpc.unary_stream_rpc_method_handler(
+                    servicer.SuscribirseFoco,
+                    request_deserializer=Comunicacion_dot_comunicacion__remota__service__pb2.SuscribirseFocoRequest.FromString,
+                    response_serializer=Comunicacion_dot_comunicacion__remota__service__pb2.ActualizacionFoco.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -101,24 +116,34 @@ def add_ComunicacionRemotaServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class ComunicacionRemotaService(object):
-    """============================================================
-    ComunicacionRemotaService — único punto de entrada desde
-    Comunicaciones_Local hacia AWS.
+    """Missing associated documentation comment in .proto file."""
 
-    Un único RPC genérico (Ejecutar) parametrizado por componente
-    destino + nombre de operación; el payload es el mensaje Request
-    específico de esa operación (ya definido en el .proto del servicio
-    real: LogicaMundoService / GestorMundoService / GestorBotsService),
-    serializado a bytes. La respuesta contiene el mensaje Response
-    específico, también serializado.
-
-    ok/error de EjecutarResponse son del PUENTE (¿se reconoció la
-    operación y se ejecutó sin excepción?) — el resultado real de la
-    operación viaja codificado dentro de `payload`, con su propio
-    ok/error interno (el de cada Response concreto).
-    ============================================================
-
-    """
+    @staticmethod
+    def Heartbeat(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/comunicacion_remota.ComunicacionRemotaService/Heartbeat',
+            common__pb2.HeartbeatRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def Ejecutar(request,
@@ -137,6 +162,60 @@ class ComunicacionRemotaService(object):
             '/comunicacion_remota.ComunicacionRemotaService/Ejecutar',
             Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarRequest.SerializeToString,
             Comunicacion_dot_comunicacion__remota__service__pb2.EjecutarResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ActualizarFoco(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/comunicacion_remota.ComunicacionRemotaService/ActualizarFoco',
+            Comunicacion_dot_comunicacion__remota__service__pb2.FocoRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SuscribirseFoco(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/comunicacion_remota.ComunicacionRemotaService/SuscribirseFoco',
+            Comunicacion_dot_comunicacion__remota__service__pb2.SuscribirseFocoRequest.SerializeToString,
+            Comunicacion_dot_comunicacion__remota__service__pb2.ActualizacionFoco.FromString,
             options,
             channel_credentials,
             insecure,

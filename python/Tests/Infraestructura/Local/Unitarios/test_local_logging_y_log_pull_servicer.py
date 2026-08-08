@@ -18,18 +18,15 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2,
     log_service_pb2,
 )
+from Infraestructura.Gestores.Log import (
+    local_logging,
+)  # para espiar local_logging.logger
 
 # ── local_logging.py ────────────────────────────────────────────────
 
 
 @pytest.fixture
 def root_logger_aislado():
-    """
-    setup_local_logging() solo añade handlers si el logger raíz está
-    completamente limpio (`if not root.handlers`) — se vacía y se
-    restaura para poder probar ambos escenarios sin depender de si
-    pytest (u otro test anterior) ya le añadió algún handler.
-    """
     root = logging.getLogger()
     handlers_previos = list(root.handlers)
     nivel_previo = root.level
@@ -43,6 +40,10 @@ def root_logger_aislado():
 def test_setup_local_logging_crea_fichero_cuando_root_esta_limpio(
     tmp_path, root_logger_aislado
 ):
+    root_logger_aislado.handlers = (
+        []
+    )  # limpia también los handlers que pytest añadió en fase "call"
+
     setup_local_logging(component="gestor_bots", log_dir=tmp_path)
 
     log_path = tmp_path / "Bots" / "Gestor" / "gestor_bots.log"
@@ -52,24 +53,29 @@ def test_setup_local_logging_crea_fichero_cuando_root_esta_limpio(
 
 @pytest.mark.unit
 def test_setup_local_logging_no_hace_nada_si_root_ya_tenia_handlers(
-    tmp_path, root_logger_aislado
+    tmp_path, root_logger_aislado, monkeypatch
 ):
-    """
-    HALLAZGO (ya sospechado por los propios autores del proyecto — ver
-    comentario en gestor_mundo_server.py sobre este mismo guard): si el
-    logger raíz ya tenía CUALQUIER handler configurado de antemano,
-    esta función es un no-op silencioso — el fichero de log nunca se
-    crea, sin ningún aviso. En un proceso donde algo más (otra
-    librería, un test anterior, etc.) ya tocó el logger raíz antes de
-    llamar a setup_local_logging(), el componente se queda sin logs a
-    fichero sin que nada lo indique.
-    """
-    root_logger_aislado.addHandler(logging.NullHandler())
+    avisos = []
+    monkeypatch.setattr(
+        local_logging.logger,
+        "warning",
+        lambda msg, *args, **kwargs: avisos.append(msg % args if args else msg),
+    )
+
+    root_logger_aislado.handlers = []  # idem: limpia lo que pytest metió en fase "call"
+    root_logger_aislado.addHandler(
+        logging.NullHandler()
+    )  # y ahora sí, el handler que queremos simular
 
     setup_local_logging(component="gestor_bots", log_dir=tmp_path)
 
     log_path = tmp_path / "Bots" / "Gestor" / "gestor_bots.log"
     assert not log_path.exists()
+    assert len(avisos) == 1
+    assert "gestor_bots" in avisos[0]
+
+    assert len(avisos) == 1
+    assert "gestor_bots" in avisos[0]
 
 
 # ── log_pull_servicer.py ─────────────────────────────────────────────
@@ -103,3 +109,30 @@ async def test_log_pull_servicer_async_devuelve_los_registros_del_handler():
     resp = await servicer.PullLogs(log_pull_service_pb2.PullLogsRequest(), context=None)
 
     assert list(resp.records) == registros
+
+
+@pytest.mark.unit
+def test_setup_local_logging_no_hace_nada_si_root_ya_tenia_handlers(
+    tmp_path, root_logger_aislado, caplog
+):
+    """
+    Si el logger raíz ya tenía CUALQUIER handler configurado de antemano,
+    setup_local_logging() no crea el fichero de log (no toca el
+    filesystem) y en su lugar emite un logger.warning explícito, para
+    que el hecho de que el componente se quede sin logs a fichero no
+    pase desapercibido.
+    """
+    root_logger_aislado.addHandler(logging.NullHandler())
+
+    with caplog.at_level(
+        logging.WARNING, logger="Infraestructura.Gestores.Log.local_logging"
+    ):
+        setup_local_logging(component="gestor_bots", log_dir=tmp_path)
+
+    log_path = tmp_path / "Bots" / "Gestor" / "gestor_bots.log"
+    assert not log_path.exists()
+
+    assert any(
+        record.levelno == logging.WARNING and "gestor_bots" in record.message
+        for record in caplog.records
+    )

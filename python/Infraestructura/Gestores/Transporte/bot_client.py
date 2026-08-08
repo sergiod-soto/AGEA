@@ -105,7 +105,7 @@ class BotClient:
 
     def __init__(
         self,
-        bot_id: str,
+        bot_id: int,
         proxy_address: str,
         timeout: float = 10.0,
     ):

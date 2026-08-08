@@ -22,7 +22,7 @@ import json
 import logging
 from typing import Optional
 
-import grpc.aio  # type: ignore[import-untyped]
+import grpc.aio
 
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
@@ -93,7 +93,7 @@ class LogicaMundoClient:
             resp = await self._stub.AsignarId(
                 pb.AsignarIdRequest(), timeout=self._t(timeout)
             )
-            return resp.id
+            return resp.id_elemento
         except grpc.aio.AioRpcError as exc:
             logger.error("AsignarId falló: %s", exc)
             raise
@@ -161,7 +161,7 @@ class LogicaMundoClient:
 
     async def resolver_accion(
         self,
-        bot_id: str,
+        bot_id: int,
         action_type: str,
         payload: bytes = b"",
         timeout: float | None = None,
@@ -183,7 +183,7 @@ class LogicaMundoClient:
             return ActionResult(ok=False, error=str(exc))
 
     async def eliminar_avatar_bot(
-        self, bot_id: str, timeout: float | None = None
+        self, bot_id: int, timeout: float | None = None
     ) -> tuple[bool, str]:
         await self._ensure_channel()
         req = pb.EliminarAvatarBotRequest(bot_id=bot_id)
@@ -335,6 +335,30 @@ class LogicaMundoClient:
         except grpc.aio.AioRpcError as exc:
             logger.error("ConsultarRepresentacion falló: %s", exc)
             return b""
+
+    async def obtener_audio(
+        self, id_sonido: str, timeout: float | None = None
+    ) -> Optional[dict]:
+        """
+        Devuelve el payload completo (id/duracion/vol/vector/pcm) de un
+        id_sonido, o None si no existe o la llamada falla -- mismo patrón
+        "blando" que consultar_representacion/obtener_celdas_en_region: un
+        fallo aquí no debe tirar a quien lo llama.
+        """
+        await self._ensure_channel()
+        req = pb.ObtenerAudioRequest(id_sonido=id_sonido)
+        try:
+            resp = await self._stub.ObtenerAudio(req, timeout=self._t(timeout))
+            if not resp.ok:
+                logger.warning("ObtenerAudio respondió error: %s", resp.error)
+                return None
+            return json.loads(resp.audio.decode())
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ObtenerAudio falló: %s", exc)
+            return None
+        except json.JSONDecodeError as exc:
+            logger.error("ObtenerAudio: audio no es JSON válido: %s", exc)
+            return None
 
     # ------------------------------------------------------------------
     # Elementos globales de tick (avanzar ciclo día-noche, lunar...)

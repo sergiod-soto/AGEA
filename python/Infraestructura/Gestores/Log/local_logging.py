@@ -27,6 +27,21 @@ def setup_local_logging(
     backup_count: int = 5,
 ) -> None:
     """Configura el logger raíz del proceso para escribir directo a fichero."""
+    root = logging.getLogger()
+
+    # Guard al principio: si el root ya tiene handlers, no tocamos nada
+    # (ni filesystem ni logger). Se avisa explícitamente porque, si no,
+    # el componente se queda sin logs a fichero sin que nada lo indique.
+    if root.handlers:
+        logger.warning(
+            "setup_local_logging(%s) no ha hecho nada: el logger raíz ya "
+            "tenía %d handler(s) configurado(s) de antemano. No se ha "
+            "creado el fichero de log para este componente.",
+            component,
+            len(root.handlers),
+        )
+        return
+
     log_dir = Path(log_dir)
     subcarpeta = categoria(component)
     if subcarpeta == Path("."):
@@ -41,7 +56,6 @@ def setup_local_logging(
     log_dir_componente.mkdir(parents=True, exist_ok=True)
     log_path = log_dir_componente / f"{component}.log"
 
-    root = logging.getLogger()
     root.setLevel(level)
 
     fmt = logging.Formatter(
@@ -62,6 +76,5 @@ def setup_local_logging(
     console_handler.setFormatter(fmt)
     console_handler.setLevel(logging.INFO)
 
-    if not root.handlers:
-        root.addHandler(file_handler)
-        root.addHandler(console_handler)
+    root.addHandler(file_handler)
+    root.addHandler(console_handler)

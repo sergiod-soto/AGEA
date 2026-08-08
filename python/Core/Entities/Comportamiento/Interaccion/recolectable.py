@@ -17,13 +17,14 @@ class Recolectable(Interaccion):
     - recolectar(self, por: Elemento)
     """
 
+    REQUIERE = {"contenido_recolectable: dict[str, tuple[Elemento, float]] = None"}
+    ABSTRACTOS = {"def recolectar(self, por: Elemento)"}
+
     def __init__(
         self, contenido_recolectable: dict[str, tuple[Elemento, float]] = None, **kwargs
     ):
         super().__init__(**kwargs)
         self.contenido_recolectable = contenido_recolectable or {}
-
- 
 
     @abstractmethod
     def recolectar(self, por: Elemento): ...

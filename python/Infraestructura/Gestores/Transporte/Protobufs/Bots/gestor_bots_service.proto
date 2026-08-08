@@ -75,7 +75,7 @@ message SpawnBotRequest {
 }
 
 message BotIdRequest {
-  string bot_id = 1;
+  uint64 bot_id = 1;
 }
 
 message BroadcastBudgetsRequest {
@@ -145,7 +145,7 @@ message ListHypervisorsRequest {}
 // ============================================================
 
 message ForwardActionRequest {
-  string bot_id        = 1;
+  uint64 bot_id        = 1;
   string hypervisor_id = 2;
   string action_type   = 3;
   bytes  payload       = 4;

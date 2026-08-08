@@ -3,3 +3,4 @@
     - normal
     - sonido (solo a x1)
     - temperatura
+

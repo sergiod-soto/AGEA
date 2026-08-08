@@ -14,10 +14,11 @@ from Infraestructura.Gestores.Mundo.Logica_Mundo.Funciones import (
     heartbeat,
     load_state,
     modificar_elemento,
+    obtener_audio,
     obtener_celdas_en_region,
     resolver_accion,
     save_snapshot,
-    shutdown,  
+    shutdown,
     spawn_global_event,
 )
 
@@ -34,6 +35,7 @@ FUNCIONES = [
     obtener_celdas_en_region,
     actualizar_celdas,
     consultar_representacion,
+    obtener_audio,
     avanzar_elementos_globales,
     save_snapshot,
     load_state,

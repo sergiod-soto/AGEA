@@ -12,6 +12,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.comunicaciones_remoto import (
 from Infraestructura.Gestores.Comunicacion.Remoto.comunicaciones_remoto_servicer import (
     ComunicacionesRemotoServicer,
 )
+from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 
 
 class FakeHeartbeatResponse:
@@ -170,7 +171,7 @@ class FakeLogicaMundoFoco:
 
     async def obtener_celdas_en_region(self, min_pos, max_pos):
         self.llamadas_obtener_celdas += 1
-        return [f"celda_{min_pos}_{max_pos}"]
+        return [common_pb2.Cell(pos=common_pb2.Position(x=min_pos[0], y=min_pos[1]))]
 
     async def consultar_representacion(self, min_pos, max_pos, incluir, modo):
         self.llamadas_consultar_representacion += 1
@@ -260,12 +261,11 @@ async def test_dos_suscriptores_reciben_la_misma_actualizacion_con_un_solo_fetch
     """
     logica, logica_mundo_fake = logica_foco
     logica.actualizar_foco((0, 0), (10, 10), [], "modo")
+    logica_mundo_fake.tick_actual = 1
 
     gen_a = logica.suscribirse_foco()
     gen_b = logica.suscribirse_foco()
-    await asyncio.sleep(0.1)  # deja que ambas colas queden registradas
 
-    logica_mundo_fake.tick_actual = 1
     actualizacion_a = await asyncio.wait_for(gen_a.__anext__(), timeout=1.0)
     actualizacion_b = await asyncio.wait_for(gen_b.__anext__(), timeout=1.0)
 

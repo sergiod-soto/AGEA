@@ -30,7 +30,7 @@ class FakeHypervisorClient:
         self.spawn_bot_llamado_con = bot_config
         return ActionResult(ok=self._ok, error=self._error)
 
-    async def kill_bot(self, bot_id: str) -> None:
+    async def kill_bot(self, bot_id: int) -> None:
         pass
 
 

@@ -35,7 +35,7 @@ def gestor_bots_client_muerto():
 def test_gestor_bots_client_spawn_bot_devuelve_ok_false_si_no_hay_servidor(
     gestor_bots_client_muerto,
 ):
-    info = gestor_bots_client_muerto.spawn_bot(bot_id="bot_1")
+    info = gestor_bots_client_muerto.spawn_bot(bot_id=1)
     assert info.ok is False
     assert info.error != ""
 
@@ -44,7 +44,7 @@ def test_gestor_bots_client_spawn_bot_devuelve_ok_false_si_no_hay_servidor(
 def test_gestor_bots_client_kill_bot_devuelve_false_si_no_hay_servidor(
     gestor_bots_client_muerto,
 ):
-    assert gestor_bots_client_muerto.kill_bot("bot_1") is False
+    assert gestor_bots_client_muerto.kill_bot(1) is False
 
 
 @pytest.mark.unit
@@ -69,7 +69,7 @@ async def hypervisor_client_muerto():
 async def test_hypervisor_client_spawn_bot_devuelve_ok_false_si_no_hay_servidor(
     hypervisor_client_muerto,
 ):
-    info = await hypervisor_client_muerto.spawn_bot({"bot_id": "bot_1"})
+    info = await hypervisor_client_muerto.spawn_bot({"bot_id": 1})
     assert info.ok is False
 
 
@@ -85,7 +85,7 @@ async def test_hypervisor_client_list_bots_devuelve_lista_vacia_si_falla(
 async def test_hypervisor_client_reset_budgets_devuelve_false_si_falla(
     hypervisor_client_muerto,
 ):
-    ok = await hypervisor_client_muerto.reset_budgets(["bot_1"], {"bot_1": 10})
+    ok = await hypervisor_client_muerto.reset_budgets([1], {1: 10})
     assert ok is False
 
 
@@ -93,7 +93,7 @@ async def test_hypervisor_client_reset_budgets_devuelve_false_si_falla(
 async def test_hypervisor_client_set_point_budget_devuelve_false_si_falla(
     hypervisor_client_muerto,
 ):
-    ok = await hypervisor_client_muerto.set_point_budget("bot_1", 50)
+    ok = await hypervisor_client_muerto.set_point_budget(1, 50)
     assert ok is False
 
 
@@ -117,14 +117,14 @@ async def test_hypervisor_client_save_snapshot_devuelve_false_si_falla(
 async def test_hypervisor_client_get_bot_stats_devuelve_none_si_falla(
     hypervisor_client_muerto,
 ):
-    assert await hypervisor_client_muerto.get_bot_stats("bot_1") is None
+    assert await hypervisor_client_muerto.get_bot_stats(1) is None
 
 
 @pytest.mark.unit
 async def test_hypervisor_client_get_bot_status_devuelve_none_si_falla(
     hypervisor_client_muerto,
 ):
-    assert await hypervisor_client_muerto.get_bot_status("bot_1") is None
+    assert await hypervisor_client_muerto.get_bot_status(1) is None
 
 
 # ── BotClient (síncrono) ──────────────────────────────────────────

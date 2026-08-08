@@ -1,10 +1,15 @@
-from Core.Entities.Comportamiento.Stats.Complejos.stat_complejo import Stat_Complejo
+# Core/Entities/Comportamiento/Stats/Complejos/tamanho.py
 
 
-class Tamanho(Stat_Complejo):
+from Core.Entities.Comportamiento.Stats.stat import Stat
+from Core.Entities.Comportamiento.Stats.stat_derivado import Stat_Derivado
+
+
+class Tamanho(Stat_Derivado):
     """ """
 
-    def __init__(self, valor_Tamanho, **kwargs):
-        super().__init__(**kwargs)
-        self.valor_Tamanho = valor_Tamanho
+    def __init__(self, valores: list[Stat], **kwargs):
+        super().__init__(nombre="tamanho", valor = 0, **kwargs)
 
+    def calcular(self) -> float:
+        raise NotImplementedError

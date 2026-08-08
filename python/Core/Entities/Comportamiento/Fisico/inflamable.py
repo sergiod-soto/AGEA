@@ -14,6 +14,9 @@ class Inflamable(Fisico):
     -
     """
 
+    REQUIERE = {"temperatura_ignicion: float"}
+    ABSTRACTOS = {}
+
     def __init__(self, temperatura_ignicion: float, **kwargs):
         super().__init__(**kwargs)
         self.temperatura_ignicion = (

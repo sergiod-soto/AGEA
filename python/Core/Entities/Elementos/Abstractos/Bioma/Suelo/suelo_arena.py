@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.arena import Arena
+from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Arena
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 

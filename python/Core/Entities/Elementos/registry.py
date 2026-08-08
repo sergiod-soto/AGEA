@@ -8,14 +8,12 @@ Para añadir un elemento nuevo: importarlo aquí y añadirlo a ELEMENTOS.
 
 from typing import TYPE_CHECKING
 
-from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
-from Core.Entities.Comportamiento.Stats.Informacion.informacion import Informacion
-from Core.Entities.Comportamiento.Terreno.piedra import Piedra
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
+from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 from Core.Entities.Elementos.Abstractos.Informacion.raycast import Raycast
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
 from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.agujero import Agujero
@@ -38,6 +36,7 @@ from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Arbol.arbol import Arbol
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 from Core.Entities.Elementos.Simples.Cadaver.cadaver import Cadaver
+from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
 from Core.Entities.Mundo.Celda.celda import Celda
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne import Carne
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_fresca import Carne_Fresca
@@ -49,6 +48,7 @@ from Core.Entities.Elementos.Simples.Comida.comida import Comida
 from Core.Entities.Elementos.Simples.Etereo.etereo import Etereo
 from Core.Entities.Elementos.Simples.Etereo.mensaje import Mensaje
 from Core.Entities.Elementos.Simples.Recipiente.recipiente import Recipiente
+
 from Core.Entities.Elementos.elemento_test import Elemento_Test
 from Core.Entities.Elementos.elemento import Elemento
 
@@ -89,7 +89,6 @@ ELEMENTOS: dict[str, type] = {
     "Harina": Harina,
     # I
     "Informacion": Informacion,
-    "Ingrediente": Ingrediente,
     # J
     # K
     # L

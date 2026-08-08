@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\x06\x63ommon\" \n\x03\x41\x63k\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\" \n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"P\n\x04\x43\x65ll\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\r\n\x05suelo\x18\x02 \x01(\x0c\x12\x0b\n\x03\x62ot\x18\x03 \x01(\x0c\x12\r\n\x05resto\x18\x04 \x03(\x0c\"\xa2\x01\n\tBotConfig\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x05\x12\x11\n\tcodigo_gz\x18\x03 \x01(\x0c\x12\x31\n\x08metadata\x18\x04 \x03(\x0b\x32\x1f.common.BotConfig.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x07\x42otInfo\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x15\n\rproxy_address\x18\x03 \x01(\t\x12\n\n\x02ok\x18\x04 \x01(\x08\x12\r\n\x05\x65rror\x18\x05 \x01(\t\"e\n\x08\x42otStats\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x0f\n\x07\x66itness\x18\x03 \x01(\x01\x12\x0c\n\x04tick\x18\x04 \x01(\x03\x12\x13\n\x0bpoints_left\x18\x05 \x01(\x05\":\n\tBotStatus\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\r\n\x05\x61live\x18\x02 \x01(\x08\x12\x0e\n\x06\x62udget\x18\x03 \x01(\x05\")\n\x07\x42otList\x12\x1e\n\x04\x62ots\x18\x01 \x03(\x0b\x32\x10.common.BotStats\"[\n\x0b\x42otSnapshot\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x1d\n\x03pos\x18\x02 \x01(\x0b\x32\x10.common.Position\x12\r\n\x05state\x18\x03 \x01(\x0c\x12\x0e\n\x06\x62udget\x18\x04 \x01(\x05\"N\n\x0c\x41\x63tionResult\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\x12\r\n\x05\x65rror\x18\x03 \x01(\t\x12\x12\n\nworld_tick\x18\x04 \x01(\x03\"I\n\x06RayHit\x12\x0b\n\x03hit\x18\x01 \x01(\x08\x12 \n\x04type\x18\x02 \x01(\x0e\x32\x12.common.EntityType\x12\x10\n\x08\x64istance\x18\x03 \x01(\x05\"-\n\rObserveResult\x12\x1c\n\x04rays\x18\x01 \x03(\x0b\x32\x0e.common.RayHit\"\x92\x01\n\x0eHypervisorInfo\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\x12\x14\n\x0c\x63urrent_load\x18\x06 \x01(\x05\x12\x0e\n\x06online\x18\x07 \x01(\x08\"=\n\x0eHypervisorList\x12+\n\x0bhypervisors\x18\x01 \x03(\x0b\x32\x16.common.HypervisorInfo\"-\n\x0b\x42udgetEntry\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\t\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x05\"R\n\nSoundEvent\x12 \n\x06origin\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x11\n\tintensity\x18\x02 \x01(\x05\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"\x12\n\x10HeartbeatRequest\"C\n\x08HVStatus\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\r\n\x05\x61live\x18\x02 \x01(\x08\x12\x11\n\tbot_count\x18\x03 \x01(\x05\"0\n\x0cSectorStatus\x12\x11\n\tsector_id\x18\x01 \x01(\t\x12\r\n\x05\x61live\x18\x02 \x01(\x08\"6\n\x0fShutdownRequest\x12\x13\n\x0bshutdown_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"-\n\x10ShutdownResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t*Z\n\nEntityType\x12\x12\n\x0e\x45NTITY_UNKNOWN\x10\x00\x12\x0e\n\nENTITY_BOT\x10\x01\x12\x13\n\x0f\x45NTITY_RESOURCE\x10\x02\x12\x13\n\x0f\x45NTITY_OBSTACLE\x10\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x63ommon.proto\x12\x06\x63ommon\" \n\x03\x41\x63k\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\" \n\x08Position\x12\t\n\x01x\x18\x01 \x01(\x05\x12\t\n\x01y\x18\x02 \x01(\x05\"P\n\x04\x43\x65ll\x12\x1d\n\x03pos\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\r\n\x05suelo\x18\x02 \x01(\x0c\x12\x0b\n\x03\x62ot\x18\x03 \x01(\x0c\x12\r\n\x05resto\x18\x04 \x03(\x0c\"\xa2\x01\n\tBotConfig\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x05\x12\x11\n\tcodigo_gz\x18\x03 \x01(\x0c\x12\x31\n\x08metadata\x18\x04 \x03(\x0b\x32\x1f.common.BotConfig.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x07\x42otInfo\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x15\n\rproxy_address\x18\x03 \x01(\t\x12\n\n\x02ok\x18\x04 \x01(\x08\x12\r\n\x05\x65rror\x18\x05 \x01(\t\"e\n\x08\x42otStats\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\x15\n\rhypervisor_id\x18\x02 \x01(\t\x12\x0f\n\x07\x66itness\x18\x03 \x01(\x01\x12\x0c\n\x04tick\x18\x04 \x01(\x03\x12\x13\n\x0bpoints_left\x18\x05 \x01(\x05\":\n\tBotStatus\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\r\n\x05\x61live\x18\x02 \x01(\x08\x12\x0e\n\x06\x62udget\x18\x03 \x01(\x05\")\n\x07\x42otList\x12\x1e\n\x04\x62ots\x18\x01 \x03(\x0b\x32\x10.common.BotStats\"p\n\x0b\x42otSnapshot\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\x1d\n\x03pos\x18\x02 \x01(\x0b\x32\x10.common.Position\x12\r\n\x05state\x18\x03 \x01(\x0c\x12\x0e\n\x06\x62udget\x18\x04 \x01(\x05\x12\x13\n\x0bid_elemento\x18\x05 \x01(\x04\"N\n\x0c\x41\x63tionResult\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\x12\r\n\x05\x65rror\x18\x03 \x01(\t\x12\x12\n\nworld_tick\x18\x04 \x01(\x03\"I\n\x06RayHit\x12\x0b\n\x03hit\x18\x01 \x01(\x08\x12 \n\x04type\x18\x02 \x01(\x0e\x32\x12.common.EntityType\x12\x10\n\x08\x64istance\x18\x03 \x01(\x05\"-\n\rObserveResult\x12\x1c\n\x04rays\x18\x01 \x03(\x0b\x32\x0e.common.RayHit\"\x92\x01\n\x0eHypervisorInfo\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x02 \x01(\t\x12\x0c\n\x04port\x18\x03 \x01(\x05\x12\x12\n\nproxy_port\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\x12\x14\n\x0c\x63urrent_load\x18\x06 \x01(\x05\x12\x0e\n\x06online\x18\x07 \x01(\x08\"=\n\x0eHypervisorList\x12+\n\x0bhypervisors\x18\x01 \x03(\x0b\x32\x16.common.HypervisorInfo\"-\n\x0b\x42udgetEntry\x12\x0e\n\x06\x62ot_id\x18\x01 \x01(\x04\x12\x0e\n\x06\x62udget\x18\x02 \x01(\x05\"R\n\nSoundEvent\x12 \n\x06origin\x18\x01 \x01(\x0b\x32\x10.common.Position\x12\x11\n\tintensity\x18\x02 \x01(\x05\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"\x12\n\x10HeartbeatRequest\"C\n\x08HVStatus\x12\x15\n\rhypervisor_id\x18\x01 \x01(\t\x12\r\n\x05\x61live\x18\x02 \x01(\x08\x12\x11\n\tbot_count\x18\x03 \x01(\x05\"0\n\x0cSectorStatus\x12\x11\n\tsector_id\x18\x01 \x01(\t\x12\r\n\x05\x61live\x18\x02 \x01(\x08\"6\n\x0fShutdownRequest\x12\x13\n\x0bshutdown_id\x18\x01 \x01(\t\x12\x0e\n\x06reason\x18\x02 \x01(\t\"-\n\x10ShutdownResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t*Z\n\nEntityType\x12\x12\n\x0e\x45NTITY_UNKNOWN\x10\x00\x12\x0e\n\nENTITY_BOT\x10\x01\x12\x13\n\x0f\x45NTITY_RESOURCE\x10\x02\x12\x13\n\x0f\x45NTITY_OBSTACLE\x10\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_BOTCONFIG_METADATAENTRY']._loaded_options = None
   _globals['_BOTCONFIG_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_ENTITYTYPE']._serialized_start=1525
-  _globals['_ENTITYTYPE']._serialized_end=1615
+  _globals['_ENTITYTYPE']._serialized_start=1546
+  _globals['_ENTITYTYPE']._serialized_end=1636
   _globals['_ACK']._serialized_start=24
   _globals['_ACK']._serialized_end=56
   _globals['_POSITION']._serialized_start=58
@@ -54,29 +54,29 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_BOTLIST']._serialized_start=602
   _globals['_BOTLIST']._serialized_end=643
   _globals['_BOTSNAPSHOT']._serialized_start=645
-  _globals['_BOTSNAPSHOT']._serialized_end=736
-  _globals['_ACTIONRESULT']._serialized_start=738
-  _globals['_ACTIONRESULT']._serialized_end=816
-  _globals['_RAYHIT']._serialized_start=818
-  _globals['_RAYHIT']._serialized_end=891
-  _globals['_OBSERVERESULT']._serialized_start=893
-  _globals['_OBSERVERESULT']._serialized_end=938
-  _globals['_HYPERVISORINFO']._serialized_start=941
-  _globals['_HYPERVISORINFO']._serialized_end=1087
-  _globals['_HYPERVISORLIST']._serialized_start=1089
-  _globals['_HYPERVISORLIST']._serialized_end=1150
-  _globals['_BUDGETENTRY']._serialized_start=1152
-  _globals['_BUDGETENTRY']._serialized_end=1197
-  _globals['_SOUNDEVENT']._serialized_start=1199
-  _globals['_SOUNDEVENT']._serialized_end=1281
-  _globals['_HEARTBEATREQUEST']._serialized_start=1283
-  _globals['_HEARTBEATREQUEST']._serialized_end=1301
-  _globals['_HVSTATUS']._serialized_start=1303
-  _globals['_HVSTATUS']._serialized_end=1370
-  _globals['_SECTORSTATUS']._serialized_start=1372
-  _globals['_SECTORSTATUS']._serialized_end=1420
-  _globals['_SHUTDOWNREQUEST']._serialized_start=1422
-  _globals['_SHUTDOWNREQUEST']._serialized_end=1476
-  _globals['_SHUTDOWNRESPONSE']._serialized_start=1478
-  _globals['_SHUTDOWNRESPONSE']._serialized_end=1523
+  _globals['_BOTSNAPSHOT']._serialized_end=757
+  _globals['_ACTIONRESULT']._serialized_start=759
+  _globals['_ACTIONRESULT']._serialized_end=837
+  _globals['_RAYHIT']._serialized_start=839
+  _globals['_RAYHIT']._serialized_end=912
+  _globals['_OBSERVERESULT']._serialized_start=914
+  _globals['_OBSERVERESULT']._serialized_end=959
+  _globals['_HYPERVISORINFO']._serialized_start=962
+  _globals['_HYPERVISORINFO']._serialized_end=1108
+  _globals['_HYPERVISORLIST']._serialized_start=1110
+  _globals['_HYPERVISORLIST']._serialized_end=1171
+  _globals['_BUDGETENTRY']._serialized_start=1173
+  _globals['_BUDGETENTRY']._serialized_end=1218
+  _globals['_SOUNDEVENT']._serialized_start=1220
+  _globals['_SOUNDEVENT']._serialized_end=1302
+  _globals['_HEARTBEATREQUEST']._serialized_start=1304
+  _globals['_HEARTBEATREQUEST']._serialized_end=1322
+  _globals['_HVSTATUS']._serialized_start=1324
+  _globals['_HVSTATUS']._serialized_end=1391
+  _globals['_SECTORSTATUS']._serialized_start=1393
+  _globals['_SECTORSTATUS']._serialized_end=1441
+  _globals['_SHUTDOWNREQUEST']._serialized_start=1443
+  _globals['_SHUTDOWNREQUEST']._serialized_end=1497
+  _globals['_SHUTDOWNRESPONSE']._serialized_start=1499
+  _globals['_SHUTDOWNRESPONSE']._serialized_end=1544
 # @@protoc_insertion_point(module_scope)

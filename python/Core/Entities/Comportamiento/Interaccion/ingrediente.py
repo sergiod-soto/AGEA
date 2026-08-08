@@ -16,6 +16,9 @@ class Ingrediente(Interaccion):
 
     -
     """
+    
+    REQUIERE = {"recetas_de: list[Receta]"}
+    ABSTRACTOS = {}
 
     def __init__(self, recetas_de: list[Receta], **kwargs):
         super().__init__(**kwargs)

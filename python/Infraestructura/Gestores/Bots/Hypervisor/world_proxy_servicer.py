@@ -78,7 +78,7 @@ class WorldProxyServicer(world_proxy_service_pb2_grpc.WorldProxyServiceServicer)
         return common_pb2.ActionResult(ok=False, error="bot-id no proporcionado")
 
     @staticmethod
-    def _reject_no_points(bot_id: str, remaining: int) -> common_pb2.ActionResult:
+    def _reject_no_points(bot_id: int, remaining: int) -> common_pb2.ActionResult:
         logger.debug(
             "Bot %s rechazado: puntos insuficientes (restantes: %d).", bot_id, remaining
         )

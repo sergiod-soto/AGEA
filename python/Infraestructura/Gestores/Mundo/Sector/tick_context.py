@@ -81,15 +81,13 @@ class TickContext:
     # ─────────────────────────────────────────
 
     def guardar_elemento(
-        self, pos: tuple[int, int], tipo_slot: str, elemento: Any
+        self,
+        pos: tuple[int, int],
+        tipo_slot: str,
+        elemento: Any,
+        bot_id: Optional[int] = None,
     ) -> str:
-        """Pide crear un elemento nuevo en `pos`.
 
-        Devuelve un marcador_local (NO es un id real) que identifica a este
-        elemento solo dentro de este tick y este sector. El elemento se
-        vuelve interactuable en el siguiente tick, una vez Logica_Mundo le
-        haya asignado su id real.
-        """
         marcador = f"nuevo_{self._contador_nuevos}"
         self._contador_nuevos += 1
         self._mutaciones.append(
@@ -98,14 +96,26 @@ class TickContext:
                 pos=pos,
                 tipo_slot=tipo_slot,
                 elemento=elemento,
+                bot_id=bot_id,
             )
         )
         return marcador
 
-    def eliminar_elemento(self, pos: tuple[int, int], id_elemento: int) -> None:
-        """Pide eliminar un elemento que ya existía al empezar el tick
-        (por eso requiere id real, no marcador_local)."""
-        self._mutaciones.append(EliminarElemento(pos=pos, id_elemento=id_elemento))
+    def mover_elemento(
+        self,
+        id_elemento: int,
+        pos_origen: tuple[int, int],
+        pos_destino: tuple[int, int],
+        bot_id: Optional[int] = None,
+    ) -> None:
+        self._mutaciones.append(
+            MoverElemento(
+                id_elemento=id_elemento,
+                pos_origen=pos_origen,
+                pos_destino=pos_destino,
+                bot_id=bot_id,
+            )
+        )
 
     def mover_elemento(
         self,

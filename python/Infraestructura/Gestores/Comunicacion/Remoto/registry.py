@@ -17,6 +17,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
     get_snapshot_info,
     list_hypervisors,
     modificar_elemento,
+    obtener_audio,
     pause,
     resume,
     resume_all,
@@ -29,6 +30,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
 FUNCIONES = [
     # Logica_Mundo
     consultar_representacion,
+    obtener_audio,
     spawn_global_event,
     despawn_global_event,
     get_active_events,

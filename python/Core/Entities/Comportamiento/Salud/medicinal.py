@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
+from Core.Entities.Comportamiento.Salud.salud import Salud
 
 
 class Medicinal(Salud):
@@ -16,7 +16,9 @@ class Medicinal(Salud):
     -
     """
 
+    REQUIERE = {"valor_medicinal: float"}
+    ABSTRACTOS = {}
+
     def __init__(self, valor_medicinal: float, **kwargs):
         super().__init__(**kwargs)
         self.valor_medicinal = valor_medicinal
-

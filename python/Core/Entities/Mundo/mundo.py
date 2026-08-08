@@ -9,6 +9,7 @@ from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Mundo.Celda.celda import Celda
 from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
+from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
 
 """
 Este Mundo es El Mundo. 
@@ -17,7 +18,6 @@ Gestiona como nodo central.
 
 Es un elemento abstracto para tener comportamientos.
 
-TODO: terminar. por ahora solo tiene el bus de eventos al que se suscriben ciertos Elementos
 """
 
 
@@ -34,6 +34,7 @@ class Mundo:
 
     def __init__(self):
         self.bus_eventos = BusEventos()
+        self.logica_mundo: LogicaMundo = None
 
         # malla terreno
         self.ids = dict[
@@ -46,10 +47,12 @@ class Mundo:
             tuple[int, int], Celda_Atmosfera
         ]  # posicion -> Celda_Atmosfera con cosas de la atmosfera
 
-    def eliminar_elemento(self, elemento: Elemento): ...  # TODO
+    def eliminar_elemento(self, elemento: Elemento):
+        raise NotImplementedError  # TODO
 
     def agregar_elemento(self, elemento: Elemento):
         elemento.mundo = self
         # TODO: resto de agregar_elemento() en mundo.py
 
-    def get_celda_atmosfera(self, posicion: tuple[int, int]): return self.malla_atmosfera
+    def get_celda_atmosfera(self, posicion: tuple[int, int]):
+        return self.malla_atmosfera

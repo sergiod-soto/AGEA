@@ -30,17 +30,10 @@ class GestorMundoServiceStub(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
-    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
-    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
-    cadencia). Todo lo que era estado/identidad/eventos globales vive
-    ahora en LogicaMundoService.
-
-    Clientes:
-    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
-    TriggerDeepSave, GetGlobalState,
-    GetSnapshotInfo (reenviadas desde
-    Comunicaciones_Local vía el puente
-    Ejecutar)
+    GetGlobalState se RETIRÓ de aquí: los elementos globales viven en
+    Logica_Mundo (ver LogicaMundoService.GetElementosGlobales) —
+    decisión "elementos_globales: B". Lo que queda aquí es
+    exclusivamente mecánica de tick + snapshot de topología propia.
     ============================================================
 
     """
@@ -60,11 +53,6 @@ class GestorMundoServiceStub(object):
                 '/gestor_mundo.GestorMundoService/Shutdown',
                 request_serializer=common__pb2.ShutdownRequest.SerializeToString,
                 response_deserializer=common__pb2.ShutdownResponse.FromString,
-                _registered_method=True)
-        self.GetGlobalState = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/GetGlobalState',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateRequest.SerializeToString,
-                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateResponse.FromString,
                 _registered_method=True)
         self.GetSnapshotInfo = channel.unary_unary(
                 '/gestor_mundo.GestorMundoService/GetSnapshotInfo',
@@ -97,37 +85,22 @@ class GestorMundoServiceServicer(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
-    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
-    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
-    cadencia). Todo lo que era estado/identidad/eventos globales vive
-    ahora en LogicaMundoService.
-
-    Clientes:
-    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
-    TriggerDeepSave, GetGlobalState,
-    GetSnapshotInfo (reenviadas desde
-    Comunicaciones_Local vía el puente
-    Ejecutar)
+    GetGlobalState se RETIRÓ de aquí: los elementos globales viven en
+    Logica_Mundo (ver LogicaMundoService.GetElementosGlobales) —
+    decisión "elementos_globales: B". Lo que queda aquí es
+    exclusivamente mecánica de tick + snapshot de topología propia.
     ============================================================
 
     """
 
     def Heartbeat(self, request, context):
-        """----- Infraestructura -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Shutdown(self, request, context):
         """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetGlobalState(self, request, context):
-        """----- Consulta del mundo -----
-        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -139,8 +112,7 @@ class GestorMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Pause(self, request, context):
-        """----- Control del ciclo de vida -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -175,11 +147,6 @@ def add_GestorMundoServiceServicer_to_server(servicer, server):
                     servicer.Shutdown,
                     request_deserializer=common__pb2.ShutdownRequest.FromString,
                     response_serializer=common__pb2.ShutdownResponse.SerializeToString,
-            ),
-            'GetGlobalState': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetGlobalState,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateRequest.FromString,
-                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateResponse.SerializeToString,
             ),
             'GetSnapshotInfo': grpc.unary_unary_rpc_method_handler(
                     servicer.GetSnapshotInfo,
@@ -218,17 +185,10 @@ class GestorMundoService(object):
     """============================================================
     GestorMundoService — expuesto por el Gestor del Mundo.
 
-    Responsabilidad tras el refactor a Logica_Mundo: solo la mecánica
-    del ciclo de tick (sectores, snapshots de topología, pausa/resume,
-    cadencia). Todo lo que era estado/identidad/eventos globales vive
-    ahora en LogicaMundoService.
-
-    Clientes:
-    - Comunicaciones_Remoto → Pause, Resume, SetTickRate,
-    TriggerDeepSave, GetGlobalState,
-    GetSnapshotInfo (reenviadas desde
-    Comunicaciones_Local vía el puente
-    Ejecutar)
+    GetGlobalState se RETIRÓ de aquí: los elementos globales viven en
+    Logica_Mundo (ver LogicaMundoService.GetElementosGlobales) —
+    decisión "elementos_globales: B". Lo que queda aquí es
+    exclusivamente mecánica de tick + snapshot de topología propia.
     ============================================================
 
     """
@@ -277,33 +237,6 @@ class GestorMundoService(object):
             '/gestor_mundo.GestorMundoService/Shutdown',
             common__pb2.ShutdownRequest.SerializeToString,
             common__pb2.ShutdownResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def GetGlobalState(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/gestor_mundo.GestorMundoService/GetGlobalState',
-            Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateRequest.SerializeToString,
-            Sectores_dot_gestor__mundo__service__pb2.GetGlobalStateResponse.FromString,
             options,
             channel_credentials,
             insecure,

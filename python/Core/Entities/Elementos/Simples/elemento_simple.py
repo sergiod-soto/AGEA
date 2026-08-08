@@ -17,21 +17,17 @@ class Elemento_Simple(Elemento):
     def __init__(
         self,
         tipo,
-        id,
+        id_elemento,
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
         rotacion: float = 0,
-        fuerza_sector_activo: bool = False,
-        fuerza_vecinos_activos: bool = False,
         **kwargs,
     ):
         super().__init__(
             tipo=tipo,
             capa=capa,
-            id=id,
-            fuerza_sector_activo=fuerza_sector_activo,
-            fuerza_vecinos_activos=fuerza_vecinos_activos,
+            id_elemento=id_elemento,
             **kwargs,
         )
         self.tamanho = tamanho

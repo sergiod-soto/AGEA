@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Informativo/informativo.py
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 

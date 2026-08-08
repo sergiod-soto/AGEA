@@ -14,8 +14,19 @@ class Luminoso(Informativo):
     -
     """
 
+    REQUIERE = {
+        "distancia_luz: float",
+        "area_luz: float = 360",
+        "direccion_luz: float = 0",
+    }
+    ABSTRACTOS = {}
+
     def __init__(
-        self, distancia_luz: float, area_luz: float = 360, direccion_luz: float = 0, **kwargs
+        self,
+        distancia_luz: float,
+        area_luz: float = 360,
+        direccion_luz: float = 0,
+        **kwargs
     ):
         super().__init__(**kwargs)
         self.distancia_luz = distancia_luz
@@ -25,5 +36,3 @@ class Luminoso(Informativo):
         else:
             self.area_luz = area_luz
             self.direccion_luz = direccion_luz
-
-

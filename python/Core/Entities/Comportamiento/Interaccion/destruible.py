@@ -13,8 +13,8 @@ class Destruible(Interaccion):
 
     Parametros:
 
-    - durabilidad_max: float
-    - durabilidad_actual: float = None
+    - durabilidad_max_destruible: float
+    - durabilidad_actual_destruible: float = None
 
     Metodos abstractos:
 
@@ -23,14 +23,22 @@ class Destruible(Interaccion):
     - _destruir(self, danho: float)
     """
 
-    def __init__(
-        self, durabilidad_max: float, durabilidad_actual: float = None, **kwargs
-    ):
-        super().__init__(**kwargs)
-        self.durabilidad_max = durabilidad_max
-        self.durabilidad_actual = durabilidad_actual or durabilidad_max
+    REQUIERE = {"durabilidad_max_destruible: float"}
+    ABSTRACTOS = {
+        "def danhar(self, danho: float)",
+        "def restaurar(self, danho: float)",
+        "def _destruir(self, danho: float)",
+    }
 
-    
+    def __init__(self, durabilidad_max_destruible: float, **kwargs):
+        super().__init__(**kwargs)
+        self.durabilidad_max_destruible = durabilidad_max_destruible
+        self.durabilidad_actual_destruible = durabilidad_max_destruible
+
+    @classmethod
+    def _campos_internos(cls):
+        return {"durabilidad_actual_destruible"}
+
     @abstractmethod
     def danhar(self, danho: float): ...
 

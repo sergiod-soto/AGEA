@@ -6,7 +6,7 @@ from Infraestructura.Gestores.Mundo.Logica_Mundo.Acciones.mirar import mirar
 
 @dataclass
 class AccionContext:
-    bot_id: str
+    bot_id: int
     payload: bytes
     gold_cells: dict | None = None
     elements: dict | None = None

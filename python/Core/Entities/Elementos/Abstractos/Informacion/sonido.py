@@ -1,3 +1,4 @@
+# Core/Entities/Elementos/Abstractos/Informacion/sonido.py
 """
 sonido.py
 =========
@@ -19,16 +20,40 @@ Reproducción:
     Python → sonido.reproducir()          requiere: pip install sounddevice
     Unity  → sonido.pcm y sonido.SAMPLE_RATE
               AudioClip.SetData(float[], int) acepta float32 directamente
+
+Serializacion (ver Comportamiento.serializar() / Sonoro.serialize_sonidos()):
+    Cada Sonido es potencialmente pesado (vector de 256 floats + pcm de
+    miles de muestras). Enviarlo entero en cada tick es caro y, ademas,
+    redundante: el sonido de un elemento no cambia una vez construido
+    (depende de parametros fijos como el peso). Por eso se separan dos
+    niveles:
+
+    .id_sonido            : hash del contenido (pcm), estable y barato de
+                             mandar en cada tick. Dos Sonido con el mismo
+                             contenido (misma duracion/vol/armonicos)
+                             comparten id automaticamente, sin
+                             coordinacion explicita -- util para que un
+                             cache externo (fuera de esta clase, p.ej. en
+                             logica_mundo) deduplique el AUDIO
+                             almacenado. Esto NO implica que las
+                             instancias de Sonido se compartan en
+                             memoria: cada Piedra sigue creando su propio
+                             objeto, aunque el id coincida.
+    .serializar_referencia(): lo que va en cada tick (id + metadatos).
+    .serializar_audio()     : el payload completo (vector/pcm como
+                              listas), para servir bajo demanda desde el
+                              cache externo cuando alguien pide el audio
+                              de un id que todavia no tiene.
 """
 
 from __future__ import annotations
 
+import hashlib
 import numpy as np
 from dataclasses import dataclass
 
 from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
-
 
 # ---------------------------------------------------------------------------
 # Constantes del sistema — modificar aquí afecta a todo
@@ -81,7 +106,7 @@ class SonidoBase(Informacion):
         self._ataque: float | None = None
         self._decay: float | None = None
 
-        super().__init__(SonidoBase, **kwargs)
+        super().__init__(SonidoBase, 1, **kwargs)
 
     def __repr__(self) -> str:
         lineas = [
@@ -213,6 +238,12 @@ class Sonido(Elemento_Abstracto):
 
     SAMPLE_RATE = SAMPLE_RATE
 
+    _cache_audio = None
+
+    @classmethod
+    def configurar_cache(cls, cache_audio) -> None:
+        cls._cache_audio = cache_audio
+
     def __init__(
         self,
         vector: np.ndarray,
@@ -222,12 +253,36 @@ class Sonido(Elemento_Abstracto):
         _señal_raw: np.ndarray,  # señal sin normalizar, para fusionar
         **kwargs,
     ):
-        super().__init__(Sonido, **kwargs)
+        super().__init__(Sonido, 1, **kwargs)
         self.vector: np.ndarray = vector
         self.pcm: np.ndarray = pcm
         self.duracion: float = duracion
         self.vol: float = vol
         self._señal_raw = _señal_raw
+        self.id_sonido: str = hashlib.sha1(self.pcm.tobytes()).hexdigest()[:16]
+
+    @classmethod
+    def desde_audio_dict(cls, data: dict) -> "Sonido":
+        """
+        Reconstruye un Sonido a partir del dict de serializar_audio()
+        (id/duracion/vol/vector/pcm como listas) -- usado al deserializar un
+        elemento en modo "guardado"/"transporte" (ver Sonoro.deserialize_sonidos).
+        """
+        vector = np.array(data["vector"], dtype=np.float32)
+        pcm = np.array(data["pcm"], dtype=np.float32)
+        sonido = cls(
+            vector=vector,
+            pcm=pcm,
+            duracion=data["duracion"],
+            vol=data["vol"],
+            _señal_raw=pcm,
+        )
+        if sonido.id_sonido != data["id"]:
+            raise ValueError(
+                f"desde_audio_dict: id recalculado ({sonido.id_sonido}) no "
+                f"coincide con el id del payload ({data['id']})."
+            )
+        return sonido
 
     # ------------------------------------------------------------------
     # Operaciones
@@ -293,6 +348,37 @@ class Sonido(Elemento_Abstracto):
             )
 
     # ------------------------------------------------------------------
+    # Serializacion
+    # ------------------------------------------------------------------
+
+    def serializar_referencia(self) -> dict:
+        """
+        Lo que va en cada tick / cada llamada a Comportamiento.serializar():
+        solo el id de contenido y metadatos minimos. NO incluye vector ni
+        pcm -- eso se pide aparte, una sola vez, via serializar_audio().
+        """
+        return {
+            "id": self.id_sonido,
+            "duracion": self.duracion,
+            "vol": self.vol,
+        }
+
+    def serializar_audio(self) -> dict:
+        """
+        Payload completo de audio (vector/pcm convertidos a listas planas,
+        JSON-serializable). Se llama bajo demanda desde el cache externo
+        (p.ej. logica_mundo) cuando un id_sonido no esta todavia
+        registrado -- no en cada tick.
+        """
+        return {
+            "id": self.id_sonido,
+            "duracion": self.duracion,
+            "vol": self.vol,
+            "vector": self.vector.tolist(),
+            "pcm": self.pcm.tolist(),
+        }
+
+    # ------------------------------------------------------------------
     # Representación
     # ------------------------------------------------------------------
 
@@ -301,6 +387,18 @@ class Sonido(Elemento_Abstracto):
             f"Sonido(dur={self.duracion:.3f}s, vol={self.vol:.3f}, "
             f"vector={self.vector.shape}, pcm={self.pcm.shape})"
         )
+
+    # ------------------------------------------------------------------
+    # Memoria en biblioteca
+    # ------------------------------------------------------------------
+
+    def guardar_en_biblioteca(self) -> None:
+        if Sonido._cache_audio is not None:
+            Sonido._cache_audio.registrar(self)
+
+    def liberar_de_biblioteca(self) -> None:
+        if Sonido._cache_audio is not None:
+            Sonido._cache_audio.liberar(self.id_sonido)
 
 
 # ---------------------------------------------------------------------------

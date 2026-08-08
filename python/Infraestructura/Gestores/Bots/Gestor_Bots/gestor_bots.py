@@ -10,6 +10,8 @@ import os
 import time
 from typing import Optional
 
+from numpy import uint64
+
 from Infraestructura.Gestores.tipos_comunes import (
     ActionResult,
     BotInfo,
@@ -41,7 +43,7 @@ class Gestor_Bots:
         self._lock = asyncio.Lock()
         self._hypervisors: dict[str, HypervisorInfo] = {}
         self._hypervisor_clients: dict[str, object] = {}
-        self._bots: dict[str, BotStats] = {}
+        self._bots: dict[uint64, BotStats] = {}
         self._bot_counter: int = 0
         self.logica_client = logica_client
 
@@ -233,7 +235,7 @@ class Gestor_Bots:
             error="",
         )
 
-    async def kill_bot(self, bot_id: str) -> None:
+    async def kill_bot(self, bot_id: int) -> None:
         async with self._lock:
             stats = self._bots.get(bot_id)
             if stats is None:
@@ -254,7 +256,7 @@ class Gestor_Bots:
             if hv and hv.current_load > 0:
                 hv.current_load -= 1
 
-    async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
+    async def eliminar_avatar_bot(self, bot_id: int) -> tuple[bool, str]:
         if self.logica_client is None:
             return True, ""
         try:
@@ -271,7 +273,7 @@ class Gestor_Bots:
 
     async def resolver_accion_bot(
         self,
-        bot_id: str,
+        bot_id: int,
         hypervisor_id: str,
         action_type: str,
         payload: bytes,
@@ -367,7 +369,7 @@ class Gestor_Bots:
     # Helpers privados
     # ------------------------------------------------------------------
 
-    async def _revertir_registro(self, hv_id: str, bot_id: str) -> None:
+    async def _revertir_registro(self, hv_id: str, bot_id: int) -> None:
         """
         Deshace el estado que spawn_bot reserva de forma optimista
         (current_load incrementado + BotStats registrado) cuando el

@@ -34,7 +34,12 @@ from typing import Any, Optional
 
 
 from Core.Entities.Elementos.registry import reconstruir_elemento
-from Infraestructura.Gestores.Mundo.Sector.mutaciones import Mutacion
+from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
+    CrearElemento,
+    EliminarElemento,
+    MoverElemento,
+    Mutacion,
+)
 from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
 
 import json
@@ -90,8 +95,42 @@ class CeldaStore:
     def __init__(self):
         self._celdas: dict[tuple[int, int], CeldaSector] = {}
 
+    def __contains__(self, pos: tuple[int, int]) -> bool:
+        # Permite `(x, y) in celda_store`, usado tanto en tests como
+        # en cualquier código que quiera comprobar existencia de una
+        # celda sin pasar por .get() y comparar con None.
+        return pos in self._celdas
+
+    def __len__(self) -> int:
+        # Complementa __contains__: sin esto, len(celda_store) también
+        # fallaría de forma inconsistente si algún test/código lo usa.
+        return len(self._celdas)
+
     def get(self, x: int, y: int) -> Optional[CeldaSector]:
         return self._celdas.get((x, y))
+
+    def get_or_create(self, x: int, y: int) -> "CeldaSector":
+        """Como get(), pero crea una CeldaSector vacía si no existía —
+        necesario para CrearElemento/MoverElemento cuando el destino cae
+        en una posición sin celda registrada todavía."""
+        pos = (x, y)
+        if pos not in self._celdas:
+            self._celdas[pos] = CeldaSector()
+        return self._celdas[pos]
+
+    def serializar_celda(self, x: int, y: int) -> "common_pb.Cell":
+        """Serializa la celda en (x, y) tal como está AHORA en el store
+        (tras resolver mutaciones), para construir cada Cell de
+        changed_cells. Si no hay celda registrada, se trata como vacía —
+        es una respuesta válida (p. ej. si el único elemento que había se
+        acaba de eliminar y no queda nada más ahí)."""
+        celda = self._celdas.get((x, y), CeldaSector())
+        return common_pb.Cell(
+            pos=common_pb.Position(x=x, y=y),
+            suelo=self._serializar_slot(celda.suelo),
+            bot=self._serializar_slot(celda.bot),
+            resto=[self._serializar_slot(e) for e in celda.resto],
+        )
 
     def items(self):
         return self._celdas.items()
@@ -161,14 +200,25 @@ class TickDelta:
 
     tick_id: int
 
-    # Todo lo que un elemento pidió crear/eliminar/mover durante su tick(),
-    # en el orden en que se pidió. Logica_Mundo es quien las aplica de
-    # verdad sobre el estado real del mundo.
+    # Registro interno/depuración de lo que pidieron los elementos.
+    # YA NO viaja tal cual a Logica_Mundo (el Sector las resuelve él
+    # mismo — ver Sector._resolver_mutaciones — para poder paralelizar
+    # el tick del mundo sector-por-sector).
     mutaciones: list[Mutacion] = field(default_factory=list)
 
-    # Sonidos cross-border emitidos durante el tick. Viaja aparte (mensaje
-    # separado), no se mezcla con `mutaciones`.
+    # Celdas ya resueltas — esto es lo que de verdad viaja a
+    # Logica_Mundo en GetDeltaResponse.changed_cells.
+    changed_cells: list = field(default_factory=list)
+
+    # bot_id (int, id del SCRIPT — no del avatar) de los bots cuyo
+    # avatar ha sido eliminado este tick. Quien reciba el GetDelta debe
+    # usarlo para ordenar la terminación del script correspondiente
+    # (ver Logica_Mundo.matar_bot).
+    dead_bot_ids: list[int] = field(default_factory=list)
+
     emitted_sounds: list = field(default_factory=list)
+
+    outgoing_bots: list = field(default_factory=list)
 
 
 # ─────────────────────────────────────────────
@@ -205,7 +255,14 @@ class Sector:
         self._current_tick_id: int = -1
 
         # Bots presentes en este sector: bot_id → BotSnapshot proto
-        self._bots: dict[str, Any] = {}
+        self._bots: dict[int, Any] = {}
+
+        # Índice inverso: id_elemento (uint64, el avatar en el mundo) →
+        # bot_id (uint64, el script). Son ids independientes — este
+        # índice es la única forma de ir de uno a otro sin adivinar por
+        # posición. Se mantiene en add_migrating_bot / _detectar_migraciones
+        # / _resolver_mutaciones.
+        self._elemento_a_bot: dict[int, int] = {}
 
     # ─────────────────────────────────────────
     #  Propiedades de región (FIX principal)
@@ -299,6 +356,7 @@ class Sector:
     def add_migrating_bot(self, tick_id: int, bot) -> None:
         """Registra un bot que acaba de migrar a este sector."""
         self._bots[bot.bot_id] = bot
+        self._elemento_a_bot[bot.id_elemento] = bot.bot_id
         logger.debug(
             "Sector (%d,%d): bot %s migrado (tick %d)",
             self._col,
@@ -315,6 +373,7 @@ class Sector:
         """Ejecuta tick() de cada elemento propio del sector (solo si el
         sector está ACTIVO), acumulando lo que piden en un único TickContext,
         y devuelve el TickDelta resultante para Logica_Mundo."""
+
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
 
@@ -345,10 +404,108 @@ class Sector:
                 elemento.tick((x, y), ctx)
 
         delta.mutaciones = ctx.obtener_mutaciones()
+        self._resolver_mutaciones(delta.mutaciones, delta)
         delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
+
+        # Detectar bots que, tras el tick, quedaron fuera de la región
+        # propia del sector — deben viajar a Logica_Mundo para
+        # reasignarse al sector correcto.
+        self._detectar_migraciones(delta)
 
         self._last_delta = delta
         return delta
+
+    def _resolver_mutaciones(
+        self, mutaciones: list[Mutacion], delta: TickDelta
+    ) -> None:
+        """Aplica cada mutación sobre self._celdas (CeldaStore), mantiene
+        sincronizado self._bots (índice posición-only usado por
+        _detectar_migraciones) y rellena delta.changed_cells /
+        delta.dead_bot_ids."""
+        posiciones_cambiadas: set[tuple[int, int]] = set()
+
+        for mutacion in mutaciones:
+            if isinstance(mutacion, CrearElemento):
+                celda = self._celdas.get_or_create(*mutacion.pos)
+                self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento)
+                posiciones_cambiadas.add(mutacion.pos)
+                # NOTA / LIMITACIÓN CONOCIDA: si tipo_slot == "bot", el
+                # elemento todavía no tiene id real (solo marcador_local,
+                # ver mutaciones.CrearElemento) — no se puede indexar en
+                # self._bots hasta que Logica_Mundo le asigne uno. Hoy no
+                # existe ningún mecanismo para que Sector se entere de ese
+                # id asignado. Pendiente de diseñar (¿una RPC de vuelta
+                # tipo ConfirmarIdAsignado?) antes de que "crear un bot"
+                # funcione de punta a punta.
+
+            elif isinstance(mutacion, EliminarElemento):
+                elemento, slot = self._quitar_de_celda(
+                    mutacion.pos, mutacion.id_elemento
+                )
+                posiciones_cambiadas.add(mutacion.pos)
+                if slot == "bot" and elemento is not None:
+                    bot_id = (
+                        mutacion.bot_id
+                        if mutacion.bot_id is not None
+                        else self._elemento_a_bot.get(mutacion.id_elemento)
+                    )
+                    if bot_id is None:
+                        logger.warning(
+                            "Sector (%d,%d): avatar %s eliminado pero sin "
+                            "bot_id asociado (ni en la mutación ni en "
+                            "_elemento_a_bot) — no se reportará en "
+                            "dead_bot_ids.",
+                            self._col,
+                            self._row,
+                            mutacion.id_elemento,
+                        )
+                    else:
+                        delta.dead_bot_ids.append(bot_id)
+                        self._bots.pop(bot_id, None)
+                        self._elemento_a_bot.pop(mutacion.id_elemento, None)
+
+            elif isinstance(mutacion, MoverElemento):
+                elemento, slot = self._quitar_de_celda(
+                    mutacion.pos_origen, mutacion.id_elemento
+                )
+                posiciones_cambiadas.add(mutacion.pos_origen)
+                if elemento is not None:
+                    celda_destino = self._celdas.get_or_create(*mutacion.pos_destino)
+                    self._asignar_slot(celda_destino, slot, elemento)
+                    posiciones_cambiadas.add(mutacion.pos_destino)
+                    if slot == "bot":
+                        bot_id = (
+                            mutacion.bot_id
+                            if mutacion.bot_id is not None
+                            else self._elemento_a_bot.get(mutacion.id_elemento)
+                        )
+                        if bot_id is not None:
+                            x, y = mutacion.pos_destino
+                            self._bots[bot_id].pos.x = x
+                            self._bots[bot_id].pos.y = y
+
+        delta.changed_cells = [
+            self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas
+        ]
+
+    def _quitar_de_celda(
+        self, pos: tuple[int, int], id_elemento: int
+    ) -> tuple[Optional[Any], Optional[str]]:
+        """Busca id_elemento en la celda de pos (suelo/bot/resto) y lo
+        quita de ahí. (None, None) si no se encontró."""
+        celda = self._celdas.get(*pos)
+        if celda is None:
+            return None, None
+        if celda.suelo is not None and celda.suelo.id_elemento == id_elemento:
+            elemento, celda.suelo = celda.suelo, None
+            return elemento, "suelo"
+        if celda.bot is not None and celda.bot.id_elemento == id_elemento:
+            elemento, celda.bot = celda.bot, None
+            return elemento, "bot"
+        for i, e in enumerate(celda.resto):
+            if e.id_elemento == id_elemento:
+                return celda.resto.pop(i), "resto"
+        return None, None
 
     def _procesar_sonidos(self, ctx: TickContext) -> None:
         """Aplica los efectos de los sonidos cross-border recibidos.
@@ -357,28 +514,6 @@ class Sector:
         for sound in self._sounds_pendientes:
             pass
         self._sounds_pendientes = []
-
-    def _tick_elementos(self, delta: TickDelta) -> None:
-        """
-        Llama al tick de cada elemento activo en las celdas propias.
-        TODO: implementar cuando los elementos tengan tick() definido.
-        """
-        # FIX: usar propiedades de instancia en lugar de constantes globales
-        contexto_vision = _ContextoVision(
-            celdas_propias=self._celdas,
-            ghost=self._ghost,
-            x0=self._x0,
-            y0=self._y0,
-            x1=self._x1,
-            y1=self._y1,
-        )
-
-        for (x, y), elemento in list(self._celdas.items()):
-            if not hasattr(elemento, "fuerza_sector_activo"):
-                continue
-            if not elemento.fuerza_sector_activo:  # type: ignore
-                continue
-            # TODO: resultado = elemento.tick(contexto_vision)
 
     def _detectar_migraciones(self, delta: TickDelta) -> None:
         """
@@ -408,6 +543,7 @@ class Sector:
                 bots_fuera.append(bot_id)
 
         for bot_id in bots_fuera:
+            self._elemento_a_bot.pop(self._bots[bot_id].id_elemento, None)
             del self._bots[bot_id]
 
     # ─────────────────────────────────────────
@@ -483,26 +619,3 @@ class Sector:
             S3_PREFIX,
             snapshot_id,
         )
-
-
-# ─────────────────────────────────────────────
-#  ContextoVision
-# ─────────────────────────────────────────────
-
-
-@dataclass
-class _ContextoVision:
-    celdas_propias: CeldaStore
-    ghost: dict
-    x0: int
-    y0: int
-    x1: int
-    y1: int
-
-    def get_celda(self, x: int, y: int) -> Optional[Any]:
-        if self.x0 <= x < self.x1 and self.y0 <= y < self.y1:
-            return self.celdas_propias.get(x, y)
-        return self.ghost.get((x, y))
-
-    def en_region_propia(self, x: int, y: int) -> bool:
-        return self.x0 <= x < self.x1 and self.y0 <= y < self.y1

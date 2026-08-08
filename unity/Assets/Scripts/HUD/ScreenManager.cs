@@ -20,7 +20,6 @@ public class ScreenManager : MonoBehaviour
 
     // ?? Asignar en el Inspector ??????????????????????????????????????????????
     [SerializeField] private MenuPrincipalView menuPrincipalView;
-    [SerializeField] private MenuPerfilesView menuPerfilesView;
     [SerializeField] private PreferencesView preferencesView;
     [SerializeField] private IngameView ingameView;
     // ????????????????????????????????????????????????????????????????????????
@@ -51,7 +50,6 @@ public class ScreenManager : MonoBehaviour
         _allViews = new List<MonoBehaviour>
         {
             menuPrincipalView,
-            menuPerfilesView,
             preferencesView,
             ingameView
         };
@@ -72,7 +70,6 @@ public class ScreenManager : MonoBehaviour
         _currentPresenter = screen switch
         {
             Screen.MenuPrincipal => Setup(menuPrincipalView, v => new MenuPrincipalPresenter(v, this)),
-            Screen.MenuPerfiles => Setup(menuPerfilesView, v => new MenuPerfilesPresenter(v, this)),
             Screen.Preferences => Setup(preferencesView, v => new PreferencesPresenter(v, this)),
             Screen.Ingame => Setup(ingameView, v => new IngamePresenter(v, this)),
             _ => throw new ArgumentOutOfRangeException(nameof(screen))

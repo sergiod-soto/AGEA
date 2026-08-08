@@ -19,6 +19,12 @@ class Agarrable(Interaccion):
     - soltar(self, por: Elemento)
     """
 
+    REQUIERE = {"agarrado_por: Elemento = None"}
+    ABSTRACTOS = {
+        "def agarrar(self, por: Elemento)",
+        "def soltar(self, por: Elemento)",
+    }
+
     def __init__(self, agarrado_por: Elemento = None, **kwargs):
         super().__init__(**kwargs)
         self.agarrado_por = agarrado_por
@@ -32,4 +38,3 @@ class Agarrable(Interaccion):
     def soltar(self, por: Elemento):
         """Accion pasiva. Se indica que el elemento atributo tiene intencion de soltar este elemento"""
         ...
-

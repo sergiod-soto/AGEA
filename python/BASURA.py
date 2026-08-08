@@ -1,31 +1,27 @@
-from dataclasses import dataclass
+from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
 
-from Core.Entities.Comportamiento.Informativo.color import Color
-from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-
-
-@dataclass
-class FakeElemento(Elemento_Simple, Color):
-
-    def __init__(
-        self,
-        **kwargs,
-    ):
-        super().__init__(
-            tipo=FakeElemento,
-            tamanho=1,
-            casilla=(0, 0),
-            capa=1,
-            rgb_base=[127.5, 0, 255],
-            transparente=0.5,
-            **kwargs,
-        )
+requiere, abstractos = Piedra.obtener_requisitos()
 
 
-elemento = FakeElemento()
+# print("REQUIERE")
+# print(requiere)
+# print()
+# print("ABSTRACTOS")
+# print(abstractos)
 
-# def test_color():
-elemento.iluminar_con_color([240, 10, 0])
-elemento.iluminar_con_color([20, 10, 10])
+p = Piedra(
+    id_elemento=0,
+    tamanho=1,
+    casilla=(0, 0),
+    capa=1,
+    peso=1,
+    coste_empujar=1,
+    volumen=1,
+    rgb_base=(0, 0, 0),
+    durabilidad_max_destruible=1,
+    temperatura_propia=1,
+    tasa_transferencia_temperatura=1,
+    durabilidad_max_erosion=1,
+)
 
-print("rgb: " + str(elemento.rgb_actual))
+print(p.serializar(modo="representacion"))

@@ -17,10 +17,12 @@ class Combinable(Material):
     - combinar(self, elemento: Elemento) -> Elemento
     """
 
+    REQUIERE = {"cantidad_max_combinable: float = None"}
+    ABSTRACTOS = {"def combinar(self, elemento: Elemento) -> Elemento"}
+
     def __init__(self, cantidad_max_combinable: float = None, **kwargs):
         super().__init__(**kwargs)
         self.cantidad_max_combinable = cantidad_max_combinable or float("inf")
-
 
     @abstractmethod
     def combinar(self, elemento: Elemento) -> Elemento:

@@ -91,7 +91,7 @@ def test_make_shutdown_fn_invoca_stub_con_el_timeout_configurado():
 
 
 @pytest.mark.unit
-async def test_crear_stubs_construye_canal_y_dos_stubs_por_componente():
+def test_crear_stubs_construye_canal_y_dos_stubs_por_componente():
     ip_por_comp = {"gestor_bots": "127.0.0.1"}
     tipo_por_comp = {"gestor_bots": "gestor_bots"}
     config = {"red": {"puerto_grpc_componentes": 50051}}
@@ -105,7 +105,7 @@ async def test_crear_stubs_construye_canal_y_dos_stubs_por_componente():
     assert len(canales) == 1
 
     for canal in canales:
-        await canal.close()
+        canal.close()
 
 
 @pytest.mark.unit

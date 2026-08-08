@@ -15,6 +15,9 @@ class Humedo(Fisico):
     - secar(self, cantidad)
     """
 
+    REQUIERE = {"humedad_max: float"}
+    ABSTRACTOS = {}
+
     def __init__(self, humedad_max: float, **kwargs):
         super().__init__(**kwargs)
         self.humedad_max = humedad_max
@@ -22,8 +25,10 @@ class Humedo(Fisico):
 
     @classmethod
     def _campos_internos(cls):
-        return {"humedad_actual"}
-    
+        return {
+            "humedad_actual",
+        }
+
     @abstractmethod
     def humedecer(self, cantidad):
         pass

@@ -27,6 +27,8 @@ import grpc
 import grpc.aio
 import pytest
 
+from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
+
 # ─────────────────────────────────────────────────────────────
 #  Config mínima de pruebas — evita depender de config.yaml real
 # ─────────────────────────────────────────────────────────────
@@ -201,3 +203,10 @@ def snapshot_dir_aislado(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("SNAPSHOT_DIR", str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture(autouse=True)
+def _limpiar_cache_de_clase():
+    Sonido._cache_audio = None
+    yield
+    Sonido._cache_audio = None

@@ -42,7 +42,7 @@ class Agua(Elemento_Simple, comportamientos):
 
     def __init__(
         self,
-        id,
+        id_elemento,
         casilla: tuple[int, int],
         # Peso:
         peso: float,
@@ -55,7 +55,7 @@ class Agua(Elemento_Simple, comportamientos):
             peso = 0
         super().__init__(
             tipo=Agua,
-            id=id,
+            id_elemento=id_elemento,
             tamanho=1,
             casilla=casilla,
             capa=1,
@@ -80,5 +80,3 @@ class Agua(Elemento_Simple, comportamientos):
             fuerza_vecinos_activos=fuerza_vecinos_activos,
             **kwargs
         )
-
-   

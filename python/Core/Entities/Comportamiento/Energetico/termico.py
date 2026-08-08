@@ -10,7 +10,7 @@ class Termico(Energetico):
     Parametros:
 
     - temperatura_propia: float
-    - tasa_transferencia: float
+    - tasa_transferencia_temperatura: float
     - radio_termico: float
 
     Metodos abstractos:
@@ -18,20 +18,35 @@ class Termico(Energetico):
     -
     """
 
+    REQUIERE = {
+        "temperatura_propia: float",
+        "tasa_transferencia_temperatura: float",
+        "radio_termico: int = 0",
+    }
+    ABSTRACTOS = {}
+
     def __init__(
         self,
         temperatura_propia: float,
-        tasa_transferencia: float,
-        radio_termico: float,
+        tasa_transferencia_temperatura: float,
+        radio_termico: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.temperatura_propia = temperatura_propia
-        self.tasa_transferencia = tasa_transferencia
-        self.radio_termico = radio_termico
-        self.termico: bool = True
+        self.tasa_transferencia_temperatura = tasa_transferencia_temperatura
+        self.radio_termico = radio_termico  # TODO: formula para calcular radio_termico
+
+    @classmethod
+    def _campos_internos(cls):
+        return {
+            "temperatura_propia",
+            "tasa_transferencia_temperatura",
+            "radio_termico",
+        }
 
     def tick(self, elementos: list[(float, float)]) -> float:
+        # TODO: comprobar que tick no machaque a super().tick()
         """
         calculo del intercambio de temperaturas con el resto de elementos.
 
@@ -40,14 +55,14 @@ class Termico(Energetico):
         temp_propia_inicial = self.temperatura_propia
         delta = 0
         for neighbor_temp, neighbor_rate in elementos:
-            U = (self.tasa_transferencia * neighbor_rate) / (
-                self.tasa_transferencia + neighbor_rate
+            U = (self.tasa_transferencia_temperatura * neighbor_rate) / (
+                self.tasa_transferencia_temperatura + neighbor_rate
             )
             Q = U * (self.temperatura_propia - neighbor_temp)
             delta -= Q
 
         self.temperatura_propia += delta
-        
+
         # emision del evento del cambio de temperatura
         if abs(self.temperatura_propia - temp_propia_inicial) > 1e-2:
             Elemento.mundo.bus.emitir(

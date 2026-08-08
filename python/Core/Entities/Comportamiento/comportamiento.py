@@ -1,5 +1,4 @@
-# Core/Entities/comportamiento/comportamiento.py
-
+# Core/Entities/Comportamiento/comportamiento.py
 
 from dataclasses import dataclass
 import inspect
@@ -23,9 +22,8 @@ NO_SERIALIZAR = _NoSerializar()
 @dataclass(kw_only=True)
 class Comportamiento:
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.comportamiento_activo = True
-        super().__init__(**kwargs)
 
     @staticmethod
     def _params_propios(cls) -> dict:
@@ -188,9 +186,11 @@ class Comportamiento:
         )
         obj.__class__ = type(obj.__class__.__name__, nuevas_bases, {})
 
-    def comportamientos(self) -> list["Comportamiento"]:
+    def comportamientos(self) -> list[type]:
         """
-        Retorna todos los comportamientos de la entidad
+        Retorna todos los comportamientos (CLASES, no instancias) de la
+        entidad. Devuelve clases porque, al ser mixins fusionados en el
+        MRO, no existe una instancia separada por comportamiento.
         """
 
         return [
@@ -199,9 +199,10 @@ class Comportamiento:
             if issubclass(c, Comportamiento) and c is not Comportamiento
         ]
 
-    def categorias(self) -> list["Comportamiento"]:
+    def categorias(self) -> list[type]:
         """
-        Retorna las categorias que contienen comportamientos presentes en la entidad
+        Retorna las categorías (CLASES) que contienen comportamientos
+        presentes en la entidad.
         """
 
         categorias = Comportamiento.__subclasses__()
@@ -212,6 +213,12 @@ class Comportamiento:
         Pregunta si el elemento tiene X comportamiento
         """
         return isinstance(self, comportamiento)
+
+    def get_comportamiento(self, nombre: str, *, modo: str) -> dict:
+        for cls in self.comportamientos():
+            if cls.__name__ == nombre:
+                return self.serializar(cls, modo=modo)
+        raise ValueError(f"{type(self).__name__} no tiene el comportamiento '{nombre}'")
 
     # --- Representación ---
     def __repr__(self):
@@ -235,12 +242,31 @@ class Comportamiento:
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
 
-    def serializar(self, cls=None) -> dict:
+    def serializar(self, cls=None, *, modo: str) -> dict:
+        """
+        modo distingue PARA QUÉ se serializa, porque un campo pesado (como
+        'sonidos' en Sonoro) puede necesitar una representación distinta
+        según el consumidor:
+        - "guardado"        : snapshots a disco (save_snapshot).
+        - "transporte"      : entre sectores / Logica_Mundo vía gRPC
+                                (_id_a_slot_bytes). Hoy idéntico a "guardado"
+                                (ambos necesitan fidelidad total para poder
+                                reconstruir el elemento), separado como modo
+                                aparte por si algún día divergen (p.ej. el
+                                transporte quisiera comprimir algo que el
+                                guardado no).
+        - "representacion"  : lo que ve Unity cada tick
+                                (consultar_representacion) -- lo más ligero
+                                posible.
+        """
+
         cls = cls or type(self)
         atributos = cls._campos_serializables()
         resultado = {}
         for nombre in atributos:
-            serializador = getattr(self, f"serialize_{nombre}", None)
+            especifico = getattr(self, f"serialize_{nombre}_{modo}", None)
+            generico = getattr(self, f"serialize_{nombre}", None)
+            serializador = especifico or generico
             if serializador:
                 valor = serializador()
             elif hasattr(self, nombre):
@@ -250,6 +276,7 @@ class Comportamiento:
             if valor is NO_SERIALIZAR:
                 continue
             resultado[nombre] = valor
+
         return resultado
 
     def deserializar(self, data: dict):

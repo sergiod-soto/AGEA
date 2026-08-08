@@ -20,6 +20,16 @@ class Perecedero(Temporal):
     - desaparecer() -> None
     """
 
+    REQUIERE = {
+        "tiempo_maximo_perecedero: float",
+        "condiciones_perecedero: list[tuple[list[Condicion], float]]",
+        "tiempo_actual_perecedero: float = None",
+    }
+    ABSTRACTOS = {
+        "def tick(self) -> None",
+        "def desaparecer(self) -> None",
+    }
+
     def __init__(
         self,
         tiempo_maximo_perecedero: float,
@@ -33,14 +43,6 @@ class Perecedero(Temporal):
             tiempo_actual_perecedero or tiempo_maximo_perecedero
         )
         self.condiciones_perecedero = condiciones_perecedero
-
-    @classmethod
-    def _campos_internos(cls):
-        return {
-            "tiempo_maximo_perecedero",
-            "condiciones_perecedero",
-            "tiempo_actual_perecedero",
-        }
 
     @abstractmethod
     def tick(self) -> None: ...

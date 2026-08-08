@@ -29,20 +29,6 @@ if _version_not_supported:
 class LogicaMundoServiceStub(object):
     """============================================================
     LogicaMundoService — expuesto por Logica_Mundo (remoto).
-
-    Es la única fuente de verdad de: estado gold (celdas + elementos),
-    identidad (IDs), eventos globales y resolución de acciones de bots.
-
-    Clientes:
-    - Gestor_Bots   → ResolverAccion (reenvío de acciones de bots)
-    - Gestor_Mundo  → ObtenerCeldasEnRegion / ActualizarCeldas
-    (sustituyen el antiguo acceso directo a
-    self._gold_cells que tenía GestorMundo)
-    - Comunicacion_Remoto (local) → ConsultarRepresentacion
-    (para Vista_Foco / Unity), y los comandos de
-    eventos globales / edición en caliente que antes
-    entraban a GestorMundoService
-    - main.py / bootstrap → Heartbeat, Shutdown (via common.proto)
     ============================================================
 
     """
@@ -108,6 +94,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.GetActiveEventsRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.GetActiveEventsResponse.FromString,
                 _registered_method=True)
+        self.GetElementosGlobales = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/GetElementosGlobales',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesResponse.FromString,
+                _registered_method=True)
         self.ObtenerCeldasEnRegion = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ObtenerCeldasEnRegion',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionRequest.SerializeToString,
@@ -122,6 +113,11 @@ class LogicaMundoServiceStub(object):
                 '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.FromString,
+                _registered_method=True)
+        self.ObtenerAudio = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ObtenerAudio',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioResponse.FromString,
                 _registered_method=True)
         self.SaveSnapshot = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/SaveSnapshot',
@@ -143,27 +139,12 @@ class LogicaMundoServiceStub(object):
 class LogicaMundoServiceServicer(object):
     """============================================================
     LogicaMundoService — expuesto por Logica_Mundo (remoto).
-
-    Es la única fuente de verdad de: estado gold (celdas + elementos),
-    identidad (IDs), eventos globales y resolución de acciones de bots.
-
-    Clientes:
-    - Gestor_Bots   → ResolverAccion (reenvío de acciones de bots)
-    - Gestor_Mundo  → ObtenerCeldasEnRegion / ActualizarCeldas
-    (sustituyen el antiguo acceso directo a
-    self._gold_cells que tenía GestorMundo)
-    - Comunicacion_Remoto (local) → ConsultarRepresentacion
-    (para Vista_Foco / Unity), y los comandos de
-    eventos globales / edición en caliente que antes
-    entraban a GestorMundoService
-    - main.py / bootstrap → Heartbeat, Shutdown (via common.proto)
     ============================================================
 
     """
 
     def Heartbeat(self, request, context):
-        """----- Infraestructura -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -175,19 +156,13 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def AsignarId(self, request, context):
-        """----- Identidad -----
-        Genera un ID nuevo y único para un elemento (incluye bots).
-        Sustituye al contador que hoy vive disperso (controlador.py / bots.py
-        gestionan apellidos, no IDs de elemento — esto es un concepto nuevo
-        centralizado aquí).
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def CrearElemento(self, request, context):
-        """----- Elementos — alta / edición / baja -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -205,8 +180,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ResolverAccion(self, request, context):
-        """----- Acciones de bots -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -218,8 +192,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SpawnGlobalEvent(self, request, context):
-        """----- Eventos globales -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -236,45 +209,38 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetElementosGlobales(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ObtenerCeldasEnRegion(self, request, context):
-        """----- Soporte al ciclo de tick de Gestor_Mundo -----
-        Gestor_Mundo ya NO mantiene _gold_cells. Para construir ghost zones
-        y para la carga inicial/restauración de cada sector, pide aquí el
-        recorte de celdas que necesita por región.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ActualizarCeldas(self, request, context):
-        """Gestor_Mundo, tras consolidar los deltas de sectores en su _fase_2,
-        entrega aquí las celdas cambiadas para que Logica_Mundo actualice
-        su estado — sustituye la escritura directa en self._gold_cells.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ConsultarRepresentacion(self, request, context):
-        """----- Representación (Vista_Foco / Unity, vía Comunicacion_Remoto) -----
-        Único punto de entrada para consultas de visualización. Aplica el
-        recorte por región Y el filtro por comportamiento/capa en el mismo
-        proceso donde vive el estado, para no mover más datos de los
-        estrictamente necesarios fuera de AWS.
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
-        ABIERTO: el campo `datos` es bytes opaco. El formato concreto de
-        serialización (JSON, protobuf anidado, etc.) para cada `modo`
-        (p.ej. "heatmap" vs "snapshot_elementos") queda pendiente de definir
-        cuando se escriba vision_unity.py — aquí solo se fija el contrato
-        de transporte, no el formato interno.
-        """
+    def ObtenerAudio(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SaveSnapshot(self, request, context):
-        """----- Persistencia -----
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -349,6 +315,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.GetActiveEventsRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.GetActiveEventsResponse.SerializeToString,
             ),
+            'GetElementosGlobales': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetElementosGlobales,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesResponse.SerializeToString,
+            ),
             'ObtenerCeldasEnRegion': grpc.unary_unary_rpc_method_handler(
                     servicer.ObtenerCeldasEnRegion,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionRequest.FromString,
@@ -363,6 +334,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ConsultarRepresentacion,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.SerializeToString,
+            ),
+            'ObtenerAudio': grpc.unary_unary_rpc_method_handler(
+                    servicer.ObtenerAudio,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioResponse.SerializeToString,
             ),
             'SaveSnapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.SaveSnapshot,
@@ -390,20 +366,6 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
 class LogicaMundoService(object):
     """============================================================
     LogicaMundoService — expuesto por Logica_Mundo (remoto).
-
-    Es la única fuente de verdad de: estado gold (celdas + elementos),
-    identidad (IDs), eventos globales y resolución de acciones de bots.
-
-    Clientes:
-    - Gestor_Bots   → ResolverAccion (reenvío de acciones de bots)
-    - Gestor_Mundo  → ObtenerCeldasEnRegion / ActualizarCeldas
-    (sustituyen el antiguo acceso directo a
-    self._gold_cells que tenía GestorMundo)
-    - Comunicacion_Remoto (local) → ConsultarRepresentacion
-    (para Vista_Foco / Unity), y los comandos de
-    eventos globales / edición en caliente que antes
-    entraban a GestorMundoService
-    - main.py / bootstrap → Heartbeat, Shutdown (via common.proto)
     ============================================================
 
     """
@@ -706,6 +668,33 @@ class LogicaMundoService(object):
             _registered_method=True)
 
     @staticmethod
+    def GetElementosGlobales(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/GetElementosGlobales',
+            Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.GetElementosGlobalesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def ObtenerCeldasEnRegion(request,
             target,
             options=(),
@@ -776,6 +765,33 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
             Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.SerializeToString,
             Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ObtenerAudio(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/ObtenerAudio',
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerAudioResponse.FromString,
             options,
             channel_credentials,
             insecure,

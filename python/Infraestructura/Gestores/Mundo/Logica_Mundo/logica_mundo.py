@@ -1,4 +1,6 @@
 # Infraestructura/Gestores/Mundo/Logica_Mundo/logica_mundo.py
+
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +14,9 @@ from typing import Any, Optional
 
 from numpy import uint64
 
+from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
 from Core.Entities.Elementos.registry import reconstruir_elemento
+from Services.Elemento.cache_audio import CacheAudio
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -64,7 +68,8 @@ class LogicaMundo:
 
         self._gold_cells: dict[tuple[int, int], Celda] = {}
         self._elements: dict[uint64, Any] = {}
-        self._bot_positions: dict[str, tuple[int, int]] = {}
+
+        self._bot_positions: dict[int, tuple[int, int]] = {}
         self._id_counter: uint64 = uint64(0)
 
         self._active_events: dict[str, GlobalEvent] = {}
@@ -75,9 +80,30 @@ class LogicaMundo:
 
         self._gestor_bots_client = gestor_bots_client
 
+        self._cache_audio = CacheAudio()
+        Sonido.configurar_cache(self._cache_audio)
+
         self._lock: asyncio.Lock = asyncio.Lock()
 
         logger.info("LogicaMundo inicializado.")
+
+    @staticmethod
+    def _bot_id_de(elemento: Any) -> Optional[int]:
+        """
+        Extrae el bot_id (stat 'id', ver Bot.__init__ / serialize_all) de un
+        elemento ya reconstruido. Devuelve None solo en el caso legítimo:
+        el elemento no es un Bot o no tiene ese stat.
+
+        FIX: la versión anterior usaba "except Exception: return None",
+        que se tragaba cualquier error real (p.ej. el AttributeError que
+        salía de _stats sin inicializar antes de que Tiene_Stats tuviera
+        deserialize_stats) y lo disfrazaba de "no es un bot". Ahora se
+        comprueba explícitamente con tiene_stat(), que ya existe para
+        esto — así un fallo real sigue reventando en vez de esconderse.
+        """
+        if not hasattr(elemento, "tiene_stat") or not elemento.tiene_stat("id"):
+            return None
+        return int(elemento.get_stat("id"))
 
     async def aplicar_delta_sector(self, mutaciones: list[Mutacion]) -> None:
         """Aplica, en orden y bajo un único lock, todas las mutaciones que un
@@ -100,15 +126,25 @@ class LogicaMundo:
         registra el elemento nuevo. Solo debe llamarse ya dentro de self._lock."""
         self._id_counter += 1
         eid = self._id_counter
-        m.elemento.id = eid  # el objeto llega sin id — se le asigna aquí
+        m.elemento.id_elemento = eid  # el objeto llega sin id — se le asigna aquí
         self._elements[eid] = m.elemento
+        self._registrar_sonidos_de(m.elemento)
 
         celda = self._gold_cells.setdefault(m.pos, Celda())
         if m.tipo_slot == "suelo":
             celda.suelo = eid
         elif m.tipo_slot == "bot":
             celda.bot = eid
-            self._bot_positions[str(eid)] = m.pos
+            # FIX: bot_id, no eid (ver _bot_id_de).
+            bot_id = self._bot_id_de(m.elemento)
+            if bot_id is not None:
+                self._bot_positions[bot_id] = m.pos
+            else:
+                logger.warning(
+                    "aplicar_delta_sector: elemento bot en %s sin bot_id "
+                    "extraíble — no se indexa en _bot_positions.",
+                    m.pos,
+                )
         else:
             celda.resto.append(eid)
 
@@ -130,11 +166,24 @@ class LogicaMundo:
             )
             return
 
+        elemento = self._elements.get(m.id_elemento)
+        if elemento is not None:
+            try:
+                self._liberar_sonidos_de(elemento)
+            except:
+                raise ValueError(f"Error eliminando sonidos de {elemento}")
+
         if celda.suelo == m.id_elemento:
             celda.suelo = None
         elif celda.bot == m.id_elemento:
             celda.bot = None
-            self._bot_positions.pop(str(m.id_elemento), None)
+            # FIX: hay que resolver el bot_id ANTES de hacer pop en
+            # self._elements más abajo, o ya no habría forma de recuperar
+            # el objeto para extraer su stat "id".
+            elemento = self._elements.get(m.id_elemento)
+            bot_id = self._bot_id_de(elemento) if elemento is not None else None
+            if bot_id is not None:
+                self._bot_positions.pop(bot_id, None)
         elif m.id_elemento in celda.resto:
             celda.resto.remove(m.id_elemento)
         else:
@@ -195,21 +244,32 @@ class LogicaMundo:
             celda_destino.suelo = m.id_elemento
         elif tipo_slot == "bot":
             celda_destino.bot = m.id_elemento
-            self._bot_positions[str(m.id_elemento)] = m.pos_destino
+            # FIX: bot_id, no id_elemento — se resuelve a partir del objeto
+            # ya guardado en self._elements (todavía no se ha tocado aquí).
+            elemento = self._elements.get(m.id_elemento)
+            bot_id = self._bot_id_de(elemento) if elemento is not None else None
+            if bot_id is not None:
+                self._bot_positions[bot_id] = m.pos_destino
         else:
             celda_destino.resto.append(m.id_elemento)
 
     # ---- Traducción Cell (proto) <-> Celda (interno) ----
 
-    def _slot_bytes_a_id(self, blob: bytes) -> uint64:
+    def _slot_bytes_a_id(self, blob: bytes) -> Optional[uint64]:
+        # FIX: un blob vacío significa "slot desocupado" (ver comentario en
+        # common.proto: "vacío si no hay elemento en este slot"), no un
+        # error — antes se lanzaba ValueError aquí, lo cual contradecía el
+        # propio _cell_a_celda, que ya filtraba resto con "if eid is not
+        # None" dando por hecho (incorrectamente, hasta este fix) que este
+        # método podía devolver None.
         if not blob:
-            raise ValueError(f"No existe suelo")
+            return None
         data = json.loads(blob.decode())
         elemento = reconstruir_elemento(data)
-        eid = getattr(elemento, "id", None)
+        eid = getattr(elemento, "id_elemento", None)
         if eid is None:
             raise ValueError(
-                f"Elemento deserializado sin 'id' (clase={data.get('__clase__')!r})."
+                f"Elemento deserializado sin 'id_elemento' (clase={data.get('__clase__')!r})."
             )
         self._elements[eid] = elemento
         return eid
@@ -221,7 +281,7 @@ class LogicaMundo:
         if elemento is None:
             logger.warning("_id_a_slot_bytes: elemento %s no encontrado.", eid)
             return b""
-        return json.dumps(elemento.serializar()).encode()
+        return json.dumps(elemento.serializar(modo="transporte")).encode()
 
     def _cell_a_celda(self, cell) -> Celda:
         return Celda(
@@ -268,12 +328,23 @@ class LogicaMundo:
             if eid is None:
                 return False, "El elemento no tiene 'id' asignado."
 
+            self._registrar_sonidos_de(self._elements[eid])
+
             celda = self._gold_cells.setdefault(pos, Celda())
             if type_id == "suelo":
                 celda.suelo = eid
             elif type_id == "bot":
                 celda.bot = eid
-                self._bot_positions[str(eid)] = pos
+                elemento = self._elements.get(eid)
+                bot_id = self._bot_id_de(elemento) if elemento is not None else None
+                if bot_id is not None:
+                    self._bot_positions[bot_id] = pos
+                else:
+                    logger.warning(
+                        "crear_elemento: bot en %s sin bot_id extraíble — "
+                        "no se indexa en _bot_positions.",
+                        pos,
+                    )
             else:
                 celda.resto.append(eid)
 
@@ -309,11 +380,18 @@ class LogicaMundo:
             if celda is None:
                 return False, f"No hay celda en {pos}."
 
+            elemento = self._elements.get(element_id)
+            if elemento is not None:
+                self._liberar_sonidos_de(elemento)
+
             if celda.suelo == element_id:
                 celda.suelo = None
             elif celda.bot == element_id:
                 celda.bot = None
-                self._bot_positions.pop(str(element_id), None)
+                elemento = self._elements.get(element_id)
+                bot_id = self._bot_id_de(elemento) if elemento is not None else None
+                if bot_id is not None:
+                    self._bot_positions.pop(bot_id, None)
             elif element_id in celda.resto:
                 celda.resto.remove(element_id)
             else:
@@ -326,7 +404,9 @@ class LogicaMundo:
 
             return True, ""
 
-    async def eliminar_avatar_bot(self, bot_id: str) -> tuple[bool, str]:
+    async def eliminar_avatar_bot(self, bot_id: int) -> tuple[bool, str]:
+        
+        bot_id = int(bot_id)
         pos = self._bot_positions.get(bot_id)
         if pos is None:
             return False, f"Bot {bot_id!r} no encontrado en bot_positions."
@@ -340,7 +420,7 @@ class LogicaMundo:
         return await self.eliminar_elemento(pos, element_id)
 
     async def matar_bot(
-        self, bot_id: str, cause: str, tick_id: int
+        self, bot_id: int, cause: str, tick_id: int
     ) -> tuple[bool, str]:
         ok, error = await self.eliminar_avatar_bot(bot_id)
         if not ok:
@@ -367,10 +447,44 @@ class LogicaMundo:
         logger.info("Bot %s eliminado (causa=%s, tick=%d).", bot_id, cause, tick_id)
         return True, ""
 
+    # ---- Sonido ------------
+
+    async def obtener_audio(self, id_sonido: str) -> tuple[bool, str, bytes]:
+        """
+        Sirve el audio completo de un id_sonido ya registrado en el
+        CacheAudio de este proceso -- lo pide Unity cuando recibe una
+        referencia (id/duracion/vol) en consultar_representacion y no tiene
+        ese id cacheado en su lado.
+
+        No usa self._lock: CacheAudio no forma parte del estado mutado por
+        aplicar_delta_sector/crear_elemento/etc. (no hay sectores ni
+        posiciones involucradas), así que no hay condición de carrera que
+        proteger aquí -- registrar() solo añade entradas nuevas, nunca las
+        modifica ni las borra.
+        """
+        if not self._cache_audio.tiene(id_sonido):
+            return (
+                False,
+                f"id_sonido '{id_sonido}' no encontrado en la biblioteca.",
+                b"",
+            )
+        audio = self._cache_audio.obtener(id_sonido)
+        return True, "", json.dumps(audio).encode()
+
+    def _liberar_sonidos_de(self, elemento) -> None:
+        if hasattr(elemento, "todos_los_sonidos"):
+            for sonido in elemento.todos_los_sonidos():
+                sonido.liberar_de_biblioteca()
+
+    def _registrar_sonidos_de(self, elemento) -> None:
+        if hasattr(elemento, "todos_los_sonidos"):
+            for sonido in elemento.todos_los_sonidos():
+                sonido.guardar_en_biblioteca()
+
     # ---- Acciones de bots ----
 
     async def resolver_accion(
-        self, bot_id: str, action_type: str, payload: bytes
+        self, bot_id: int, action_type: str, payload: bytes
     ) -> ActionResult:
         from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
             ACCIONES,
@@ -533,7 +647,18 @@ class LogicaMundo:
 
                     comportamientos_encontrados = {}
                     for nombre in incluir:
-                        comp = elemento.get_comportamiento(nombre)
+                        # FIX: get_comportamiento lanza ValueError si el
+                        # elemento no tiene ese comportamiento (no devuelve
+                        # None) — se captura para que un elemento sin el
+                        # comportamiento pedido simplemente se omita del
+                        # resultado, en vez de reventar toda la consulta de
+                        # la región.
+                        try:
+                            comp = elemento.get_comportamiento(
+                                nombre, modo="representacion"
+                            )
+                        except ValueError:
+                            continue
                         if comp is not None:
                             comportamientos_encontrados[nombre] = comp
 
@@ -572,9 +697,12 @@ class LogicaMundo:
                     for (x, y), celda in self._gold_cells.items()
                 },
                 "elements": {
-                    str(eid): elemento.serializar()
+                    str(eid): elemento.serializar(modo="guardado")
                     for eid, elemento in self._elements.items()
                 },
+                # NOTA: json.dumps convierte automáticamente las claves int
+                # a string en el JSON de salida (bot_id se recupera con
+                # int(bid) en load_state, ver más abajo).
                 "bot_positions": {
                     bid: list(pos) for bid, pos in self._bot_positions.items()
                 },
@@ -618,8 +746,13 @@ class LogicaMundo:
                 for k, v in data.get("gold_cells", {}).items()
             }
 
+            # FIX: las claves de un objeto JSON siempre llegan como str,
+            # incluso si al guardar eran int (ver save_snapshot) — hay que
+            # reconvertir a int aquí para que coincida con el resto de
+            # _bot_positions (dict[int, tuple[int, int]]).
             self._bot_positions = {
-                bid: tuple(pos) for bid, pos in data.get("bot_positions", {}).items()
+                int(bid): tuple(pos)
+                for bid, pos in data.get("bot_positions", {}).items()
             }
 
             self._active_events = {

@@ -16,6 +16,9 @@ class Color(Comportamiento):
     -
     """
 
+    REQUIERE = {"rgb_base: tuple[float, float, float]", "transparente: float = 0"}
+    ABSTRACTOS = {}
+
     def __init__(
         self,
         rgb_base: tuple[float, float, float],

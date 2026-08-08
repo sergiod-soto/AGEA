@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.hielo import Hielo
+from Core.Entities.Comportamiento.Terreno.terreno_hielo import Hielo
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 

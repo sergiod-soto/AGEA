@@ -23,6 +23,7 @@ service LogicaMundoService {
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
   rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
+  rpc ObtenerAudio (ObtenerAudioRequest) returns (ObtenerAudioResponse);
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
@@ -35,8 +36,12 @@ message LogicaMundoHeartbeatResponse {
 
 message AsignarIdRequest {}
 
+// FIX: el campo se llamaba "id"; logica_mundo_client.py siempre leyó
+// "resp.id_elemento" (el nombre usado en el resto del sistema para
+// identificar un elemento del mundo), así que aquí se renombra el
+// campo del proto en vez de tocar el cliente.
 message AsignarIdResponse {
-  uint64 id = 1;
+  uint64 id_elemento = 1;
 }
 
 message CrearElementoRequest {
@@ -57,13 +62,13 @@ message EliminarElementoRequest {
 }
 
 message ResolverAccionRequest {
-  string bot_id      = 1;
+  uint64 bot_id      = 1;
   string action_type = 2;
   bytes  payload     = 3;
 }
 
 message EliminarAvatarBotRequest {
-  string bot_id = 1;
+  uint64 bot_id = 1;
 }
 
 message GlobalEvent {
@@ -96,7 +101,6 @@ message GetActiveEventsResponse {
   repeated GlobalEvent events = 3;
 }
 
-// NUEVO — ver rpc GetElementosGlobales arriba.
 message GetElementosGlobalesRequest {}
 
 message ElementoGlobalState {
@@ -108,10 +112,11 @@ message GetElementosGlobalesResponse {
   bool                         ok                 = 1;
   string                       error              = 2;
   repeated ElementoGlobalState elementos_globales = 3;
+  uint64                       tick_actual        = 4;
 }
 
 message AvanzarElementosGlobalesRequest {
-  int64 tick_id = 1;
+  uint64 tick_id = 1;
 }
 
 message AvanzarElementosGlobalesResponse {
@@ -163,4 +168,15 @@ message SaveSnapshotResponse {
 
 message LoadStateRequest {
   string snapshot_id = 1;
+}
+
+message ObtenerAudioRequest {
+  string id_sonido = 1;
+}
+
+message ObtenerAudioResponse {
+  bool   ok    = 1;
+  string error = 2;
+  
+  bytes  audio  = 3;
 }

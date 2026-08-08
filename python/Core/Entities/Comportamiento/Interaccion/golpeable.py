@@ -15,9 +15,12 @@ class Golpeable(Material):
     - golpear(self, por: Elemento)
     """
 
-    def __init__(self, **kwargs):
+    REQUIERE = {}
+    ABSTRACTOS = {"def golpear(self, por: Elemento)"}
+
+    def __init__(self, golpeable=True, **kwargs):
         super().__init__(**kwargs)
-        self.golpeable = True
+        self.golpeable = golpeable
 
     @classmethod
     def _campos_internos(cls):

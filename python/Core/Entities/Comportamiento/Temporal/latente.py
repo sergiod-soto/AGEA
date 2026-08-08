@@ -20,6 +20,12 @@ class Latente(Temporal):
     - tick() -> None
     """
 
+    REQUIERE = {
+        "condiciones: list[Condicion]",
+        "accion_latente: Accion",
+    }
+    ABSTRACTOS = {"def tick(self) -> None"}
+
     def __init__(self, condiciones: list[Condicion], accion_latente: Accion, **kwargs):
         super().__init__(**kwargs)
         self.condiciones = condiciones

@@ -11,6 +11,12 @@ dobles) porque _detectar_migraciones() los empaqueta como campos
 tipados de un mensaje protobuf (MigratingBot(bot=..., ...)) — protobuf
 valida el tipo en tiempo de asignación, así que un doble Python
 cualquiera haría fallar la construcción del mensaje, no el test en sí.
+
+NOTA sobre ids: bot_id (id del script) e id_elemento (id del avatar en
+el mundo) son ids INDEPENDIENTES — no se puede asumir que coincidan.
+_bot() por defecto les da valores distintos (id_elemento = bot_id +
+1000) precisamente para que ningún test dé por sentado, ni por
+casualidad numérica, que son el mismo id.
 """
 
 import pytest
@@ -33,9 +39,20 @@ def sector_test(monkeypatch) -> Sector:
     return Sector()
 
 
-def _bot(bot_id: str, x: int, y: int, budget: int = 10) -> common_pb2.BotSnapshot:
+def _bot(
+    bot_id: int,
+    x: int,
+    y: int,
+    budget: int = 10,
+    id_elemento: int | None = None,
+) -> common_pb2.BotSnapshot:
+    if id_elemento is None:
+        id_elemento = bot_id + 1000  # deliberadamente distinto de bot_id
     return common_pb2.BotSnapshot(
-        bot_id=bot_id, pos=common_pb2.Position(x=x, y=y), budget=budget
+        bot_id=bot_id,
+        pos=common_pb2.Position(x=x, y=y),
+        budget=budget,
+        id_elemento=id_elemento,
     )
 
 
@@ -48,21 +65,21 @@ def _cell(x: int, y: int) -> common_pb2.Cell:
 
 @pytest.mark.unit
 def test_load_state_carga_celdas_y_bots_indexados_por_posicion(sector_test):
-    sector_test.load_state(cells=[_cell(5, 5)], bots=[_bot("b1", 5, 5)])
+    sector_test.load_state(cells=[_cell(5, 5)], bots=[_bot(1, 5, 5)])
 
     assert (5, 5) in sector_test._celdas
-    assert "b1" in sector_test._bots
+    assert 1 in sector_test._bots
 
 
 @pytest.mark.unit
 def test_get_state_devuelve_lo_cargado_en_load_state(sector_test):
-    sector_test.load_state(cells=[_cell(1, 1)], bots=[_bot("b1", 1, 1)])
+    sector_test.load_state(cells=[_cell(1, 1)], bots=[_bot(1, 1, 1)])
 
     cells, bots = sector_test.get_state()
 
     assert len(cells) == 1
     assert (cells[0].pos.x, cells[0].pos.y) == (1, 1)
-    assert bots[0].bot_id == "b1"
+    assert bots[0].bot_id == 1
 
 
 # ── set_mode ─────────────────────────────────────────────────────
@@ -91,8 +108,11 @@ def test_set_sounds_almacena_pendientes(sector_test):
 
 @pytest.mark.unit
 def test_add_migrating_bot_registra_en_bots(sector_test):
-    sector_test.add_migrating_bot(tick_id=1, bot=_bot("b_nuevo", 10, 10))
-    assert "b_nuevo" in sector_test._bots
+    sector_test.add_migrating_bot(tick_id=1, bot=_bot(2, 10, 10))
+    assert 2 in sector_test._bots
+    assert (
+        sector_test._elemento_a_bot[1002] == 2
+    )  # id_elemento por defecto = bot_id + 1000
 
 
 # ── compute_tick / migraciones ───────────────────────────────────
@@ -100,36 +120,36 @@ def test_add_migrating_bot_registra_en_bots(sector_test):
 
 @pytest.mark.unit
 def test_compute_tick_en_modo_inactivo_devuelve_delta_vacio(sector_test):
-    sector_test._bots["b1"] = _bot("b1", 500, 500)  # fuera de la región
+    sector_test._bots[1] = _bot(1, 500, 500)  # fuera de la región
 
     delta = sector_test.compute_tick(tick_id=1)
 
     assert delta.outgoing_bots == []
-    assert "b1" in sector_test._bots  # en INACTIVO no se procesa nada
+    assert 1 in sector_test._bots  # en INACTIVO no se procesa nada
 
 
 @pytest.mark.unit
 def test_compute_tick_detecta_bot_que_migro_fuera_de_la_region(sector_test):
     sector_test.set_mode(SectorMode.ACTIVO)
-    sector_test._bots["b1"] = _bot("b1", 150, 5)  # x=150 fuera de [0,100)
+    sector_test._bots[1] = _bot(1, 150, 5)  # x=150 fuera de [0,100)
 
     delta = sector_test.compute_tick(tick_id=1)
 
     assert len(delta.outgoing_bots) == 1
-    assert delta.outgoing_bots[0].bot.bot_id == "b1"
+    assert delta.outgoing_bots[0].bot.bot_id == 1
     assert delta.outgoing_bots[0].target_pos.x == 150
-    assert "b1" not in sector_test._bots  # se retira del sector de origen
+    assert 1 not in sector_test._bots  # se retira del sector de origen
 
 
 @pytest.mark.unit
 def test_compute_tick_bot_dentro_de_la_region_no_migra(sector_test):
     sector_test.set_mode(SectorMode.ACTIVO)
-    sector_test._bots["b1"] = _bot("b1", 50, 50)
+    sector_test._bots[1] = _bot(1, 50, 50)
 
     delta = sector_test.compute_tick(tick_id=1)
 
     assert delta.outgoing_bots == []
-    assert "b1" in sector_test._bots
+    assert 1 in sector_test._bots
 
 
 # ── get_delta ────────────────────────────────────────────────────

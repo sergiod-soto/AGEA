@@ -15,7 +15,6 @@ public class IngamePresenter : PresenterBase
 {
     private readonly IngameView _view;
     private readonly IConexionMundo _conexion;
-    private readonly IPerfilService _perfilService;
 
     // ── Configuración ─────────────────────────────────────────────────────────
     private const float INTERVALO_POLLING = 0.1f;   // segundos entre cada petición
@@ -34,7 +33,6 @@ public class IngamePresenter : PresenterBase
     {
         _view = view;
         _conexion = ServiceLocator.Instance.Get<IConexionMundo>();
-        _perfilService = ServiceLocator.Instance.Get<IPerfilService>();
     }
 
     // ── Ciclo de vida ─────────────────────────────────────────────────────────
@@ -46,7 +44,6 @@ public class IngamePresenter : PresenterBase
         _view.OnVelocidadDisminuir += HandleVelocidadDisminuir;
         _view.OnPausa += HandlePausa;
         _view.OnOpciones += HandleOpciones;
-        _view.OnVolverAlMenu += HandleVolverAlMenu;
         _view.OnElementoClicado += HandleElementoClicado;
 
         _view.ActualizarVelocidad(_velocidadActual);
@@ -61,7 +58,6 @@ public class IngamePresenter : PresenterBase
         _view.OnVelocidadDisminuir -= HandleVelocidadDisminuir;
         _view.OnPausa -= HandlePausa;
         _view.OnOpciones -= HandleOpciones;
-        _view.OnVolverAlMenu -= HandleVolverAlMenu;
         _view.OnElementoClicado -= HandleElementoClicado;
 
         _view.DetenerPolling();
@@ -150,11 +146,7 @@ public class IngamePresenter : PresenterBase
         _view.MostrarOverlay(elemento);
     }
 
-    private async void HandleVolverAlMenu()
-    {
-        await _perfilService.GuardarTiempoAsync(_tiempoSesion);
-        Navigator.NavigateTo(ScreenManager.Screen.MenuPrincipal);
-    }
+
 
     // ── Privados ──────────────────────────────────────────────────────────────
 

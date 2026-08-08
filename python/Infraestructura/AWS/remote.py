@@ -388,6 +388,9 @@ def arrancar_remoto(config: dict) -> None:
 
     logger.info("Cerrando canales gRPC...")
     for canal in canales:
-        canal.close()
+        try:
+            canal.close()
+        except Exception:
+            logger.warning("No se pudo cerrar un canal gRPC", exc_info=True)
 
     sys.exit(exit_code)

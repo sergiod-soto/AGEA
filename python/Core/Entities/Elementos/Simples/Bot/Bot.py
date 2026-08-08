@@ -3,7 +3,25 @@
 # el elemento bot se encuentra en etapa muy temprana e incompleta
 
 from typing import Tuple
-from Core.Entities.Comportamiento.Stats.stat import Stat
+from Core.Entities.Comportamiento.Stats.Complejos.armadura import Armadura
+from Core.Entities.Comportamiento.Stats.Complejos.grasa import Grasa
+from Core.Entities.Comportamiento.Stats.Complejos.longevidad import Longevidad
+from Core.Entities.Comportamiento.Stats.Complejos.movilidad import Movilidad
+from Core.Entities.Comportamiento.Stats.Complejos.percepcion import Percepcion
+from Core.Entities.Comportamiento.Stats.Informacion.id import ID
+from Core.Entities.Comportamiento.Stats.Simples.ataque import Ataque
+from Core.Entities.Comportamiento.Stats.Simples.defensa import Defensa
+from Core.Entities.Comportamiento.Stats.Simples.deteccion import Deteccion
+from Core.Entities.Comportamiento.Stats.Simples.edad import Edad
+from Core.Entities.Comportamiento.Stats.Simples.energia import Energia
+from Core.Entities.Comportamiento.Stats.Simples.regulacion_temperatura import (
+    Regulacion_Temperatura,
+)
+from Core.Entities.Comportamiento.Stats.Simples.sigilo import Sigilo
+from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
+from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
+from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
+from Core.Entities.Comportamiento.Stats.tiene_stats import Tiene_Stats
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
@@ -18,36 +36,7 @@ from Core.Entities.Comportamiento.Interaccion.golpeable import Golpeable
 from Core.Entities.Comportamiento.Interaccion.interactuable import Interactuable
 from Core.Entities.Comportamiento.Material.solido import Solido
 from Core.Entities.Comportamiento.Material.tangible import Tangible
-from Core.Entities.Comportamiento.Stats.Complejos.agresividad import Agresividad
-from Core.Entities.Comportamiento.Stats.Complejos.armadura import Armadura
-from Core.Entities.Comportamiento.Stats.Complejos.grasa import Grasa
-from Core.Entities.Comportamiento.Stats.Complejos.longevidad import Longevidad
-from Core.Entities.Comportamiento.Stats.Complejos.movilidad import Movilidad
-from Core.Entities.Comportamiento.Stats.Complejos.percepcion import Percepcion
-from Core.Entities.Comportamiento.Stats.Complejos.tamanho import Tamanho
-from Core.Entities.Comportamiento.Stats.Complejos.temperatura_optima import (
-    Temperatura_Optima,
-)
-from Core.Entities.Comportamiento.Stats.Informacion.apellidos import Apellidos
-from Core.Entities.Comportamiento.Stats.Informacion.id import ID
-from Core.Entities.Comportamiento.Stats.Modificadores.focus import Focus
-from Core.Entities.Comportamiento.Stats.Modificadores.hambre import Hambre
-from Core.Entities.Comportamiento.Stats.Modificadores.herida import Herida
-from Core.Entities.Comportamiento.Stats.Simples.ataque import Ataque
-from Core.Entities.Comportamiento.Stats.Simples.defensa import Defensa
-from Core.Entities.Comportamiento.Stats.Simples.deteccion import Deteccion
-from Core.Entities.Comportamiento.Stats.Simples.edad import Edad
-from Core.Entities.Comportamiento.Stats.Simples.edad_adulta import Edad_Adulta
-from Core.Entities.Comportamiento.Stats.Simples.energia import Energia
-from Core.Entities.Comportamiento.Stats.Simples.regulacion_temperatura import (
-    Regulacion_Temperatura,
-)
-from Core.Entities.Comportamiento.Stats.Simples.sigilo import Sigilo
-from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
-from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
-from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
-from Exceptions.exceptions import NumAtributosIncorrecto
 
 comportamientos = Comportamiento.declarar_comportamientos(
     Peso,
@@ -63,42 +52,7 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Contenedor,
     Golpeable,
     Interactuable,
-)
-
-stats = Comportamiento.declarar_comportamientos(
-    #
-    # _Complejos_____________________________________________________
-    Agresividad,
-    Armadura,
-    Grasa,
-    Longevidad,
-    Movilidad,
-    Percepcion,
-    Tamanho,
-    Temperatura_Optima,
-    #
-    # _Temporales____________________________________________________
-    Focus,
-    Hambre,
-    Herida,
-    #
-    # _Simples_______________________________________________________
-    Ataque,
-    Defensa,
-    Deteccion,
-    Edad_Adulta,
-    Edad,
-    Energia,
-    Regulacion_Temperatura,
-    Sigilo,
-    Temperatura,
-    Velocidad,
-    Vida,
-)
-
-informacion = Comportamiento.declarar_comportamientos(
-    ID,
-    Apellidos,
+    Tiene_Stats,
 )
 
 
@@ -110,7 +64,7 @@ def generarApellidos(ape1, ape2):
     return apellidos
 
 
-class Bot(Elemento_Simple, comportamientos, stats, informacion):
+class Bot(Elemento_Simple, comportamientos):
     """
     ----------------------------------------------------------------------------
 
@@ -158,25 +112,90 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     self.stats["percepcion"] = stats["percepcion"]
     self.stats["armadura"] = stats["armadura"]
     self.stats["metabolismo"] = stats["metabolismo"]
-    self.stats["agresividad"] = stats["agresividad"]
     self.stats["longevidad"] = stats["longevidad"]
     """
 
     def __init__(
         self,
-        id,
+        id_elemento,
+        stats_script: dict[str, int],
+        id_bot,
         tamanho: int,
         casilla,
         rotacion: float,
         capa: int = 2,
     ):
+        #
+        # Complejos
+        armadura = Armadura(stats_script["armadura"])
+        grasa = Grasa(stats_script["grasa"])
+        longevidad = Longevidad(stats_script["longevidad"])
+        movilidad = Movilidad(stats_script["movilidad"])
+        percepcion = Percepcion(stats_script["percepcion"])
+        #
+        # Simples
+        ataque = Ataque(valor=0)
+        defensa = Defensa(valor=0)
+        deteccion = Deteccion(valor=0)
+        edad = Edad(valor=0, edad_adulta=0)
+        energia = Energia(valor=0)
+        regulacion_temperatura = Regulacion_Temperatura(valor=0)
+        sigilo = Sigilo(valor=0)
+        temperatura = Temperatura(valor=0)
+        velocidad = Velocidad(valor=0)
+        vida = Vida(valor=0)
+        #
+        # Informacion
+        id_bot = ID(id_bot)
+        #
+        #
+        stats = [
+            # Complejos
+            armadura,
+            grasa,
+            longevidad,
+            movilidad,
+            percepcion,
+            #
+            # Simples
+            ataque,
+            defensa,
+            deteccion,
+            edad,
+            energia,
+            regulacion_temperatura,
+            sigilo,
+            temperatura,
+            velocidad,
+            vida,
+            #
+            # Informacion
+            id_bot,
+        ]
+
         super().__init__(
+            #
+            # Elemento
             Bot,
-            id=id,
+            id_elemento=id_elemento,
             tamanho=tamanho,
             casilla=casilla,
             capa=capa,
             rotacion=rotacion,
+            #
+            # Comportamientos
+            peso=0,
+            volumen=0,
+            rgb_base=(0.0, 0.0, 0.0),
+            transparente=0,
+            temperatura_propia=0,
+            tasa_transferencia_temperatura=0,
+            coste_empujar=0,
+            condiciones_rastro=[],
+            capacidad_contenedor=0,
+            #
+            # Stats
+            stats=stats,
         )
 
     def set_casilla(self, new_casilla: Tuple[int, int]):
@@ -188,21 +207,20 @@ class Bot(Elemento_Simple, comportamientos, stats, informacion):
     def serializar_adn(self):
         return self.adn
 
-    
-
     def serialize_all(self):
         return {
-            "id": self.id,
+            "id_elemento": self.id_elemento,
+            "id_bot": self.get_stat("id"),
             "tamanho": self.serialize_tamanho(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),
             "adn": self.serializar_adn(),
-            "stats": Stat.serializar(self)
+            "stats": self.serialize_stats(),
         }
 
     def serialize_position(self):
         return {
-            "id": self.id,
+            "id_elemento": self.id_elemento,
             "tamanho": self.serialize_tamanho(),
             "casilla": self.serialize_casilla(),
             "rotacion": self.serialize_rotacion(),

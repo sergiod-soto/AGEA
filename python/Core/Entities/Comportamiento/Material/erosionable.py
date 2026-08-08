@@ -19,23 +19,32 @@ class Erosionable(Material):
     - _destruir(self, efecto: Accion)
     """
 
+    REQUIERE = {
+        "condiciones_erosion: list[tuple[list[Condicion], float]]",
+        "durabilidad_max_erosion: float",
+    }
+    ABSTRACTOS = {
+        "def erosionar(self, cantidad: float)",
+        "def _destruir(self, efecto: Accion)",
+    }
+
     def __init__(
         self,
-        condiciones_erosion: list[tuple[list[Condicion], float]],
         durabilidad_max_erosion: float,
-        durabilidad_actual_erosion: float = None,
+        condiciones_erosion: list[tuple[list[Condicion], float]] = None,
         **kwargs
     ):
         super().__init__(**kwargs)
         self.durabilidad_max_erosion = durabilidad_max_erosion
         self.condiciones_erosion = condiciones_erosion
-        self.durabilidad_actual_erosion = (
-            durabilidad_actual_erosion or durabilidad_max_erosion
-        )
+        self.durabilidad_actual_erosion = durabilidad_max_erosion
 
-
+    @classmethod
+    def _campos_internos(cls):
+        return {"durabilidad_actual_erosion"}
 
     def tick(self) -> None:
+        # TODO: comporbar que funciona correctamente y no machaca ningun otro tick()
         super().tick()
         for condiciones, cantidad in self.condiciones_erosion:
             if all(c.evaluar() for c in condiciones):

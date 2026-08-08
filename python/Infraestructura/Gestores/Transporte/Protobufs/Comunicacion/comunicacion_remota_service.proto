@@ -22,7 +22,7 @@ enum ComponenteDestino {
 message EjecutarRequest {
   ComponenteDestino componente = 1;
   string            operacion  = 2;
-  bytes             payload    = 3;
+  bytes             payload    = 3;                                                                                                 
 }
 
 message EjecutarResponse {

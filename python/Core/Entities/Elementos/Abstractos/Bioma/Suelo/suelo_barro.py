@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.barro import Barro
+from Core.Entities.Comportamiento.Terreno.terreno_barro import Barro
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 

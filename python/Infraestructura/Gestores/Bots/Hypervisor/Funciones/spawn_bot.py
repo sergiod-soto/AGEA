@@ -19,7 +19,7 @@ async def handle(hv, request, context):
     try:
         result = await hv.spawn_bot(bot_config)
         return common_pb2.BotInfo(
-            bot_id=str(cfg.bot_id),
+            bot_id=cfg.bot_id,
             hypervisor_id=str(hv.hypervisor_id),
             ok=result.ok,
             error=result.error,

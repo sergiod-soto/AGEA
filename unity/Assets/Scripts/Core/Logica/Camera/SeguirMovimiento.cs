@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
@@ -92,9 +93,10 @@ public class SeguirMovimientoGameObject : MonoBehaviour
      */
     public void SetBot_A_Actualizar(GameObject objeto)
     {
-        if (objeto.TryGetComponent<BotInfo>(out _))
-        {
-            bot = objeto;
-        }
+        throw new NotImplementedException("SetBot_A_Actualizar");
+        //if (objeto.TryGetComponent<BotInfo>(out _))
+        //{
+        //    bot = objeto;
+        //}
     }
 }

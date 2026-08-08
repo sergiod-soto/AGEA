@@ -95,12 +95,12 @@ async def cliente_hypervisor(levantar_servidor):
 @pytest.mark.integration
 async def test_spawn_bot_y_get_bot_stats_via_grpc(cliente_hypervisor):
     stub, _ = cliente_hypervisor
-    cfg = common_pb2.BotConfig(bot_id="bot_1", budget=10)
+    cfg = common_pb2.BotConfig(bot_id=1, budget=10)
 
     resp_spawn = await stub.SpawnBot(pb.SpawnBotRequest(config=cfg))
     assert resp_spawn.ok is True
 
-    resp_stats = await stub.GetBotStats(pb.BotIdRequest(bot_id="bot_1"))
+    resp_stats = await stub.GetBotStats(pb.BotIdRequest(bot_id=1))
     assert resp_stats.points_left == 10
 
 
@@ -109,7 +109,7 @@ async def test_get_bot_stats_bot_desconocido_devuelve_not_found(cliente_hypervis
     stub, _ = cliente_hypervisor
 
     with pytest.raises(grpc.aio.AioRpcError) as exc_info:
-        await stub.GetBotStats(pb.BotIdRequest(bot_id="no_existe"))
+        await stub.GetBotStats(pb.BotIdRequest(bot_id=123))
 
     assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND
 
@@ -129,15 +129,15 @@ async def test_freeze_y_resume_via_grpc(cliente_hypervisor):
 async def test_reset_budgets_via_grpc_actualiza_puntos_reales(cliente_hypervisor):
     stub, _ = cliente_hypervisor
     await stub.SpawnBot(
-        pb.SpawnBotRequest(config=common_pb2.BotConfig(bot_id="bot_1", budget=10))
+        pb.SpawnBotRequest(config=common_pb2.BotConfig(bot_id=1, budget=10))
     )
 
     resp = await stub.ResetBudgets(
-        pb.ResetBudgetsRequest(bot_ids=["bot_1"], default_budget=50, overrides=[])
+        pb.ResetBudgetsRequest(bot_ids=[1], default_budget=50, overrides=[])
     )
 
     assert resp.ok is True
-    stats = await stub.GetBotStats(pb.BotIdRequest(bot_id="bot_1"))
+    stats = await stub.GetBotStats(pb.BotIdRequest(bot_id=1))
     assert stats.points_left == 50
 
 
@@ -145,11 +145,11 @@ async def test_reset_budgets_via_grpc_actualiza_puntos_reales(cliente_hypervisor
 async def test_kill_bot_via_grpc(cliente_hypervisor):
     stub, _ = cliente_hypervisor
     await stub.SpawnBot(
-        pb.SpawnBotRequest(config=common_pb2.BotConfig(bot_id="bot_1", budget=10))
+        pb.SpawnBotRequest(config=common_pb2.BotConfig(bot_id=1, budget=10))
     )
 
-    resp = await stub.KillBot(pb.BotIdRequest(bot_id="bot_1"))
+    resp = await stub.KillBot(pb.BotIdRequest(bot_id=1))
 
     assert resp.ok is True
     with pytest.raises(grpc.aio.AioRpcError):
-        await stub.GetBotStats(pb.BotIdRequest(bot_id="bot_1"))
+        await stub.GetBotStats(pb.BotIdRequest(bot_id=1))

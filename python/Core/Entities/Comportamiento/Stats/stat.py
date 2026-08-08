@@ -1,22 +1,19 @@
-import json
-
-from Core.Entities.Comportamiento.comportamiento import Comportamiento
+# Core/Entities/Comportamiento/Stats/stat.py
 
 
-class Stat(Comportamiento):
-    def __init__(self, nombre: str, valor,**kwargs):
-        super().__init__(**kwargs)
-        self.valor = valor
+# Representa un unico stat: nombre + valor. Es un objeto de composicion
+# simple que vive dentro del dict interno de Tiene_Stats. Al ser una
+# instancia propia por cada stat, su self.valor/self.nombre nunca puede
+# colisionar con el de otro (el bug historico venia de que todos los
+# stats compartian el __dict__ del Bot via herencia multiple, porque
+# Stat era un mixin y el MRO deduplicaba su __init__ compartido).
+class Stat:
+    def __init__(self, nombre: str, valor):
         self.nombre = nombre
+        self.valor = valor
 
-    def to_dict(self):
+    def a_dict(self) -> dict:
         return {self.nombre: self.valor}
 
-    @classmethod
-    def serializar(cls, bot):
-        stats = {
-            nombre: attr.to_dict()
-            for nombre, attr in bot.__dict__.items()
-            if isinstance(attr, cls)
-        }
-        return json.dumps(stats)
+    def __repr__(self):
+        return f"Stat({self.nombre}={self.valor!r})"

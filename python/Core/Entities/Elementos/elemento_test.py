@@ -16,7 +16,7 @@ class Elemento_Test(Elemento_Simple, comportamientos):
     def __init__(
         self,
         casilla: tuple[int, int],
-        id,
+        id_elemento,
         # Peso:
         peso: float,
         **kwargs
@@ -25,12 +25,10 @@ class Elemento_Test(Elemento_Simple, comportamientos):
             peso = 0
         super().__init__(
             tipo=Elemento_Test,
-            id=id,
+            id_elemento=id_elemento,
             tamanho=1,
             casilla=casilla,
             capa=1,
-            fuerza_sector_activo=False,
-            fuerza_vecinos_activos=False,
             # Peso:
             peso=peso,
             **kwargs

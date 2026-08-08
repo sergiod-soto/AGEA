@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Informativo/sonoro.py
+
 from Core.Entities.Comportamiento.Informativo.informativo import Informativo
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
 
@@ -13,7 +15,48 @@ class Sonoro(Informativo):
     -
     """
 
+    REQUIERE = {"sonidos: dict[str, list[Sonido]]"}
+    ABSTRACTOS = {}
+
     def __init__(self, sonidos: dict[str, list[Sonido]], **kwargs):
         super().__init__(**kwargs)
         self.sonidos = sonidos
 
+    def todos_los_sonidos(self) -> list:
+        """Lista plana de todos los Sonido de todas las categorias -- para
+        que quien construye el elemento (o quien gestione el mundo) pueda
+        registrarlos en el CacheAudio sin que Sonoro conozca su existencia."""
+        return [s for lista in self.sonidos.values() for s in lista]
+
+    def serialize_sonidos(self) -> dict:
+        """Hook genérico: fidelidad completa. Cubre 'guardado' y 'transporte'
+        por fallback (ver Comportamiento.serializar) mientras ambos necesiten
+        lo mismo. El día que uno de los dos necesite algo distinto, se le
+        añade su propio serialize_sonidos_guardado() o
+        serialize_sonidos_transporte() sin tocar este ni la firma de nada."""
+        return {
+            categoria: [s.serializar_audio() for s in lista]
+            for categoria, lista in self.sonidos.items()
+        }
+
+    def serialize_sonidos_representacion(self) -> dict:
+        """Modo 'representacion' (Unity, cada tick): solo referencias -- el
+        audio completo se pide aparte bajo demanda vía CacheAudio."""
+        return {
+            categoria: [s.serializar_referencia() for s in lista]
+            for categoria, lista in self.sonidos.items()
+        }
+
+    def deserialize_sonidos(self, valor: dict) -> None:
+        """
+        Contraparte de serialize_sonidos(): reconstruye Sonido reales a
+        partir del dict de audio completo, para que todos_los_sonidos() siga
+        devolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
+        reconstruir un elemento (ver piedra.py, bug detectado al revisar el
+        fichero real). NO llama a guardar_en_biblioteca() aquí -- ver aviso
+        sobre el contador de referencias más abajo en la conversación.
+        """
+        self.sonidos = {
+            categoria: [Sonido.desde_audio_dict(d) for d in lista]
+            for categoria, lista in valor.items()
+        }

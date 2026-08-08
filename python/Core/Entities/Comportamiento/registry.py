@@ -41,24 +41,21 @@ from Core.Entities.Comportamiento.Salud.comestible import Comestible
 from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Comportamiento.Salud.medicinal import Medicinal
 from Core.Entities.Comportamiento.Salud.nutritivo import Nutritivo
-from Core.Entities.Comportamiento.Salud.regenerable import Regenerable
+from Core.Entities.Comportamiento.Temporal.regenerable import Regenerable
 from Core.Entities.Comportamiento.Salud.toxico import Toxico
 from Core.Entities.Comportamiento.Social.intercambiable import Intercambiable
 from Core.Entities.Comportamiento.Social.social import Social
-from Core.Entities.Comportamiento.Stats.Complejos.agresividad import Agresividad
 from Core.Entities.Comportamiento.Stats.Complejos.armadura import Armadura
 from Core.Entities.Comportamiento.Stats.Complejos.grasa import Grasa
 from Core.Entities.Comportamiento.Stats.Complejos.longevidad import Longevidad
 from Core.Entities.Comportamiento.Stats.Complejos.movilidad import Movilidad
 from Core.Entities.Comportamiento.Stats.Complejos.percepcion import Percepcion
-from Core.Entities.Comportamiento.Stats.Complejos.stat_complejo import Stat_Complejo
 from Core.Entities.Comportamiento.Stats.Complejos.tamanho import Tamanho
 from Core.Entities.Comportamiento.Stats.Complejos.temperatura_optima import (
     Temperatura_Optima,
 )
 from Core.Entities.Comportamiento.Stats.Informacion.apellidos import Apellidos
 from Core.Entities.Comportamiento.Stats.Informacion.id import ID
-from Core.Entities.Comportamiento.Stats.Informacion.informacion import Informacion
 from Core.Entities.Comportamiento.Stats.Modificadores.focus import Focus
 from Core.Entities.Comportamiento.Stats.Modificadores.hambre import Hambre
 from Core.Entities.Comportamiento.Stats.Modificadores.herida import Herida
@@ -72,9 +69,7 @@ from Core.Entities.Comportamiento.Stats.Simples.energia import Energia
 from Core.Entities.Comportamiento.Stats.Simples.regulacion_temperatura import (
     Regulacion_Temperatura,
 )
-from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
 from Core.Entities.Comportamiento.Stats.Simples.sigilo import Sigilo
-from Core.Entities.Comportamiento.Stats.Simples.stat_simple import Stat_Simple
 from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
 from Core.Entities.Comportamiento.Stats.Simples.velocidad import Velocidad
 from Core.Entities.Comportamiento.Stats.Simples.vida import Vida
@@ -84,15 +79,15 @@ from Core.Entities.Comportamiento.Temporal.estacional import Estacional
 from Core.Entities.Comportamiento.Temporal.latente import Latente
 from Core.Entities.Comportamiento.Temporal.perecedero import Perecedero
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
-from Core.Entities.Comportamiento.Terreno.arena import Arena
-from Core.Entities.Comportamiento.Terreno.barro import Barro
-from Core.Entities.Comportamiento.Terreno.cesped import Cesped
-from Core.Entities.Comportamiento.Terreno.charco import Charco
-from Core.Entities.Comportamiento.Terreno.grava import Grava
-from Core.Entities.Comportamiento.Terreno.hielo import Hielo
-from Core.Entities.Comportamiento.Terreno.piedra import Piedra
+from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Terreno_Arenoso
+from Core.Entities.Comportamiento.Terreno.terreno_barro import Barro
+from Core.Entities.Comportamiento.Terreno.terreno_cesped import Cesped
+from Core.Entities.Comportamiento.Terreno.terreno_charco import Charco
+from Core.Entities.Comportamiento.Terreno.terreno_grava import Grava
+from Core.Entities.Comportamiento.Terreno.terreno_hielo import Hielo
+from Core.Entities.Comportamiento.Terreno.terreno_rocoso import Rocoso
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
-from Core.Entities.Comportamiento.Terreno.tierra import Tierra
+from Core.Entities.Comportamiento.Terreno.terreno_tierra import Tierra
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 import logging
@@ -102,9 +97,8 @@ logger = logging.getLogger(__name__)
 COMPORTAMIENTOS: dict[str, type] = {
     # A
     "Agarrable": Agarrable,
-    "Agresividad": Agresividad,
     "Apellidos": Apellidos,
-    "Arena": Arena,
+    "Terreno_Arenoso": Terreno_Arenoso,
     "Armadura": Armadura,
     "Ataque": Ataque,
     # B
@@ -156,7 +150,6 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Inflamable": Inflamable,
     "Informativo": Informativo,
     "Ingrediente": Ingrediente,
-    "Informacion": Informacion,
     "Interaccion": Interaccion,
     "Interactuable": Interactuable,
     "Intercambiable": Intercambiable,
@@ -179,7 +172,6 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Percepcion": Percepcion,
     "Perecedero": Perecedero,
     "Peso": Peso,
-    "Piedra": Piedra,
     "Plantable": Plantable,
     # Q
     # R
@@ -187,15 +179,13 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Recolectable": Recolectable,
     "Regenerable": Regenerable,
     "Regulacion_Temperatura": Regulacion_Temperatura,
+    "Rocoso": Rocoso,
     # S
-    "Salud": Salud,
     "Sigilo": Sigilo,
     "Social": Social,
     "Solido": Solido,
     "Sonoro": Sonoro,
     "Stat": Stat,
-    "Stat_Complejo": Stat_Complejo,
-    "Stat_Simple": Stat_Simple,
     # T
     "Tamanho": Tamanho,
     "Tangible": Tangible,
@@ -232,7 +222,7 @@ def _todas_las_subclases(cls: type) -> set[type]:
 
 
 def _avisar_si_falta_registrar():
-    
+
     reales = {
         c for c in _todas_las_subclases(Comportamiento) if c._es_comportamiento_real()
     }

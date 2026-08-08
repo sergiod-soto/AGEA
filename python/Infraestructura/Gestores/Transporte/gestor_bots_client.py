@@ -124,7 +124,7 @@ class GestorBotsClient:
 
     def spawn_bot(
         self,
-        bot_id: str,
+        bot_id: int,
         codigo_gz: bytes = b"",
         budget: int = 100,
         metadata: dict[str, str] | None = None,
@@ -147,7 +147,7 @@ class GestorBotsClient:
             self._handle_grpc_error("SpawnBot", exc)
             return BotInfo(bot_id, "", "", ok=False, error=str(exc))
 
-    def kill_bot(self, bot_id: str, timeout: float | None = None) -> bool:
+    def kill_bot(self, bot_id: int, timeout: float | None = None) -> bool:
         request = gestor_bots_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
             pb = self._stub.KillBot(request, timeout=self._t(timeout))
@@ -157,7 +157,7 @@ class GestorBotsClient:
             return False
 
     def notificar_avatar_sin_piloto(
-        self, bot_id: str, timeout: float | None = None
+        self, bot_id: int, timeout: float | None = None
     ) -> bool:
         """
         Flujo B: llamado por el Hypervisor cuando detecta que el script
@@ -177,7 +177,7 @@ class GestorBotsClient:
 
     def update_fitness(
         self,
-        bot_id: str,
+        bot_id: int,
         fitness: float,
         tick: int,
         timeout: float | None = None,
@@ -195,7 +195,7 @@ class GestorBotsClient:
     def broadcast_budgets(
         self,
         default_budget: int,
-        overrides: dict[str, int] | None = None,
+        overrides: dict[int, int] | None = None,
         timeout: float | None = None,
     ) -> bool:
         budget_entries = [
@@ -308,7 +308,7 @@ class GestorBotsClient:
 
     def forward_action(
         self,
-        bot_id: str,
+        bot_id: int,
         hypervisor_id: str,
         action_type: str,
         payload: bytes = b"",

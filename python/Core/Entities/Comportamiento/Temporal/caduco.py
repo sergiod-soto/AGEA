@@ -18,6 +18,9 @@ class Caduco(Temporal):
     - desaparecer() -> None
     """
 
+    REQUIERE = {"duracion_max_caduco: int", ""}
+    ABSTRACTOS = {"def tick(self) -> None", "def desaparecer(self) -> None"}
+
     def __init__(
         self, duracion_max_caduco: int, duracion_restante_caduco: int = None, **kwargs
     ):

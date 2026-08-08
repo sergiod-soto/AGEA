@@ -17,6 +17,14 @@ class Enterrable(Fisico):
     - desenterrar(self)
     """
 
+    REQUIERE = {}
+    ABSTRACTOS = {
+        "def check_enterrable(self) -> bool",
+        "def check_desenterrable(self) -> bool",
+        "def enterrar(self) -> bool",
+        "def desenterrar(self) -> bool",
+    }
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

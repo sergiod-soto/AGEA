@@ -30,12 +30,11 @@ from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Comportamiento.Material.solido import Solido
 from Core.Entities.Comportamiento.Material.tangible import Tangible
 from Core.Entities.Comportamiento.Material.transformable import Transformable
-from Core.Entities.Comportamiento.Material.transparente import Transparente
 from Core.Entities.Comportamiento.Salud.comestible import Comestible
 from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Comportamiento.Salud.medicinal import Medicinal
 from Core.Entities.Comportamiento.Salud.nutritivo import Nutritivo
-from Core.Entities.Comportamiento.Salud.regenerable import Regenerable
+from Core.Entities.Comportamiento.Temporal.regenerable import Regenerable
 from Core.Entities.Comportamiento.Salud.toxico import Toxico
 from Core.Entities.Comportamiento.Social.intercambiable import Intercambiable
 from Core.Entities.Comportamiento.Temporal.caduco import Caduco
@@ -155,8 +154,6 @@ def get_parametros_init(comportamientos: list[Comportamiento]):
             partes.append(
                 "\n#Transformable:\ndict_transformable: dict[Condicion, Elemento], "
             )
-        elif c is Transparente:
-            partes.append("")
         #
         elif c is Comestible:
             partes.append("")
@@ -311,8 +308,6 @@ def get_parametros_superinit(comportamientos: list[Comportamiento]):
             partes.append("")
         elif c is Transformable:
             partes.append("\n#Transformable:\ndict_transformable = dict_transformable,")
-        elif c is Transparente:
-            partes.append("")
         #
         elif c is Comestible:
             partes.append("")
@@ -367,13 +362,13 @@ class Agua(Peso, Volumen, Temperatura):
             temperatura = temperatura,
 
             peso = 1.0,
-            volumen = 1.0
-            **kwargs #  <- Importante
+            volumen = 1.0,
+            **kwargs, #  <- Importante
         )
 """
-comportamientos = [Sonoro]
-print("init:")
-print(get_parametros_init(comportamientos))
-print()
-print("superinit:")
-print(get_parametros_superinit(comportamientos))
+# comportamientos = [Sonoro]
+# print("init:")
+# print(get_parametros_init(comportamientos))
+# print()
+# print("superinit:")
+# print(get_parametros_superinit(comportamientos))

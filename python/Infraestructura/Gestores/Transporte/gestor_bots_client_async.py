@@ -85,7 +85,7 @@ class GestorBotsClientAsync:
     # Muerte de bots — Flujo A (el Mundo decide la muerte)
     # ------------------------------------------------------------------
 
-    async def matar_script_bot(self, bot_id: str, timeout: float | None = None) -> bool:
+    async def matar_script_bot(self, bot_id: int, timeout: float | None = None) -> bool:
         """
         Pide a Gestor_Bots que mate el proceso/script de un bot cuyo
         avatar ya fue eliminado del gold por Logica_Mundo. No lleva
@@ -107,7 +107,7 @@ class GestorBotsClientAsync:
     # ------------------------------------------------------------------
 
     async def notificar_avatar_sin_piloto(
-        self, bot_id: str, timeout: float | None = None
+        self, bot_id: int, timeout: float | None = None
     ) -> bool:
         """
         Flujo B: llamado por Hypervisor cuando detecta que el script de
@@ -200,7 +200,7 @@ class GestorBotsClientAsync:
 
     async def forward_action(
         self,
-        bot_id: str,
+        bot_id: int,
         hypervisor_id: str,
         action_type: str,
         payload: bytes = b"",
@@ -304,3 +304,26 @@ class GestorBotsClientAsync:
         except grpc.aio.AioRpcError as exc:
             logger.error("SaveSnapshot falló: %s", exc)
             return False, str(exc)
+
+    # ------------------------------------------------------------------
+    # Infraestructura (usado por main.py, y por este test de integración)
+    # ------------------------------------------------------------------
+
+    async def heartbeat(self, timeout: float | None = None):
+        """
+        Comprueba el estado del propio Gestor_Bots y de los HVs
+        registrados. Devuelve el proto GestorBotsHeartbeatResponse tal
+        cual (ok, error, hv_statuses) — a diferencia de otros métodos
+        de este cliente, aquí no se envuelve en un dataclass propio
+        porque de momento solo se consume .ok/.error/.hv_statuses
+        directamente, sin transformación adicional.
+        """
+        await self._ensure_channel()
+        request = common_pb2.HeartbeatRequest()
+        try:
+            return await self._stub.Heartbeat(request, timeout=self._t(timeout))
+        except grpc.aio.AioRpcError as exc:
+            logger.error("Heartbeat falló: %s", exc)
+            return gestor_bots_service_pb2.GestorBotsHeartbeatResponse(
+                ok=False, error=str(exc)
+            )

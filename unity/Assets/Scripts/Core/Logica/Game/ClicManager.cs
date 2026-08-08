@@ -32,12 +32,12 @@ public class ClicManager : MonoBehaviour
             if (hit.collider != null)
             { // se ha hecho clic en algo con hitbox
 
-                // si se hace clic en un bot
-                if (hit.collider.TryGetComponent<BotInfo>(out var bot_inf))
-                {
-                    botsLogica.ClicEnBot(bot_inf.gameObject);
-                    return;
-                }
+                //// si se hace clic en un bot
+                //if (hit.collider.TryGetComponent<BotInfo>(out var bot_inf))
+                //{
+                //    botsLogica.ClicEnBot(bot_inf.gameObject);
+                //    return;
+                //}
             }
             else
             {

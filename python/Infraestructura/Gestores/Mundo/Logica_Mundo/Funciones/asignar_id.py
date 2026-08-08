@@ -12,4 +12,4 @@ NAME = "AsignarId"
 
 async def handle(logica, request, context):
     nuevo_id = await logica.asignar_id()
-    return pb.AsignarIdResponse(id=nuevo_id)
+    return pb.AsignarIdResponse(id_elemento=nuevo_id)

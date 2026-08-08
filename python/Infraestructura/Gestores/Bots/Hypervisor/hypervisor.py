@@ -48,7 +48,7 @@ DEFAULT_BUDGET = 100
 
 @dataclass
 class BotRecord:
-    bot_id: str
+    bot_id: int
     budget: int
     max_budget: int
     alive: bool = True
@@ -72,13 +72,13 @@ class LanzadorProcesosBot:
     def __init__(self, codigo_dir: Path = Path("bots_codigo")):
         self._codigo_dir = codigo_dir
 
-    def codigo_path(self, hypervisor_id: str, bot_id: str) -> Path:
+    def codigo_path(self, hypervisor_id: str, bot_id: int) -> Path:
         return self._codigo_dir / hypervisor_id / f"{bot_id}.py"
 
     async def lanzar(
         self,
         hypervisor_id: str,
-        bot_id: str,
+        bot_id: int,
         codigo_gz: bytes,
         env_extra: dict,
     ) -> asyncio.subprocess.Process:
@@ -103,7 +103,7 @@ class LanzadorProcesosBot:
             env={**os.environ, **env_extra},
         )
 
-    def limpiar(self, hypervisor_id: str, bot_id: str) -> None:
+    def limpiar(self, hypervisor_id: str, bot_id: int) -> None:
         """Elimina el fichero de código del bot, si existe. Idempotente."""
         self.codigo_path(hypervisor_id, bot_id).unlink(missing_ok=True)
 
@@ -238,7 +238,7 @@ class Hypervisor:
         return SpawnResult(ok=True)
 
     async def _watch_bot_process(
-        self, bot_id: str, proceso: asyncio.subprocess.Process
+        self, bot_id: int, proceso: asyncio.subprocess.Process
     ) -> None:
         await proceso.wait()
 
@@ -271,7 +271,7 @@ class Hypervisor:
         except Exception as exc:
             logger.error("Error notificando avatar sin piloto para %s: %s", bot_id, exc)
 
-    async def get_bot_stats(self, bot_id: str) -> Optional[BotStats]:
+    async def get_bot_stats(self, bot_id: int) -> Optional[BotStats]:
         async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
@@ -283,7 +283,7 @@ class Hypervisor:
                 alive=rec.alive,
             )
 
-    async def get_bot_status(self, bot_id: str) -> Optional[BotStatusHV]:
+    async def get_bot_status(self, bot_id: int) -> Optional[BotStatusHV]:
         async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
@@ -304,7 +304,7 @@ class Hypervisor:
                 ]
             )
 
-    async def kill_bot(self, bot_id: str) -> None:
+    async def kill_bot(self, bot_id: int) -> None:
         async with self._lock:
             if bot_id not in self._bots:
                 logger.warning("kill_bot: bot desconocido %s", bot_id)
@@ -329,7 +329,7 @@ class Hypervisor:
     # Control de presupuesto
     # ------------------------------------------------------------------
 
-    async def try_spend_points(self, bot_id: str, cost: int) -> tuple[bool, int]:
+    async def try_spend_points(self, bot_id: int, cost: int) -> tuple[bool, int]:
         async with self._lock:
             if self._frozen:
                 return False, 0
@@ -350,7 +350,7 @@ class Hypervisor:
             rec.budget -= cost
             return True, rec.budget
 
-    async def set_point_budget(self, bot_id: str, points: int) -> None:
+    async def set_point_budget(self, bot_id: int, points: int) -> None:
         async with self._lock:
             rec = self._bots.get(bot_id)
             if rec is None:
@@ -378,7 +378,7 @@ class Hypervisor:
     # ------------------------------------------------------------------
 
     async def forward_to_gestor(
-        self, bot_id: str, action_type: str, payload: bytes
+        self, bot_id: int, action_type: str, payload: bytes
     ) -> ActionResult:
         """Redirige una acción al gestor_bots (para acciones que pasan por él)."""
         return await self.gestor_client.forward_action(

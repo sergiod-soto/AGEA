@@ -16,6 +16,14 @@ class Empujable(Fisico):
     - push(self, direccion) -> bool
     """
 
+    REQUIERE = {
+        "coste_empujar: float",
+    }
+    ABSTRACTOS = {
+        "def check_push(self, direccion) -> Elemento | bool",
+        "def push(self, direccion) -> bool",
+    }
+
     def __init__(self, coste_empujar: float, **kwargs):
         super().__init__(**kwargs)
 

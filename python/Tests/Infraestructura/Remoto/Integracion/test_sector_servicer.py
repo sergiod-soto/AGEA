@@ -58,9 +58,7 @@ async def test_set_sector_mode_via_grpc_cambia_estado_real(cliente_sector):
 async def test_load_state_y_get_state_roundtrip_via_grpc(cliente_sector):
     stub, _ = cliente_sector
     cell = common_pb2.Cell(pos=common_pb2.Position(x=5, y=5))
-    bot = common_pb2.BotSnapshot(
-        bot_id="bot_1", pos=common_pb2.Position(x=5, y=5), budget=10
-    )
+    bot = common_pb2.BotSnapshot(bot_id=1, pos=common_pb2.Position(x=5, y=5), budget=10)
 
     resp_load = await stub.LoadState(pb.LoadStateRequest(cells=[cell], bots=[bot]))
     assert resp_load.ok is True
@@ -68,7 +66,7 @@ async def test_load_state_y_get_state_roundtrip_via_grpc(cliente_sector):
     resp_state = await stub.GetState(pb.GetStateRequest())
     assert resp_state.ok is True
     assert len(resp_state.cells) == 1
-    assert resp_state.bots[0].bot_id == "bot_1"
+    assert resp_state.bots[0].bot_id == 1
 
 
 @pytest.mark.integration
@@ -132,10 +130,10 @@ async def test_save_snapshot_via_grpc(cliente_sector):
 async def test_add_migrating_bot_via_grpc(cliente_sector):
     stub, sector = cliente_sector
     bot = common_pb2.BotSnapshot(
-        bot_id="bot_migrado", pos=common_pb2.Position(x=10, y=10), budget=5
+        bot_id=1, pos=common_pb2.Position(x=10, y=10), budget=5
     )
 
     resp = await stub.AddMigratingBot(pb.AddMigratingBotRequest(tick_id=1, bot=bot))
 
     assert resp.ok is True
-    assert "bot_migrado" in sector._bots
+    assert 1 in sector._bots

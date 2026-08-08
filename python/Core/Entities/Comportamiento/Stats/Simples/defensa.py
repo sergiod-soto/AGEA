@@ -1,6 +1,8 @@
-from Core.Entities.Comportamiento.Stats.Simples.stat_simple import Stat_Simple
+# Core/Entities/Comportamiento/Stats/Simples/defensa.py
+
+from Core.Entities.Comportamiento.Stats.stat import Stat
 
 
-class Defensa(Stat_Simple):
-    def __init__(self,**kwargs):
-        super().__init__(**kwargs)
+class Defensa(Stat):
+    def __init__(self, valor: int):
+        super().__init__(nombre="defensa", valor=valor)

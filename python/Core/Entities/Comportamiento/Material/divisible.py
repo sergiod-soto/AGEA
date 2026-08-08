@@ -17,10 +17,12 @@ class Divisible(Material):
     - dividir(self, cantidad: float) -> Elemento | None
     """
 
+    REQUIERE = {"cantidad_minima_divisible: float"}
+    ABSTRACTOS = {"def dividir(self, cantidad: float) -> Elemento | None"}
+
     def __init__(self, cantidad_minima_divisible: float, **kwargs):
         super().__init__(**kwargs)
         self.cantidad_minima_divisible = cantidad_minima_divisible
 
-    
     @abstractmethod
     def dividir(self, cantidad: float) -> Elemento | None: ...

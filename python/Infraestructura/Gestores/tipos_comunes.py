@@ -23,7 +23,7 @@ class ActionResult:
 class BotInfo:
     __slots__ = ("bot_id", "hypervisor_id", "proxy_address", "ok", "error")
 
-    def __init__(self, bot_id, hypervisor_id, proxy_address, ok, error):
+    def __init__(self, bot_id: int, hypervisor_id, proxy_address, ok, error):
         self.bot_id = bot_id
         self.hypervisor_id = hypervisor_id
         self.proxy_address = proxy_address
@@ -37,7 +37,7 @@ class BotInfo:
 class BotStats:
     __slots__ = ("bot_id", "hypervisor_id", "points_left", "alive", "uptime_s")
 
-    def __init__(self, bot_id, hypervisor_id, points_left, alive, uptime_s=0.0):
+    def __init__(self, bot_id: int, hypervisor_id, points_left, alive, uptime_s=0.0):
         self.bot_id = bot_id
         self.hypervisor_id = hypervisor_id
         self.points_left = points_left
@@ -55,7 +55,7 @@ class BotList:
 class BotStatusHV:
     __slots__ = ("bot_id", "alive", "budget")
 
-    def __init__(self, bot_id, alive, budget):
+    def __init__(self, bot_id: int, alive, budget):
         self.bot_id = bot_id
         self.alive = alive
         self.budget = budget
@@ -63,7 +63,7 @@ class BotStatusHV:
 
 @dataclass
 class BotStatusPropio:
-    bot_id: str
+    bot_id: int
     x: int
     y: int
     rotation: float

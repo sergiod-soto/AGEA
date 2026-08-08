@@ -45,14 +45,14 @@ message Cell {
 // ============================================================
 
 message BotConfig {
-  string              bot_id    = 1;
+  uint64              bot_id    = 1;
   int32               budget    = 2;
   bytes               codigo_gz = 3;   // gzip del código Python compilado
   map<string, string> metadata  = 4;
 }
 
 message BotInfo {
-  string bot_id        = 1;
+  uint64 bot_id        = 1;
   string hypervisor_id = 2;
   string proxy_address = 3;   // "host:puerto" del world_proxy
   bool   ok            = 4;
@@ -60,7 +60,7 @@ message BotInfo {
 }
 
 message BotStats {
-  string bot_id        = 1;
+  uint64 bot_id        = 1;
   string hypervisor_id = 2;
   double fitness       = 3;
   int64  tick          = 4;
@@ -68,7 +68,7 @@ message BotStats {
 }
 
 message BotStatus {
-  string bot_id = 1;
+  uint64 bot_id = 1;
   bool   alive  = 2;
   int32  budget = 3;
 }
@@ -79,10 +79,11 @@ message BotList {
 
 // Estado de un bot para migración entre sectores o hibernación.
 message BotSnapshot {
-  string   bot_id = 1;
-  Position pos    = 2;
-  bytes    state  = 3;
-  int32    budget = 4;
+  uint64   bot_id      = 1;
+  Position pos         = 2;
+  bytes    state       = 3;
+  int32    budget      = 4;
+  uint64   id_elemento = 5;
 }
 
 // ============================================================
@@ -140,7 +141,7 @@ message HypervisorList {
 // ============================================================
 
 message BudgetEntry {
-  string bot_id = 1;
+  uint64 bot_id = 1;
   int32  budget = 2;
 }
 

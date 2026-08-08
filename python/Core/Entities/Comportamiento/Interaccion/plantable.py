@@ -16,6 +16,12 @@ class Plantable(Interaccion):
     - desplantar(self, por: Elemento)
     """
 
+    REQUIERE = {}
+    ABSTRACTOS = {
+        "def plantar(self, agujero: Elemento)",
+        "def desplantar(self, por: Elemento)",
+    }
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.plantado = False

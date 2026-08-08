@@ -87,7 +87,7 @@ async def gestor_bots_client_async_muerto():
 async def test_gestor_bots_client_async_matar_script_bot_devuelve_false_si_falla(
     gestor_bots_client_async_muerto,
 ):
-    assert await gestor_bots_client_async_muerto.matar_script_bot("bot_1") is False
+    assert await gestor_bots_client_async_muerto.matar_script_bot(1) is False
 
 
 @pytest.mark.unit
@@ -159,6 +159,6 @@ async def test_logica_mundo_client_resolver_accion_devuelve_ok_false_si_falla(
     logica_mundo_client_muerto,
 ):
     resultado = await logica_mundo_client_muerto.resolver_accion(
-        bot_id="bot_1", action_type="mirar", payload=b""
+        bot_id=1, action_type="mirar", payload=b""
     )
     assert resultado.ok is False

@@ -7,7 +7,7 @@ from Core.Entities.Elementos.elemento import Elemento
 class Consumible(Interaccion):
     """
     Todo lo que puede ser consumido por otro Elemento.
-    
+
     NO ES SER COMIDO/BEBIDO, ESO ES COMESTIBLE, esto es,
     por ejemplo, madera en una hoguera, la tiza al escribir, etc
 
@@ -20,10 +20,11 @@ class Consumible(Interaccion):
     - consumir(self, por: Elemento)
     """
 
+    REQUIERE = {}
+    ABSTRACTOS = {"def consumir(self, por: Elemento)"}
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     @abstractmethod
     def consumir(self, por: Elemento): ...
-
-    

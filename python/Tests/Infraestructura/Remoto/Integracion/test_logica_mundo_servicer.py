@@ -10,6 +10,8 @@ import json
 
 import pytest
 
+from Core.Entities.Elementos.elemento_test import Elemento_Test
+from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo_servicer import (
     LogicaMundoServicer,
@@ -21,9 +23,38 @@ from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoC
 
 
 def _elemento_bytes(eid: int) -> bytes:
-    """Blob mínimo que crear_elemento() espera — mismo formato que
-    usa test_logica_mundo.py (Unitarios) para el elemento 'Agua'."""
-    return json.dumps({"__clase__": "Agua", "id": eid, "comportamientos": {}}).encode()
+    """
+    Blob que crear_elemento() espera para un elemento cualquiera.
+    """
+    elemento = Elemento_Test(casilla=(0, 0), id_elemento=eid, peso=1.0)
+    return json.dumps(elemento.serializar(modo="guardar")).encode()
+
+
+def _bot_bytes(id_elemento: int, id_bot: int) -> bytes:
+    """
+    Blob de un Bot real y completo para tests que necesiten un avatar de
+    bot de verdad (no basta un Elemento_Test genérico: eliminar_avatar_bot
+    depende del stat "id" que solo Bot declara).
+
+    id_elemento (id del avatar en el mundo, asignado por Logica_Mundo) y
+    id_bot (id del bot/script en GestorBots) son intencionalmente
+    distintos aquí para no repetir la confusión que motivó separarlos.
+    """
+    bot = Bot(
+        id_elemento=id_elemento,
+        stats_script={
+            "armadura": 1,
+            "grasa": 1,
+            "longevidad": 1,
+            "movilidad": 1,
+            "percepcion": 1,
+        },
+        id_bot=id_bot,
+        tamanho=1,
+        casilla=(0, 0),
+        rotacion=0.0,
+    )
+    return json.dumps(bot.serializar(modo="guardar")).encode()
 
 
 @pytest.fixture
@@ -73,8 +104,10 @@ async def test_crear_y_eliminar_elemento_roundtrip_via_grpc(cliente_logica_mundo
 async def test_resolver_accion_desconocida_via_grpc(cliente_logica_mundo):
     client, _ = cliente_logica_mundo
 
+    # FIX: bot_id es uint64 en el proto (ResolverAccionRequest.bot_id) —
+    # antes se pasaba un string de ejemplo ("bot_1").
     resultado = await client.resolver_accion(
-        bot_id="bot_1", action_type="no_existe", payload=b""
+        bot_id=1, action_type="no_existe", payload=b""
     )
 
     assert resultado.ok is False
@@ -171,12 +204,12 @@ async def test_get_elementos_globales_tick_actual_es_cero_antes_de_avanzar(
     cliente_logica_mundo,
 ):
     """
-    NUEVO — tick_actual (campo añadido a GetElementosGlobalesResponse
-    para que Vista_Foco/FocoBroadcaster pueda detectar "hubo tick
-    nuevo"): antes de cualquier AvanzarElementosGlobales, debe llegar
-    como 0 — no como el valor por defecto "ausente" de proto3, que
-    también es 0, pero aquí lo comprobamos explícitamente para dejar
-    documentado el contrato.
+    tick_actual (campo de GetElementosGlobalesResponse para que
+    Vista_Foco/FocoBroadcaster pueda detectar "hubo tick nuevo"): antes
+    de cualquier AvanzarElementosGlobales, debe llegar como 0 — no como
+    el valor por defecto "ausente" de proto3, que también es 0, pero
+    aquí lo comprobamos explícitamente para dejar documentado el
+    contrato.
     """
     client, _ = cliente_logica_mundo
 
@@ -190,7 +223,7 @@ async def test_get_elementos_globales_tick_actual_refleja_el_ultimo_avance_via_g
     cliente_logica_mundo,
 ):
     """
-    NUEVO — el caso real que motivó el campo: tras llamar a
+    El caso real que motivó el campo: tras llamar a
     AvanzarElementosGlobales(tick_id=N) por la red, una llamada
     POSTERIOR (y separada) a GetElementosGlobales debe devolver ese
     mismo N en tick_actual. Esto es justo lo que FocoBroadcaster hace
@@ -285,12 +318,19 @@ async def test_save_snapshot_y_load_state_roundtrip_via_grpc(
 @pytest.mark.integration
 async def test_eliminar_avatar_bot_via_grpc(cliente_logica_mundo):
     client, logica = cliente_logica_mundo
-    await client.crear_elemento(pos=(7, 7), type_id="bot", element=_elemento_bytes(50))
 
-    ok, error = await client.eliminar_avatar_bot(bot_id="50")
+    # FIX: id_elemento (avatar en el mundo) e id_bot (script en
+    # GestorBots) son ids distintos a propósito — antes el test usaba
+    # el mismo valor ("50") para ambos, ocultando que _bot_positions
+    # debe indexarse por bot_id, no por id_elemento.
+    await client.crear_elemento(
+        pos=(7, 7), type_id="bot", element=_bot_bytes(id_elemento=50, id_bot=99)
+    )
+
+    ok, error = await client.eliminar_avatar_bot(bot_id=99)
 
     assert ok is True
-    assert "50" not in logica._bot_positions
+    assert 99 not in logica._bot_positions
 
 
 # ── AvanzarElementosGlobales ─────────────────────────────────────────

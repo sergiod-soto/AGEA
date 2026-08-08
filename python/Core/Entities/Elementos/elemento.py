@@ -22,17 +22,14 @@ class Elemento(ABC, Comportamiento):
         self,
         tipo: type,
         capa: int,
-        id: uint64,
-        fuerza_sector_activo: bool,
-        fuerza_vecinos_activos: bool,
+        id_elemento: uint64,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.capa = capa
         self.tipo = tipo
-        self.id = id
-        self.fuerza_sector_activo = fuerza_sector_activo
-        self.fuerza_vecinos_activos = fuerza_vecinos_activos
+        self.id_elemento = id_elemento
+
         self.excluyente_en_celda = False
         self.mundo: Mundo | None = None
 
@@ -91,16 +88,35 @@ class Elemento(ABC, Comportamiento):
             resultado[k] = valor
         return resultado
 
-    def serializar(self) -> dict:
+    def serializar(self, *, modo: str) -> dict:
+        """
+        (Por serializar() desde Comportamiento)
+
+        modo distingue PARA QUÉ se serializa, porque un campo pesado (como
+        'sonidos' en Sonoro) puede necesitar una representación distinta
+        según el consumidor:
+        - "guardado"        : snapshots a disco (save_snapshot).
+        - "transporte"      : entre sectores / Logica_Mundo vía gRPC
+                                (_id_a_slot_bytes). Hoy idéntico a "guardado"
+                                (ambos necesitan fidelidad total para poder
+                                reconstruir el elemento), separado como modo
+                                aparte por si algún día divergen (p.ej. el
+                                transporte quisiera comprimir algo que el
+                                guardado no).
+        - "representacion"  : lo que ve Unity cada tick
+                                (consultar_representacion) -- lo más ligero
+                                posible.
+        """
         return {
             "__clase__": type(self).__name__,
             **self._serializar_propios(),
             "comportamientos": {
-                c.__name__: c.serializar(self, c) for c in self._get_comportamientos()
+                c.__name__: c.serializar(self, c, modo=modo)
+                for c in self._get_comportamientos()
             },
         }
 
-    def deserializar(self, data: dict, mundo: Mundo):
+    def deserializar(self, data: dict, mundo: Mundo | None):
         # Deserializa atributos propios del elemento
         atributos_comportamientos = self._atributos_de_comportamientos()
 
@@ -140,3 +156,32 @@ class Elemento(ABC, Comportamiento):
         if self.mundo == None:
             raise TypeError("No se ha inicializado Mundo")
         self.mundo.eliminar_elemento(self)
+
+    @classmethod
+    def obtener_requisitos(cls) -> tuple[dict[str, type], set[str]]:
+        """
+        Retorna:
+            (
+                {
+                    "nombre_atributo": tipo,
+                    ...
+                },
+                {
+                    "metodo1",
+                    "metodo2",
+                    ...
+                }
+            )
+        """
+
+        requiere = set()
+        abstractos = set()
+
+        # Desde la clase más base hasta la más derivada.
+        # Así las clases hijas pueden sobrescribir requisitos.
+        for base in reversed(cls.__mro__):
+
+            requiere.update(getattr(base, "REQUIERE", set()))
+            abstractos.update(getattr(base, "ABSTRACTOS", set()))
+
+        return requiere, abstractos

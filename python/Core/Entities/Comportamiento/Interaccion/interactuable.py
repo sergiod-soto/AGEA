@@ -15,6 +15,9 @@ class Interactuable(Interaccion):
     - interaccion(self, por:Elemento)
     """
 
+    REQUIERE = {}
+    ABSTRACTOS = {"def interaccion(self, por: Elemento)"}
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

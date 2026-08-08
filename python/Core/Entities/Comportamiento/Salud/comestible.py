@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from Core.Entities.Comportamiento.Stats.Simples.salud import Salud
+from Core.Entities.Comportamiento.Salud.salud import Salud
 from Core.Entities.Elementos.elemento import Elemento
 
 
@@ -16,6 +16,9 @@ class Comestible(Salud):
 
     - comer(self, por: Elemento)
     """
+
+    REQUIERE = {}
+    ABSTRACTOS = {"def comer(self, por: Elemento)"}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

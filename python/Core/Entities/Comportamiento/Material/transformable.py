@@ -22,6 +22,9 @@ class Transformable(Material):
     -
     """
 
+    REQUIERE = {"dict_transformable: dict[Condicion, Callable]"}
+    ABSTRACTOS = {}
+
     def __init__(self, dict_transformable: dict[Condicion, Callable], **kwargs):
         super().__init__(**kwargs)
         self.dict_transformable = dict_transformable

@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.cesped import Cesped
+from Core.Entities.Comportamiento.Terreno.terreno_cesped import Cesped
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 

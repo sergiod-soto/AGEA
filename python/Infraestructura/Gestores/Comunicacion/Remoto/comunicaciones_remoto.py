@@ -79,11 +79,5 @@ class ComunicacionesRemoto:
         """
         self._foco.actualizar_foco(min_pos, max_pos, incluir, modo)
 
-    async def suscribirse_foco(self) -> AsyncIterator["pb.ActualizacionFoco"]:
-        """
-        Punto de entrada para el RPC de streaming SuscribirseFoco.
-        Delega en FocoBroadcaster, que es quien realmente vigila el
-        tick y reparte a todos los suscriptores activos.
-        """
-        async for actualizacion in self._foco.suscribirse():
-            yield actualizacion
+    def suscribirse_foco(self) -> AsyncIterator["pb.ActualizacionFoco"]:
+        return self._foco.suscribirse()

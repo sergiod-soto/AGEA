@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.charco import Charco
+from Core.Entities.Comportamiento.Terreno.terreno_charco import Charco
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 

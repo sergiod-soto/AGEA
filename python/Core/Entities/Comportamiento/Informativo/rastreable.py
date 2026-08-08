@@ -22,6 +22,9 @@ class Rastreable(Informativo):
 
     - dejar_rastro(self, terreno: Terreno) -> Rastro | None:
     """
+    
+    REQUIERE = {}
+    ABSTRACTOS = {}
 
     def __init__(
         self, condiciones_rastro: list[tuple[list[Condicion], float]] = None, **kwargs

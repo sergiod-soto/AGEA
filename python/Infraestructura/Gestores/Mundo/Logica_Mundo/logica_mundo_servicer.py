@@ -104,3 +104,8 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         return await self._dispatch["EliminarAvatarBot"].handle(
             self._logica, request, context
         )
+
+    async def ObtenerAudio(self, request, context):
+        return await self._dispatch["ObtenerAudio"].handle(
+            self._logica, request, context
+        )

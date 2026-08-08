@@ -1,27 +1,22 @@
-from Core.Entities.Comportamiento.Informativo.sonoro import Sonoro
 from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
 
 piedra = Piedra(
     tamanho=1,
+    id_elemento=0,
+    rgb_base=(0, 0, 0),
     casilla=(0, 0),
+    tasa_transferencia_temperatura=0,
     capa=0,
     peso=1000.0,
     coste_empujar=0.0,
     volumen=0.0,
-    recetas_de=None,
-    rgb_color=(0, 0, 0),
     agarrado_por=None,
     durabilidad_max=0.0,
     temperatura_propia=0.0,
-    tasa_transferencia=0.0,
     radio_termico=0.0,
-    condiciones_erosion=None,
-    durabilidad_max_erosion=0.0,
     durabilidad_actual=None,
     durabilidad_actual_erosion=None,
     rotacion=0,
-    fuerza_sector_activo=False,
-    fuerza_vecinos_activos=False,
 )
 
 audio = piedra.sonidos["GOLPEAR"][0]

@@ -6,7 +6,7 @@ from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Comida.Ingredientes.harina import Harina
-from Core.Entities.Elementos.Simples.Comida.Ingredientes.ingrediente import Ingrediente
+from Core.Entities.Elementos.Simples.Comida.Ingredientes.Ingrediente_Elemento import Ingrediente
 from Core.Entities.Elementos.Simples.Comida.Ingredientes.masa_pan import Masa_Pan
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta

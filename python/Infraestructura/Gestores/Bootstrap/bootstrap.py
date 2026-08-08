@@ -22,6 +22,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -122,14 +123,18 @@ def _direcciones_locales(grupos: list[list[ComponenteSpec]]) -> dict[str, str]:
     }
 
 
-def _env_extra_local(spec: ComponenteSpec, direcciones: dict[str, str]) -> dict[str, str]:
+def _env_extra_local(
+    spec: ComponenteSpec, direcciones: dict[str, str]
+) -> dict[str, str]:
     """Variables propias del proceso (host/puerto de sí mismo) + las
     direcciones ajenas que necesite (ver topologia.resolver_env_extra)."""
     propio = {spec.host_env_var: "localhost", spec.port_env_var: str(spec.default_port)}
     return {**propio, **resolver_env_extra(spec, direcciones)}
 
 
-def _lanzar_proceso(spec: ComponenteSpec, env_extra: dict[str, str]) -> subprocess.Popen:
+def _lanzar_proceso(
+    spec: ComponenteSpec, env_extra: dict[str, str]
+) -> subprocess.Popen:
     script = _SCRIPT_POR_TIPO[spec.tipo]
     if not script.exists():
         raise FileNotFoundError(f"Script no encontrado: {script}")
@@ -180,7 +185,9 @@ def _lanzar_grupo(
     Lanza todos los componentes del grupo y espera su healthcheck en
     paralelo. Devuelve (procesos, nombres de los que fallaron).
     """
-    procs = [_lanzar_proceso(spec, _env_extra_local(spec, direcciones)) for spec in grupo]
+    procs = [
+        _lanzar_proceso(spec, _env_extra_local(spec, direcciones)) for spec in grupo
+    ]
 
     with ThreadPoolExecutor(max_workers=len(grupo)) as executor:
         oks = list(executor.map(_healthcheck, grupo))
@@ -230,8 +237,6 @@ def ejecutar_modo_local() -> None:
             _apagar_procesos(todos_procesos)
             sys.exit(1)
 
-    logger.info("Stack local completo arrancado y operativo.")
-
     # Disponible para el resto de módulos locales — ver docstring.
     from Infraestructura.Gestores.Comunicacion.Local.comunicaciones_local import (
         ComunicacionesLocal,
@@ -239,23 +244,35 @@ def ejecutar_modo_local() -> None:
 
     comunicaciones_local = ComunicacionesLocal(direcciones["comunicaciones_remoto"])
     logger.info(
-        "ComunicacionesLocal listo, apuntando a %s", direcciones["comunicaciones_remoto"]
+        "ComunicacionesLocal listo, apuntando a %s",
+        direcciones["comunicaciones_remoto"],
     )
+
+    apagar_solicitado = threading.Event()
 
     def _shutdown(sig, frame):
         logger.info("Señal %s recibida. Apagando...", sig)
-        _apagar_procesos(todos_procesos)
-        sys.exit(0)
+        apagar_solicitado.set()
 
-    signal.signal(signal.SIGINT, _shutdown)
-    signal.signal(signal.SIGTERM, _shutdown)
+    if sys.platform == "win32":
+        signal.signal(signal.SIGBREAK, _shutdown)
+    else:
+        signal.signal(signal.SIGINT, _shutdown)
+
+    logger.info("Stack local completo arrancado y operativo.")
 
     while True:
+        if apagar_solicitado.is_set():
+            logger.info("Apagando stack local...")
+            _apagar_procesos(todos_procesos)
+            sys.exit(0)
+
         for proc in todos_procesos:
             if proc.poll() is not None:
                 logger.error("Proceso (pid %d) ha muerto. Apagando todo.", proc.pid)
                 _apagar_procesos(todos_procesos)
                 sys.exit(1)
+
         time.sleep(1)
 
 
@@ -273,8 +290,8 @@ def ejecutar_componente_produccion(args: argparse.Namespace) -> None:
     real — por eso no hace falta preocuparse por el logging ya
     configurado en configurar_entorno(): desaparece con el reemplazo.
     """
-    if args.id:
-        os.environ["COMPONENT_ID"] = args.id
+    if args.id_elemento:
+        os.environ["COMPONENT_ID"] = args.id_elemento
     if args.sesion:
         os.environ["SESSION_ID"] = args.sesion
     if args.bucket:
@@ -292,5 +309,5 @@ def ejecutar_componente_produccion(args: argparse.Namespace) -> None:
     if not script.exists():
         raise FileNotFoundError(f"Script no encontrado: {script}")
 
-    logger.info("Producción: arrancando %s (id=%s)", args.componente, args.id)
+    logger.info("Producción: arrancando %s (id=%s)", args.componente, args.id_elemento)
     os.execv(sys.executable, [sys.executable, str(script)])

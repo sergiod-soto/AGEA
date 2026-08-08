@@ -16,7 +16,7 @@ Por qué existen como tipos separados en vez de aplicar el cambio directamente:
 """
 
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 @dataclass
@@ -36,6 +36,7 @@ class CrearElemento:
     pos: tuple[int, int]
     tipo_slot: str  # "suelo" | "bot" | "resto"
     elemento: Any  # objeto Elemento ya construido, todavía sin id real
+    bot_id: Optional[int] = None
 
 
 @dataclass
@@ -46,6 +47,7 @@ class EliminarElemento:
 
     pos: tuple[int, int]
     id_elemento: int
+    bot_id: Optional[int] = None
 
 
 @dataclass
@@ -61,6 +63,7 @@ class MoverElemento:
     id_elemento: int
     pos_origen: tuple[int, int]
     pos_destino: tuple[int, int]
+    bot_id: Optional[int] = None
 
 
 # Unión de todas las mutaciones posibles. Se usa para tipar la lista interna

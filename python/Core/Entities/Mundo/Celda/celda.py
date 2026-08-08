@@ -1,5 +1,5 @@
 # Core/Entities/Elementos/Simples/Celda/celda.py
-from typing import Optional
+
 from numpy import uint64
 
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
@@ -22,14 +22,14 @@ class Celda:
                 return False
             else:
                 self.inocupable = True
-        self.contenido.append(elemento.id)
+        self.contenido.append(elemento.id_elemento)
         return True
 
     def remove_elemento(self, elemento: Elemento) -> bool:
         # busco
         elemento_guardado = None
         for id_contenido in self.contenido:
-            if id_contenido == elemento.id:
+            if id_contenido == elemento.id_elemento:
                 elemento_guardado = elemento
                 break
 
@@ -39,5 +39,5 @@ class Celda:
         # era o no excluyente
         if elemento_guardado.excluyente_en_celda:
             self.inocupable = False
-        self.contenido.remove(elemento.id)
+        self.contenido.remove(elemento.id_elemento)
         return True

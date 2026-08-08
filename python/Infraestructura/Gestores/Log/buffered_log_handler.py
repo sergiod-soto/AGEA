@@ -72,7 +72,7 @@ class BufferedLogHandler(logging.Handler):
                 component=self._component,
                 level=_PY_TO_PB.get(record.levelno, log_service_pb2.INFO),
                 logger=record.name,
-                message=self.format(record),
+                message=record.getMessage(),
                 timestamp=int(record.created * 1000),
                 exc_info=exc_info,
             )
@@ -122,7 +122,6 @@ def setup_buffered_logging(
     )
 
     handler = BufferedLogHandler(component=component)
-    handler.setFormatter(fmt)
     handler.setLevel(level)
     root.addHandler(handler)
 

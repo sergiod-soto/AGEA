@@ -75,7 +75,7 @@ class HypervisorClient:
         self, bot_config: dict, timeout: float | None = None
     ) -> BotInfo:
         cfg = common_pb2.BotConfig(
-            bot_id=bot_config.get("bot_id", ""),
+            bot_id=bot_config.get("bot_id", 0),
             codigo_gz=bot_config.get("codigo_gz", b""),
             budget=int(bot_config.get("budget", 100)),
             metadata=bot_config.get("metadata", {}),
@@ -93,14 +93,14 @@ class HypervisorClient:
         except grpc.aio.AioRpcError as exc:
             self._handle_error("SpawnBot", exc)
             return BotInfo(
-                bot_id=bot_config.get("bot_id", ""),
+                bot_id=bot_config.get("bot_id", 0),
                 hypervisor_id="",
                 proxy_address="",
                 ok=False,
                 error=str(exc),
             )
 
-    async def kill_bot(self, bot_id: str, timeout: float | None = None) -> bool:
+    async def kill_bot(self, bot_id: int, timeout: float | None = None) -> bool:
         request = hypervisor_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
             pb = await self._stub.KillBot(request, timeout=self._t(timeout))
@@ -110,7 +110,7 @@ class HypervisorClient:
             return False
 
     async def get_bot_stats(
-        self, bot_id: str, timeout: float | None = None
+        self, bot_id: int, timeout: float | None = None
     ) -> Optional[BotStats]:
         request = hypervisor_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
@@ -128,7 +128,7 @@ class HypervisorClient:
             return None
 
     async def get_bot_status(
-        self, bot_id: str, timeout: float | None = None
+        self, bot_id: int, timeout: float | None = None
     ) -> Optional[BotStatusHV]:
         request = hypervisor_service_pb2.BotIdRequest(bot_id=bot_id)
         try:
@@ -165,8 +165,8 @@ class HypervisorClient:
 
     async def reset_budgets(
         self,
-        bot_ids: list[str],
-        new_budgets: dict[str, int],
+        bot_ids: list[int],
+        new_budgets: dict[int, int],
         default_budget: int = 100,
         timeout: float | None = None,
     ) -> bool:
@@ -188,7 +188,7 @@ class HypervisorClient:
             return False
 
     async def set_point_budget(
-        self, bot_id: str, points: int, timeout: float | None = None
+        self, bot_id: int, points: int, timeout: float | None = None
     ) -> bool:
         request = hypervisor_service_pb2.SetPointBudgetRequest(
             bot_id=bot_id, points=points

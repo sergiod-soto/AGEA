@@ -21,6 +21,7 @@ explícita en vez de asumidas en silencio:
 """
 
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -76,6 +77,14 @@ def _entorno_aislado(tmp_path: Path) -> dict:
 def test_stack_local_arranca_y_se_apaga_limpio(tmp_path):
     env = _entorno_aislado(tmp_path)
 
+    # En Windows, CREATE_NEW_PROCESS_GROUP es imprescindible: sin él,
+    # CTRL_BREAK_EVENT se propagaría también a este proceso de test
+    # (comparten grupo de consola por defecto) y se mataría a sí mismo.
+    # En Linux no hace falta ningún flag especial para SIGTERM.
+    creationflags = (
+        subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
+    )
+
     proceso = subprocess.Popen(
         [sys.executable, "main.py", "--modo", "local"],
         cwd=str(ROOT),
@@ -83,6 +92,7 @@ def test_stack_local_arranca_y_se_apaga_limpio(tmp_path):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        creationflags=creationflags,
     )
 
     try:
@@ -92,8 +102,22 @@ def test_stack_local_arranca_y_se_apaga_limpio(tmp_path):
             "del subprocess para el motivo (puerto ocupado, healthcheck fallido, etc.)"
         )
 
-        # Apagado ordenado — mismo mecanismo que Ctrl+C manual.
-        proceso.terminate()
+        # Apagado ordenado — señal "nativa" de cada SO:
+        # - Windows: CTRL_BREAK_EVENT (requiere CREATE_NEW_PROCESS_GROUP arriba).
+        #   proceso.terminate() en Windows NO sirve para esto: llama a
+        #   TerminateProcess y fuerza código de salida 1 sin dar opción
+        #   a limpieza — por eso fallaba este test.
+        # - Linux: SIGTERM real, capturable con signal.signal().
+        if sys.platform == "win32":
+            proceso.send_signal(signal.CTRL_BREAK_EVENT)
+        else:
+            proceso.terminate()
+        try:
+            proceso.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proceso.kill()
+            proceso.wait(timeout=5)
+
         codigo = proceso.wait(timeout=15)
         assert codigo == 0, f"El proceso no terminó limpiamente (código {codigo})"
 
@@ -103,19 +127,18 @@ def test_stack_local_arranca_y_se_apaga_limpio(tmp_path):
             proceso.wait(timeout=5)
 
 
-def _esperar_linea(proceso: subprocess.Popen, fragmento: str, timeout: float) -> bool:
-    """
-    Lee stdout del subprocess línea a línea hasta encontrar el
-    fragmento buscado o agotar el timeout. No usa proceso.stdout.read()
-    (bloquearía indefinidamente) — lee con un límite de tiempo real.
-    """
+def _esperar_linea(
+    proceso: subprocess.Popen, fragmento: str, timeout: float
+) -> tuple[bool, str]:
     inicio = time.monotonic()
+    lineas_leidas: list[str] = []
     while time.monotonic() - inicio < timeout:
         linea = proceso.stdout.readline()
         if not linea:
             if proceso.poll() is not None:
-                return False  # el proceso murió antes de arrancar
+                break  # el proceso murió antes de arrancar
             continue
+        lineas_leidas.append(linea)
         if fragmento in linea:
-            return True
-    return False
+            return True, "".join(lineas_leidas)
+    return False, "".join(lineas_leidas)

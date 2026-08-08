@@ -1,3 +1,8 @@
+# Core/Entities/Elementos/Simples/Piedra/piedra.py
+
+
+from numpy import uint64
+
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
 from Core.Entities.Comportamiento.Fisico.enterrable import Enterrable
@@ -15,6 +20,7 @@ from Core.Entities.Comportamiento.Material.solido import Solido
 from Core.Entities.Comportamiento.Material.tangible import Tangible
 from Core.Entities.Comportamiento.Social.intercambiable import Intercambiable
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
+from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import SonidoBase
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
@@ -51,6 +57,7 @@ class Piedra(Elemento_Simple, comportamientos):
 
     def __init__(
         self,
+        id_elemento: uint64,
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
@@ -61,29 +68,19 @@ class Piedra(Elemento_Simple, comportamientos):
         coste_empujar: float,
         # Volumen:
         volumen: float,
-        # Ingrediente:
-        recetas_de: dict[str, Crafteable],
         # Color:
-        rgb_color: tuple[int, int, int],
-        # Agarrable:
-        agarrado_por: Elemento,
-        # Destruible:
-        durabilidad_max: float,
+        rgb_base: tuple[int, int, int],
         # Termico:
         temperatura_propia: float,
-        tasa_transferencia: float,
-        radio_termico: float,
-        # Erosionable:
-        condiciones_erosion: list[tuple[list[Condicion], float]],
-        durabilidad_max_erosion: float,
+        tasa_transferencia_temperatura: float,
+        # Agarrable:
+        agarrado_por: Elemento = None,
         # Destruible:
-        durabilidad_actual: float = None,
+        durabilidad_max_destruible: float = None,
         # Erosionable:
-        durabilidad_actual_erosion: float = None,
+        durabilidad_max_erosion=1,
+        condiciones_erosion: list[tuple[list[Condicion], float]] = None,
         #
-        rotacion: int = 0,
-        fuerza_sector_activo=False,
-        fuerza_vecinos_activos=False,
         **kwargs
     ):
         # comprobaciones:
@@ -120,15 +117,14 @@ class Piedra(Elemento_Simple, comportamientos):
         )
 
         sonido_golpear_1 = SonidoBase.fusionar(base1, base2)
+        sonido_golpear_1.guardar_en_biblioteca()
 
         super().__init__(
             tipo=Piedra,
+            id_elemento=id_elemento,
             tamanho=tamanho,
             casilla=casilla,
             capa=capa,
-            rotacion=rotacion,
-            fuerza_sector_activo=fuerza_sector_activo,
-            fuerza_vecinos_activos=fuerza_vecinos_activos,
             # Peso:
             peso=peso,
             # Enterrable:
@@ -136,23 +132,19 @@ class Piedra(Elemento_Simple, comportamientos):
             # Volumen:
             volumen=volumen,
             # Color:
-            rgb_color=rgb_color,
+            rgb_base=rgb_base,
             # Agarrable:
             agarrado_por=agarrado_por,
-            # Destruible:
-            durabilidad_max=durabilidad_max,
             # Ingrediente:
-            recetas_de=recetas_de,  # Termico:
+            recetas_de=None,
+            # Termico:
             temperatura_propia=temperatura_propia,
-            tasa_transferencia=tasa_transferencia,
-            radio_termico=radio_termico,
-            # Erosionable:
-            condiciones_erosion=condiciones_erosion,
-            durabilidad_max_erosion=durabilidad_max_erosion,
+            tasa_transferencia_temperatura=tasa_transferencia_temperatura,
             # Destruible:
-            durabilidad_actual=durabilidad_actual,
+            durabilidad_max_destruible=durabilidad_max_destruible,
             # Erosionable:
-            durabilidad_actual_erosion=durabilidad_actual_erosion,
+            durabilidad_max_erosion=durabilidad_max_erosion,
+            condiciones_erosion=condiciones_erosion,
             # Sonoro:
             sonidos={
                 "GOLPEAR": [sonido_golpear_1],
@@ -160,3 +152,21 @@ class Piedra(Elemento_Simple, comportamientos):
             },
             **kwargs,
         )
+
+    def soltar(self, por: Elemento): ...
+    def agarrar(self, por: Elemento): ...
+    def erosionar(self, cantidad: float): ...
+    def danhar(self, danho: float): ...
+    def check_push(self, direccion) -> Elemento | bool: ...
+    def golpear(self, por: Elemento): ...
+    def check_desenterrable(self) -> bool: ...
+    def check_enterrable(self) -> bool: ...
+    def _destruir(self, efecto: Accion): ...
+    def enterrar(self) -> bool: ...
+    def desenterrar(self) -> bool: ...
+    def push(self, direccion) -> bool: ...
+    def restaurar(self, danho: float): ...
+    def _destruir(self, danho: float): ...
+
+
+Piedra.obtener_requisitos()

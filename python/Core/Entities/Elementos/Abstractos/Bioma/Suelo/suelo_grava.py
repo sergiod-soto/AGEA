@@ -1,4 +1,4 @@
-from Core.Entities.Comportamiento.Terreno.grava import Grava
+from Core.Entities.Comportamiento.Terreno.terreno_grava import Grava
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 
