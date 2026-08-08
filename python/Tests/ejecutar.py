@@ -31,7 +31,7 @@ tests: list[str] = [
     # # ── Sonido
     # "Tests/Entities/Elementos/Sonido/test_biblioteca_sonidos.py",
     # "Tests/Entities/Elementos/Sonido/test_desde_audio_dict.py",
-    # "Tests/Entities/Elementos/Sonido/test_logica_mundo_audio.py", 
+    # "Tests/Entities/Elementos/Sonido/test_logica_mundo_audio.py",
     # "Tests/Entities/Elementos/Sonido/test_sonido.py",
     # "Tests/Entities/Elementos/Sonido/test_sonoro_modos.py",
     # #
@@ -91,6 +91,11 @@ tests: list[str] = [
     # "Tests/Infraestructura/Local/Unitarios/test_tipos_comunes_y_clientes_remotos.py",
     # "Tests/Infraestructura/Local/Unitarios/test_local_logging_y_log_pull_servicer.py",
     # #
+    # # ── Otros ───────────────────────────────------------------
+    "Tests/Otros/test_salida_representacion_unity.py",
+    # #
+    # Salida a consola:
+    "-s",
 ]
 
 if __name__ == "__main__":

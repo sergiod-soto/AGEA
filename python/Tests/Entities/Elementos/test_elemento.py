@@ -226,6 +226,47 @@ def test_reconstruir_elemento_clase_desconocida_lanza_value_error():
         reconstruir_elemento({"__clase__": "Esto_No_Existe", "comportamientos": {}})
 
 
+def test_get_comportamiento_sobre_elemento_real(elemento_basico):
+    resultado = elemento_basico.get_comportamiento("Peso", modo="representacion")
+    assert resultado == {"peso": 10.0}
+
+
+def test_get_comportamiento_sobre_elemento_real(elemento_basico):
+    """
+    Camino que usa consultar_representacion() en producción. Antes del
+    fix de 'cls=None' en Elemento.serializar, esto lanzaba TypeError en
+    vez de devolver el dict del comportamiento pedido.
+    """
+    resultado = elemento_basico.get_comportamiento("Peso", modo="representacion")
+    assert resultado == {"peso": 10.0}
+
+
+def test_get_comportamiento_nombre_inexistente_lanza_value_error(elemento_basico):
+    """Comportamiento que el elemento no tiene -> ValueError, que es
+    justo lo que consultar_representacion sabe capturar y saltarse."""
+    with pytest.raises(ValueError):
+        elemento_basico.get_comportamiento("Volumen", modo="representacion")
+
+
+def test_get_comportamiento_devuelve_mismo_resultado_en_los_tres_modos(elemento_basico):
+    """
+    De momento 'representacion' es intencionalmente idéntico a
+    'guardado'/'transporte' (no hay hooks serialize_X_representacion
+    todavía). Este test fija ese contrato actual: si algún día se añade
+    un hook específico de representación en algún comportamiento, este
+    test empezará a fallar y avisará de que el contrato cambió on
+    purpose -- momento de revisar si el test debe actualizarse o si el
+    cambio fue accidental.
+    """
+    en_guardado = elemento_basico.get_comportamiento("Peso", modo="guardado")
+    en_transporte = elemento_basico.get_comportamiento("Peso", modo="transporte")
+    en_representacion = elemento_basico.get_comportamiento(
+        "Peso", modo="representacion"
+    )
+
+    assert en_guardado == en_transporte == en_representacion == {"peso": 10.0}
+
+
 # ─────────────────────────────────────────────────────────────
 #  Comportamientos dinámicos (anhadir/quitar) — reconciliación
 # ─────────────────────────────────────────────────────────────
@@ -289,3 +330,87 @@ def test_anhadir_comportamiento_dinamicamente_se_conserva_tras_roundtrip(monkeyp
     assert reconstruido.valor_prueba == 12.5
     assert isinstance(reconstruido, Peso)
     assert reconstruido.peso == 3.0
+
+
+# ─────────────────────────────────────────────────────────────
+#  eliminar() — limpieza de estado + aviso al mundo
+# ─────────────────────────────────────────────────────────────
+
+
+class _MundoFalsoConRegistro:
+    """Doble de Mundo que registra si se le avisó de la eliminación,
+    y con qué elemento -- basta para comprobar el 'aviso al mundo' sin
+    un Mundo real."""
+
+    def __init__(self):
+        self.elemento_eliminado = None
+
+    def eliminar_elemento(self, elemento):
+        self.elemento_eliminado = elemento
+
+
+def test_eliminar_sin_mundo_lanza_type_error_y_no_toca_el_estado():
+    """
+    Guard clause: si mundo no está inicializado, eliminar() debe fallar
+    ANTES de limpiar nada -- no tiene sentido destruir el estado de un
+    elemento que ni siquiera se va a poder notificar/retirar
+    correctamente. (Regresión del bug de orden: antes limpiaba primero
+    y fallaba después, siempre, tuviera mundo o no.)
+    """
+    elem = Elemento_Test(casilla=(1, 2), id_elemento=1, peso=5.0)
+    assert elem.mundo is None
+
+    with pytest.raises(TypeError):
+        elem.eliminar()
+
+    # El estado NO debe haberse tocado: el fallo fue antes de limpiar.
+    assert elem.peso == 5.0
+    assert elem.casilla == (1, 2)
+    assert elem.id_elemento == 1
+
+
+def test_eliminar_con_mundo_limpia_atributos_propios_y_de_comportamientos():
+    """
+    Con mundo inicializado, eliminar() debe poner a None tanto los
+    atributos propios de Elemento (casilla, tamanho...) como los de
+    sus comportamientos (peso, atributo_test) -- opción B: limpieza
+    uniforme, sin distinguir origen.
+    """
+    elem = Elemento_Test(casilla=(1, 2), id_elemento=1, peso=5.0)
+    elem.mundo = _MundoFalsoConRegistro()
+
+    elem.eliminar()
+
+    assert elem.peso is None
+    assert elem.atributo_test is None
+    assert elem.casilla is None
+    assert elem.tamanho is None
+    assert elem.id_elemento is None
+
+
+def test_eliminar_avisa_al_mundo_con_el_propio_elemento():
+    """El mundo debe recibir la llamada a eliminar_elemento(self) --
+    y recibir el MISMO objeto, no una copia ni None."""
+    elem = Elemento_Test(casilla=(1, 2), id_elemento=1, peso=5.0)
+    mundo_falso = _MundoFalsoConRegistro()
+    elem.mundo = mundo_falso
+
+    elem.eliminar()
+
+    assert mundo_falso.elemento_eliminado is elem
+
+
+def test_eliminar_no_toca_class_ni_isinstance(elemento_basico):
+    """
+    Diferencia deliberada frente a quitar(): eliminar() (opción B) NO
+    reescribe __class__. isinstance() sigue dando True para los
+    comportamientos que tenía, aunque sus atributos ya sean None --
+    es aceptable porque el objeto no se va a volver a usar, pero se
+    deja fijado aquí para que un cambio futuro a "reescribir __class__"
+    sea una decisión consciente, no un efecto colateral no probado.
+    """
+    elemento_basico.mundo = _MundoFalsoConRegistro()
+    elemento_basico.eliminar()
+
+    assert isinstance(elemento_basico, Peso)
+    assert elemento_basico.peso is None

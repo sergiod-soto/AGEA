@@ -170,8 +170,8 @@ class LogicaMundo:
         if elemento is not None:
             try:
                 self._liberar_sonidos_de(elemento)
-            except:
-                raise ValueError(f"Error eliminando sonidos de {elemento}")
+            except Exception as exc:
+                raise ValueError(f"Error eliminando sonidos de {elemento}") from exc
 
         if celda.suelo == m.id_elemento:
             celda.suelo = None
@@ -405,7 +405,7 @@ class LogicaMundo:
             return True, ""
 
     async def eliminar_avatar_bot(self, bot_id: int) -> tuple[bool, str]:
-        
+
         bot_id = int(bot_id)
         pos = self._bot_positions.get(bot_id)
         if pos is None:
@@ -647,12 +647,6 @@ class LogicaMundo:
 
                     comportamientos_encontrados = {}
                     for nombre in incluir:
-                        # FIX: get_comportamiento lanza ValueError si el
-                        # elemento no tiene ese comportamiento (no devuelve
-                        # None) — se captura para que un elemento sin el
-                        # comportamiento pedido simplemente se omita del
-                        # resultado, en vez de reventar toda la consulta de
-                        # la región.
                         try:
                             comp = elemento.get_comportamiento(
                                 nombre, modo="representacion"
@@ -670,10 +664,8 @@ class LogicaMundo:
                             "id": eid,
                             "x": x,
                             "y": y,
-                            "comportamientos": {
-                                n: str(v)
-                                for n, v in comportamientos_encontrados.items()
-                            },
+                            "clase": type(elemento).__name__,
+                            "comportamientos": comportamientos_encontrados,
                         }
                     )
 
