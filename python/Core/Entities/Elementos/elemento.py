@@ -74,14 +74,16 @@ class Elemento(ABC, Comportamiento):
     def serialize_mundo(self):
         return NO_SERIALIZAR
 
-    def _serializar_propios(self) -> dict:
-        atributos_comportamientos = self._atributos_de_comportamientos()
+    def _serializar_cadena_elemento(self, *, modo: str) -> dict:
 
+        atributos_comportamientos = self._atributos_de_comportamientos()
         resultado = {}
         for k, v in vars(self).items():
             if k.startswith("_") or k in atributos_comportamientos:
                 continue
-            serializador = getattr(self, f"serialize_{k}", None)
+            especifico = getattr(self, f"serialize_{k}_{modo}", None)
+            generico = getattr(self, f"serialize_{k}", None)
+            serializador = especifico or generico
             valor = serializador() if serializador else v
             if valor is NO_SERIALIZAR:
                 continue
@@ -90,45 +92,54 @@ class Elemento(ABC, Comportamiento):
 
     def serializar(self, cls: type | None = None, *, modo: str) -> dict:
         """
-        (Por serializar() desde Comportamiento)
+        Serialización PLANA para snapshot/transporte (save_snapshot,
+        _id_a_slot_bytes, crear_elemento...). Es la que necesita
+        '__clase__' en el nivel superior: reconstruir_elemento() lo lee
+        de ahí para saber qué clase instanciar -- si falta, revienta con
+        "Clase de elemento desconocida" (ver sesión anterior).
 
-        cls : None cuando se serializa el ELEMENTO ENTERO (uso normal:
-              _id_a_slot_bytes, save_snapshot, crear_elemento...). Si se
-              pasa una clase de comportamiento, es porque quien llama es
-              Comportamiento.get_comportamiento() -- que siempre invoca
-              self.serializar(cls, modo=modo) -- y en ese caso hay que
-              delegar en Comportamiento.serializar para devolver solo
-              los campos de ESE comportamiento, no el elemento completo.
-              (FIX: antes Elemento.serializar no aceptaba 'cls', así que
-              esa llamada rompía con TypeError para cualquier Elemento
-              real -- ver Tests/Core/Entities/Elementos/test_elemento.py
-              ::test_get_comportamiento_sobre_elemento_real)
+        cls : None cuando se serializa el ELEMENTO ENTERO. Si se pasa
+              una clase de comportamiento, viene de
+              Comportamiento.get_comportamiento() -- delega en
+              Comportamiento.serializar para devolver solo los campos de
+              ESE comportamiento, no el elemento completo.
 
-        modo distingue PARA QUÉ se serializa, porque un campo pesado (como
-        'sonidos' en Sonoro) puede necesitar una representación distinta
-        según el consumidor:
-        - "guardado"        : snapshots a disco (save_snapshot).
-        - "transporte"      : entre sectores / Logica_Mundo vía gRPC
-                                (_id_a_slot_bytes). Hoy idéntico a "guardado".
-        - "representacion"  : lo que ve Unity cada tick
-                                (consultar_representacion) -- lo más ligero
-                                posible. Hoy idéntico a los otros dos: sin
-                                hooks serialize_X_representacion todavía,
-                                pero la distinción existe con vistas a
-                                futuro (comentario del usuario, ver
-                                sesión de tests).
+        modo: "guardado" | "transporte" | "representacion" -- ver
+              docstring de serializar_cadena_elemento(). NOTA: pese a
+              aceptar "representacion" como valor de modo, este método
+              NO es el que usa Unity -- Unity pasa por representacion(),
+              que construye "elemento" a mano con un formato ANIDADO
+              distinto (ver más abajo). Si algún día se llama
+              serializar(modo="representacion") por error en vez de
+              representacion(), el resultado sería plano, no el
+              esquema anidado que espera Unity.
         """
         if cls is not None:
             return Comportamiento.serializar(self, cls, modo=modo)
 
         return {
             "__clase__": type(self).__name__,
-            **self._serializar_propios(),
+            **self._serializar_cadena_elemento(modo=modo),
             "comportamientos": {
                 c.__name__: c.serializar(self, c, modo=modo)
                 for c in self._get_comportamientos()
             },
         }
+
+    def serializar_elemento(self, cls: type | None = None, *, modo: str) -> dict:
+
+        return {
+            "__clase__": type(self).__name__,
+            "capa": self.capa,
+            "id_elemento": self.id_elemento,
+        }
+
+    def representacion(self, modo: str, incluir: list[str]) -> dict:
+
+        raise NotImplementedError(
+            f"{type(self).__name__} no implementa representacion(); "
+            "cada tipo concreto debe definir explícitamente qué manda a Unity."
+        )
 
     def deserializar(self, data: dict, mundo: Mundo | None):
         # Deserializa atributos propios del elemento
@@ -156,19 +167,7 @@ class Elemento(ABC, Comportamiento):
                 c.deserializar(self, data["comportamientos"][c.__name__])
 
     def eliminar(self):
-        """
-        Limpia el estado del elemento antes de descartarlo y avisa al mundo
-        para que quite la referencia.
 
-        No se usa Comportamiento.quitar() aquí (opción B, ver discusión):
-        quitar() reescribe __class__ para mantener consistente la identidad
-        de un objeto que sigue vivo -- trabajo desperdiciado para un objeto
-        que va a desaparecer del todo, y que además revienta por cascada
-        cuando un comportamiento (p.ej. Fisico) solo está presente en el
-        MRO a través de otro (Peso) que se quita antes en el mismo bucle.
-        En su lugar, se ponen a None TODOS los atributos propios por igual
-        (los del elemento y los de sus comportamientos), sin tocar __class__.
-        """
         mundo = self.mundo
         if mundo is None:
             raise TypeError("No se ha inicializado Mundo")

@@ -22,8 +22,7 @@ NO_SERIALIZAR = _NoSerializar()
 @dataclass(kw_only=True)
 class Comportamiento:
 
-    def __init__(self):
-        self.comportamiento_activo = True
+    def __init__(self): ...
 
     @staticmethod
     def _params_propios(cls) -> dict:
@@ -224,19 +223,6 @@ class Comportamiento:
     def __repr__(self):
         nombres = [c.__name__ for c in self.comportamientos()]
         return f"{type(self).__name__}({', '.join(nombres)})"
-
-    # --- Serialización  ---
-    def a_dict(self) -> dict:
-        """
-        Exporta el estado del Comportamiento como diccionario
-        """
-        return {k: v for k, v in self.__dict__.items()}
-
-    @classmethod
-    def desde_dict(cls, datos: dict):
-        obj = cls.__new__(cls)
-        obj.__dict__.update(datos)
-        return obj
 
     def declarar_comportamientos(*clases):
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""

@@ -627,6 +627,7 @@ class LogicaMundo:
         max_pos: tuple[int, int],
         incluir: list[str],
         modo: str,
+        tipos: list[str] | None = None,  # None = sin filtro de tipo
     ) -> bytes:
         x0, y0 = min_pos
         x1, y1 = max_pos
@@ -639,33 +640,21 @@ class LogicaMundo:
 
                 ids = [celda.suelo, celda.bot, *celda.resto]
                 for eid in ids:
-                    if eid is None:
-                        continue
                     elemento = self._elements.get(eid)
                     if elemento is None:
                         continue
+                    if tipos is not None and type(elemento).__name__ not in tipos:
+                        continue
 
-                    comportamientos_encontrados = {}
-                    for nombre in incluir:
-                        try:
-                            comp = elemento.get_comportamiento(
-                                nombre, modo="representacion"
-                            )
-                        except ValueError:
-                            continue
-                        if comp is not None:
-                            comportamientos_encontrados[nombre] = comp
+                    campos = elemento.representacion(modo, incluir)
 
-                    if not comportamientos_encontrados:
+                    if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
 
                     resultado.append(
                         {
-                            "id": eid,
-                            "x": x,
-                            "y": y,
-                            "clase": type(elemento).__name__,
-                            "comportamientos": comportamientos_encontrados,
+                            # "clase": type(elemento).__name__,
+                            **campos,  # "elemento": {...}, "comportamientos": {...}
                         }
                     )
 

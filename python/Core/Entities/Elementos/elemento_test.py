@@ -33,3 +33,22 @@ class Elemento_Test(Elemento_Simple, comportamientos):
             peso=peso,
             **kwargs
         )
+
+    def representacion(self, modo: str, incluir: list[str] = None) -> dict:
+        serializacion_simple = self.serializar_elemento_simple(modo=modo)
+
+        campos = {}
+        campos["elemento"] = {
+            "tamanho": self.serializar_tamanho(),
+            "casilla": self.serializar_casilla(),
+            "rotacion": self.serializar_rotacion(),
+        }
+        campos["elemento"].update(serializacion_simple)
+
+        campos["comportamientos"] = {
+            cls.__name__: self.serializar(cls, modo=modo)
+            for cls in self._get_comportamientos()
+            if cls.__name__ in incluir
+        }
+
+        return campos

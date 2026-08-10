@@ -10,15 +10,13 @@ class Elemento_Simple(Elemento):
     - casilla: tuple[int, int],
     - capa: int,
     - rotacion: float = 0,
-    - fuerza_sector_activo: bool = False,
-    - fuerza_vecinos_activos: bool = False,
     """
 
     def __init__(
         self,
         tipo,
         id_elemento,
-        tamanho: int,
+        tamanho: float,
         casilla: tuple[int, int],
         capa: int,
         rotacion: float = 0,
@@ -34,12 +32,26 @@ class Elemento_Simple(Elemento):
         self.casilla = casilla
         self.rotacion = rotacion
 
-    def serialize_casilla(self):
+    def serializar_tamanho(self):
+        return self.tamanho
+
+    def serializar_casilla(self):
         return {"x": self.casilla[0], "y": self.casilla[1]}
 
-    def deserialize_casilla(self, value):
+    def deserializar_casilla(self, value):
         self.casilla = (value["x"], value["y"])
 
     # 'rotacion' se normaliza a [0, 360) al serializar.
-    def serialize_rotacion(self):
+    def serializar_rotacion(self):
         return self.rotacion % 360
+
+    def serializar_elemento_simple(self, modo):
+        serializacion = self.serializar_elemento(modo=modo)
+        s_simple = {
+            "tipo_elemento": "elemento_simple",
+            "tamanho": self.serializar_tamanho(),
+            "casilla": self.serializar_casilla(),
+            "rotacion": self.serializar_rotacion(),
+        }
+        serializacion.update(s_simple)
+        return serializacion

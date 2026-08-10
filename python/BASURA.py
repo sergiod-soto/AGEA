@@ -1,27 +1,15 @@
 from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
+from Core.Entities.Elementos.elemento_test import Elemento_Test
 
-requiere, abstractos = Piedra.obtener_requisitos()
-
-
+# requiere, abstractos = Piedra.obtener_requisitos()
+#
 # print("REQUIERE")
 # print(requiere)
 # print()
 # print("ABSTRACTOS")
 # print(abstractos)
 
-p = Piedra(
-    id_elemento=0,
-    tamanho=1,
-    casilla=(0, 0),
-    capa=1,
-    peso=1,
-    coste_empujar=1,
-    volumen=1,
-    rgb_base=(0, 0, 0),
-    durabilidad_max_destruible=1,
-    temperatura_propia=1,
-    tasa_transferencia_temperatura=1,
-    durabilidad_max_erosion=1,
-)
+elem = Elemento_Test(casilla=(3, 4), id_elemento=1, peso=10.0)
+import json
+print(json.dumps(elem.representacion(modo="representacion"), indent=2, ensure_ascii=False))
 
-print(p.serializar(modo="representacion"))
