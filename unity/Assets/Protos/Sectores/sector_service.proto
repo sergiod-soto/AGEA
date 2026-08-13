@@ -1,0 +1,201 @@
+syntax = "proto3";
+package sector;
+import "common.proto";
+
+// ============================================================
+//  SectorService — expuesto por cada Sector.
+//
+//  Cliente único: Gestor_Mundo.
+//  main.py también puede llamar a Shutdown directamente.
+// ============================================================
+
+service SectorService {
+  // ----- Infraestructura (main.py) -----
+  // Los sectores no tienen estado que hibernar: su existencia es discreta.
+  // Shutdown simplemente termina el proceso.
+  rpc Shutdown         (common.ShutdownRequest)   returns (common.ShutdownResponse);
+
+  // ----- Ciclo de vida -----
+  rpc SetSectorMode    (SetSectorModeRequest)      returns (SetSectorModeResponse);
+  rpc LoadState        (LoadStateRequest)          returns (LoadStateResponse);
+  rpc GetState         (GetStateRequest)           returns (GetStateResponse);
+
+  // ----- FASE 0 — preparación del tick -----
+  rpc SetGhostZone     (SetGhostZoneRequest)       returns (SetGhostZoneResponse);
+  rpc SetSounds        (SetSoundsRequest)          returns (SetSoundsResponse);
+  rpc AddMigratingBot  (AddMigratingBotRequest)    returns (AddMigratingBotResponse);
+
+  // ----- FASE 1 — computación -----
+  rpc StartTick        (StartTickRequest)          returns (StartTickResponse);
+
+  // ----- FASE 2 — consolidación -----
+  rpc GetDelta         (GetDeltaRequest)           returns (GetDeltaResponse);
+
+  // ----- Guardado profundo coordinado -----
+  rpc SaveSnapshot     (SaveSnapshotRequest)       returns (SaveSnapshotResponse);
+
+  // ----- Consulta de atributos (debug/dev) -----
+  rpc GetElementAttributes (GetElementAttributesRequest) returns (GetElementAttributesResponse);
+}
+
+// ============================================================
+//  Modos de sector
+// ============================================================
+
+enum SectorMode {
+  INACTIVO = 0;
+  DORMIDO  = 1;
+  ACTIVO   = 2;
+}
+
+// ============================================================
+//  SetSectorMode
+// ============================================================
+
+message SetSectorModeRequest {
+  SectorMode mode = 1;
+}
+
+message SetSectorModeResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ============================================================
+//  LoadState / GetState
+// ============================================================
+
+message LoadStateRequest {
+  repeated common.Cell        cells = 1;
+  repeated common.BotSnapshot bots  = 2;
+}
+
+message LoadStateResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+message GetStateRequest {}
+
+message GetStateResponse {
+  bool   ok    = 1;
+  string error = 2;
+  repeated common.Cell        cells = 3;
+  repeated common.BotSnapshot bots  = 4;
+}
+
+// ============================================================
+//  FASE 0 — preparación del tick
+// ============================================================
+
+message SetGhostZoneRequest {
+  uint64                   tick_id     = 1;
+  repeated common.Cell    ghost_cells = 2;
+}
+
+message SetGhostZoneResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+message SetSoundsRequest {
+  uint64                        tick_id = 1;
+  repeated common.SoundEvent   sounds  = 2;
+}
+
+message SetSoundsResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+message AddMigratingBotRequest {
+  uint64               tick_id = 1;
+  common.BotSnapshot  bot     = 2;
+}
+
+message AddMigratingBotResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ============================================================
+//  FASE 1 — computación
+// ============================================================
+
+message StartTickRequest {
+  uint64 tick_id    = 1;
+  int32 timeout_ms = 2;
+}
+
+message StartTickResponse {
+  bool   ok        = 1;
+  string error     = 2;
+  bool   timed_out = 3;
+}
+
+// ============================================================
+//  FASE 2 — consolidación
+// ============================================================
+
+message MigratingBot {
+  common.BotSnapshot bot        = 1;
+  common.Position    target_pos = 2;
+}
+
+message GetDeltaRequest {
+  uint64 tick_id = 1;
+}
+
+message GetDeltaResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  uint64  tick_id = 3;
+
+  repeated common.Cell         changed_cells  = 4;
+  repeated MigratingBot        outgoing_bots  = 5;
+  repeated uint64              dead_bot_ids   = 6;
+  repeated common.SoundEvent   emitted_sounds = 7;
+}
+
+// ============================================================
+//  SaveSnapshot
+// ============================================================
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;
+}
+
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}
+
+// ============================================================
+//  GetElementAttributes (debug/dev)
+// ============================================================
+
+message GetElementAttributesRequest {
+  repeated uint64 element_ids = 1;
+}
+
+message Valor {
+  oneof valor {
+    int64  entero   = 1;
+    double decimal  = 2;
+    bool   booleano = 3;
+    string texto    = 4;
+  }
+}
+
+message ElementAttributes {
+  uint64              element_id      = 1;
+  repeated string     comportamientos = 2;
+  map<string, Valor>  atributos       = 3;
+}
+
+message GetElementAttributesResponse {
+  bool   ok    = 1;
+  string error = 2;
+  repeated ElementAttributes elementos = 3;
+}

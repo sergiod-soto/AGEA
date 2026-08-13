@@ -1,0 +1,187 @@
+syntax = "proto3";
+package common;
+
+// ============================================================
+//  Genéricos
+// ============================================================
+
+message Ack {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+// ============================================================
+//  Grid
+// ============================================================
+
+// Posición absoluta en el grid global.
+message Position {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+// Celda del grid.
+//
+// CAMBIO (antes: un único campo `element`): una celda puede tener hasta
+// 3 elementos simultáneos en distintos "slots" — suelo, bot, y una lista
+// de "resto" (objetos sueltos, etc.). Cada campo son los bytes de la
+// serialización Elemento → dict → bytes de ese elemento concreto, o
+// vacío (b"") si el slot no está ocupado. El `id` de cada elemento va
+// incluido dentro de su propio blob serializado (no es un campo aparte
+// aquí), así que quien deserializa puede extraerlo directamente.
+//
+// Antes de este cambio, mirar.py ya asumía esta forma de 3 slots aunque
+// el proto solo tuviera un campo `element` — este cambio hace que el
+// contrato refleje lo que el código ya daba por hecho.
+message Cell {
+  Position       pos   = 1;
+  bytes          suelo = 2;   // vacío si no hay elemento en este slot
+  bytes          bot   = 3;   // vacío si no hay bot en esta celda
+  repeated bytes resto = 4;   // lista de elementos sueltos, puede ser vacía
+}
+
+// ============================================================
+//  Bots
+// ============================================================
+
+message BotConfig {
+  uint64              bot_id    = 1;
+  int32               budget    = 2;
+  bytes               codigo_gz = 3;   // gzip del código Python compilado
+  map<string, string> metadata  = 4;
+}
+
+message BotInfo {
+  uint64 bot_id        = 1;
+  string hypervisor_id = 2;
+  string proxy_address = 3;   // "host:puerto" del world_proxy
+  bool   ok            = 4;
+  string error         = 5;
+}
+
+message BotStats {
+  uint64 bot_id        = 1;
+  string hypervisor_id = 2;
+  double fitness       = 3;
+  int64  tick          = 4;
+  int32  points_left   = 5;
+}
+
+message BotStatus {
+  uint64 bot_id = 1;
+  bool   alive  = 2;
+  int32  budget = 3;
+}
+
+message BotList {
+  repeated BotStats bots = 1;
+}
+
+// Estado de un bot para migración entre sectores o hibernación.
+message BotSnapshot {
+  uint64   bot_id      = 1;
+  Position pos         = 2;
+  bytes    state       = 3;
+  int32    budget      = 4;
+  uint64   id_elemento = 5;
+}
+
+// ============================================================
+//  Acciones
+// ============================================================
+
+message ActionResult {
+  bool   ok         = 1;
+  bytes  payload    = 2;
+  string error      = 3;
+  int64  world_tick = 4;
+}
+
+// ============================================================
+//  Observación
+// ============================================================
+
+enum EntityType {
+  ENTITY_UNKNOWN  = 0;
+  ENTITY_BOT      = 1;
+  ENTITY_RESOURCE = 2;
+  ENTITY_OBSTACLE = 3;
+}
+
+message RayHit {
+  bool       hit      = 1;
+  EntityType type     = 2;
+  int32      distance = 3;
+}
+
+message ObserveResult {
+  repeated RayHit rays = 1;
+}
+
+// ============================================================
+//  Hypervisores
+// ============================================================
+
+message HypervisorInfo {
+  string hypervisor_id = 1;
+  string address       = 2;
+  int32  port          = 3;
+  int32  proxy_port    = 4;
+  int32  capacity      = 5;
+  int32  current_load  = 6;
+  bool   online        = 7;
+}
+
+message HypervisorList {
+  repeated HypervisorInfo hypervisors = 1;
+}
+
+// ============================================================
+//  Presupuesto
+// ============================================================
+
+message BudgetEntry {
+  uint64 bot_id = 1;
+  int32  budget = 2;
+}
+
+// ============================================================
+//  Sonido cross-border
+// ============================================================
+
+message SoundEvent {
+  Position origin    = 1;
+  int32    intensity = 2;
+  bytes    payload   = 3;
+}
+
+// ============================================================
+//  Heartbeat — tipos de estado de hijos
+// ============================================================
+
+message HeartbeatRequest {}
+
+message HVStatus {
+  string hypervisor_id = 1;
+  bool   alive         = 2;
+  int32  bot_count     = 3;
+}
+
+message SectorStatus {
+  string sector_id = 1;
+  bool   alive     = 2;
+}
+
+// ============================================================
+//  Shutdown coordinado
+// ============================================================
+
+message ShutdownRequest {
+  string shutdown_id = 1;
+  string reason      = 2;
+}
+
+message ShutdownResponse {
+  bool   ok    = 1;
+  string error = 2;
+}

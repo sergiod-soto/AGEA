@@ -1,0 +1,49 @@
+syntax = "proto3";
+package world_proxy;
+import "common.proto";
+
+// ============================================================
+//  WorldProxyService — expuesto por cada Hypervisor en su
+//  proxy_port. Los Bots se conectan aquí creyendo hablar
+//  directamente con el Mundo.
+//
+//  Cliente único: los Bots.
+//
+//  El bot se identifica con el header gRPC:
+//    ("bot-id", "bot_001")
+//
+//  Las acciones disponibles y sus costes se definen en:
+//    core/acciones.py
+//  No hay que tocar este proto para añadir nuevas acciones.
+// ============================================================
+
+service WorldProxyService {
+  rpc Act (ActRequest) returns (common.ActionResult);
+}
+
+// ============================================================
+//  Mensajes
+// ============================================================
+
+message ActRequest {
+  string action_name = 1;
+  bytes  payload     = 2;
+}
+
+// TODO: definir e integrar cuando se implemente observación directa
+message MirarRequest {
+  int32 distancia = 1;
+}
+
+// TODO: definir e integrar cuando se implemente consulta de estado desde bot
+message GetStatusRequest {}
+
+message BotStatusResponse {
+  string           bot_id      = 1;
+  common.Position  position    = 2;
+  float            rotation    = 3;
+  float            health      = 4;
+  int32            points_left = 5;
+  int64            world_tick  = 6;
+  bool             alive       = 7;
+}

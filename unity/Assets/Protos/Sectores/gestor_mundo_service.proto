@@ -1,0 +1,58 @@
+// Infraestructura/Transporte/Protobufs/Sectores/gestor_mundo_service.proto
+syntax = "proto3";
+package gestor_mundo;
+import "common.proto";
+
+// ============================================================
+//  GestorMundoService — expuesto por el Gestor del Mundo.
+//
+//  GetGlobalState se RETIRÓ de aquí: los elementos globales viven en
+//  Logica_Mundo (ver LogicaMundoService.GetElementosGlobales) —
+//  decisión "elementos_globales: B". Lo que queda aquí es
+//  exclusivamente mecánica de tick + snapshot de topología propia.
+// ============================================================
+
+service GestorMundoService {
+  rpc Heartbeat          (common.HeartbeatRequest)       returns (GestorMundoHeartbeatResponse);
+  rpc Shutdown           (common.ShutdownRequest)        returns (common.ShutdownResponse);
+
+  rpc GetSnapshotInfo    (GetSnapshotInfoRequest)         returns (GetSnapshotInfoResponse);
+
+  rpc Pause              (PauseRequest)                   returns (common.Ack);
+  rpc Resume             (ResumeRequest)                  returns (common.Ack);
+  rpc SetTickRate        (SetTickRateRequest)             returns (common.Ack);
+  rpc TriggerDeepSave    (TriggerDeepSaveRequest)         returns (TriggerDeepSaveResponse);
+}
+
+message GestorMundoHeartbeatResponse {
+  bool                         ok              = 1;
+  string                       error           = 2;
+  repeated common.SectorStatus sector_statuses = 3;
+}
+
+message GetSnapshotInfoRequest {}
+
+message GetSnapshotInfoResponse {
+  bool   ok               = 1;
+  string error            = 2;
+  string snapshot_id      = 3;
+  int64  tick_id          = 4;
+  int64  timestamp_unix   = 5;
+  bool   is_deep_snapshot = 6;
+}
+
+message PauseRequest  {}
+
+message ResumeRequest {}
+
+message SetTickRateRequest {
+  int32 ticks_per_second = 1;
+}
+
+message TriggerDeepSaveRequest {}
+
+message TriggerDeepSaveResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}

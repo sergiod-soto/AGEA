@@ -1,0 +1,79 @@
+syntax = "proto3";
+package hypervisor;
+import "common.proto";
+
+// ============================================================
+//  HypervisorService — expuesto por cada Hypervisor.
+//
+//  Clientes:
+//    - El Gestor  → todo excepto Shutdown
+//    - main.py    → Shutdown (cierre directo sin pasar por gestor)
+// ============================================================
+
+service HypervisorService {
+  // ----- Infraestructura (main.py) -----
+  rpc Shutdown        (common.ShutdownRequest)  returns (common.ShutdownResponse);
+
+  // ----- Ciclo de vida de bots -----
+  rpc SpawnBot        (SpawnBotRequest)         returns (common.BotInfo);
+  rpc KillBot         (BotIdRequest)            returns (common.Ack);
+  rpc GetBotStats     (BotIdRequest)            returns (common.BotStats);
+  rpc ListBots        (ListBotsRequest)         returns (common.BotList);
+
+  // ----- Control de presupuesto -----
+  rpc ResetBudgets    (ResetBudgetsRequest)     returns (common.Ack);
+  rpc SetPointBudget  (SetPointBudgetRequest)   returns (common.Ack);
+
+  // ----- Consultas de estado -----
+  rpc GetBotStatus    (BotIdRequest)            returns (common.BotStatus);
+
+  // ----- Pausa y reanudación (mid-session, coordinado por gestor) -----
+  // Freeze suspende la ejecución de todos los bots de este HV.
+  // Se usa durante TriggerDeepSave para garantizar un snapshot consistente.
+  rpc Freeze          (FreezeRequest)           returns (common.Ack);
+  rpc Resume          (ResumeRequest)           returns (common.Ack);
+
+  // ----- Snapshot (mid-session, coordinado por gestor) -----
+  // Persiste el estado de los bots con el snapshot_id compartido del sistema.
+  // Solo se llama con el HV en Freeze.
+  rpc SaveSnapshot    (SaveSnapshotRequest)     returns (SaveSnapshotResponse);
+}
+
+// ============================================================
+//  Mensajes
+// ============================================================
+
+message SpawnBotRequest {
+  common.BotConfig config = 1;
+}
+
+message BotIdRequest {
+  uint64 bot_id = 1;
+}
+
+message ListBotsRequest {}
+
+message ResetBudgetsRequest {
+  repeated uint64             bot_ids        = 1;
+  int32                       default_budget = 2;
+  repeated common.BudgetEntry overrides      = 3;
+}
+
+message SetPointBudgetRequest {
+  uint64 bot_id = 1;
+  int32  points = 2;
+}
+
+message FreezeRequest {}
+
+message ResumeRequest {}
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;
+}
+
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}

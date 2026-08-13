@@ -1,0 +1,61 @@
+// Infraestructura/Transporte/Protobufs/Comunicacion/comunicacion_remota_service.proto
+
+
+syntax = "proto3";
+package comunicacion_remota;
+import "common.proto";
+import "Comunicacion/logica_mundo_service.proto";  
+
+service ComunicacionRemotaService {
+  rpc Heartbeat (common.HeartbeatRequest) returns (common.Ack);
+  rpc Ejecutar  (EjecutarRequest)         returns (EjecutarResponse);
+  rpc ActualizarFoco (FocoRequest) returns (common.Ack);
+  rpc SuscribirseFoco (SuscribirseFocoRequest) returns (stream ActualizacionFoco);
+}
+
+enum ComponenteDestino {
+  LOGICA_MUNDO = 0;
+  GESTOR_MUNDO = 1;
+  GESTOR_BOTS  = 2;
+}
+
+message EjecutarRequest {
+  ComponenteDestino componente = 1;
+  string            operacion  = 2;
+  bytes             payload    = 3;                                                                                                 
+}
+
+message EjecutarResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;
+}
+
+// ------------------------------------------------------------------
+// Vista_Foco: fijar el foco (master) y recibir sus actualizaciones
+// (master + espectadores), por streaming compartido.
+// ------------------------------------------------------------------
+
+message FocoRequest {
+  common.Position min     = 1;
+  common.Position max     = 2;
+  repeated string incluir = 3;  // mismo filtro que ya acepta ConsultarRepresentacion
+  string          modo    = 4;  // idem
+}
+
+message SuscribirseFocoRequest {
+  // Vacío a propósito: suscribirse no elige nada, solo te conecta a
+  // la emisión compartida del foco actual.
+}
+
+message ActualizacionFoco {
+  bool   ok    = 1;
+  string error = 2;
+
+  // Snapshot completo del foco en este pulso (no delta: más simple,
+  // suficiente mientras el mundo sea pequeño).
+  repeated common.Cell                      celdas             = 3;
+  bytes                                     representacion     = 4;  // datos ya serializados de ConsultarRepresentacion
+  repeated logica_mundo.ElementoGlobalState elementos_globales = 5;
+  int64                                     tick_actual        = 6;
+}

@@ -2,34 +2,31 @@
 using Newtonsoft.Json.Linq;
 
 /// <summary>
-/// Dato puro (sin MonoBehaviour) de un elemento del mundo tal como llega
-/// en "representacion" (ver logica_mundo.py::consultar_representacion).
-/// Es la ÚNICA fuente de verdad para cualquier tipo de elemento (Bot, Piedra, etc.):
-/// sustituye a BotInfo, ElementoMundo y DatosBot.
+/// Dato puro (sin MonoBehaviour) de un elemento del mundo, deserializado
+/// a partir de UN ítem de "representacion.elementos[]" (formato real
+/// confirmado, no el de "transporte"/"guardado" que se usa para Cell).
+/// Es la única fuente de verdad para cualquier tipo de elemento (Bot,
+/// Piedra, Elemento_Test, etc.): sustituye a BotInfo, ElementoMundo y DatosBot.
 ///
-/// No conoce nada de Unity a propósito: así el pool puede comparar/actualizar
-/// estos datos sin depender de que exista ya un GameObject para ellos.
+/// Cada ítem de "elementos[]" viene como dos bloques separados:
+///   "elemento": { tamanho, casilla, rotacion, __clase__, capa, id_elemento, tipo_elemento }
+///   "comportamientos": { NombreComportamiento: {...datos...}, ... }
+/// Se guardan ambos bloques, no se aplanan, para no perder esa distinción
+/// que ya trae el propio formato.
 /// </summary>
 public class ElementoInstancia
 {
-    // "__clase__" en el JSON -> usado por PrefabRegistry para elegir el prefab.
-    public string Clase { get; private set; }
+    public int IdElemento { get; private set; }      // elemento.id_elemento
+    public string Clase { get; private set; }         // elemento.__clase__
+    public string TipoElemento { get; private set; }  // elemento.tipo_elemento
+    public int Capa { get; private set; }              // elemento.capa
+    public int Tamanho { get; private set; }            // elemento.tamanho
+    public (int x, int y) Casilla { get; private set; } // elemento.casilla.{x,y}
+    public float Rotacion { get; private set; }          // elemento.rotacion
 
-    // Identificador único y estable del elemento (id_elemento en el JSON).
-    // Es la clave que usa ElementoPool para saber "esto ya existe" vs "esto es nuevo".
-    public int IdElemento { get; private set; }
-
-    public int Capa { get; private set; }
-    public int Tamanho { get; private set; }
-    public (int x, int y) Casilla { get; private set; }
-    public float Rotacion { get; private set; }
-    public bool ComportamientoActivo { get; private set; }
-
-    // Diccionario abierto: cada comportamiento (Color, Destruible, Sonoro, ...)
-    // se guarda como JObject crudo. ComportamientoHandlers decide qué hacer
-    // con cada uno; los que no tengan handler simplemente se ignoran.
-    // Esto evita tener que tocar esta clase cada vez que el simulador añade
-    // un comportamiento nuevo.
+    // Dict abierto: cada comportamiento (Peso, Color, Sonoro, ...) se
+    // guarda como JObject crudo. ComportamientoHandlers decide qué hacer
+    // con cada uno; los que no tengan handler se ignoran sin error.
     public JObject Comportamientos { get; private set; }
 
     // Último tick en el que este elemento apareció en un ActualizacionFoco.
@@ -37,25 +34,24 @@ public class ElementoInstancia
     public long UltimoTickVisto { get; set; }
 
     /// <summary>
-    /// Construye una instancia a partir de un elemento de "representacion.elementos[]".
-    /// No valida exhaustivamente el JSON: si faltase un campo obligatorio,
-    /// preferimos que falle aquí de forma ruidosa (excepción) a que se
-    /// propague un dato a medias hacia el pool o el render.
+    /// Construye una instancia a partir de UN ítem de "representacion.elementos[]"
+    /// (el JObject que contiene las claves "elemento" y "comportamientos").
     /// </summary>
-    public static ElementoInstancia DesdeJson(JObject json, long tickActual)
+    public static ElementoInstancia DesdeJson(JObject item, long tickActual)
     {
-        var casillaJson = json["casilla"];
+        var elemento = (JObject)item["elemento"];
+        var casillaJson = elemento["casilla"];
 
         return new ElementoInstancia
         {
-            Clase = (string)json["__clase__"],
-            IdElemento = (int)json["id_elemento"],
-            Capa = (int)json["capa"],
-            Tamanho = (int)json["tamanho"],
+            IdElemento = (int)elemento["id_elemento"],
+            Clase = (string)elemento["__clase__"],
+            TipoElemento = (string)elemento["tipo_elemento"],
+            Capa = (int)elemento["capa"],
+            Tamanho = (int)elemento["tamanho"],
             Casilla = ((int)casillaJson["x"], (int)casillaJson["y"]),
-            Rotacion = (float)json["rotacion"],
-            ComportamientoActivo = (bool)json["comportamiento_activo"],
-            Comportamientos = (JObject)json["comportamientos"],
+            Rotacion = (float)elemento["rotacion"],
+            Comportamientos = (JObject)item["comportamientos"],
             UltimoTickVisto = tickActual
         };
     }

@@ -1,0 +1,42 @@
+syntax = "proto3";
+package logs;
+
+// ============================================================
+//  LogService — expuesto por el Mundo (nodo local).
+//
+//  Clientes: Gestor, Hypervisores (ambos en AWS).
+//
+//  El envío es fire-and-forget: si falla la red, el componente
+//  sigue funcionando y el log se pierde (aceptable; los logs
+//  críticos también se escriben localmente en AWS como respaldo).
+// ============================================================
+
+service LogService {
+  rpc SendLog   (LogRecord) returns (LogAck);
+  rpc SendBatch (LogBatch)  returns (LogAck);
+}
+
+enum LogLevel {
+  DEBUG    = 0;
+  INFO     = 1;
+  WARNING  = 2;
+  ERROR    = 3;
+  CRITICAL = 4;
+}
+
+message LogRecord {
+  string   component = 1;   // "gestor" | "hv_01" | ...
+  LogLevel level     = 2;
+  string   logger    = 3;
+  string   message   = 4;
+  int64    timestamp = 5;   // epoch ms
+  string   exc_info  = 6;   // traceback si aplica
+}
+
+message LogBatch {
+  repeated LogRecord records = 1;
+}
+
+message LogAck {
+  bool ok = 1;
+}

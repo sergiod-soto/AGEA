@@ -1,0 +1,182 @@
+// Infraestructura/Transporte/Protobufs/Comunicacion/logica_mundo_service.proto
+syntax = "proto3";
+package logica_mundo;
+import "common.proto";
+
+// ============================================================
+//  LogicaMundoService — expuesto por Logica_Mundo (remoto).
+// ============================================================
+
+service LogicaMundoService {
+  rpc Heartbeat (common.HeartbeatRequest) returns (LogicaMundoHeartbeatResponse);
+  rpc Shutdown  (common.ShutdownRequest)  returns (common.ShutdownResponse);
+  rpc AsignarId (AsignarIdRequest) returns (AsignarIdResponse);
+  rpc CrearElemento     (CrearElementoRequest)     returns (common.Ack);
+  rpc ModificarElemento (ModificarElementoRequest) returns (common.Ack);
+  rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
+  rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
+  rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
+  rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
+  rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
+  rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
+  rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
+  rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
+  rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
+  rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
+  rpc ObtenerAudio (ObtenerAudioRequest) returns (ObtenerAudioResponse);
+  rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
+  rpc LoadState    (LoadStateRequest)    returns (common.Ack);
+  rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
+}
+
+message LogicaMundoHeartbeatResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
+message AsignarIdRequest {}
+
+// FIX: el campo se llamaba "id"; logica_mundo_client.py siempre leyó
+// "resp.id_elemento" (el nombre usado en el resto del sistema para
+// identificar un elemento del mundo), así que aquí se renombra el
+// campo del proto en vez de tocar el cliente.
+message AsignarIdResponse {
+  uint64 id_elemento = 1;
+}
+
+message CrearElementoRequest {
+  common.Position pos     = 1;
+  string          type_id = 2;
+  bytes           element = 3;
+}
+
+message ModificarElementoRequest {
+  common.Position pos     = 1;
+  string          type_id = 2;
+  bytes           patch   = 3;
+}
+
+message EliminarElementoRequest {
+  common.Position pos        = 1;
+  uint64          element_id = 2;
+}
+
+message ResolverAccionRequest {
+  uint64 bot_id      = 1;
+  string action_type = 2;
+  bytes  payload     = 3;
+}
+
+message EliminarAvatarBotRequest {
+  uint64 bot_id = 1;
+}
+
+message GlobalEvent {
+  string          event_id = 1;
+  string          type     = 2;
+  common.Position pos      = 3;
+  bytes           payload  = 4;
+}
+
+message SpawnGlobalEventRequest {
+  GlobalEvent event = 1;
+}
+
+message SpawnGlobalEventResponse {
+  bool   ok       = 1;
+  string error    = 2;
+  string event_id = 3;
+}
+
+message DespawnGlobalEventRequest {
+  string event_id = 1;
+  string reason   = 2;
+}
+
+message GetActiveEventsRequest {}
+
+message GetActiveEventsResponse {
+  bool                 ok     = 1;
+  string               error  = 2;
+  repeated GlobalEvent events = 3;
+}
+
+message GetElementosGlobalesRequest {}
+
+message ElementoGlobalState {
+  string name  = 1;
+  bytes  state = 2;   // JSON de elem.to_snapshot()
+}
+
+message GetElementosGlobalesResponse {
+  bool                         ok                 = 1;
+  string                       error              = 2;
+  repeated ElementoGlobalState elementos_globales = 3;
+  uint64                       tick_actual        = 4;
+}
+
+message AvanzarElementosGlobalesRequest {
+  uint64 tick_id = 1;
+}
+
+message AvanzarElementosGlobalesResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  cambios = 3;
+}
+
+message ObtenerCeldasEnRegionRequest {
+  common.Position min             = 1;
+  common.Position max             = 2;
+  common.Position excluir_min     = 3;
+  common.Position excluir_max     = 4;
+  bool            tiene_exclusion = 5;
+}
+
+message ObtenerCeldasEnRegionResponse {
+  bool                 ok    = 1;
+  string               error = 2;
+  repeated common.Cell cells = 3;
+}
+
+message ActualizarCeldasRequest {
+  repeated common.Cell changed_cells = 1;
+}
+
+message ConsultarRepresentacionRequest {
+  common.Position min     = 1;
+  common.Position max     = 2;
+  repeated string incluir = 3;
+  string          modo    = 4;
+}
+
+message ConsultarRepresentacionResponse {
+  bool   ok    = 1;
+  string error = 2;
+  bytes  datos = 3;
+}
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;
+}
+
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}
+
+message LoadStateRequest {
+  string snapshot_id = 1;
+}
+
+message ObtenerAudioRequest {
+  string id_sonido = 1;
+}
+
+message ObtenerAudioResponse {
+  bool   ok    = 1;
+  string error = 2;
+  
+  bytes  audio  = 3;
+}

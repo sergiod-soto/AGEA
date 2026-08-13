@@ -13,3 +13,4 @@ elem = Elemento_Test(casilla=(3, 4), id_elemento=1, peso=10.0)
 import json
 print(json.dumps(elem.representacion(modo="representacion"), indent=2, ensure_ascii=False))
 
+

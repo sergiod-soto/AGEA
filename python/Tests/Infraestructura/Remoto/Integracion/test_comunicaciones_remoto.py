@@ -1,5 +1,27 @@
 # Tests/Infraestructura/Remoto/Integracion/test_comunicaciones_remoto.py
+"""
+test_comunicaciones_remoto.py — Valida la propagación total de fallos
+en el puente: ComunicacionesRemotoServicer.Heartbeat debe devolver
+ok=False si CUALQUIERA de sus 3 subordinados (logica_mundo,
+gestor_mundo, gestor_bots) falla — por excepción de red O por
+responder con ok=False propio (ver directiva explícita: "cualquier
+cosa caída, todo se apaga").
 
+Se llama al servicer directamente (sin levantar un grpc.aio.server
+real) porque lo que se quiere validar es la lógica de propagación de
+ComunicacionesRemotoServicer + ComunicacionesRemoto colaborando de
+verdad — no la serialización proto de este RPC en concreto, que ya
+queda cubierta por el test de integración de Gestor_Bots (mismo
+patrón, con servidor real). Se documenta la decisión aquí para que
+quede explícita, no implícita.
+
+Sección Vista_Foco (NUEVA): mismo criterio — se ejercita
+ComunicacionesRemoto.actualizar_foco()/suscribirse_foco() directamente
+(sin servidor gRPC real), porque lo que interesa aquí es la lógica de
+FocoBroadcaster (vigilancia de tick + fan-out a suscriptores), no la
+serialización de red — eso lo cubre
+test_comunicaciones_local_roundtrip.py con un servidor real.
+"""
 
 import asyncio
 from types import SimpleNamespace
@@ -12,7 +34,6 @@ from Infraestructura.Gestores.Comunicacion.Remoto.comunicaciones_remoto import (
 from Infraestructura.Gestores.Comunicacion.Remoto.comunicaciones_remoto_servicer import (
     ComunicacionesRemotoServicer,
 )
-from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2
 
 
 class FakeHeartbeatResponse:
@@ -152,10 +173,10 @@ class FakeGlobalesResponse:
 
 class FakeLogicaMundoFoco:
     """
-    Doble de logica_mundo para ejercitar FocoBroadcaster: expone
-    exactamente los tres métodos que su bucle de vigilancia usa
-    (get_elementos_globales, obtener_celdas_en_region,
-    consultar_representacion). `tick_actual` es mutable a mano por el
+    Doble de logica_mundo para ejercitar FocoBroadcaster: expone los
+    dos métodos que su bucle de vigilancia usa (get_elementos_globales,
+    consultar_representacion — obtener_celdas_en_region se retiró del
+    pulso, ver vista_foco.py). `tick_actual` es mutable a mano por el
     test — simula "Logica_Mundo avanzó de tick" sin depender de
     AvanzarElementosGlobales real (eso ya lo cubre
     test_logica_mundo_servicer.py).
@@ -163,15 +184,10 @@ class FakeLogicaMundoFoco:
 
     def __init__(self):
         self.tick_actual = 0
-        self.llamadas_obtener_celdas = 0
         self.llamadas_consultar_representacion = 0
 
     async def get_elementos_globales(self):
         return FakeGlobalesResponse(tick_actual=self.tick_actual)
-
-    async def obtener_celdas_en_region(self, min_pos, max_pos):
-        self.llamadas_obtener_celdas += 1
-        return [common_pb2.Cell(pos=common_pb2.Position(x=min_pos[0], y=min_pos[1]))]
 
     async def consultar_representacion(self, min_pos, max_pos, incluir, modo):
         self.llamadas_consultar_representacion += 1
@@ -227,7 +243,6 @@ async def test_recibe_actualizacion_tras_fijar_foco_y_avanzar_tick(logica_foco):
 
     assert actualizacion.ok is True
     assert actualizacion.tick_actual == 1
-    assert logica_mundo_fake.llamadas_obtener_celdas == 1
     assert logica_mundo_fake.llamadas_consultar_representacion == 1
 
 
@@ -255,9 +270,26 @@ async def test_dos_suscriptores_reciben_la_misma_actualizacion_con_un_solo_fetch
     """
     El punto central del diseño: "una sola conexión lógica a
     Logica_Mundo, N Unitys escuchando" — dos suscriptores deben recibir
-    el mismo tick_actual, pero obtener_celdas_en_region solo debe
+    el mismo tick_actual, pero consultar_representacion solo debe
     llamarse UNA vez por tick, no una por suscriptor (fan-out desde un
     único fetch).
+    """
+    """
+    El punto central del diseño: "una sola conexión lógica a
+    Logica_Mundo, N Unitys escuchando" — dos suscriptores deben recibir
+    el mismo tick_actual, pero consultar_representacion solo debe
+    llamarse UNA vez por tick, no una por suscriptor (fan-out desde un
+    único fetch).
+
+    El tick se fija ANTES de que nadie se suscriba, a propósito: si se
+    fijara después (con el foco ya establecido y algún suscriptor ya
+    registrado), el vigilante detectaría "primer tick visto" (None -> 0,
+    el valor por defecto) en cuanto se registrara el primer suscriptor,
+    y ambos recibirían ese empuje espurio con tick=0 en vez del tick=1
+    que el test quiere comprobar — no es un bug de producción (un
+    suscriptor nuevo SÍ debe recibir el estado actual de inmediato),
+    solo hay que fijar el tick antes de arrancar los generadores para
+    que el primer empuje que se observe sea el que interesa al test.
     """
     logica, logica_mundo_fake = logica_foco
     logica.actualizar_foco((0, 0), (10, 10), [], "modo")
@@ -265,12 +297,21 @@ async def test_dos_suscriptores_reciben_la_misma_actualizacion_con_un_solo_fetch
 
     gen_a = logica.suscribirse_foco()
     gen_b = logica.suscribirse_foco()
+    # Crear el generador NO ejecuta su cuerpo (igual que cualquier
+    # generador Python) — hace falta arrancar su primer __anext__()
+    # para que de verdad llegue a registrarse en _suscriptores. Ambas
+    # tareas se crean seguidas, sin ningún `await` entre medias, así
+    # que asyncio las ejecuta en ese mismo orden (hasta su primera
+    # suspensión en `cola.get()`) antes de que la Task del vigilante
+    # —creada dentro de la primera— llegue a su turno.
+    tarea_a = asyncio.ensure_future(gen_a.__anext__())
+    tarea_b = asyncio.ensure_future(gen_b.__anext__())
 
-    actualizacion_a = await asyncio.wait_for(gen_a.__anext__(), timeout=1.0)
-    actualizacion_b = await asyncio.wait_for(gen_b.__anext__(), timeout=1.0)
+    actualizacion_a = await asyncio.wait_for(tarea_a, timeout=1.0)
+    actualizacion_b = await asyncio.wait_for(tarea_b, timeout=1.0)
 
     assert actualizacion_a.tick_actual == actualizacion_b.tick_actual == 1
-    assert logica_mundo_fake.llamadas_obtener_celdas == 1
+    assert logica_mundo_fake.llamadas_consultar_representacion == 1
 
 
 @pytest.mark.integration
@@ -281,10 +322,19 @@ async def test_desconexion_del_suscriptor_lo_retira_de_la_lista(logica_foco):
     FocoBroadcaster.suscribirse() debe quitar su cola — si no, el
     vigilante seguiría intentando repartir a colas de nadie.
     """
-    logica, _ = logica_foco
+    logica, logica_mundo_fake = logica_foco
     logica.actualizar_foco((0, 0), (10, 10), [], "modo")
     gen = logica.suscribirse_foco()
-    await asyncio.sleep(0.1)  # deja que arranque el vigilante y se registre la cola
+
+    # Crear el generador no ejecuta su cuerpo (ver docstring de
+    # test_dos_suscriptores...): hace falta un primer __anext__() para
+    # que se registre en _suscriptores. Se dispara un cambio de tick
+    # para que ese __anext__() complete de verdad y el generador quede
+    # suspendido en el `yield` — el único estado desde el que se puede
+    # cerrar con aclose() sin pisar una operación __anext__() todavía
+    # en curso sobre el mismo generador.
+    logica_mundo_fake.tick_actual = 1
+    await asyncio.wait_for(gen.__anext__(), timeout=1.0)
 
     assert len(logica._foco._suscriptores) == 1
 

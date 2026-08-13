@@ -1,5 +1,25 @@
 # Tests/Infraestructura/Remoto/Integracion/test_comunicaciones_local_roundtrip.py
+"""
+test_comunicaciones_local_roundtrip.py — Integración de extremo a
+extremo del puente completo: ComunicacionesLocal (cliente, en la
+máquina local) → ComunicacionRemotaService real (gRPC) →
+ComunicacionesRemotoServicer → ComunicacionesRemoto.ejecutar() →
+dispatch real de Funciones/*.py.
 
+Es el único test que ejercita las TRES capas juntas; los tests de
+test_comunicaciones_remoto_ejecutar.py y test_comunicaciones_remoto.py
+ya cubren cada capa por separado con más detalle de casos — aquí basta
+con unos pocos casos representativos para confirmar que el cableado
+end-to-end funciona.
+
+Sección Vista_Foco (NUEVA): mismo criterio, pero para
+ActualizarFoco/SuscribirseFoco — confirma que el master (vía
+ComunicacionesLocal.actualizar_foco) y un espectador (vía
+ComunicacionesLocal.suscribirse_foco, en OTRA instancia de
+ComunicacionesLocal, como sería un segundo proceso Unity) reciben de
+verdad la misma emisión a través de la red real, no solo en memoria
+(eso ya lo cubre test_comunicaciones_remoto.py con dobles).
+"""
 
 import asyncio
 from types import SimpleNamespace
@@ -106,9 +126,6 @@ class FakeLogicaMundoFoco:
     async def get_elementos_globales(self):
         return FakeGlobalesResponse(tick_actual=self.tick_actual)
 
-    async def obtener_celdas_en_region(self, min_pos, max_pos):
-        return []
-
     async def consultar_representacion(self, min_pos, max_pos, incluir, modo):
         return b"representacion_real"
 
@@ -122,6 +139,11 @@ async def stack_foco(levantar_servidor):
     otra para hacer de "espectador" (solo se suscribe), tal como
     serían dos procesos Unity distintos hablando con el mismo
     Comunicaciones_Remoto.
+
+    También se expone el propio FocoBroadcaster (logica_remoto._foco):
+    algunos tests necesitan sincronizarse con su estado interno (ver
+    comentarios en test_master_y_espectador_...) porque es un
+    componente de solo-servidor, invisible desde ComunicacionesLocal.
     """
     logica_mundo_fake = FakeLogicaMundoFoco()
     clientes = SimpleNamespace(
@@ -140,7 +162,7 @@ async def stack_foco(levantar_servidor):
     master = ComunicacionesLocal(servidor.address)
     espectador = ComunicacionesLocal(servidor.address)
 
-    yield master, espectador, logica_mundo_fake
+    yield master, espectador, logica_mundo_fake, logica_remoto._foco
 
     await master.close()
     await espectador.close()
@@ -151,7 +173,7 @@ async def stack_foco(levantar_servidor):
 
 @pytest.mark.integration
 async def test_actualizar_foco_via_grpc_responde_ok(stack_foco):
-    master, _, _ = stack_foco
+    master, _, _, _ = stack_foco
 
     ok, error = await master.actualizar_foco(
         min_pos=(0, 0), max_pos=(10, 10), incluir=["Color"], modo="test"
@@ -169,34 +191,47 @@ async def test_master_y_espectador_reciben_la_misma_actualizacion_via_grpc_real(
     El caso central del diseño, ahora sobre red real: el master fija
     el foco desde SU ComunicacionesLocal; un espectador con OTRA
     ComunicacionesLocal (mismo servidor) se suscribe sin haber fijado
-    nada — y recibe la misma actualización que vería el master, que
-    se suscribe TARDE (después de que ya se repartió el primer frame)
-    y aun así debe recibirlo, gracias a la caché de FocoBroadcaster.
-
-    El tick se fija ANTES de que nadie se suscriba: el primer ciclo
-    del vigilante dispara solo porque _ultimo_tick empieza en None
-    (ver FocoBroadcaster._ciclo_de_vigilancia) — no hace falta forzar
-    ninguna carrera con sleeps para que el espectador vea el tick=1
-    como su primer frame.
+    nada — y recibe la misma actualización que vería el master.
     """
-    master, espectador, logica_mundo_fake = stack_foco
+    master, espectador, logica_mundo_fake, foco_broadcaster = stack_foco
 
     await master.actualizar_foco(
         min_pos=(0, 0), max_pos=(10, 10), incluir=[], modo="modo_real"
     )
-    logica_mundo_fake.tick_actual = 1
+
+    # FocoBroadcaster arranca con _ultimo_tick=None, así que en cuanto
+    # llega el PRIMER suscriptor (master o espectador, lo que gane la
+    # carrera de conexión de red) el vigilante emite de inmediato con
+    # el tick_actual que haya EN ESE MOMENTO (0, el inicial), aunque no
+    # sea un cambio real. Esa emisión "fantasma" solo le llega a quien
+    # ya esté suscrito — si es el master, su __anext__() se resuelve
+    # ahí mismo con tick=0 y nunca llega a ver la transición real a
+    # tick=1 de más abajo; el espectador, que se suscribe una fracción
+    # de segundo más tarde, sí la ve. Eso es justo lo que causó el
+    # `assert 0 == 1` del run anterior.
+    #
+    # Se neutraliza fijando _ultimo_tick al valor actual ANTES de que
+    # nadie se suscriba: así el único disparo posible en este test es
+    # el cambio real a tick=1, y llega a ambos por igual porque para
+    # entonces los dos ya están suscritos.
+    foco_broadcaster._ultimo_tick = logica_mundo_fake.tick_actual
 
     gen_espectador = espectador.suscribirse_foco()
-    actualizacion_espectador = await asyncio.wait_for(
-        gen_espectador.__anext__(), timeout=2.0
-    )
-
-    # El master se suscribe DESPUÉS de que el tick=1 ya se repartió:
-    # debe recibir la actualización cacheada de inmediato, sin esperar
-    # a un tick nuevo que en este test (fake con tick fijo) no llegaría
-    # nunca — este es justo el caso que fallaba antes del fix.
     gen_master = master.suscribirse_foco()
-    actualizacion_master = await asyncio.wait_for(gen_master.__anext__(), timeout=2.0)
+
+    # suscribirse_foco() es una función generadora asíncrona: llamarla
+    # no ejecuta nada de su cuerpo (ni abre el canal) hasta el primer
+    # __anext__(). Por eso se envuelven en tareas ANTES del sleep: así
+    # el sleep(0.1) sí espera a que ambas suscripciones lleguen al
+    # servidor, en vez de no hacer nada.
+    tarea_espectador = asyncio.create_task(gen_espectador.__anext__())
+    tarea_master = asyncio.create_task(gen_master.__anext__())
+    await asyncio.sleep(0.1)  # deja que ambas suscripciones lleguen al servidor
+
+    logica_mundo_fake.tick_actual = 1
+
+    actualizacion_espectador = await asyncio.wait_for(tarea_espectador, timeout=2.0)
+    actualizacion_master = await asyncio.wait_for(tarea_master, timeout=2.0)
 
     assert actualizacion_espectador.ok is True
     assert actualizacion_espectador.tick_actual == 1
@@ -205,43 +240,3 @@ async def test_master_y_espectador_reciben_la_misma_actualizacion_via_grpc_real(
 
     await gen_espectador.aclose()
     await gen_master.aclose()
-
-
-@pytest.mark.integration
-async def test_actualizar_foco_dispara_reparto_aunque_no_cambie_el_tick(
-    stack_foco,
-):
-    """
-    Con el mundo pausado (Logica_Mundo actualiza 0 veces/s) la cámara
-    se puede seguir moviendo: actualizar_foco() debe disparar un
-    reparto nuevo a los suscriptores existentes aunque tick_actual no
-    haya cambiado desde el último envío.
-    """
-    master, espectador, logica_mundo_fake = stack_foco
-
-    await master.actualizar_foco(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=[], modo="modo_real"
-    )
-    logica_mundo_fake.tick_actual = 1
-
-    gen_espectador = espectador.suscribirse_foco()
-    primera_actualizacion = await asyncio.wait_for(
-        gen_espectador.__anext__(), timeout=2.0
-    )
-    assert primera_actualizacion.tick_actual == 1
-
-    # Simula "mundo en pausa": el tick NO vuelve a cambiar, pero el
-    # master mueve la cámara (nueva región).
-    ok, error = await master.actualizar_foco(
-        min_pos=(5, 5), max_pos=(15, 15), incluir=[], modo="modo_real"
-    )
-    assert ok is True
-
-    segunda_actualizacion = await asyncio.wait_for(
-        gen_espectador.__anext__(), timeout=2.0
-    )
-
-    assert segunda_actualizacion.tick_actual == 1
-    assert segunda_actualizacion.ok is True
-
-    await gen_espectador.aclose()

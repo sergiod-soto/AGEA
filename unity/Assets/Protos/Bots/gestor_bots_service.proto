@@ -1,0 +1,152 @@
+// Infraestructura/Transporte/Protobufs/Bots/gestor_bots_service.proto
+syntax = "proto3";
+package gestor;
+import "common.proto";
+
+// ============================================================
+//  GestorBotsService — expuesto por el Gestor de Bots.
+//
+//  Clientes:
+//    - main.py          → Heartbeat, Shutdown
+//    - Logica_Mundo     → SpawnBot, KillBot, MatarScriptBot,
+//                         BroadcastBudgets, SaveSnapshot, LoadState,
+//                         FreezeAll, ResumeAll, ResetBudgets
+//    - Hypervisores     → RegisterHypervisor, UpdateHypervisorLoad,
+//                         ForwardAction, ListHypervisors,
+//                         NotificarAvatarSinPiloto
+// ============================================================
+
+service GestorBotsService {
+  // ----- Infraestructura (main.py) -----
+  rpc Heartbeat           (common.HeartbeatRequest)   returns (GestorBotsHeartbeatResponse);
+  rpc Shutdown            (common.ShutdownRequest)    returns (common.ShutdownResponse);
+
+  // ----- Ciclo de vida de bots (llamado por Logica_Mundo) -----
+  rpc SpawnBot            (SpawnBotRequest)            returns (common.BotInfo);
+  rpc KillBot             (BotIdRequest)               returns (common.Ack);
+  rpc BroadcastBudgets    (BroadcastBudgetsRequest)    returns (common.Ack);
+
+  // ----- Muerte de bots — dos orígenes, dos RPCs independientes -----
+  // Flujo A: Logica_Mundo decidió la muerte (combate/inanición) y ya
+  // eliminó el avatar del gold. Solo pide matar el proceso/script.
+  rpc MatarScriptBot           (BotIdRequest) returns (common.Ack);
+  // Flujo B: el propio Hypervisor detecta que el script de un bot se
+  // ha roto (no compila, excepción no controlada, etc.) y notifica que
+  // el avatar se ha quedado sin piloto — Gestor_Bots solo hace de
+  // puente hacia Logica_Mundo para que elimine ese avatar.
+  rpc NotificarAvatarSinPiloto (BotIdRequest) returns (common.Ack);
+
+  // ----- Persistencia -----
+  rpc SaveSnapshot        (SaveSnapshotRequest)        returns (SaveSnapshotResponse);
+  rpc LoadState           (LoadStateRequest)           returns (common.Ack);
+
+  // ----- Pausa y reanudación -----
+  rpc FreezeAll           (FreezeAllRequest)           returns (common.Ack);
+  rpc ResumeAll           (ResumeAllRequest)           returns (common.Ack);
+
+  // ----- Reset de presupuestos -----
+  rpc ResetBudgets        (ResetBudgetsRequest)        returns (common.Ack);
+
+  // ----- Registro y control de Hypervisores -----
+  rpc RegisterHypervisor  (RegisterHypervisorRequest)  returns (RegisterHVAck);
+  rpc UpdateHypervisorLoad(UpdateLoadRequest)           returns (common.Ack);
+  rpc ListHypervisors     (ListHypervisorsRequest)      returns (common.HypervisorList);
+
+  // ----- Reenvío de acciones -----
+  rpc ForwardAction       (ForwardActionRequest)        returns (common.ActionResult);
+}
+
+// ============================================================
+//  Heartbeat
+// ============================================================
+
+message GestorBotsHeartbeatResponse {
+  bool                     ok          = 1;
+  string                   error       = 2;
+  repeated common.HVStatus hv_statuses = 3;
+}
+
+// ============================================================
+//  Mensajes — ciclo de vida de bots
+// ============================================================
+
+message SpawnBotRequest {
+  common.BotConfig config = 1;
+}
+
+message BotIdRequest {
+  uint64 bot_id = 1;
+}
+
+message BroadcastBudgetsRequest {
+  int32                       default_budget = 1;
+  repeated common.BudgetEntry overrides      = 2;
+}
+
+// ============================================================
+//  Mensajes — persistencia
+// ============================================================
+
+message SaveSnapshotRequest {
+  string snapshot_id = 1;
+}
+
+message SaveSnapshotResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  string snapshot_id = 3;
+}
+
+message LoadStateRequest {
+  string snapshot_id = 1;
+}
+
+// ============================================================
+//  Mensajes — pausa y reanudación
+// ============================================================
+
+message FreezeAllRequest {}
+
+message ResumeAllRequest {}
+
+// ============================================================
+//  Mensajes — reset de presupuestos
+// ============================================================
+
+message ResetBudgetsRequest {}
+
+// ============================================================
+//  Mensajes — Hypervisores
+// ============================================================
+
+message RegisterHypervisorRequest {
+  string hypervisor_id = 1;
+  string address       = 2;
+  int32  port          = 3;
+  int32  proxy_port    = 4;
+  int32  capacity      = 5;
+}
+
+message RegisterHVAck {
+  bool            ok                = 1;
+  string          error             = 2;
+  repeated string delegated_actions = 3;
+}
+
+message UpdateLoadRequest {
+  string hypervisor_id = 1;
+  int32  current_load  = 2;
+}
+
+message ListHypervisorsRequest {}
+
+// ============================================================
+//  Mensajes — reenvío de acciones
+// ============================================================
+
+message ForwardActionRequest {
+  uint64 bot_id        = 1;
+  string hypervisor_id = 2;
+  string action_type   = 3;
+  bytes  payload       = 4;
+}

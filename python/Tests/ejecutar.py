@@ -92,10 +92,11 @@ tests: list[str] = [
     # "Tests/Infraestructura/Local/Unitarios/test_local_logging_y_log_pull_servicer.py",
     # #
     # # ── Otros ───────────────────────────────------------------
-    "Tests/Otros/test_salida_representacion_unity.py",
+    # "Tests/Otros/test_salida_representacion_unity.py",
+    # "Tests/Otros/ejemplo_tick_completo.py",
     # #
     # Salida a consola:
-    "-s",
+    # "-s",
 ]
 
 if __name__ == "__main__":
