@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Assets/Scripts/HUD/Ingame/IngameView.cs
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +13,7 @@ using TMPro;
 ///   Esquina superior izquierda — botones Opciones, Velocidad+, Velocidad-
 ///   Esquina inferior izquierda — botón Pausa
 ///   Lateral derecho            — overlay contextual (se muestra al clicar un elemento)
-///   Centro                     — panel de opciones (volver al menú, etc.)
+///   Centro                     — overlay de opciones (ver OpcionesOverlayView)
 /// </summary>
 public class IngameView : MonoBehaviour
 {
@@ -21,7 +22,7 @@ public class IngameView : MonoBehaviour
     public event Action OnVelocidadAumentar;
     public event Action OnVelocidadDisminuir;
     public event Action OnPausa;
-    public event Action OnVolverAlMenu;          // desde panel opciones
+    public event Action OnVolverAlMenu;          // burbujea desde OpcionesOverlayView
     public event Action<ElementoMundo> OnElementoClicado;       // agregado de todos los elementos
     public event Action OnTick;                  // pulso de polling
 
@@ -39,10 +40,8 @@ public class IngameView : MonoBehaviour
     [Header("Overlay lateral derecho")]
     [SerializeField] private Transform contenedorOverlays;
 
-    [Header("Panel opciones ingame")]
-    [SerializeField] private GameObject panelOpciones;
-    [SerializeField] private Button btnVolverAlMenu;
-    [SerializeField] private Button btnCerrarOpciones;
+    [Header("Overlay de opciones (centro)")]
+    [SerializeField] private OpcionesOverlayView opcionesOverlay;
 
     [Header("Bots")]
     [SerializeField] private GameObject prefabBot;
@@ -62,11 +61,10 @@ public class IngameView : MonoBehaviour
         btnVelocidadMas.onClick.AddListener(() => OnVelocidadAumentar?.Invoke());
         btnVelocidadMenos.onClick.AddListener(() => OnVelocidadDisminuir?.Invoke());
         btnPausa.onClick.AddListener(() => OnPausa?.Invoke());
-        btnVolverAlMenu.onClick.AddListener(() => OnVolverAlMenu?.Invoke());
-        btnCerrarOpciones.onClick.AddListener(MostrarPanelOpciones);
+
+        opcionesOverlay.OnVolverAlMenu += () => OnVolverAlMenu?.Invoke();
 
         RegistrarOverlays();
-        panelOpciones.SetActive(false);
     }
 
     // ── API que el Presenter usa ──────────────────────────────────────────────
@@ -161,7 +159,7 @@ public class IngameView : MonoBehaviour
 
     public void MostrarPanelOpciones()
     {
-        panelOpciones.SetActive(!panelOpciones.activeSelf);
+        opcionesOverlay.Alternar();
     }
 
     // ── Privados ──────────────────────────────────────────────────────────────

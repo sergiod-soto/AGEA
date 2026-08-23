@@ -30,6 +30,8 @@ from Infraestructura.Gestores.tipos_comunes import ActionResult
 
 logger = logging.getLogger(__name__)
 
+SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
+
 
 @dataclass
 class Celda:
@@ -704,6 +706,24 @@ class LogicaMundo:
         path.write_text(json.dumps(data))
         logger.info("Snapshot de Logica_Mundo guardado: %s", path)
 
+        self._purgar_snapshots_antiguos()
+
+    def _purgar_snapshots_antiguos(self) -> None:
+        """
+        Mantiene como máximo SNAPSHOT_MAX ficheros en SNAPSHOT_DIR, borrando
+        los más antiguos por número de snapshot (no por fecha de disco, para
+        no depender de que el reloj/mtime sea fiable). Se llama tras cada
+        guardado — así el límite se aplica de forma incremental, sin picos.
+        """
+        snapshots = sorted(
+            self.SNAPSHOT_DIR.glob("logica_mundo_*.json"),
+            key=lambda p: p.stem.removeprefix("logica_mundo_"),
+        )
+        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        for path in snapshots[:sobrantes]:
+            path.unlink(missing_ok=True)
+            logger.debug("Snapshot antiguo purgado: %s", path)
+
     async def load_state(self, snapshot_id: str) -> None:
         path = self.SNAPSHOT_DIR / f"logica_mundo_{snapshot_id}.json"
         if not path.exists():
@@ -727,10 +747,6 @@ class LogicaMundo:
                 for k, v in data.get("gold_cells", {}).items()
             }
 
-            # FIX: las claves de un objeto JSON siempre llegan como str,
-            # incluso si al guardar eran int (ver save_snapshot) — hay que
-            # reconvertir a int aquí para que coincida con el resto de
-            # _bot_positions (dict[int, tuple[int, int]]).
             self._bot_positions = {
                 int(bid): tuple(pos)
                 for bid, pos in data.get("bot_positions", {}).items()

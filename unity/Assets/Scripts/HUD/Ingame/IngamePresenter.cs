@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
+﻿// Assets/Scripts/HUD/Ingame/IngamePresenter.cs
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using ComunicacionRemota;
 using Newtonsoft.Json.Linq;
 
 /// <summary>
 /// Presenter del Ingame.
 ///
 /// Responsabilidades:
-///   - Iniciar el polling y procesar cada respuesta de Python
+///   - Iniciar el polling y procesar cada respuesta de Python (vía gRPC)
 ///   - Gestionar velocidad y pausa enviando peticiones al servidor
 ///   - Delegar la actualización visual a IngameView
 ///   - Gestionar el overlay contextual al clicar un elemento
@@ -23,10 +26,21 @@ public class IngamePresenter : PresenterBase
     private const float VELOCIDAD_MIN = 0.5f;
     private const float VELOCIDAD_MAX = 5f;
 
+    // TODO(decisión pendiente): confirmar a qué ComponenteDestino va cada operación.
+    // Ver pregunta al usuario en la respuesta del chat.
+    private const ComponenteDestino COMPONENTE_BOTS = ComponenteDestino.GestorBots;
+    private const ComponenteDestino COMPONENTE_SIMULACION = ComponenteDestino.GestorMundo;
+
     // ── Estado ────────────────────────────────────────────────────────────────
     private float _velocidadActual = VELOCIDAD_INICIAL;
     private bool _pausado = false;
     private float _tiempoSesion = 0f;            // segundos jugados en esta sesión
+
+    // Evita que se solapen peticiones "actualizar" si la respuesta tarda más
+    // que INTERVALO_POLLING: sin esta guarda, con latencia de red variable
+    // podrían quedar varias peticiones en vuelo a la vez y llegar desordenadas,
+    // pintando un estado viejo encima de uno más nuevo.
+    private bool _actualizando = false;
 
     public IngamePresenter(IngameView view, ScreenManager navigator)
         : base(navigator)
@@ -44,6 +58,7 @@ public class IngamePresenter : PresenterBase
         _view.OnVelocidadDisminuir += HandleVelocidadDisminuir;
         _view.OnPausa += HandlePausa;
         _view.OnOpciones += HandleOpciones;
+        _view.OnVolverAlMenu += HandleVolverAlMenu;
         _view.OnElementoClicado += HandleElementoClicado;
 
         _view.ActualizarVelocidad(_velocidadActual);
@@ -58,6 +73,7 @@ public class IngamePresenter : PresenterBase
         _view.OnVelocidadDisminuir -= HandleVelocidadDisminuir;
         _view.OnPausa -= HandlePausa;
         _view.OnOpciones -= HandleOpciones;
+        _view.OnVolverAlMenu -= HandleVolverAlMenu;
         _view.OnElementoClicado -= HandleElementoClicado;
 
         _view.DetenerPolling();
@@ -68,34 +84,50 @@ public class IngamePresenter : PresenterBase
     /// <summary>
     /// Cada tick: pide a Python los datos de los elementos visibles
     /// y actualiza los visuals con la respuesta.
+    /// "async void" porque es un manejador de evento (OnTick no admite Task);
+    /// las excepciones dentro se capturan igualmente porque EnviarMensaje
+    /// nunca lanza (ver ConexionMundoManager: los fallos de red se devuelven
+    /// como EjecutarResultado.ok = false, no como excepción).
     /// </summary>
-    private void HandleTick()
+    private async void HandleTick()
     {
         if (_pausado) return;
+        if (_actualizando) return; // petición anterior todavía en vuelo: se descarta este tick
 
         _tiempoSesion += INTERVALO_POLLING;
+        _actualizando = true;
 
-        var ids = _view.ObtenerIdsVisibles();
-        var mensaje = new JObject
+        try
         {
-            ["tipo"] = "simulacion",
-            ["accion"] = "actualizar",
-            ["elementos"] = new JArray(ids)
-        };
+            var ids = _view.ObtenerIdsVisibles();
+            var payload = new JObject
+            {
+                ["elementos"] = new JArray(ids)
+            };
 
-        _conexion.EnviarMensaje(mensaje.ToString());
+            EjecutarResultado resultado = await _conexion.EnviarMensaje(
+                COMPONENTE_BOTS, "actualizar", payload);
 
-        // La respuesta llega de forma asíncrona a través de
-        // IProcesamientoEntradaConexion, que debe llamar a ProcesarActualizacion()
+            if (!resultado.ok)
+            {
+                UnityEngine.Debug.LogWarning($"[IngamePresenter] Fallo al actualizar: {resultado.error}");
+                return;
+            }
+
+            AplicarActualizacion(resultado.payload);
+        }
+        finally
+        {
+            _actualizando = false;
+        }
     }
 
     /// <summary>
-    /// Llamado por IProcesamientoEntradaConexion cuando llega
-    /// un mensaje con "tipo": "simulacion" y "accion": "actualizar".
+    /// Parsea el payload de la respuesta "actualizar" y actualiza los visuals.
     /// </summary>
-    public void ProcesarActualizacion(JObject mensaje)
+    private void AplicarActualizacion(JObject payload)
     {
-        var bots = mensaje["bots"]?.ToObject<List<DatosActualizacionBot>>();
+        var bots = payload?["bots"]?.ToObject<List<DatosActualizacionBot>>();
         if (bots == null) return;
 
         foreach (var bot in bots)
@@ -112,28 +144,32 @@ public class IngamePresenter : PresenterBase
         }
     }
 
-    private void HandleVelocidadAumentar()
+    private async void HandleVelocidadAumentar()
     {
         _velocidadActual = UnityEngine.Mathf.Min(_velocidadActual + PASO_VELOCIDAD, VELOCIDAD_MAX);
-        EnviarVelocidad();
+        await EnviarVelocidad();
     }
 
-    private void HandleVelocidadDisminuir()
+    private async void HandleVelocidadDisminuir()
     {
         _velocidadActual = UnityEngine.Mathf.Max(_velocidadActual - PASO_VELOCIDAD, VELOCIDAD_MIN);
-        EnviarVelocidad();
+        await EnviarVelocidad();
     }
 
-    private void HandlePausa()
+    private async void HandlePausa()
     {
         _pausado = !_pausado;
         _view.ActualizarEstadoPausa(_pausado);
 
-        _conexion.EnviarMensaje(new JObject
+        var resultado = await _conexion.EnviarMensaje(
+            COMPONENTE_SIMULACION,
+            _pausado ? "pausar" : "reanudar",
+            new JObject());
+
+        if (!resultado.ok)
         {
-            ["tipo"] = "simulacion",
-            ["accion"] = _pausado ? "pausar" : "reanudar"
-        }.ToString());
+            UnityEngine.Debug.LogWarning($"[IngamePresenter] Fallo al {(_pausado ? "pausar" : "reanudar")}: {resultado.error}");
+        }
     }
 
     private void HandleOpciones()
@@ -141,25 +177,31 @@ public class IngamePresenter : PresenterBase
         _view.MostrarPanelOpciones();
     }
 
+    private void HandleVolverAlMenu()
+    {
+        // El overlay de opciones no navega por sí mismo (decisión acordada:
+        // es local a Ingame); solo el Presenter tiene acceso al Navigator.
+        Navigator.NavigateTo(ScreenManager.Screen.MenuPrincipal);
+    }
+
     private void HandleElementoClicado(ElementoMundo elemento)
     {
         _view.MostrarOverlay(elemento);
     }
 
-
-
     // ── Privados ──────────────────────────────────────────────────────────────
 
-    private void EnviarVelocidad()
+    private async Task EnviarVelocidad()
     {
         _view.ActualizarVelocidad(_velocidadActual);
 
-        _conexion.EnviarMensaje(new JObject
+        var payload = new JObject { ["velocidad"] = _velocidadActual };
+        var resultado = await _conexion.EnviarMensaje(COMPONENTE_SIMULACION, "velocidad", payload);
+
+        if (!resultado.ok)
         {
-            ["tipo"] = "simulacion",
-            ["accion"] = "velocidad",
-            ["velocidad"] = _velocidadActual
-        }.ToString());
+            UnityEngine.Debug.LogWarning($"[IngamePresenter] Fallo al cambiar velocidad: {resultado.error}");
+        }
     }
 }
 

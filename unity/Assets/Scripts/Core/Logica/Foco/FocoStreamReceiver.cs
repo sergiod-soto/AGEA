@@ -1,4 +1,4 @@
-// Assets/Scripts/VistaFoco/FocoStreamReceiver.cs
+// Assets/Scripts/Core/Logica/Foco/FocoStreamReceiver.cs
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -19,8 +19,14 @@ namespace Assets.Scripts.Core.Logica.Foco
     /// Reconexión: si el stream se corta (red, reinicio del servidor) se
     /// reintenta con backoff exponencial (decisión acordada) hasta
     /// reconectar o hasta que el componente se desactive/destruya.
+    ///
+    /// Se registra en ServiceLocator como IFocoStream -- quien necesite
+    /// las actualizaciones (TraductorMundo, ModeloElementosGlobales) lo
+    /// piden con ServiceLocator.Instance.Get&lt;IFocoStream&gt;() y se
+    /// suscriben al evento, en vez de depender de una referencia de
+    /// escena por SerializeField.
     /// </summary>
-    public class FocoStreamReceiver : MonoBehaviour
+    public class FocoStreamReceiver : MonoBehaviour, IFocoStream
     {
         [Tooltip("Backoff inicial entre reintentos de reconexión, en segundos.")]
         [SerializeField] private float backoffInicialSegundos = 1f;
@@ -60,9 +66,13 @@ namespace Assets.Scripts.Core.Logica.Foco
                     // Si vuelve sin excepción, el servidor cerró el stream
                     // limpiamente -- también se reintenta en ese caso.
                 }
+                //catch (RpcException ex)
+                //{
+                //    Debug.LogWarning($"[FocoStreamReceiver] Stream caído ({ex.StatusCode}), reintentando en {_backoffActual:0.0}s");
+                //}
                 catch (RpcException ex)
                 {
-                    Debug.LogWarning($"[FocoStreamReceiver] Stream caído ({ex.StatusCode}), reintentando en {_backoffActual:0.0}s");
+                    Debug.LogWarning($"[FocoStreamReceiver] Stream caído ({ex.StatusCode}) - {ex.Status.Detail} - {ex}");
                 }
                 catch (OperationCanceledException)
                 {
@@ -93,7 +103,7 @@ namespace Assets.Scripts.Core.Logica.Foco
 
         private async Task EscucharUnaVezAsync(CancellationToken token)
         {
-            var stub = GrpcConnectionManager.Instancia.Stub;
+            var stub = ServiceLocator.Instance.Get<IConexionGrpc>().Stub;
             using var call = stub.SuscribirseFoco(new SuscribirseFocoRequest(), cancellationToken: token);
 
             bool primerMensajeDeEstaConexion = true;

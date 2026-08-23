@@ -1,40 +1,23 @@
-using Newtonsoft.Json.Linq;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+// Assets/Scripts/Core/Logica/Game/GameMain.cs
 using UnityEngine;
 
+/// <summary>
+/// El flujo que había aquí antes -- leer JObject de
+/// IConexionMundo.GetAccionesPendientes(), pasarlo por
+/// IProcesamientoEntradaConexion.DigerirEntrada() y pintar bots con
+/// IBotsLogica.RenderizarBots() -- se retira por completo: confirmado
+/// que esos tres pasos solo existían para pintar, y ese camino ahora
+/// es gRPC + TraductorMundo, que pinta el Tilemap suscribiéndose
+/// directamente a IFocoStream (ver TraductorMundo.cs /
+/// ModeloElementosGlobales.cs). GameMain ya no necesita mediar en ese
+/// flujo -- TraductorMundo y ModeloElementosGlobales se resuelven solos
+/// contra ServiceLocator.
+///
+/// Dejo la clase vacía en vez de borrar el fichero, por si tenías
+/// pensado darle otra responsabilidad (arranque de partida, etc.) que
+/// no formaba parte de lo que hemos hablado. Si no va a tener más uso,
+/// se puede eliminar sin más.
+/// </summary>
 public class GameMain : MonoBehaviour
 {
-    IConexionMundo conexion;
-    IBotsLogica botsLogica;
-    IProcesamientoEntradaConexion procesamientoEntradaConexion;
-    IBotsGameobjectData botsGameobjectData;
-
-
-
-    void Awake()
-    {
-        conexion = ServiceLocator.Instance.Get<IConexionMundo>();
-        botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
-        procesamientoEntradaConexion = ServiceLocator.Instance.Get<IProcesamientoEntradaConexion>();
-        botsGameobjectData = ServiceLocator.Instance.Get<IBotsGameobjectData>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        ConcurrentQueue<JObject> accionesPendientesPython = conexion.GetAccionesPendientes();
-
-        while (accionesPendientesPython.TryDequeue(out JObject dataFromPython))
-        {
-            EjecutarServerTicBots(dataFromPython);
-        }
-
-    }
-
-    void EjecutarServerTicBots(JObject data)
-    {
-        procesamientoEntradaConexion.DigerirEntrada(data);
-        botsLogica.RenderizarBots(botsGameobjectData.Bots_GameObjects);
-    }
 }

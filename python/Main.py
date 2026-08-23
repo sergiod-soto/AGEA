@@ -56,12 +56,18 @@ def main() -> None:
         default=None,
         help="(Solo producción) Nombre del bucket S3.",
     )
+    parser.add_argument(
+        "--escenario",
+        default=None,
+        help="(Opcional) Nombre del escenario de inicialización a cargar "
+        "(ver Escenarios/escenarios.py). Disponible en local y producción.",
+    )
     args = parser.parse_args()
 
     bootstrap.configurar_entorno(args.modo)
 
     if args.modo == "local":
-        bootstrap.ejecutar_modo_local()
+        bootstrap.ejecutar_modo_local(escenario=args.escenario)
 
     elif args.modo == "remoto":
         import yaml

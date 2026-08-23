@@ -5,7 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class SeguirMovimientoGameObject : MonoBehaviour
 {
-    ISolicitudDatos solicitarDatos;
 
     Camera cam;
     Transform target;
@@ -21,7 +20,7 @@ public class SeguirMovimientoGameObject : MonoBehaviour
 
     void Awake()
     {
-        solicitarDatos = ServiceLocator.Instance.Get<ISolicitudDatos>();
+        
     }
 
     void Start()
@@ -65,7 +64,7 @@ public class SeguirMovimientoGameObject : MonoBehaviour
 
         if (bot != null)
         {
-            solicitarDatos.SolicitarDatos(bot);
+            Debug.Log("hay que pensar que deberia ir aqui, ahora no quiero hacerlo");
         }
 
     }

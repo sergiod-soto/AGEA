@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>System.IO.Pipelines</id>
+    <version>11.0.0-preview.7.26381.103</version>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>Icon.png</icon>
+    <readme>PACKAGE.md</readme>
+    <projectUrl>https://dot.net/</projectUrl>
+    <description>Single producer single consumer byte buffer management.
+
+Commonly Used Types:
+System.IO.Pipelines.Pipe
+System.IO.Pipelines.PipeWriter
+System.IO.Pipelines.PipeReader</description>
+    <releaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <serviceable>true</serviceable>
+    <repository type="git" url="https://github.com/dotnet/dotnet" commit="e2c1e00b3d0f96afb892fb261d5921565b400246" />
+    <dependencies>
+      <group targetFramework="net10.0" />
+      <group targetFramework="net11.0" />
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="System.Buffers" version="4.6.1" exclude="Build,Analyzers" />
+        <dependency id="System.Memory" version="4.6.3" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Tasks.Extensions" version="4.6.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Buffers" version="4.6.1" exclude="Build,Analyzers" />
+        <dependency id="System.Memory" version="4.6.3" exclude="Build,Analyzers" />
+        <dependency id="System.Threading.Tasks.Extensions" version="4.6.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

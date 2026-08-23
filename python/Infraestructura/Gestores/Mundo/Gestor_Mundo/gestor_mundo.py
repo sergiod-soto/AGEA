@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 FALLOS_CONSECUTIVOS_SECTOR_CAIDO = int(os.getenv("FALLOS_CONSECUTIVOS_SECTOR_CAIDO", 3))
+SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
 
 
 class SystemState(Enum):
@@ -331,8 +332,7 @@ class GestorMundo:
             )
             # TODO: distribuir cambios_globales a sectores que lo necesiten
 
-        if self._tick_id % self.UNITY_FRAME_EVERY_N_TICKS == 0:
-            await self._enviar_frame_unity()
+
 
         await self._reset_budgets()
 
@@ -501,7 +501,7 @@ class GestorMundo:
 
         async with self._consolidacion_lock:
             data = {
-                "tick_id": int(self._tick_id), 
+                "tick_id": int(self._tick_id),
                 "snapshot_id": snapshot_id,
                 "fecha": datetime.datetime.now().isoformat(),
                 "sectores": [
@@ -522,18 +522,30 @@ class GestorMundo:
         self._snapshot_id = snapshot_id
         logger.info("Snapshot guardado: %s", path)
 
+        self._purgar_snapshots_antiguos()
+
+    def _purgar_snapshots_antiguos(self) -> None:
+        snapshots = sorted(
+            self.SNAPSHOT_DIR.glob("mundo_*.json"),
+            key=lambda p: p.stem.removeprefix("mundo_"),
+        )
+        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        for path in snapshots[:sobrantes]:
+            path.unlink(missing_ok=True)
+            logger.debug("Snapshot antiguo purgado: %s", path)
+
     async def _deep_save(self) -> None:
         logger.info("Guardado profundo iniciado (tick %d)", self._tick_id)
-    
+
         estaba_corriendo = self._state == SystemState.RUNNING
-    
+
         await self.freeze()
         try:
             snapshot_id = f"{self._tick_id:010d}_deep"
             self._snapshot_id = snapshot_id
-    
+
             import json
-    
+
             path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
             async with self._consolidacion_lock:
                 data = {
@@ -552,14 +564,14 @@ class GestorMundo:
                 }
             path.write_text(json.dumps(data))
             await self._logica_client.save_snapshot(snapshot_id)
-    
+
             try:
                 await self._bots_stub.SaveSnapshot(
                     bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
                 )
             except grpc.aio.AioRpcError as e:
                 logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
-    
+
             tareas_sectores = []
             for info in self._sectores.values():
                 if info.stub is not None:
@@ -584,12 +596,11 @@ class GestorMundo:
                         info.row,
                         res.error,
                     )
-    
+
             logger.info("Guardado profundo completado. snapshot_id=%s", snapshot_id)
         finally:
             if estaba_corriendo:
                 await self.resume()
-
 
     def _latest_snapshot_path(self) -> Optional[Path]:
         snapshots = sorted(self.SNAPSHOT_DIR.glob("mundo_*.json"))
@@ -621,8 +632,7 @@ class GestorMundo:
         except grpc.aio.AioRpcError as e:
             logger.error("gRPC error LoadState (%d,%d): %s", info.col, info.row, e)
 
-    async def _enviar_frame_unity(self) -> None:
-        pass
+
 
     async def _reset_budgets(self) -> None:
         try:

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(SeguirMovimientoGameObject))]
-public class CamaraLogica : MonoBehaviour, IControlCamara
+public class CamaraLogica : MonoBehaviour
 {
     public void SeguirConCamara(GameObject newTarget)
     {

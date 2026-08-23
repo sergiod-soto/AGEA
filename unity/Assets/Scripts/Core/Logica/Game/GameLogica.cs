@@ -1,24 +1,10 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Pausar))]
-[RequireComponent(typeof(ActualizarDatos))]
-public class GameLogica : MonoBehaviour, IGameLogica
+public class GameLogica : MonoBehaviour
 {
-
-    public void ActivarActualizacionDatos()
-    {
-        GetComponent<ActualizarDatos>().ActivarActualizacionDatos();
-    }
-
-    public void DesactivarActualizacionDatos()
-    {
-        GetComponent<ActualizarDatos>().DesactivarActualizacionDatos();
-    }
-
     public void PausarSimulacion()
     {
         GetComponent<Pausar>().PausePython();
     }
-
-
 }

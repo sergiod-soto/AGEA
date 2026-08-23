@@ -45,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_BUDGET = 100
 
+SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
+
 
 @dataclass
 class BotRecord:
@@ -466,7 +468,27 @@ class Hypervisor:
             "fecha": datetime.datetime.now().isoformat(),
             "bots": bots_snapshot,
         }
-        path = Path("data/snapshots") / f"hv_{self.hypervisor_id}_{snapshot_id}.json"
+        path = Path("data/snapshots") / f"{self.hypervisor_id}_{snapshot_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(state))
         logger.info("Hypervisor %s snapshot guardado: %s", self.hypervisor_id, path)
+
+        self._purgar_snapshots_antiguos()
+
+    def _purgar_snapshots_antiguos(self) -> None:
+        """
+        Mantiene como máximo SNAPSHOT_MAX ficheros de snapshot para este
+        hypervisor, borrando los más antiguos por número de snapshot (no
+        por fecha de disco, para no depender de que el mtime sea fiable).
+        Se llama tras cada guardado, así el límite se aplica de forma
+        incremental sin picos de borrado masivo.
+        """
+        carpeta = Path("data/snapshots")
+        snapshots = sorted(
+            carpeta.glob(f"{self.hypervisor_id}_*.json"),
+            key=lambda p: p.stem.removeprefix(f"{self.hypervisor_id}_"),
+        )
+        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        for path in snapshots[:sobrantes]:
+            path.unlink(missing_ok=True)
+            logger.debug("Snapshot antiguo purgado: %s", path)

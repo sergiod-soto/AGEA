@@ -282,20 +282,15 @@ def ejecutar_modo_local() -> None:
 
 
 def ejecutar_componente_produccion(args: argparse.Namespace) -> None:
-    """
-    En producción, se recibe el tipo de componente a arrancar y sus
-    metadatos (id, sesión, bucket). Los metadatos se exponen como
-    variables de entorno para que el server script los lea con
-    os.getenv. os.execv reemplaza este proceso por el del componente
-    real — por eso no hace falta preocuparse por el logging ya
-    configurado en configurar_entorno(): desaparece con el reemplazo.
-    """
-    if args.id_elemento:
+
+    if args.id:
         os.environ["COMPONENT_ID"] = args.id_elemento
     if args.sesion:
         os.environ["SESSION_ID"] = args.sesion
     if args.bucket:
         os.environ["S3_BUCKET"] = args.bucket
+    if args.escenario:
+        os.environ["ESCENARIO_INICIAL"] = args.escenario
 
     script = _SCRIPT_POR_TIPO.get(args.componente)
     if script is None:
@@ -309,5 +304,10 @@ def ejecutar_componente_produccion(args: argparse.Namespace) -> None:
     if not script.exists():
         raise FileNotFoundError(f"Script no encontrado: {script}")
 
-    logger.info("Producción: arrancando %s (id=%s)", args.componente, args.id_elemento)
+    logger.info(
+        "Producción: arrancando %s (id=%s, escenario=%s)",
+        args.componente,
+        args.id,
+        args.escenario,
+    )
     os.execv(sys.executable, [sys.executable, str(script)])

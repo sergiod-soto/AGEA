@@ -7,13 +7,10 @@ using UnityEngine.InputSystem;
 public class ClicManager : MonoBehaviour
 {
 
-    IBotsLogica botsLogica;
-    IControlHUDLogica controlHUDLogica;
 
     private void Awake()
     {
-        botsLogica = ServiceLocator.Instance.Get<IBotsLogica>();
-        controlHUDLogica = ServiceLocator.Instance.Get<IControlHUDLogica>();
+
     }
 
     void Update()
@@ -41,7 +38,7 @@ public class ClicManager : MonoBehaviour
             }
             else
             {
-                controlHUDLogica.CloseBotHUD();
+                Debug.Log("Quitar HUD");
             }
         }
     }

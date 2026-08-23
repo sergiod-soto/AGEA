@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(BotsDatos))]
-public class DatosMundo : MonoBehaviour, IDatosMundo
+public class DatosMundo : MonoBehaviour
 {
-    BotsDatos IDatosMundo.DatosBots => GetComponent<BotsDatos>();
+    
 }

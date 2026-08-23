@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39635298fef77bd42a1e5f8da893e296, type: 3}
+  m_Name: CatalogoElementos
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.Logica.Foco.CatalogoElementos
+  entradas:
+  - tipoElemento: elemento_simple
+    clase: Elemento_Test
+    tile: {fileID: 11400000, guid: dbc38323c086d234c9ae02548d7567cb, type: 2}
+  - tipoElemento: elemento_simple
+    clase: Piedra
+    tile: {fileID: 11400000, guid: dbc38323c086d234c9ae02548d7567cb, type: 2}

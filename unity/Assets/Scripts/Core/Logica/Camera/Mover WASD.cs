@@ -7,7 +7,6 @@ public class MoverCamaraWASD : MonoBehaviour
     float actualZoom;
     float velocidad;
     float zoomSpeed;
-    IControlCamara controlCamara;
 
     public Camera cam;
     public float zoomMin;
@@ -17,7 +16,6 @@ public class MoverCamaraWASD : MonoBehaviour
 
     void Awake()
     {
-        controlCamara = ServiceLocator.Instance.Get<IControlCamara>();
 
         actualZoom = Camera.main.orthographicSize;
         velocidad = factorVelocidad * actualZoom / zoomMin;
@@ -41,7 +39,7 @@ public class MoverCamaraWASD : MonoBehaviour
             dir.y != 0 ||
             dir.z != 0)
         {
-            controlCamara.DejarDeSeguirConCamara();
+            Debug.Log("DejarDeSeguirConCamara()");
         }
         transform.position += Time.deltaTime * velocidad * dir;
 

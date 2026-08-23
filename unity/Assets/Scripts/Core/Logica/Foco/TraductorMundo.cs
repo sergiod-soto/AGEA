@@ -1,4 +1,5 @@
-// Assets/Scripts/VistaFoco/TraductorMundo.cs
+// Assets/Scripts/Core/Logica/Foco/TraductorMundo.cs
+using Assets.Scripts.Core.Entities.Elementos;
 using ComunicacionRemota;
 using Newtonsoft.Json;
 using System.Text;
@@ -18,12 +19,18 @@ namespace Assets.Scripts.Core.Logica.Foco
     /// </summary>
     public class TraductorMundo : MonoBehaviour
     {
-        [SerializeField] private FocoStreamReceiver receptor;
         [SerializeField] private Tilemap tilemap;
         [SerializeField] private CatalogoElementos catalogo;
 
-        private void OnEnable() => receptor.OnActualizacionRecibida += Pintar;
-        private void OnDisable() => receptor.OnActualizacionRecibida -= Pintar;
+        private IFocoStream _receptor;
+
+        // Awake (no OnEnable): ServiceLocator tiene DefaultExecutionOrder
+        // -100, así que para cuando este Awake se ejecuta el registro ya
+        // está poblado.
+        private void Awake() => _receptor = ServiceLocator.Instance.Get<IFocoStream>();
+
+        private void OnEnable() => _receptor.OnActualizacionRecibida += Pintar;
+        private void OnDisable() => _receptor.OnActualizacionRecibida -= Pintar;
 
         private void Pintar(ActualizacionFoco actualizacion)
         {

@@ -1,22 +1,21 @@
 using UnityEngine;
 
-public class HUDControl : MonoBehaviour, IHUDRunningControl
+public class HUDControl : MonoBehaviour
 {
 
-    IControlHUDLogica controlHUD;
     void Awake()
     {
-        controlHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
+
     }
 
     public void Show_HUD()
     {
-        controlHUD.OpenBotHUD();
+        Debug.Log("Show_HUD()");
     }
 
     public void Hide_HUD()
     {
-       controlHUD.CloseBotHUD();
+        Debug.Log("Hide_HUD()");
     }
-   
+
 }

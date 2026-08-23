@@ -4,34 +4,25 @@ using System.Diagnostics;
 
 public class BotonesMenuPrincipal : MonoBehaviour
 {
-    IConexionMundo conexionMundo;
-    IControlHUDLogica logicaHUD;
-    IPerfilesLogica logicaPerfiles;
-
 
     private readonly Process pythonProcess;
 
 
     void Awake()
     {
-        conexionMundo = ServiceLocator.Instance.Get<IConexionMundo>();
-        logicaHUD = ServiceLocator.Instance.Get<IControlHUDLogica>();
-        logicaPerfiles = ServiceLocator.Instance.Get<IPerfilesLogica>();
+
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void Boton_Start()
     {
-        conexionMundo.Arrancar();
-        logicaHUD.AbrirPerfiles();
-        logicaPerfiles.SolicitarPerfiles();
 
     }
 
 
     public void Boton_Preferences()
     {
-        logicaHUD.EnterOptions();
+        UnityEngine.Debug.Log("Boton_Preferences");
     }
 
     public void Boton_Exit()

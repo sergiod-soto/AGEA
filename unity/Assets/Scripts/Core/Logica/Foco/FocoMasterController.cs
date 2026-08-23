@@ -1,10 +1,10 @@
-// Assets/Scripts/VistaFoco/FocoMasterController.cs
-using Common; // namespace generado a partir de common.proto (package common) -- VERIFICAR contra el stub real
-using ComunicacionRemota;
-using Grpc.Core;
+// Assets/Scripts/Core/Logica/Foco/VistaFoco/FocoMasterController.cs
 using System;
 using System.Threading.Tasks;
+using Grpc.Core;
 using UnityEngine;
+using ComunicacionRemota;
+using Common;
 
 namespace Assets.Scripts.Core.Logica.Foco
 {
@@ -63,7 +63,7 @@ namespace Assets.Scripts.Core.Logica.Foco
         {
             try
             {
-                await GrpcConnectionManager.Instancia.Stub.ActualizarFocoAsync(request);
+                await ServiceLocator.Instance.Get<IConexionGrpc>().Stub.ActualizarFocoAsync(request);
             }
             catch (RpcException ex)
             {
