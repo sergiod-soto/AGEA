@@ -1,6 +1,19 @@
 # Infraestructura/Gestores/Mundo/Logica_Mundo/logica_mundo_server.py
 """
 logica_mundo_server.py
+
+poblar_suelo=FRESH (NUEVO): LogicaMundo no sabe nada de FRESH/snapshots
+—recibe el flag explícito de quien lo instancia, que es este fichero.
+Si es un arranque en frío (FRESH=true), se puebla el suelo aquí mismo
+al construir LogicaMundo. Si no (se espera restaurar desde un
+snapshot), no se puebla: quien orqueste el resume es responsable de
+llamar al RPC LoadState después de que este proceso arranque — ese
+snapshot ya trae su propio suelo guardado, así que poblarlo aquí sería
+trabajo tirado (se sobreescribiría igualmente al cargar el snapshot).
+Este fichero no contiene ninguna llamada a load_state() — si la
+restauración no llega a ocurrir por lo que sea, el mundo se quedaría
+sin ningún Suelo; es el mismo riesgo que ya existía para cualquier
+otro elemento antes de este cambio, no algo nuevo que introduzca esto.
 """
 
 from __future__ import annotations
@@ -29,7 +42,7 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import MODO, LOG_DIR
+from Config.settings import MODO, LOG_DIR, FRESH
 
 logger = logging.getLogger("logica_mundo_server")
 
@@ -57,7 +70,10 @@ async def serve() -> None:
 
     gestor_bots_client = GestorBotsClientAsync(gestor_bots_address)
 
-    logica = LogicaMundo(gestor_bots_client=gestor_bots_client)
+    # poblar_suelo=FRESH: ver docstring del módulo — solo se puebla el
+    # suelo aquí si es un arranque en frío; si se va a restaurar un
+    # snapshot, ese snapshot ya trae el suelo consigo.
+    logica = LogicaMundo(gestor_bots_client=gestor_bots_client, poblar_suelo=FRESH)
     servicer = LogicaMundoServicer(logica)
 
     server = grpc.aio.server(

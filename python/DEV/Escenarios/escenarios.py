@@ -1,72 +1,109 @@
 # Dev/Escenarios/escenarios.py
+"""
+escenarios.py — Registro de escenarios de inicialización para pruebas.
+
+Ver Serie_Estados.py (mismo directorio): aquí solo se registran
+"recetas" que rellenan una Serie_Estados con estados, indexadas por
+nombre. Un escenario nuevo es una entrada en ESCENARIOS, sin tocar
+el motor.
+"""
 
 from __future__ import annotations
 
 from typing import Callable
 
-from Core.Entities.Mundo import datos
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_piedra import Suelo_Piedra
 from Dev.Escenarios.serie_estados import Serie_Estados
+from Core.Entities.Elementos.elemento_test import Elemento_Test
 
-# Cada función recibe la Serie_Estados a rellenar y no devuelve nada:
-# su efecto es llamar a serie.add(...) las veces que haga falta.
 TipoEscenario = Callable[[Serie_Estados], None]
 
 
-def _escenario_dos_bots_test(serie: Serie_Estados) -> None:
+def _escenario_suelo(serie: Serie_Estados) -> None:
     """
-    Migrado de Serie_Estados.test(): "b0.test" alterna girando sobre
-    sí mismo, "b3.test" recorre un cuadrado de 50x50 en pasos de 10
-    y reinicia.
+    Malla de NxN Suelos, desde (0,0) hasta (n-1, n-1).
+    N se define aquí mismo (n=4); para otro tamaño, cambiar este valor
+    -- ver conversación: se descartó parametrizarlo por función porque
+    de momento solo hace falta un tamaño fijo.
+    """
+    n = 10
 
-    Nota heredada del original: asume que "b0.test" y "b3.test" ya
-    existen en datos.bots antes de cargar este escenario -- si no,
-    fallará al primer acceso. No se corrige aquí porque no es parte
-    del problema que se está resolviendo ahora mismo.
+    async def crear():
+        for i in range(n):
+            for j in range(n):
+                await serie.Crear_Elemento(
+                    Suelo_Piedra,
+                    casilla=(i, j),
+                    type_id="Suelo_Piedra",
+                )
+
+    serie.add([crear])
+
+
+def _escenario_elemento_test_1(serie: Serie_Estados) -> None:
+    """
+    Escenario mínimo: un único Elemento_Test en (0, 0) y nada más.
+    Pensado para probar de punta a punta que Logica_Mundo recibe el
+    elemento y que Unity acaba representándolo -- no crea bots ni
+    ningún otro comportamiento.
     """
 
-    def girar():
-        datos.bots["b0.test"].rotacion += 5
-        serie.add([lambda: girar()])
+    async def crear():
+        await serie.Crear_Elemento(
+            Elemento_Test,
+            casilla=(0, 0),
+            peso=1.0,
+        )
+
+    serie.add([crear])
 
 
-    def mover_x():
-        casilla = datos.bots["b3.test"].casilla
-        if casilla[0] >= 50:
-            serie.add([lambda: mover_y()])
-        else:
-            datos.bots["b3.test"].casilla = (casilla[0] + 10, casilla[1])
-            serie.add([lambda: mover_x()])
+def _escenario_elemento_test_100(serie: Serie_Estados) -> None:
 
-    def mover_y():
-        casilla = datos.bots["b3.test"].casilla
-        if casilla[1] >= 50:
-            serie.add([lambda: reiniciar()])
-        else:
-            datos.bots["b3.test"].casilla = (casilla[0], casilla[1] + 10)
-            serie.add([lambda: mover_y()])
+    async def crear():
+        for i in range(10):
+            for j in range(10):
+                await serie.Crear_Elemento(
+                    Elemento_Test,
+                    casilla=(i, j),
+                    peso=1.0,
+                )
 
-    def reiniciar():
-        datos.bots["b3.test"].casilla = (15, 15)
-        serie.add([lambda: mover_x()])
-
-    girar()
-    mover_x()
+    serie.add([crear])
 
 
-# Nombre -> función que puebla el escenario. Añadir uno nuevo es una
-# línea aquí, no un cambio en Serie_Estados ni en cargar_escenario().
+def _escenario_elemento_test_cuadrado(serie: Serie_Estados) -> None:
+    """
+    Un Elemento_Test recorre en bucle el perímetro de un cuadrado de
+    10x10 empezando en (0,0):
+        (0,0) -> (10,0) -> (10,10) -> (0,10) -> (0,0) -> ...
+    """
+    lado = 2
+    esquinas = [(0, 0), (lado, 0), (lado, lado), (0, lado)]
+
+    async def paso(elemento, indice: int):
+        siguiente = esquinas[indice % len(esquinas)]
+        await serie.Mover_Elemento_Logica(elemento, siguiente)
+        serie.add([lambda: paso(elemento, indice + 1)])
+
+    async def crear_y_empezar():
+        elemento = await serie.Crear_Elemento(Elemento_Test, casilla=(0, 0), peso=1.0)
+        serie.add([lambda: paso(elemento, 1)])
+
+    serie.add([crear_y_empezar])
+
+
+# Nombre -> función que puebla el escenario.
 ESCENARIOS: dict[str, TipoEscenario] = {
-    "dos_bots_test": _escenario_dos_bots_test,
+    "escenario_suelo": _escenario_suelo,
+    "escenario_elemento_test_1": _escenario_elemento_test_1,
+    "escenario_elemento_test_100": _escenario_elemento_test_100,
+    "escenario_elemento_test_cuadrado": _escenario_elemento_test_cuadrado,
 }
 
 
 def cargar_escenario(nombre: str, serie: Serie_Estados) -> None:
-    """
-    Punto de entrada único: busca `nombre` en el registro y lo aplica
-    sobre `serie`. Lanza KeyError con los nombres válidos si no
-    existe, en vez de arrancar en silencio con un escenario vacío
-    (que sería mucho más difícil de diagnosticar).
-    """
+    """Busca `nombre` en el registro y lo aplica sobre `serie`."""
     escenario = ESCENARIOS.get(nombre)
     if escenario is None:
         raise KeyError(

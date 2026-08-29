@@ -1,28 +1,5 @@
 # Infraestructura/Gestores/Bootstrap/topologia.py
-"""
-topologia.py — Fuente única de verdad de la topología de componentes
-remotos: qué componentes existen, cuántos, en qué orden deben arrancar,
-y qué variable de entorno necesita cada uno para conocer la dirección
-de los que arrancaron antes.
 
-Usado por:
-  - Bootstrap (modo local): lanza cada componente como subprocess local.
-  - remote.py (modo remoto real): lanza cada componente como instancia
-    EC2 Spot.
-
-Antes de este módulo, main.py (local) y remote.py (AWS) construían la
-topología cada uno por su cuenta, de forma duplicada y desincronizada.
-Esto causaba dos bugs concretos:
-  1. Los sectores lanzados en AWS real no recibían su SECTOR_COL/ROW
-     (remote.py nunca los calculaba, a diferencia de main.py en local).
-  2. NINGÚN componente remoto real recibía la dirección de otro
-     (ni SECTOR_ADDR_*, ni GESTOR_MUNDO_ADDRESS, ni nada) — cada uno
-     caía siempre en su valor por defecto ("localhost:puerto"), que en
-     una instancia EC2 real apunta a sí misma, no a otra instancia.
-Este módulo resuelve ambos de raíz, con una única función de topología
-y una única función de resolución de direcciones, compartidas por
-local y remoto.
-"""
 
 from __future__ import annotations
 
@@ -30,6 +7,8 @@ import math
 import os
 from dataclasses import dataclass, field
 from typing import Optional
+
+import Config.settings as config
 
 
 @dataclass
@@ -91,12 +70,12 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
     Orden: Sectores → Logica_Mundo → [Gestor_Mundo, Gestor_Bots] →
            Hypervisores → Comunicaciones_Remoto
 
-    Cuenta sectores/Hypervisores a partir de las MISMAS variables de
-    entorno que ya usaba el modo local (GRID_WIDTH/HEIGHT/SECTOR_SIZE,
-    HYPERVISOR_COUNT) — una sola fuente de verdad para local y remoto.
+    El tamaño del mundo (ANCHO/ALTO) sale de Config.settings — es dato
+    de mundo, igual en local y en AWS. El resto (SECTOR_SIZE, puertos,
+    HYPERVISOR_COUNT) sigue siendo config de despliegue, en entorno.
     """
-    grid_w = int(os.getenv("GRID_WIDTH", 1000))
-    grid_h = int(os.getenv("GRID_HEIGHT", 1000))
+    grid_w = config.ANCHO
+    grid_h = config.ALTO
     sector_size = int(os.getenv("SECTOR_SIZE", 100))
     sector_base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
     hv_count = int(os.getenv("HYPERVISOR_COUNT", 1))
@@ -133,13 +112,13 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
 
     hypervisores = [
         ComponenteSpec(
-            nombre=f"hv_{i:02d}",
+            nombre=f"hv_{i:03d}",
             tipo="hypervisor",
             host_env_var="HYPERVISOR_HOST",
             port_env_var="HYPERVISOR_PORT",
             default_port=hv_base_port + i,
             extra_env={
-                "HYPERVISOR_ID": f"hv_{i:02d}",
+                "HYPERVISOR_ID": f"hv_{i:03d}",
                 "HYPERVISOR_PROXY_PORT": str(hv_proxy_base_port + i),
             },
         )

@@ -12,6 +12,15 @@ from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_arena import Suelo_Arena
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_barro import Suelo_Barro
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_cesped import Suelo_Cesped
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_charco import Suelo_Charco
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_grava import Suelo_Grava
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_hielo import Suelo_Hielo
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_oceano import Suelo_Oceano
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_piedra import Suelo_Piedra
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_tierra import Suelo_Tierra
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 from Core.Entities.Elementos.Abstractos.Informacion.raycast import Raycast
@@ -113,6 +122,15 @@ ELEMENTOS: dict[str, type] = {
     "Recipiente": Recipiente,
     # S
     "Sonido": Sonido,
+    "Suelo_Arena": Suelo_Arena,
+    "Suelo_Barro": Suelo_Barro,
+    "Suelo_Cesped": Suelo_Cesped,
+    "Suelo_Charco": Suelo_Charco,
+    "Suelo_Grava": Suelo_Grava,
+    "Suelo_Hielo": Suelo_Hielo,
+    "Suelo_Oceano": Suelo_Oceano,
+    "Suelo_Piedra": Suelo_Piedra,
+    "Suelo_Tierra": Suelo_Tierra,
     # T
     # U
     # V

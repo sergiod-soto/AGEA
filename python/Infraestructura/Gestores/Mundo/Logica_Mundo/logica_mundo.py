@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 from numpy import uint64
 
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_cesped import Suelo_Cesped
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
 from Core.Entities.Elementos.registry import reconstruir_elemento
 from Services.Elemento.cache_audio import CacheAudio
@@ -27,6 +28,8 @@ from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
     GestorBotsClientAsync,
 )
 from Infraestructura.Gestores.tipos_comunes import ActionResult
+import Config.settings as config
+from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 logger = logging.getLogger(__name__)
 
@@ -65,27 +68,29 @@ class ElementoGlobal:
 
 class LogicaMundo:
 
-    def __init__(self, gestor_bots_client: "GestorBotsClientAsync | None" = None):
+    def __init__(
+        self,
+        gestor_bots_client: "GestorBotsClientAsync | None" = None,
+        poblar_suelo: bool = False,
+    ):
         self.SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots_logica"))
 
         self._gold_cells: dict[tuple[int, int], Celda] = {}
         self._elements: dict[uint64, Any] = {}
-
-        self._bot_positions: dict[int, tuple[int, int]] = {}
+        self._bot_positions: dict[str, tuple[int, int]] = {}
         self._id_counter: uint64 = uint64(0)
 
         self._active_events: dict[str, GlobalEvent] = {}
         self._event_counter: int = 0
 
         self._elementos_globales: dict[str, ElementoGlobal] = {}
-        self._tick_actual: int = 0
 
         self._gestor_bots_client = gestor_bots_client
 
-        self._cache_audio = CacheAudio()
-        Sonido.configurar_cache(self._cache_audio)
-
         self._lock: asyncio.Lock = asyncio.Lock()
+
+        if poblar_suelo:
+            self._poblar_suelo()
 
         logger.info("LogicaMundo inicializado.")
 
@@ -634,14 +639,28 @@ class LogicaMundo:
         x0, y0 = min_pos
         x1, y1 = max_pos
 
-        resultado = []
+        elementos = []
+        suelo_resultado = []
         async with self._lock:
             for (x, y), celda in self._gold_cells.items():
                 if not (x0 <= x < x1 and y0 <= y < y1):
                     continue
 
-                ids = [celda.suelo, celda.bot, *celda.resto]
-                for eid in ids:
+                # Suelo, aparte del resto — misma lógica de filtrado por
+                # 'tipos' y mismo formato de representacion(), solo que
+                # va a su propia lista en vez de a "elementos".
+                if celda.suelo is not None:
+                    suelo_elemento = self._elements.get(celda.suelo)
+                    if suelo_elemento is not None and (
+                        tipos is None or type(suelo_elemento).__name__ in tipos
+                    ):
+                        campos = suelo_elemento.representacion(modo, incluir)
+                        if campos.get("elemento") or campos.get("comportamientos"):
+                            suelo_resultado.append({**campos})
+
+                # bot/resto: igual que antes, solo que ya sin celda.suelo
+                # mezclado en la misma lista de ids.
+                for eid in (celda.bot, *celda.resto):
                     elemento = self._elements.get(eid)
                     if elemento is None:
                         continue
@@ -653,14 +672,17 @@ class LogicaMundo:
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
 
-                    resultado.append(
-                        {
-                            # "clase": type(elemento).__name__,
-                            **campos,  # "elemento": {...}, "comportamientos": {...}
-                        }
-                    )
+                    elementos.append({**campos})
 
-        return json.dumps({"modo": modo, "elementos": resultado}).encode()
+        return json.dumps(
+            {
+                "modo": modo,
+                "elementos": elementos,
+                "suelo": suelo_resultado,
+                # "datos_atmosfera" se añade aquí el día que exista —
+                # no se reserva una clave vacía de antemano.
+            }
+        ).encode()
 
     async def save_snapshot(self, snapshot_id: str) -> None:
         self.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -683,9 +705,6 @@ class LogicaMundo:
                     str(eid): elemento.serializar(modo="guardado")
                     for eid, elemento in self._elements.items()
                 },
-                # NOTA: json.dumps convierte automáticamente las claves int
-                # a string en el JSON de salida (bot_id se recupera con
-                # int(bid) en load_state, ver más abajo).
                 "bot_positions": {
                     bid: list(pos) for bid, pos in self._bot_positions.items()
                 },
@@ -703,7 +722,7 @@ class LogicaMundo:
                 },
             }
 
-        path.write_text(json.dumps(data))
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         logger.info("Snapshot de Logica_Mundo guardado: %s", path)
 
         self._purgar_snapshots_antiguos()
@@ -768,3 +787,32 @@ class LogicaMundo:
                     elem.__dict__.update(elem.from_snapshot(eg_data[nombre]).__dict__)
 
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
+
+    def _poblar_suelo(self) -> None:
+        # TODO: esto es un parche temporal para tener suelo. hay que hacer un generador de suelo en condiciones
+        """
+        Crea una instancia de Suelo por cada celda del grid, usando
+        Config.settings.ANCHO/ALTO (tamaño del mundo — el mismo en
+        local que en AWS, ver topologia.py). Se ejecuta síncronamente
+        dentro de __init__: no hace falta await ni self._lock porque
+        el objeto todavía no es accesible desde ningún otro sitio en
+        este punto (nadie más puede tener una referencia a self aún).
+
+        No usa asignar_id() (que sí es async y sí toma el lock) por el
+        mismo motivo — sería tomar un lock que no puede tener
+        contención posible todavía, solo overhead sin beneficio.
+        """
+        for x in range(config.ANCHO):
+            for y in range(config.ALTO):
+                self._id_counter += 1
+                eid = self._id_counter
+                suelo = Suelo_Cesped(casilla=(x, y), id_elemento=eid)
+                self._elements[eid] = suelo
+                self._gold_cells[(x, y)] = Celda(suelo=eid)
+
+        logger.info(
+            "Suelo poblado: %d x %d celdas (%d elementos Suelo creados).",
+            config.ANCHO,
+            config.ALTO,
+            config.ANCHO * config.ALTO,
+        )

@@ -7,18 +7,7 @@ import "Comunicacion/logica_mundo_service.proto";  // reutilizamos ElementoGloba
 service ComunicacionRemotaService {
   rpc Heartbeat (common.HeartbeatRequest) returns (common.Ack);
   rpc Ejecutar  (EjecutarRequest)         returns (EjecutarResponse);
-
-  // NUEVO — el master (vía Comunicaciones_Local) fija/actualiza el
-  // foco actual (posición de cámara + filtro de representación).
-  // Unario y separado de Ejecutar(): esto es estado propio de
-  // Comunicaciones_Remoto, no un reenvío a un componente remoto.
   rpc ActualizarFoco (FocoRequest) returns (common.Ack);
-
-  // NUEVO — streaming compartido. Cualquiera que se suscriba (el
-  // master u otro Unity espectador) recibe la MISMA emisión: no hay
-  // un foco distinto por suscriptor, todos ven lo que el foco actual
-  // esté mostrando. Por eso la petición va vacía: no se elige nada
-  // al suscribirse, solo se conecta a lo que ya hay.
   rpc SuscribirseFoco (SuscribirseFocoRequest) returns (stream ActualizacionFoco);
 }
 
@@ -61,10 +50,7 @@ message ActualizacionFoco {
   bool   ok    = 1;
   string error = 2;
 
-  // Campo 3 (celdas) retirado: era redundante con `representacion`
-  // (que ya trae lo que Unity necesita para pintar) y mucho más
-  // pesado — cada celda mandaba el elemento SERIALIZADO COMPLETO, sin
-  // filtrar. Se reserva el número para que nadie lo reutilice por error.
+  // Campo 3 (celdas) retirado.
   reserved 3;
   reserved "celdas";
 

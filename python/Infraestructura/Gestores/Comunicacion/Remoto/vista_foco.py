@@ -140,20 +140,16 @@ class FocoBroadcaster:
                 self._foco
             )  # copia local por si actualizar_foco() cambia _foco a mitad de fetch
 
-            # Solo se pide `representacion` — se quitó `obtener_celdas_en_region`
-            # porque su resultado era redundante con `representacion` (que ya
-            # trae lo que Unity necesita para pintar) y mucho más pesado
-            # (elemento serializado completo por celda, sin filtrar).
             representacion = await self._clientes.logica_mundo.consultar_representacion(
                 foco.min_pos, foco.max_pos, foco.incluir, foco.modo
             )
-
             actualizacion = pb.ActualizacionFoco(
                 ok=True,
                 representacion=representacion,
                 elementos_globales=globales_resp.elementos_globales,
                 tick_actual=self._ultimo_tick,
             )
+            print("actualizacion:\n" + str(actualizacion))
 
             # Un solo fetch, repartido a todos: esto es el fan-out.
             for cola in list(self._suscriptores):

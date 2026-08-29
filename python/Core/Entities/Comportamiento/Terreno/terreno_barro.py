@@ -1,7 +1,7 @@
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 
 
-class Barro(Terreno):
+class Embarrado(Terreno):
 
     REQUIERE = {}
     ABSTRACTOS = {}

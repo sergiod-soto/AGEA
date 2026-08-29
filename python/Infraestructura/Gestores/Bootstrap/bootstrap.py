@@ -211,7 +211,7 @@ def _apagar_procesos(procesos: list[subprocess.Popen]) -> None:
             proc.kill()
 
 
-def ejecutar_modo_local() -> None:
+def ejecutar_modo_local(escenario: str | None = None) -> None:
     """
     Arranca TODO el stack (lo que en producción corre en AWS: sectores,
     Logica_Mundo, Gestor_Mundo, Gestor_Bots, Hypervisores, y
@@ -224,6 +224,10 @@ def ejecutar_modo_local() -> None:
     fuerza ninguna llamada de prueba a través de él aquí.
     """
     logger.info("=== Modo LOCAL ===")
+
+    if escenario:
+        os.environ["ESCENARIO_INICIAL"] = escenario
+        logger.info("Escenario inicial: %s", escenario)
 
     grupos = construir_topologia()
     direcciones = _direcciones_locales(grupos)
@@ -284,7 +288,7 @@ def ejecutar_modo_local() -> None:
 def ejecutar_componente_produccion(args: argparse.Namespace) -> None:
 
     if args.id:
-        os.environ["COMPONENT_ID"] = args.id_elemento
+        os.environ["COMPONENT_ID"] = args.id
     if args.sesion:
         os.environ["SESSION_ID"] = args.sesion
     if args.bucket:

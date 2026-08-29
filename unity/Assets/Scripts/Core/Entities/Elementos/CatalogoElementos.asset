@@ -12,10 +12,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39635298fef77bd42a1e5f8da893e296, type: 3}
   m_Name: CatalogoElementos
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.Logica.Foco.CatalogoElementos
-  entradas:
-  - tipoElemento: elemento_simple
-    clase: Elemento_Test
+  entradasElementoSimple:
+  - clase: 
+    tile: {fileID: 0}
+  entradasSuelo:
+  - clase: Suelo_Arena
+    tile: {fileID: 11400000, guid: 9c7a6c5c5740e1e4688f25d64419f5cc, type: 2}
+  - clase: Suelo_Barro
+    tile: {fileID: 0}
+  - clase: Suelo_Cesped
+    tile: {fileID: 11400000, guid: 158b7b637c3efbd42bea17a4589a259e, type: 2}
+  - clase: Suelo_Charco
+    tile: {fileID: 0}
+  - clase: Suelo_Grava
+    tile: {fileID: 0}
+  - clase: Suelo_Hielo
+    tile: {fileID: 0}
+  - clase: Suelo_Piedra
     tile: {fileID: 11400000, guid: dbc38323c086d234c9ae02548d7567cb, type: 2}
-  - tipoElemento: elemento_simple
-    clase: Piedra
-    tile: {fileID: 11400000, guid: dbc38323c086d234c9ae02548d7567cb, type: 2}
+  - clase: Suelo_Tierra
+    tile: {fileID: 0}
+  - clase: Suelo_Oceano
+    tile: {fileID: 11400000, guid: 3219b25ba8ecc6f44b112c7316a276b4, type: 2}

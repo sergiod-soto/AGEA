@@ -89,7 +89,7 @@ class GestorMundo:
         self._pause_event: asyncio.Event = asyncio.Event()
         self._pause_event.set()
         self._tick_rate: int = DEFAULT_TICK_RATE
-        self._tick_interval: float = 0.0
+        self._tick_interval: float = self._calcular_intervalo(DEFAULT_TICK_RATE)
 
         self._bots_channel: Optional[grpc.aio.Channel] = None
         self._bots_stub = None
@@ -332,8 +332,6 @@ class GestorMundo:
             )
             # TODO: distribuir cambios_globales a sectores que lo necesiten
 
-
-
         await self._reset_budgets()
 
     async def _get_delta_sector(self, sector: SectorInfo):
@@ -485,9 +483,14 @@ class GestorMundo:
         self._pause_event.set()
         logger.info("Sistema reanudado.")
 
+    @staticmethod
+    def _calcular_intervalo(ticks_per_second: int) -> float:
+        return (1.0 / ticks_per_second) if ticks_per_second > 0 else 0.0
+
     async def set_tick_rate(self, ticks_per_second: int) -> None:
+        
         self._tick_rate = ticks_per_second
-        self._tick_interval = (1.0 / ticks_per_second) if ticks_per_second > 0 else 0.0
+        self._tick_interval = self._calcular_intervalo(ticks_per_second)
         logger.info(
             "Cadencia de ticks cambiada a %s",
             "sin límite" if ticks_per_second <= 0 else f"{ticks_per_second}/s",
@@ -515,7 +518,7 @@ class GestorMundo:
                 ],
             }
 
-        path.write_text(json.dumps(data))
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
         await self._logica_client.save_snapshot(snapshot_id)
 
@@ -562,7 +565,7 @@ class GestorMundo:
                         for info in self._sectores.values()
                     ],
                 }
-            path.write_text(json.dumps(data))
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
             await self._logica_client.save_snapshot(snapshot_id)
 
             try:
@@ -631,8 +634,6 @@ class GestorMundo:
                 )
         except grpc.aio.AioRpcError as e:
             logger.error("gRPC error LoadState (%d,%d): %s", info.col, info.row, e)
-
-
 
     async def _reset_budgets(self) -> None:
         try:

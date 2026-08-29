@@ -1,7 +1,11 @@
-from Core.Entities.Comportamiento.Terreno.terreno_tierra import Tierra
+from Core.Entities.Comportamiento.Terreno.terreno_tierra import Terroso
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 
-class Suelo_Tierra(Suelo, Tierra):
-    def __init__(self):
-        super().__init__()
+class Suelo_Tierra(Suelo, Terroso):
+    def __init__(self, id_elemento, casilla):
+        super().__init__(
+            tipo=Suelo_Tierra,
+            casilla=casilla,
+            id_elemento=id_elemento,
+        )

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac5e627ffd7c7224c9e3a9fff3b69ff4, type: 3}
+  m_Name: CatalogoPrefabsElementos
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.Entities.Elementos.CatalogoPrefabsElementos
+  entradas:
+  - clase: Error
+    prefab: {fileID: 6734217021923115399, guid: dc55c24580a0ce14ea57b6bc4dbafa12, type: 3}
+  - clase: Bot
+    prefab: {fileID: 8256855989151442394, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}

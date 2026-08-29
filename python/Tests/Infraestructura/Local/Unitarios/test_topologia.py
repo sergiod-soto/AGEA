@@ -5,14 +5,18 @@ la topología de componentes (orden de arranque, número de sectores/
 hypervisores según variables de entorno) y resolución de env_extra
 para cada tipo de componente.
 
-Todas estas funciones leen variables de entorno en tiempo de llamada
-(no en import), así que basta con monkeypatch.setenv antes de invocar
-construir_topologia()/resolver_env_extra() en cada test — no hace
-falta recargar el módulo.
+ACTUALIZADO: el tamaño del mundo (ANCHO/ALTO) ya no se lee de
+variables de entorno (GRID_WIDTH/GRID_HEIGHT) — ahora sale de
+Config.settings, porque es un dato de MUNDO (debe ser igual en local y
+en AWS), no de despliegue. Por eso estos tests fijan ANCHO/ALTO con
+monkeypatch.setattr(config, ...) en vez de monkeypatch.setenv(...). El
+resto (SECTOR_SIZE, puertos, HYPERVISOR_COUNT) sigue siendo config de
+despliegue y se sigue fijando por entorno, sin cambios ahí.
 """
 
 import pytest
 
+import Config.settings as config
 from Infraestructura.Gestores.Bootstrap.topologia import (
     HEALTHCHECK_INFO,
     ComponenteSpec,
@@ -23,8 +27,8 @@ from Infraestructura.Gestores.Bootstrap.topologia import (
 
 def _entorno_grid_1_sector(monkeypatch):
     """Grid mínimo: exactamente 1 sector, 1 hypervisor — caso base."""
-    monkeypatch.setenv("GRID_WIDTH", "100")
-    monkeypatch.setenv("GRID_HEIGHT", "100")
+    monkeypatch.setattr(config, "ANCHO", 100)
+    monkeypatch.setattr(config, "ALTO", 100)
     monkeypatch.setenv("SECTOR_SIZE", "100")
     monkeypatch.setenv("HYPERVISOR_COUNT", "1")
 
@@ -68,8 +72,8 @@ def test_construir_topologia_multiples_sectores_en_grid_no_cuadrado(monkeypatch)
     que _sectores() usa math.ceil (no división entera) y que el puerto
     de cada sector es determinista (base_port + col*rows + row).
     """
-    monkeypatch.setenv("GRID_WIDTH", "200")
-    monkeypatch.setenv("GRID_HEIGHT", "100")
+    monkeypatch.setattr(config, "ANCHO", 200)
+    monkeypatch.setattr(config, "ALTO", 100)
     monkeypatch.setenv("SECTOR_SIZE", "100")
     monkeypatch.setenv("SECTOR_BASE_PORT", "50100")
     monkeypatch.setenv("HYPERVISOR_COUNT", "1")
@@ -94,10 +98,10 @@ def test_construir_topologia_varios_hypervisores(monkeypatch):
     grupos = construir_topologia()
     hypervisores = grupos[3]
 
-    assert [hv.nombre for hv in hypervisores] == ["hv_00", "hv_01", "hv_02"]
+    assert [hv.nombre for hv in hypervisores] == ["hv_000", "hv_001", "hv_002"]
     assert hypervisores[1].default_port == 50301
     assert hypervisores[1].extra_env == {
-        "HYPERVISOR_ID": "hv_01",
+        "HYPERVISOR_ID": "hv_001",
         "HYPERVISOR_PROXY_PORT": "50401",
     }
 

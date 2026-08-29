@@ -470,7 +470,7 @@ class Hypervisor:
         }
         path = Path("data/snapshots") / f"{self.hypervisor_id}_{snapshot_id}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(state))
+        path.write_text(json.dumps(state, indent=2, ensure_ascii=False))
         logger.info("Hypervisor %s snapshot guardado: %s", self.hypervisor_id, path)
 
         self._purgar_snapshots_antiguos()

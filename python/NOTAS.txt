@@ -5,4 +5,9 @@ al modificar un nodo del ADN -> recompilado parcial
 
 hay que separar ann y pesos de ADN
 
+---------------------------------------------
+SERVIDOR
+---------------------------------------------
+
+ falta terminar de desarrollar la parte de unity master-slave
 

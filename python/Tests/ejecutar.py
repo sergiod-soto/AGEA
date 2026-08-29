@@ -79,7 +79,7 @@ tests: list[str] = [
     # "Tests/Infraestructura/Local/Integracion/test_aws_red_y_sesiones.py",
     # #
     # # ── Unitarios
-    # "Tests/Infraestructura/Local/Unitarios/test_topologia.py",
+    "Tests/Infraestructura/Local/Unitarios/test_topologia.py",
     # "Tests/Infraestructura/Local/Unitarios/test_monitor.py",
     # "Tests/Infraestructura/Local/Unitarios/test_shutdown.py",
     # "Tests/Infraestructura/Local/Unitarios/test_log_categorias.py",

@@ -219,6 +219,12 @@ class ComunicacionesLocal:
         return ack.ok, ack.error
 
     async def set_tick_rate(self, ticks_per_second: int) -> tuple[bool, str]:
+        """
+        ticks_per_second <= 0 (usar 0 por convención) pide la frecuencia
+        máxima posible: el bucle de Gestor_Mundo deja de dormir entre
+        ticks y corre limitado solo por CPU. El cambio se aplica a partir
+        del siguiente tick completo, no interrumpe el que esté en curso.
+        """
         req = mundo_pb.SetTickRateRequest(ticks_per_second=ticks_per_second)
         raw = await self._ejecutar(bridge_pb.GESTOR_MUNDO, "SetTickRate", req)
         ack = common_pb.Ack()

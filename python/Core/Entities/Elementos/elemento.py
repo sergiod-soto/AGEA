@@ -90,6 +90,9 @@ class Elemento(ABC, Comportamiento):
             resultado[k] = valor
         return resultado
 
+    def serialize_id_elemento(self):
+        return int(self.id_elemento)
+
     def serializar(self, cls: type | None = None, *, modo: str) -> dict:
         """
         Serialización PLANA para snapshot/transporte (save_snapshot,
@@ -131,7 +134,7 @@ class Elemento(ABC, Comportamiento):
         return {
             "__clase__": type(self).__name__,
             "capa": self.capa,
-            "id_elemento": self.id_elemento,
+            "id_elemento": self.serialize_id_elemento(),
         }
 
     def representacion(self, modo: str, incluir: list[str]) -> dict:

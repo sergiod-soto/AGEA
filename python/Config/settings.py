@@ -16,12 +16,12 @@ UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")
 UNITY_PORT: int = int(os.getenv("UNITY_PORT", "5069" if DEBUG else "5001"))
 
 # ── Mundo ─────────────────────────────────────────────────────────────────────
-ANCHO: int = int(os.getenv("ANCHO", "1000"))
-ALTO: int = int(os.getenv("ALTO", "1000"))
+ANCHO: int = int(os.getenv("ANCHO", "5"))
+ALTO: int = int(os.getenv("ALTO", "5"))
 MAX_VISION_DISTANCE: int = int(os.getenv("MAX_VISION_DISTANCE", "50"))
 
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
-DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 0))  # 0 = sin límite
+DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 2))  # 0 = sin límite
 
 # ── Loop principal ────────────────────────────────────────────────────────────
 MS_POR_FRAME: int = int(os.getenv("MS_POR_FRAME", "500"))
@@ -46,4 +46,3 @@ MODO: str = os.getenv("MODO", "local")
 # ── Intervalo de polling de logs en modo remoto (segundos) ────────────────────
 # main.py, en modo remoto, pregunta a cada componente cada este intervalo.
 LOG_PULL_INTERVAL_SEGUNDOS: int = int(os.getenv("LOG_PULL_INTERVAL_SEGUNDOS", 5))
-

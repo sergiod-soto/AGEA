@@ -1,7 +1,7 @@
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 
 
-class Hielo(Terreno):
+class Helado(Terreno):
 
     REQUIERE = {}
     ABSTRACTOS = {}

@@ -50,10 +50,15 @@ public class FocoTestLogger : MonoBehaviour
         {
             var json = JObject.Parse(Encoding.UTF8.GetString(actualizacion.Representacion.ToByteArray()));
             numElementos = (json["elementos"] as JArray)?.Count ?? 0;
+            Debug.Log($"[FocoTestLogger] #{_mensajesRecibidos}" +
+                 $"json:{json}");
         }
 
-        Debug.Log($"[FocoTestLogger] #{_mensajesRecibidos} tick={actualizacion.TickActual} " +
-                  $"elementos={numElementos} globales={actualizacion.ElementosGlobales.Count} " +
-                  $"(+{delta:0.00}s desde el anterior)");
+
+
+
+        //Debug.Log($"[FocoTestLogger] #{_mensajesRecibidos} tick={actualizacion.TickActual} " +
+        //          $"elementos={numElementos} globales={actualizacion.ElementosGlobales.Count} " +
+        //          $"(+{delta:0.00}s desde el anterior)");
     }
 }

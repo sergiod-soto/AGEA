@@ -1,7 +1,7 @@
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 
 
-class Tierra(Terreno):
+class Terroso(Terreno):
 
     REQUIERE = {}
     ABSTRACTOS = {}

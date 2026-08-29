@@ -79,15 +79,17 @@ from Core.Entities.Comportamiento.Temporal.estacional import Estacional
 from Core.Entities.Comportamiento.Temporal.latente import Latente
 from Core.Entities.Comportamiento.Temporal.perecedero import Perecedero
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
-from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Terreno_Arenoso
-from Core.Entities.Comportamiento.Terreno.terreno_barro import Barro
-from Core.Entities.Comportamiento.Terreno.terreno_cesped import Cesped
-from Core.Entities.Comportamiento.Terreno.terreno_charco import Charco
-from Core.Entities.Comportamiento.Terreno.terreno_grava import Grava
-from Core.Entities.Comportamiento.Terreno.terreno_hielo import Hielo
+from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Arenoso
+from Core.Entities.Comportamiento.Terreno.terreno_cesped import Hervoso
+from Core.Entities.Comportamiento.Terreno.terreno_charco import Encharcado
+from Core.Entities.Comportamiento.Terreno.terreno_hielo import Helado
+from Core.Entities.Comportamiento.Terreno.terreno_barro import Embarrado
+from Core.Entities.Comportamiento.Terreno.terreno_tierra import Terroso
+
+
+from Core.Entities.Comportamiento.Terreno.terreno_grava import Gravoso
 from Core.Entities.Comportamiento.Terreno.terreno_rocoso import Rocoso
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
-from Core.Entities.Comportamiento.Terreno.terreno_tierra import Tierra
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 import logging
@@ -98,15 +100,13 @@ COMPORTAMIENTOS: dict[str, type] = {
     # A
     "Agarrable": Agarrable,
     "Apellidos": Apellidos,
-    "Terreno_Arenoso": Terreno_Arenoso,
+    "Arenoso": Arenoso,
     "Armadura": Armadura,
     "Ataque": Ataque,
     # B
-    "Barro": Barro,
+    "Embarrado": Embarrado,
     # C
     "Caduco": Caduco,
-    "Cesped": Cesped,
-    "Charco": Charco,
     "Color": Color,
     "Combinable": Combinable,
     "Combustible": Combustible,
@@ -122,6 +122,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Divisible": Divisible,
     # E
     "Empujable": Empujable,
+    "Encharcado": Encharcado,
     "Enterrable": Enterrable,
     "Energetico": Energetico,
     "Equipable": Equipable,
@@ -138,12 +139,13 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Golpeable": Golpeable,
     "Gaseoso": Gaseoso,
     "Grasa": Grasa,
-    "Grava": Grava,
+    "Gravoso": Gravoso,
     # H
     "Hambre": Hambre,
+    "Helado": Helado,
     "Herida": Herida,
+    "Hervoso": Hervoso,
     "Hidratante": Hidratante,
-    "Hielo": Hielo,
     "Humedo": Humedo,
     # I
     "ID": ID,
@@ -194,7 +196,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Temporal": Temporal,
     "Termico": Termico,
     "Terreno": Terreno,
-    "Tierra": Tierra,
+    "Terroso": Terroso,
     "Toxico": Toxico,
     "Transformable": Transformable,
     # U
