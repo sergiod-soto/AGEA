@@ -13,7 +13,7 @@ SCRIPT_GESTOR_MUNDO = (
     / "Infraestructura"
     / "Gestores"
     / "Mundo"
-    / "Gestor_Mundo"
+    / "GestorMundo"
     / "gestor_mundo_server.py"
 )
 SCRIPT_GESTOR_BOTS = (
@@ -21,7 +21,7 @@ SCRIPT_GESTOR_BOTS = (
     / "Infraestructura"
     / "Gestores"
     / "Bots"
-    / "Gestor_Bots"
+    / "GestorBots"
     / "gestor_bots_server.py"
 )
 SCRIPT_HYPERVISOR = (
@@ -37,7 +37,7 @@ SCRIPT_LOGICA_MUNDO = (
     / "Infraestructura"
     / "Gestores"
     / "Mundo"
-    / "Logica_Mundo"
+    / "LogicaMundo"
     / "logica_mundo_server.py"
 )
 SCRIPT_COMUNICACIONES_REMOTO = (
@@ -47,4 +47,8 @@ SCRIPT_COMUNICACIONES_REMOTO = (
     / "Comunicacion"
     / "Remoto"
     / "comunicaciones_remoto_server.py"
+)
+
+SCRIPT_CONSOLA = (
+    ROOT / "Infraestructura" / "Gestores" / "Consola" / "consola_main.py",
 )

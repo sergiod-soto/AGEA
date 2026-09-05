@@ -13,8 +13,8 @@ LoadState.
 import grpc.aio
 import pytest
 
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots_servicer import (
+from Infraestructura.Gestores.Bots.GestorBots.gestor_bots import Gestor_Bots
+from Infraestructura.Gestores.Bots.GestorBots.gestor_bots_servicer import (
     Gestor_Bots_Servicer,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2

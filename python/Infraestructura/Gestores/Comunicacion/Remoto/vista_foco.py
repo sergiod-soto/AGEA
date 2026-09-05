@@ -114,43 +114,76 @@ class FocoBroadcaster:
         Bucle único: mientras haya algún suscriptor y un foco fijado,
         comprueba el tick de Logica_Mundo; si cambió, pide los datos
         del foco UNA vez y los reparte a todas las colas activas.
+
+        FIX: esta tarea es crítica -- si muere, nadie vuelve a recibir
+        nada hasta que un cliente nuevo se suscriba (ver
+        _asegurar_vigilante). Por eso el cuerpo entero va protegido: un
+        fallo puntual (timeout contra Logica_Mundo, dato inesperado en
+        un pulso concreto) se loguea y el bucle sigue, en vez de matar
+        la tarea para siempre.
         """
         while True:
-            if not self._suscriptores or self._foco is None:
-                # Nadie escuchando, o el master aún no fijó foco:
-                # no tiene sentido gastar llamadas a Logica_Mundo.
-                await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
-                continue
+            try:
+                if not self._suscriptores or self._foco is None:
+                    await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
+                    continue
 
-            globales_resp = await self._clientes.logica_mundo.get_elementos_globales()
-            if not globales_resp.ok:
+                globales_resp = (
+                    await self._clientes.logica_mundo.get_elementos_globales()
+                )
+                if not globales_resp.ok:
+                    logger.warning(
+                        "Vista_Foco: GetElementosGlobales devolvió error: %s",
+                        globales_resp.error,
+                    )
+                    await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
+                    continue
+
+                if globales_resp.tick_actual == self._ultimo_tick:
+                    await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
+                    continue
+
+                self._ultimo_tick = globales_resp.tick_actual
+                foco = self._foco
+
+                POSICION_CUADRADO_TEST = (100, 100)
+                px, py = POSICION_CUADRADO_TEST
+                dentro_de_rango = (
+                    foco.min_pos[0] <= px < foco.max_pos[0]
+                    and foco.min_pos[1] <= py < foco.max_pos[1]
+                )
                 logger.warning(
-                    "Vista_Foco: GetElementosGlobales devolvió error: %s",
-                    globales_resp.error,
+                    "[DEBUG-FOCO] vigilar: usando foco min=%s max=%s -- celda test %s dentro_de_rango=%s",
+                    foco.min_pos,
+                    foco.max_pos,
+                    POSICION_CUADRADO_TEST,
+                    dentro_de_rango,
+                )
+
+                representacion = (
+                    await self._clientes.logica_mundo.consultar_representacion(
+                        foco.min_pos, foco.max_pos, foco.incluir, foco.modo
+                    )
+                )
+                actualizacion = pb.ActualizacionFoco(
+                    ok=True,
+                    representacion=representacion,
+                    elementos_globales=globales_resp.elementos_globales,
+                    tick_actual=self._ultimo_tick,
+                )
+
+                for cola in list(self._suscriptores):
+                    cola.put_nowait(actualizacion)
+
+            except asyncio.CancelledError:
+                # Cancelación real (shutdown del proceso, etc.): no es un
+                # fallo, hay que dejarla propagar para no bloquear el cierre.
+                raise
+            except Exception as exc:
+                # Cualquier otro fallo: se loguea con el foco actual (clave
+                # para reproducir) y el bucle continúa en el siguiente
+                # ciclo de poll, en vez de morir para siempre.
+                logger.exception(
+                    "Vista_Foco: fallo en el vigilante (foco=%s): %s", self._foco, exc
                 )
                 await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
-                continue
-
-            if globales_resp.tick_actual == self._ultimo_tick:
-                await asyncio.sleep(_POLL_INTERVAL_SEGUNDOS)
-                continue
-
-            self._ultimo_tick = globales_resp.tick_actual
-            foco = (
-                self._foco
-            )  # copia local por si actualizar_foco() cambia _foco a mitad de fetch
-
-            representacion = await self._clientes.logica_mundo.consultar_representacion(
-                foco.min_pos, foco.max_pos, foco.incluir, foco.modo
-            )
-            actualizacion = pb.ActualizacionFoco(
-                ok=True,
-                representacion=representacion,
-                elementos_globales=globales_resp.elementos_globales,
-                tick_actual=self._ultimo_tick,
-            )
-            print("actualizacion:\n" + str(actualizacion))
-
-            # Un solo fetch, repartido a todos: esto es el fan-out.
-            for cola in list(self._suscriptores):
-                cola.put_nowait(actualizacion)

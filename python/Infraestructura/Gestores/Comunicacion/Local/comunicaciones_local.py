@@ -231,6 +231,42 @@ class ComunicacionesLocal:
         ack.ParseFromString(raw)
         return ack.ok, ack.error
 
+    async def ejecutar_comando_consola(self, tipo: str, request_msg) -> bytes:
+        """
+        Punto único de salida para comandos de consola contra
+        Gestor_Mundo. request_msg es el *Request concreto ya
+        construido (ej. SetStepModeRequest); se serializa aquí y se
+        envuelve en ComandoConsolaRequest. Lanza RuntimeError si
+        ok=False, igual que _ejecutar() con el resto de operaciones.
+        """
+        req = mundo_pb.ComandoConsolaRequest(
+            tipo=tipo, payload=request_msg.SerializeToString()
+        )
+        raw = await self._ejecutar(bridge_pb.GESTOR_MUNDO, "ComandoConsola", req)
+        resp = mundo_pb.ComandoConsolaResponse()
+        resp.ParseFromString(raw)
+        if not resp.ok:
+            raise RuntimeError(resp.error)
+        return resp.payload
+
+    async def set_step_mode(self, activar: bool) -> tuple[bool, str]:
+        try:
+            await self.ejecutar_comando_consola(
+                "SetStepMode", mundo_pb.SetStepModeRequest(activar=activar)
+            )
+            return True, ""
+        except RuntimeError as exc:
+            return False, str(exc)
+
+    async def avanza_tick(self) -> tuple[bool, str]:
+        try:
+            await self.ejecutar_comando_consola(
+                "AdvanceTick", mundo_pb.AdvanceTickRequest()
+            )
+            return True, ""
+        except RuntimeError as exc:
+            return False, str(exc)
+
     async def trigger_deep_save(self) -> "mundo_pb.TriggerDeepSaveResponse":
         raw = await self._ejecutar(
             bridge_pb.GESTOR_MUNDO, "TriggerDeepSave", mundo_pb.TriggerDeepSaveRequest()

@@ -24,7 +24,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
+from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,
     SystemState,

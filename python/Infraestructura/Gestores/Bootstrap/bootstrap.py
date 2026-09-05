@@ -16,6 +16,7 @@ esperar a que cada instancia tenga IP pública asignada — ver remote.py).
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import logging.handlers
 import os
@@ -37,6 +38,7 @@ from Config.rutas import (
     SCRIPT_GESTOR_BOTS,
     SCRIPT_HYPERVISOR,
     SCRIPT_COMUNICACIONES_REMOTO,
+    SCRIPT_CONSOLA,
 )
 from Infraestructura.Gestores.Bootstrap.topologia import (
     HEALTHCHECK_INFO,
@@ -252,11 +254,54 @@ def ejecutar_modo_local(escenario: str | None = None) -> None:
         direcciones["comunicaciones_remoto"],
     )
 
-    apagar_solicitado = threading.Event()
+    def _run_consola() -> None:
+        from Infraestructura.Gestores.Consola.consola import iniciar
+
+        asyncio.run(iniciar(comunicaciones_local))
+
+    def _lanzar_consola(comunicaciones_remoto_address: str) -> None:
+        """
+        Abre la consola de administración como ventana cmd APARTE en
+        Windows (subprocess.CREATE_NEW_CONSOLE). Fuera de Windows no hay
+        un equivalente fiable a "ventana nueva" sin adivinar qué emulador
+        de terminal hay instalado — por ahora solo se soporta Windows (ver
+        decisión explícita); en cualquier otro SO se avisa y no se lanza
+        nada, en vez de fingir que funciona.
+
+        No se añade a la lista de procesos vigilados por el bucle de
+        salud de ejecutar_modo_local(): que alguien cierre la ventana de
+        la consola no debe tumbar el resto del stack, al revés que un
+        sector o un hypervisor.
+        """
+        if sys.platform != "win32":
+            logger.warning(
+                "Consola de administración no soportada fuera de Windows por "
+                "ahora — no se lanzará ninguna ventana. (Ver decisión: "
+                "solo Windows.)"
+            )
+            return
+
+        env = os.environ.copy()
+        env["COMUNICACIONES_REMOTO_ADDRESS"] = comunicaciones_remoto_address
+
+        proc = subprocess.Popen(
+            [sys.executable, str(SCRIPT_CONSOLA)],
+            env=env,
+            cwd=str(ROOT),
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
+        logger.info(
+            "Consola de administración lanzada en ventana aparte (pid %d).", proc.pid
+        )
 
     def _shutdown(sig, frame):
         logger.info("Señal %s recibida. Apagando...", sig)
         apagar_solicitado.set()
+
+    _lanzar_consola(direcciones["comunicaciones_remoto"])
+    logger.info("Consola de administración arrancada.")
+
+    apagar_solicitado = threading.Event()
 
     if sys.platform == "win32":
         signal.signal(signal.SIGBREAK, _shutdown)

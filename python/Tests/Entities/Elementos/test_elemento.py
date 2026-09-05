@@ -127,7 +127,7 @@ def test_serialize_casilla_produce_dict_json_valido():
     Python, no JSON). Ahora debe ser un dict real con claves x/y.
     """
     elem = Elemento_Test(casilla=(7, 9), id_elemento=1, peso=1.0)
-    assert elem.serialize_casilla() == {"x": 7, "y": 9}
+    assert elem.serializar_casilla() == {"x": 7, "y": 9}
 
 
 def test_casilla_roundtrip_reconstruye_tupla():
@@ -151,7 +151,7 @@ def test_rotacion_se_normaliza_a_0_360():
         peso=1.0,
         rotacion=370,
     )
-    assert elem.serialize_rotacion() == 10
+    assert elem.serializar_rotacion() == 10
 
     elem_negativo = Elemento_Test(
         casilla=(0, 0),
@@ -159,7 +159,7 @@ def test_rotacion_se_normaliza_a_0_360():
         peso=1.0,
         rotacion=-10,
     )
-    assert elem_negativo.serialize_rotacion() == 350
+    assert elem_negativo.serializar_rotacion() == 350
 
 
 # ─────────────────────────────────────────────────────────────

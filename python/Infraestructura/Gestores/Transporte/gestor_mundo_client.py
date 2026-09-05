@@ -93,6 +93,20 @@ class GestorMundoClient:
             logger.error("SetTickRate falló: %s", exc)
             return False, str(exc)
 
+    async def ejecutar_comando_consola(
+        self, tipo: str, payload: bytes, timeout: float | None = None
+    ) -> tuple[bool, str, bytes]:
+        await self._ensure_channel()
+        req = pb.ComandoConsolaRequest(tipo=tipo, payload=payload)
+        try:
+            resp = await self._stub.EjecutarComandoConsola(
+                req, timeout=self._t(timeout)
+            )
+            return resp.ok, resp.error, resp.payload
+        except grpc.aio.AioRpcError as exc:
+            logger.error("EjecutarComandoConsola(%s) falló: %s", tipo, exc)
+            return False, str(exc), b""
+
     async def trigger_deep_save(
         self, timeout: float | None = None
     ) -> "pb.TriggerDeepSaveResponse":

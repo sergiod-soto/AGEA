@@ -172,6 +172,23 @@ class Serie_Estados:
         )
         return elemento
 
+    async def Crear_Suelo(self, clase, casilla: tuple[int, int], **kwargs):
+        """
+        Crea un Suelo en `casilla`. Es un envoltorio fino sobre
+        Crear_Elemento con type_id="suelo" fijo -- a nivel de
+        Logica_Mundo un Suelo SIGUE viajando por el mismo RPC
+        CrearElemento y viviendo en el mismo self._elements que
+        cualquier otro elemento (ver LogicaMundo.crear_elemento: solo
+        cambia a qué campo de Celda se cuelga según type_id). Lo único
+        que hace esta función es evitar que quien escribe un escenario
+        tenga que acordarse de pasar "suelo" a mano cada vez.
+
+        `clase` es obligatoria y sin valor por defecto (decisión
+        explícita: no hay un tipo de terreno "por defecto" razonable --
+        Suelo, Suelo_Cesped, etc. deben elegirse siempre a propósito).
+        """
+        return await self.Crear_Elemento(clase, casilla, type_id="suelo", **kwargs)
+
     # endregion
     #####################################################################
 

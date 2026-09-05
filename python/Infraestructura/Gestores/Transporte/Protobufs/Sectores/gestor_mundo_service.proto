@@ -13,14 +13,13 @@ import "common.proto";
 // ============================================================
 
 service GestorMundoService {
-  rpc Heartbeat          (common.HeartbeatRequest)       returns (GestorMundoHeartbeatResponse);
-  rpc Shutdown           (common.ShutdownRequest)        returns (common.ShutdownResponse);
-
+  rpc Heartbeat          (common.HeartbeatRequest)        returns (GestorMundoHeartbeatResponse);
+  rpc Shutdown           (common.ShutdownRequest)         returns (common.ShutdownResponse);
   rpc GetSnapshotInfo    (GetSnapshotInfoRequest)         returns (GetSnapshotInfoResponse);
-
+  rpc EjecutarComandoConsola (ComandoConsolaRequest)      returns (ComandoConsolaResponse);
   rpc Pause              (PauseRequest)                   returns (common.Ack);
   rpc Resume             (ResumeRequest)                  returns (common.Ack);
-  rpc SetTickRate        (SetTickRateRequest)             returns (common.Ack);
+  rpc AdvanceTick        (AdvanceTickRequest)             returns (common.Ack);
   rpc TriggerDeepSave    (TriggerDeepSaveRequest)         returns (TriggerDeepSaveResponse);
 }
 
@@ -45,9 +44,18 @@ message PauseRequest  {}
 
 message ResumeRequest {}
 
-message SetTickRateRequest {
-  int32 ticks_per_second = 1;
+message ComandoConsolaRequest {
+  string tipo    = 1;  // ej. "SetStepMode", "AdvanceTick" — identifica el handler
+  bytes  payload = 2;  // el *Request concreto de ese tipo, serializado
 }
+
+message ComandoConsolaResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;  // el *Response concreto de ese tipo, serializado (vacío si no aplica)
+}
+
+message AdvanceTickRequest {}
 
 message TriggerDeepSaveRequest {}
 

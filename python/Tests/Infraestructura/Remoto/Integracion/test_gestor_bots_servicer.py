@@ -12,8 +12,8 @@ lógica de Gestor_Bots en memoria.
 
 import pytest
 
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import Gestor_Bots
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots_servicer import (
+from Infraestructura.Gestores.Bots.GestorBots.gestor_bots import Gestor_Bots
+from Infraestructura.Gestores.Bots.GestorBots.gestor_bots_servicer import (
     Gestor_Bots_Servicer,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated.Bots import (
@@ -65,7 +65,7 @@ async def test_heartbeat_reporta_hv_caido_por_staleness(levantar_servidor, monke
     reportar carga hace más de UMBRAL_HV_CAIDO_SEGUNDOS debe hacer que
     el Heartbeat real (no solo la función interna) devuelva ok=False.
     """
-    import Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots as gestor_bots_mod
+    import Infraestructura.Gestores.Bots.GestorBots.gestor_bots as gestor_bots_mod
 
     monkeypatch.setattr(gestor_bots_mod, "UMBRAL_HV_CAIDO_SEGUNDOS", 0.01)
 

@@ -16,6 +16,8 @@ MonoBehaviour:
   - clase: 
     tile: {fileID: 0}
   entradasSuelo:
+  - clase: Suelo_Error
+    tile: {fileID: 11400000, guid: b39a567fdddc5cd4c9ada9d46e119769, type: 2}
   - clase: Suelo_Arena
     tile: {fileID: 11400000, guid: 9c7a6c5c5740e1e4688f25d64419f5cc, type: 2}
   - clase: Suelo_Barro

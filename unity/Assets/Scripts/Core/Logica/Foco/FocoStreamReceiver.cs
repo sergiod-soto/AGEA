@@ -66,10 +66,6 @@ namespace Assets.Scripts.Core.Logica.Foco
                     // Si vuelve sin excepción, el servidor cerró el stream
                     // limpiamente -- también se reintenta en ese caso.
                 }
-                //catch (RpcException ex)
-                //{
-                //    Debug.LogWarning($"[FocoStreamReceiver] Stream caído ({ex.StatusCode}), reintentando en {_backoffActual:0.0}s");
-                //}
                 catch (RpcException ex)
                 {
                     Debug.LogWarning($"[FocoStreamReceiver] Stream caído ({ex.StatusCode}) - {ex.Status.Detail} - {ex}");

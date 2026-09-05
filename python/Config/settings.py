@@ -15,9 +15,27 @@ FRESH: bool = os.getenv("FRESH", "false").lower() == "true"
 UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")
 UNITY_PORT: int = int(os.getenv("UNITY_PORT", "5069" if DEBUG else "5001"))
 
+# ── Conexión con comunicaciones_remoto_server ────────────────────────────────────────────────────────
+COMUNICACIONES_REMOTO_HOST = os.getenv("COMUNICACIONES_REMOTO_HOST", "[::]")
+COMUNICACIONES_REMOTO_PORT: int = int(os.getenv("COMUNICACIONES_REMOTO_PORT", 50500))
+LOGICA_MUNDO_ADDRESS = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
+GESTOR_MUNDO_ADDRESS = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
+GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
+LOG_LEVEL_REMOTE_SERVER = os.getenv("LOG_LEVEL_REMOTE_SERVER", "INFO")
+
+
+# ── Conexión con gestor_bots_server ────────────────────────────────────────────────────────
+GESTOR_BOTS_HOST = os.getenv("GESTOR_BOTS_HOST", "[::]")
+GESTOR_BOTS_PORT: int = int(os.getenv("GESTOR_BOTS_PORT", 50051))
+GESTOR_BOTS_WORKERS: int = int(os.getenv("GESTOR_BOTS_WORKERS", 10))
+BOTS_POR_HYPERVISOR: int = int(os.getenv("BOTS_POR_HYPERVISOR", 100))
+LOGICA_MUNDO_ADDRESS = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+
 # ── Mundo ─────────────────────────────────────────────────────────────────────
-ANCHO: int = int(os.getenv("ANCHO", "5"))
-ALTO: int = int(os.getenv("ALTO", "5"))
+ANCHO: int = int(os.getenv("ANCHO", "500"))
+ALTO: int = int(os.getenv("ALTO", "500"))
 MAX_VISION_DISTANCE: int = int(os.getenv("MAX_VISION_DISTANCE", "50"))
 
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
@@ -25,9 +43,6 @@ DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 2))  # 0 = sin lími
 
 # ── Loop principal ────────────────────────────────────────────────────────────
 MS_POR_FRAME: int = int(os.getenv("MS_POR_FRAME", "500"))
-
-# ── Perfiles ──────────────────────────────────────────────────────────────────
-NUM_PERFILES: int = int(os.getenv("NUM_PERFILES", "6"))
 
 # ── Ficheros ──────────────────────────────────────────────────────────────────
 NOMBRE_FICHERO_URLS: str = os.getenv("NOMBRE_FICHERO_URLS", "Urls.csv")

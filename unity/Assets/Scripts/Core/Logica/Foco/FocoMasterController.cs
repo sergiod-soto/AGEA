@@ -69,6 +69,13 @@ namespace Assets.Scripts.Core.Logica.Foco
             {
                 Debug.LogWarning($"[FocoMasterController] ActualizarFoco falló: {ex.StatusCode}");
             }
+            catch (Exception ex)
+            {
+                // Cualquier otro fallo (ServiceLocator sin registrar, stub en mal
+                // estado, etc.) no debe quedar como excepción no observada: si esto
+                // pasa en silencio, parecería "no llegan datos" sin pista de por qué.
+                Debug.LogError($"[FocoMasterController] Error inesperado enviando foco: {ex}");
+            }
         }
 
         /// <summary>

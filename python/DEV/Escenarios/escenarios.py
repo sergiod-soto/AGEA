@@ -22,20 +22,14 @@ TipoEscenario = Callable[[Serie_Estados], None]
 def _escenario_suelo(serie: Serie_Estados) -> None:
     """
     Malla de NxN Suelos, desde (0,0) hasta (n-1, n-1).
-    N se define aquí mismo (n=4); para otro tamaño, cambiar este valor
-    -- ver conversación: se descartó parametrizarlo por función porque
-    de momento solo hace falta un tamaño fijo.
+    N se define aquí mismo (n=4); para otro tamaño, cambiar este valor.
     """
-    n = 10
+    n = 1000
 
     async def crear():
         for i in range(n):
             for j in range(n):
-                await serie.Crear_Elemento(
-                    Suelo_Piedra,
-                    casilla=(i, j),
-                    type_id="Suelo_Piedra",
-                )
+                await serie.Crear_Suelo(Suelo_Piedra, casilla=(i, j))
 
     serie.add([crear])
 

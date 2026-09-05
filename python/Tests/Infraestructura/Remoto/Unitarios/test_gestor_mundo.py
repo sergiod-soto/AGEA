@@ -9,7 +9,7 @@ Gestor_Bots) y se le inyectan SectorInfo con FakeStub como stub.
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import (
+from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import (
     GestorMundo,
     SectorInfo,
     FALLOS_CONSECUTIVOS_SECTOR_CAIDO,

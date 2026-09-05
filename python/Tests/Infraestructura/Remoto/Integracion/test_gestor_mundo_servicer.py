@@ -16,8 +16,8 @@ genérico, así que el RPC no tira el servidor, pero conviene saberlo.
 import grpc.aio
 import pytest
 
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo import GestorMundo
-from Infraestructura.Gestores.Mundo.Gestor_Mundo.gestor_mundo_servicer import (
+from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import GestorMundo
+from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo_servicer import (
     GestorMundoServicer,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2

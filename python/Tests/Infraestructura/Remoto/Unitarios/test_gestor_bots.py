@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from Infraestructura.Gestores.Bots.Gestor_Bots.gestor_bots import (
+from Infraestructura.Gestores.Bots.GestorBots.gestor_bots import (
     Gestor_Bots,
     UMBRAL_HV_CAIDO_SEGUNDOS,
 )

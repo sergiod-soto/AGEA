@@ -40,7 +40,16 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import MODO, LOG_DIR
+from Config.settings import (
+    COMUNICACIONES_REMOTO_HOST,
+    COMUNICACIONES_REMOTO_PORT,
+    GESTOR_BOTS_ADDRESS,
+    GESTOR_MUNDO_ADDRESS,
+    LOG_LEVEL_REMOTE_SERVER,
+    LOGICA_MUNDO_ADDRESS,
+    MODO,
+    LOG_DIR,
+)
 
 logger = logging.getLogger("comunicaciones_remoto_server")
 
@@ -48,12 +57,12 @@ _COMPONENT_ID = "comunicaciones_remoto"
 
 
 async def serve() -> None:
-    host = os.getenv("COMUNICACIONES_REMOTO_HOST", "[::]")
-    port = int(os.getenv("COMUNICACIONES_REMOTO_PORT", 50500))
-    logica_mundo_address = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
-    gestor_mundo_address = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
-    gestor_bots_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
-    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO"))
+    host = COMUNICACIONES_REMOTO_HOST
+    port = COMUNICACIONES_REMOTO_PORT
+    logica_mundo_address = LOGICA_MUNDO_ADDRESS
+    gestor_mundo_address = GESTOR_MUNDO_ADDRESS
+    gestor_bots_address = GESTOR_BOTS_ADDRESS
+    log_level = getattr(logging, LOG_LEVEL_REMOTE_SERVER)
 
     if MODO == "local":
         setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)
