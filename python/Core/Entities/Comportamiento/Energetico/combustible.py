@@ -44,7 +44,7 @@ class Combustible(Energetico):
     def _campos_internos(cls):
         return {"energia_actual"}
 
-    def gastar(self, cantidad: float):
+    def gastar(self, cantidad: float) -> float:
         if cantidad > self.ratio_emision:
             cantidad = self.ratio_emision
 
@@ -64,3 +64,33 @@ class Combustible(Energetico):
 
         if self.energia_actual > self.energia_maxima:
             self.energia_actual = self.energia_maxima
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "energia_maxima",
+            "ratio_emision",
+            "energia_actual",
+            "ratio_recarga",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser usado como fuente de energia (no implica combustión).
+
+Atributos:
+\tenergia_maxima: float,
+\tratio_emision: float,
+\tenergia_actual: float = None,
+\tratio_recarga: float = 0.0
+
+Métodos:
+\tgastar(self, cantidad: float) -> float
+\t--------------------------------------
+\tConsume carga de energía.
+
+\tcargar(self, cantidad: float)
+\t--------------------------------------
+\tRecarga energía.
+            """

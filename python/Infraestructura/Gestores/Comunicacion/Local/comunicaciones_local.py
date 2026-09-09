@@ -3,8 +3,8 @@
 comunicaciones_local.py — Cliente único hacia Comunicaciones_Remoto.
 
 Es el ÚNICO módulo local con permiso para hablar con AWS. Cualquier
-otro módulo local (Vista_Foco, Vision_Unity, Bootstrap para tareas
-administrativas) debe pasar por esta clase — nunca abrir un canal
+otro módulo local (Bootstrap para tareas administrativas)
+debe pasar por esta clase — nunca abrir un canal
 gRPC propio hacia un componente remoto.
 
 Cada método público construye el mensaje *Request tipado del servicio
@@ -13,7 +13,8 @@ lo serializa, lo envía dentro de EjecutarRequest (ver
 comunicacion_remota_service.proto), y deserializa la respuesta al
 *Response tipado correspondiente.
 
-actualizar_foco / suscribirse_foco son la excepción: no pasan por
+actualizar_foco / suscribirse_foco son la excepción
+porque no se consideran modulos locales: no pasan por
 EjecutarRequest porque no son un reenvío a un componente remoto —
 son RPCs propios de ComunicacionRemotaService (estado y streaming
 de Vista_Foco). Se llaman directamente sobre el mismo stub.
@@ -174,11 +175,11 @@ class ComunicacionesLocal:
         return ack.ok, ack.error
 
     async def modificar_elemento(
-        self, pos: tuple[int, int], type_id: str, patch: bytes
+        self, pos: tuple[int, int], element_id: int, patch: bytes
     ) -> tuple[bool, str]:
         req = logica_pb.ModificarElementoRequest(
             pos=common_pb.Position(x=pos[0], y=pos[1]),
-            type_id=type_id,
+            element_id=element_id,
             patch=patch,
         )
         raw = await self._ejecutar(bridge_pb.LOGICA_MUNDO, "ModificarElemento", req)
@@ -186,17 +187,27 @@ class ComunicacionesLocal:
         ack.ParseFromString(raw)
         return ack.ok, ack.error
 
-    async def eliminar_elemento(
-        self, pos: tuple[int, int], element_id: int
-    ) -> tuple[bool, str]:
-        req = logica_pb.EliminarElementoRequest(
+    async def construir_elemento(
+        self, pos: tuple[int, int], nombre_clase: str, campos: bytes
+    ) -> tuple[bool, str, int]:
+        """
+        A diferencia de crear_elemento (que reenvía un elemento YA
+        construido y serializado), aquí 'campos' es un JSON de valores
+        primitivos sin id -- es Logica_Mundo quien llama al __init__
+        real de la clase y asigna el id (ver ConstruirElemento en
+        logica_mundo_service.proto). Por eso la respuesta trae
+        id_elemento: quien llama lo necesita para poder modificar o
+        eliminar este elemento más adelante.
+        """
+        req = logica_pb.ConstruirElementoRequest(
             pos=common_pb.Position(x=pos[0], y=pos[1]),
-            element_id=element_id,
+            nombre_clase=nombre_clase,
+            campos=campos,
         )
-        raw = await self._ejecutar(bridge_pb.LOGICA_MUNDO, "EliminarElemento", req)
-        ack = common_pb.Ack()
-        ack.ParseFromString(raw)
-        return ack.ok, ack.error
+        raw = await self._ejecutar(bridge_pb.LOGICA_MUNDO, "ConstruirElemento", req)
+        resp = logica_pb.ConstruirElementoResponse()
+        resp.ParseFromString(raw)
+        return resp.ok, resp.error, resp.id_elemento
 
     # ------------------------------------------------------------------
     # Gestor_Mundo — control del ciclo de tick

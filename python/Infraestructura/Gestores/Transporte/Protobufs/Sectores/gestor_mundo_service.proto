@@ -54,6 +54,9 @@ message ComandoConsolaResponse {
   string error   = 2;
   bytes  payload = 3;  // el *Response concreto de ese tipo, serializado (vacío si no aplica)
 }
+message SetStepModeRequest {
+  bool activar = 1;
+}
 
 message AdvanceTickRequest {}
 

@@ -22,3 +22,21 @@ class Crafteable(Interaccion):
 
         for ingrediente in self.receta.ingredientes:
             ingrediente.incluir_en_receta(self.receta)
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser generado siguiendo una receta.
+
+Atributos:
+\treceta: Receta
+
+Métodos:
+\t-
+        """

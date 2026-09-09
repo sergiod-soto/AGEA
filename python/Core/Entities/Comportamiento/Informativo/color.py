@@ -97,3 +97,31 @@ class Color(Comportamiento):
         rgb[2] = rgb[2] / max * 255
 
         return rgb
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "rgb_base",
+            "transparente",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento, al ser iluminado, modifica el valor de la luz que refleja.
+
+Atributos:
+\trgb_base: tuple[float, float, float],
+\ttransparente: float = 0,
+
+Métodos:
+\tiluminar_con_color(self, color_luz: tuple[float, float, float])
+\t--------------------------------------
+\tModifica el color (e intensidad) que refleja
+\tel elemento en base al color e intensidad con el que es iluminado
+
+\tget_rgb_normalizado(self) -> tuple[float, float, float]
+\t--------------------------------------
+\tRetorna el RGB de la luz total reflejada
+\tnormalizada a 255 para representacion, no uso.
+        """

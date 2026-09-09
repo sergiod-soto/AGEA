@@ -28,3 +28,21 @@ class Recolectable(Interaccion):
 
     @abstractmethod
     def recolectar(self, por: Elemento): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return []
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser recolectado para la generacion de otro Elemento.
+
+Atributos:
+\tcontenido_recolectable: dict[str, tuple[Elemento, float]] = None
+
+Métodos:
+\t@abstractmethod recolectar(self, por: Elemento)
+\t--------------------------------------
+\tProvoca la generacion del recurso, si posible.
+        """

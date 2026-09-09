@@ -59,12 +59,43 @@ class Empujable(Fisico):
                 return False
 
     @abstractmethod
-    def check_push(self, direccion) -> Elemento | bool:
+    def check_push(self, direccion, fuerza) -> Elemento | bool:
         """
-        Intenta mover la entidad una celda en `direccion`.
+        Intenta mover la entidad una celda en 'direccion' con 'fuerza'.
         Devuelve un Elemento si choca contra algo, True si tendria exito o False si no puede.
         """
         ...
 
     @abstractmethod
     def push(self, direccion) -> bool: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "coste_empujar",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Indica que es un Elemento empujable por otros.
+
+Atributos:
+\tcoste_empujar: float
+
+Métodos:
+\tcalcular_coste_empujar_en_cadena(self, direccion) -> float
+\t--------------------------------------
+\tCalcula la energia necesaria para mover el elemento tnato en 
+\tcaso de que se mueva solo como que provoque un empuje en cadena.
+
+\t@abstractmethod check_push(self, direccion) -> Elemento | bool
+\t--------------------------------------
+\tComprueba si el Elemento puede ser movido.
+
+\t@abstractmethod push(self, direccion) -> bool
+\t--------------------------------------
+\tIntenta empujar el elemento el la dirección y con la fuerza dada.
+\tSi choca contra un Elemento, lo retorna. 
+\tSi logra moverlo, retorna True. En caso contrario, retorna False.
+        """

@@ -68,3 +68,25 @@ class Termico(Energetico):
             Elemento.mundo.bus.emitir(
                 f"temperatura_cambiada_{id(self)}", self.temperatura_propia
             )
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "temperatura_propia",
+            "tasa_transferencia_temperatura",
+            "radio_termico",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Peso es la masa del elemento.
+
+Atributos:
+\tpeso: float
+
+Métodos:
+\ttick(self, elementos: list[(float, float)]) -> float
+\t--------------------------------------
+\tComputa el siguiente tick.
+        """

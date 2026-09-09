@@ -28,3 +28,21 @@ class Consumible(Interaccion):
 
     @abstractmethod
     def consumir(self, por: Elemento): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return []
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser destruido por otro para obtener efectos.
+
+Atributos:
+\t-
+
+Métodos:
+\t@abstractmethod consumir(self, por: Elemento)
+\t--------------------------------------
+\tSe consume.
+        """

@@ -81,3 +81,18 @@ async def ejecutar_cuestionario(campos: list[CampoCuestionario]) -> dict[str, An
             except ValueError as exc:
                 print(f"  ✗ Valor inválido: {exc}. Vuelve a intentarlo.")
     return valores
+
+
+def parse_nombre_clase(texto: str) -> str:
+    """
+    Valida contra el registry real de Core -- si el nombre no existe
+    ahí, falla aquí mismo (se vuelve a pedir) en vez de dejar que el
+    error aparezca más tarde, ya con red de por medio, en
+    construir_elemento().
+    """
+    from Core.Entities.Elementos.registry import ELEMENTOS
+
+    nombre = texto.strip()
+    if nombre not in ELEMENTOS:
+        raise ValueError(f"'{nombre}' no es un tipo de elemento conocido.")
+    return nombre

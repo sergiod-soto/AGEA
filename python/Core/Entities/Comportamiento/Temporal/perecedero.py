@@ -49,3 +49,29 @@ class Perecedero(Temporal):
 
     @abstractmethod
     def desaparecer(self) -> None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento se degrada hasta desaparecer con el tiempo.
+
+Atributos:
+\ttiempo_maximo_perecedero: float
+\tcondiciones_perecedero: list[tuple[list[Condicion], float]]
+\ttiempo_actual_perecedero: float = None
+
+Métodos:
+\t@abstractmethod tick(self) -> None
+\t--------------------------------------
+\tComputa el siguiente tick.
+
+\t@abstractmethod desaparecer(self) -> None
+\t--------------------------------------
+\tEl Elemento se ha degradado al máximo.
+        """

@@ -55,3 +55,35 @@ class Erosionable(Material):
 
     @abstractmethod
     def _destruir(self, efecto: Accion): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "condiciones_erosion",
+            "durabilidad_max_erosion",
+            "durabilidad_actual_erosion",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Indica que el Elemento puede ser erosionado, frotando, por ejemplo.
+
+Atributos:
+\tcondiciones_erosion: list[tuple[list[Condicion], float]]
+\tdurabilidad_max_erosion: float
+\tdurabilidad_actual_erosion: float = None
+
+Métodos:
+\ttick(self) -> None
+\t--------------------------------------
+\tComputa el siguiente tick.
+
+\t@abstractmethod erosionar(self, cantidad: float)
+\t--------------------------------------
+\tEjecuta un tick de erosión.
+
+\t@abstractmethod _destruir(self, efecto: Accion)
+\t--------------------------------------
+\tRealiza una accion al Elemento ser destruido por erosión.
+        """

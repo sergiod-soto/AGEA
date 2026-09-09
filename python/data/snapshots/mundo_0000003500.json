@@ -1,0 +1,13 @@
+{
+  "tick_id": 3500,
+  "snapshot_id": "0000003500",
+  "fecha": "2026-09-07T12:52:59.120745",
+  "sectores": [
+    {
+      "col": 0,
+      "row": 0,
+      "address": "localhost:50100",
+      "mode": 0
+    }
+  ]
+}

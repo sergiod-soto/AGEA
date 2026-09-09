@@ -33,3 +33,26 @@ class Caduco(Temporal):
 
     @abstractmethod
     def desaparecer(self) -> None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return ["duracion_max_caduco", "duracion_restante_caduco"]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento tiene una durabilidad que se reduce con el tiempo.
+
+Atributos:
+\tduracion_max_caduco: int,
+\tduracion_restante_caduco: int = None,
+
+Métodos:
+\t@abstractmethod tick(self) -> None
+\t--------------------------------------
+\tComputa el siguiente tick.
+
+\t@abstractmethod desaparecer(self) -> None
+\t--------------------------------------
+\tEl Elemento ha caducado.
+        """

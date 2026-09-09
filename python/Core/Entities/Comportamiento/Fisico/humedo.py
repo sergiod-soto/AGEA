@@ -36,3 +36,15 @@ class Humedo(Fisico):
     @abstractmethod
     def secar(self, cantidad):
         pass
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+TODO
+            """

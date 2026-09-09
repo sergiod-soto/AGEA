@@ -37,6 +37,11 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
+    async def ConstruirElemento(self, request, context):
+        return await self._dispatch["ConstruirElemento"].handle(
+            self._logica, request, context
+        )
+
     async def ModificarElemento(self, request, context):
         return await self._dispatch["ModificarElemento"].handle(
             self._logica, request, context

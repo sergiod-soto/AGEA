@@ -38,3 +38,25 @@ class Combinable(Material):
         la cantidad sobrante
         """
         ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "cantidad_max_combinable",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser combinado, eliminando tanto ese Elemento como
+el Elemento target, y creando un Elemento resultado de
+cantidad igual a la suma de ambos.
+
+Atributos:
+\tcantidad_max_combinable: float = None
+
+Métodos:
+\t@abstractmethod combinar(self, elemento: Elemento) -> Elemento
+\t--------------------------------------
+\tConsume carga de energía.
+            """

@@ -35,3 +35,26 @@ class Plantable(Interaccion):
 
     @abstractmethod
     def desplantar(self, por: Elemento): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return []
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Indica si el Elemento tiene algún efecto especial al ser enterrado.
+
+Atributos:
+\t-
+
+Métodos:
+\t@abstractmethod plantar(self, agujero: Elemento)
+\t--------------------------------------
+\tSe entierra.
+
+
+\t@abstractmethod desplantar(self, por: Elemento)
+\t--------------------------------------
+\tSe desentierra.
+        """

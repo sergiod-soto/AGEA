@@ -35,21 +35,21 @@ from Exceptions.Bot.comportamientos_exceptions import Peso_Zero
 
 
 comportamientos = Comportamiento.declarar_comportamientos(
-    Peso,
-    Enterrable,
-    Empujable,
-    Volumen,
-    Ingrediente,
-    Color,
     Agarrable,
+    Color,
     Destruible,
+    Empujable,
+    Enterrable,
+    Erosionable,
     Golpeable,
+    Ingrediente,
+    Intercambiable,
+    Peso,
     Solido,
+    Sonoro,
     Tangible,
     Termico,
-    Erosionable,
-    Intercambiable,
-    Sonoro,
+    Volumen,
 )
 
 
@@ -64,7 +64,7 @@ class Piedra(Elemento_Simple, comportamientos):
         #
         # Peso:
         peso: float,
-        # Enterrable:
+        # Empujable:
         coste_empujar: float,
         # Volumen:
         volumen: float,
@@ -168,5 +168,40 @@ class Piedra(Elemento_Simple, comportamientos):
     def restaurar(self, danho: float): ...
     def _destruir(self, danho: float): ...
 
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        # Todos los parámetros obligatorios de __init__, en el mismo
+        # orden que aparecen ahí (facilita comparar visualmente si
+        # cambia la firma del constructor).
+        return [
+            *["tamanho", "casilla", "capa"],
+            *Peso.campos_para_creacion(),
+            *Empujable.campos_para_creacion(),
+            *Volumen.campos_para_creacion(),
+            *Color.campos_para_creacion(),
+            *Termico.campos_para_creacion(),
+            *Agarrable.campos_para_creacion(),
+            *Destruible.campos_para_creacion(),
+            *Erosionable.campos_para_creacion(),
+        ]
 
-Piedra.obtener_requisitos()
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return (
+            "Una piedra\n"
+            "\n"
+            "Atributos:\n"
+            "\ttamanho: int\n"
+            "\tcasilla: tuple[int, int]\n"
+            "\tcapa: int\n"
+            "\tpeso: float\n"
+            "\tcoste_empujar: float\n"
+            "\tcoste_empujar: float\n"
+            "\tvolumen: float\n"
+            "\trgb_base: tuple[int, int, int]\n"
+            "\ttemperatura_propia: float\n"
+            "\ttasa_transferencia_temperatura: float\n"
+            "\tagarrado_por: Elemento = None\n"
+            "\tdurabilidad_max_destruible: float = None\n"
+            "\tdurabilidad_max_erosion=1 (a cambiar)\n"
+        )

@@ -12,6 +12,7 @@ from Infraestructura.Gestores.Consola.Acciones import (
     modo_paso,
     avanzar_tick,
     tick_rate,
+    crear_elemento,
 )
 
 _MODULOS = (
@@ -20,6 +21,7 @@ _MODULOS = (
     modo_paso,
     avanzar_tick,
     tick_rate,
+    crear_elemento,
 )
 
 ACCIONES = {modulo.ACCION.nombre: modulo.ACCION for modulo in _MODULOS}

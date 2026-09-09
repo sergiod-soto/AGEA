@@ -10,7 +10,7 @@ class Agarrable(Interaccion):
 
     Parametros:
 
-    - agarrado_por: Elemento
+    - agarrado_por: Elemento = None
 
     Metodos abstractos:
 
@@ -19,7 +19,10 @@ class Agarrable(Interaccion):
     - soltar(self, por: Elemento)
     """
 
-    REQUIERE = {"agarrado_por: Elemento = None"}
+    REQUIERE = {
+        "agarrado_por: Elemento = None",
+    }
+
     ABSTRACTOS = {
         "def agarrar(self, por: Elemento)",
         "def soltar(self, por: Elemento)",
@@ -38,3 +41,27 @@ class Agarrable(Interaccion):
     def soltar(self, por: Elemento):
         """Accion pasiva. Se indica que el elemento atributo tiene intencion de soltar este elemento"""
         ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "agarrado_por",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser agarrado por otro Elemento.
+
+Atributos:
+\tagarrado_por: Elemento = None
+
+Métodos:
+\t@abstractmethod agarrar(self, por: Elemento)
+\t--------------------------------------
+\tSe intenta agarrar.
+
+\t@abstractmethod soltar(self, por: Elemento)
+\t--------------------------------------
+\tSe intenta soltar
+        """

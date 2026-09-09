@@ -46,3 +46,36 @@ class Enterrable(Fisico):
 
     @abstractmethod
     def desenterrar(self) -> bool: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Indica que el Elemento puede ser enterrado.
+
+Atributos:
+
+\t-
+
+Métodos:
+\t@abstractmethod check_enterrable(self) -> bool
+\t--------------------------------------
+\tComprueba si es enterrable.
+
+\t@abstractmethod check_desenterrable(self) -> bool
+\t--------------------------------------
+\tComprueba si es desenterrable.
+
+\t@abstractmethod enterrar(self) -> bool
+\t--------------------------------------
+\tEntierra al Elemento.
+
+\t@abstractmethod desenterrar(self) -> bool
+\t--------------------------------------
+\tDesentierra al Elemento.
+            """

@@ -280,3 +280,24 @@ class Comportamiento:
                 deserializador(value)
             else:
                 setattr(self, key, value)
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        """
+        Texto explicativo que la consola muestra con 'ayuda <Comportamiento>'
+        -- qué es este comportamiento y cómo afecta al elemento que lo
+        tiene. Cada comportamiento concreto DEBE sobrescribirlo -- se
+        deja sin implementar a propósito, igual que campos_para_creacion(),
+        para que un comportamiento nuevo sin documentar falle alto en
+        vez de mostrar un hueco vacío en silencio.
+        """
+        raise NotImplementedError(
+            f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
+            "de ayuda definido para este comportamiento todavía."
+        )
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        raise NotImplementedError(
+            f"{cls.__name__} no implementa campos_para_creacion(). No puede ser creado por consola."
+        )

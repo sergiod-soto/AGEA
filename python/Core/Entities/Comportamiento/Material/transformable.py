@@ -31,3 +31,24 @@ class Transformable(Material):
 
     def get_condiciones(self) -> list[Condicion]:
         return list(self.dict_transformable.keys())
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "dict_transformable",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede transformarse en otro (ser eliminado y crear otro nuevo)
+al cumplirse ciertas condiciones.
+
+Atributos:
+\tdict_transformable: dict[Condicion, Callable]
+
+Métodos:
+\tget_condiciones(self) -> list[Condicion]
+\t--------------------------------------
+\tConsulta el diccionario de qué transformaciones convierten el Elemento en cual.
+        """

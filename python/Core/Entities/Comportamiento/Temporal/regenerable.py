@@ -6,7 +6,7 @@ from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 
 class Regenerable(Temporal):
     """
-    Indica que el Elemento tiene stats que regeneran con el tiempo
+    Indica que el Elemento tiene propiedades que regeneran con el tiempo
 
     Parametros:
 
@@ -26,3 +26,23 @@ class Regenerable(Temporal):
 
     @abstractmethod
     def tick(self): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Indica que el Elemento tiene propiedades que regeneran con el tiempo.
+
+Parametros:
+\ttasas_regeneracion: list[tuple[Stat, float]]
+
+Métodos:
+\t@abstractmethod tick()
+\t--------------------------------------
+\tComputa el siguiente tick.
+        """

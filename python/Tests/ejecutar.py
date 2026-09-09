@@ -44,6 +44,7 @@ tests: list[str] = [
     # "Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_bots.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_mundo.py",
+    "Tests/Infraestructura/Remoto/Unitarios/test_campos_para_creacion.py",  # ------------------
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_mundo_ciclo_vida.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_hypervisor.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_sector.py",
@@ -56,9 +57,12 @@ tests: list[str] = [
     # "Tests/Infraestructura/Remoto/Unitarios/test_vista_foco.py",
     # # #
     # # ── Integracion
+    # "Tests/Infraestructura/Remoto/Integracion/test_ayuda.py",  # ------------------
     # "Tests/Infraestructura/Remoto/Integracion/test_gestor_bots_servicer.py",
     # "Tests/Infraestructura/Remoto/Integracion/test_comunicaciones_remoto.py",
     # "Tests/Infraestructura/Remoto/Integracion/test_comunicaciones_remoto_ejecutar.py",
+    # "Tests/Infraestructura/Remoto/Integracion/test_consola_loop.py",  # ------------------
+    # "Tests/Infraestructura/Remoto/Integracion/test_crear_elemento_accion.py",  # ------------------
     # "Tests/Infraestructura/Remoto/Integracion/test_sector_servicer.py",
     # "Tests/Infraestructura/Remoto/Integracion/test_logica_mundo_servicer.py",
     # "Tests/Infraestructura/Remoto/Integracion/test_gestor_mundo_servicer.py",

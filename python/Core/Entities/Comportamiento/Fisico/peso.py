@@ -24,3 +24,21 @@ class Peso(Fisico):
     def __init__(self, peso: float, **kwargs):
         super().__init__(**kwargs)
         self.peso = peso
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Peso es la masa del elemento.
+
+Atributos:
+\tpeso: float
+
+Métodos:
+\t-
+            """

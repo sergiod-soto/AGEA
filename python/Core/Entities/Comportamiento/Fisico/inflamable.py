@@ -54,3 +54,31 @@ class Inflamable(Fisico):
             return self._tiempo_total_quemado
         else:
             return self._tiempo_total_quemado + (time() - self._hora_encendido)
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser usado como fuente de energia (no implica combustión).
+
+Atributos:
+\ttemperatura_ignicion: float
+
+Métodos:
+\tencender(self)
+\t--------------------------------------
+\tCombustiona el Elemento.
+
+\tapagar(self)
+\t--------------------------------------
+\tCorta la combustión del Elemento.
+
+\tget_tiempo_total_quemado(self) -> float
+\t--------------------------------------
+\tRetorna el tiempo total que el Elemento ha estado en combustión.
+            """

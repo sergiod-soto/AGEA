@@ -2,11 +2,11 @@
 """
 consola_main.py — Punto de entrada de la consola cuando corre como
 PROCESO APARTE (ventana cmd propia en Windows — ver
-bootstrap.py::_lanzar_consola). No comparte memoria con el proceso
-principal: construye su propia ComunicacionesLocal apuntando a la
-misma dirección de Comunicaciones_Remoto que ya conoce el proceso
-principal (pasada por variable de entorno, igual que el resto de
-componentes en modo local — ver topologia.resolver_env_extra).
+bootstrap.py::_lanzar_consola).
+
+Se añade también un input() final si algo falla, para que la ventana
+no vuelva a desaparecer sin dar tiempo a leer el error, sea cual sea
+la causa real.
 """
 
 from __future__ import annotations
@@ -15,6 +15,11 @@ import asyncio
 import logging
 import os
 import sys
+import traceback
+from pathlib import Path
+
+# Debe ir ANTES de cualquier import "Infraestructura...." — ver docstring.
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,3 +54,11 @@ if __name__ == "__main__":
         asyncio.run(_main())
     except KeyboardInterrupt:
         pass
+    except SystemExit:
+        raise
+    except Exception:
+        # Red de seguridad: si algo revienta antes/durante _main(), se
+        # imprime el traceback completo y se espera a que pulses Enter,
+        # en vez de dejar que la ventana se cierre sola. Ver docstring.
+        traceback.print_exc()
+        input("\nLa consola terminó con un error. Pulsa Enter para cerrar...")

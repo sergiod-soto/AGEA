@@ -24,5 +24,5 @@ async def handle(logica, request, context):
         logger.warning("ModificarElemento: patch inválido: %s", exc)
         return common_pb.Ack(ok=False, error=f"Patch inválido: {exc}")
 
-    ok, error = await logica.modificar_elemento(pos, request.type_id, patch)
+    ok, error = await logica.modificar_elemento(pos, request.element_id, patch)
     return common_pb.Ack(ok=ok, error=error)

@@ -18,9 +18,9 @@ class Golpeable(Material):
     REQUIERE = {}
     ABSTRACTOS = {"def golpear(self, por: Elemento)"}
 
-    def __init__(self, golpeable=True, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.golpeable = golpeable
+        self.golpeable = True
 
     @classmethod
     def _campos_internos(cls):
@@ -28,3 +28,21 @@ class Golpeable(Material):
 
     @abstractmethod
     def golpear(self, por: Elemento): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return []
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser interactuado con "golpear".
+
+Atributos:
+\t-
+
+Métodos:
+\t@abstractmethod golpear(self, por: Elemento)
+\t--------------------------------------
+\tSe golpea al Elemento por el Elemento "por"
+        """

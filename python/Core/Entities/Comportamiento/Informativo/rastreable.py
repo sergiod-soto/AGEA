@@ -22,7 +22,7 @@ class Rastreable(Informativo):
 
     - dejar_rastro(self, terreno: Terreno) -> Rastro | None:
     """
-    
+
     REQUIERE = {}
     ABSTRACTOS = {}
 
@@ -34,3 +34,24 @@ class Rastreable(Informativo):
 
     @abstractmethod
     def dejar_rastro(self, terreno: Terreno) -> Rastro | None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Involuntariamente, el Elemento deja rastro. 
+ Demasiado complejo para inicializarlo por consola.
+
+Atributos:
+\tcondiciones_rastro: list[tuple[list[Condicion], float]] = None
+
+Métodos:
+\t@abstractmethod dejar_rastro(self, terreno: Terreno) -> Rastro | None
+\t--------------------------------------
+\tDeja un Elemento Rastro detectable.
+        """

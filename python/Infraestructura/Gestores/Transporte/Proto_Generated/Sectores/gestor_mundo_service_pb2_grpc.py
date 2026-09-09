@@ -59,6 +59,11 @@ class GestorMundoServiceStub(object):
                 request_serializer=Sectores_dot_gestor__mundo__service__pb2.GetSnapshotInfoRequest.SerializeToString,
                 response_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetSnapshotInfoResponse.FromString,
                 _registered_method=True)
+        self.EjecutarComandoConsola = channel.unary_unary(
+                '/gestor_mundo.GestorMundoService/EjecutarComandoConsola',
+                request_serializer=Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaRequest.SerializeToString,
+                response_deserializer=Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaResponse.FromString,
+                _registered_method=True)
         self.Pause = channel.unary_unary(
                 '/gestor_mundo.GestorMundoService/Pause',
                 request_serializer=Sectores_dot_gestor__mundo__service__pb2.PauseRequest.SerializeToString,
@@ -69,9 +74,9 @@ class GestorMundoServiceStub(object):
                 request_serializer=Sectores_dot_gestor__mundo__service__pb2.ResumeRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
-        self.SetTickRate = channel.unary_unary(
-                '/gestor_mundo.GestorMundoService/SetTickRate',
-                request_serializer=Sectores_dot_gestor__mundo__service__pb2.SetTickRateRequest.SerializeToString,
+        self.AdvanceTick = channel.unary_unary(
+                '/gestor_mundo.GestorMundoService/AdvanceTick',
+                request_serializer=Sectores_dot_gestor__mundo__service__pb2.AdvanceTickRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
         self.TriggerDeepSave = channel.unary_unary(
@@ -111,6 +116,12 @@ class GestorMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def EjecutarComandoConsola(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Pause(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -123,7 +134,7 @@ class GestorMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetTickRate(self, request, context):
+    def AdvanceTick(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -153,6 +164,11 @@ def add_GestorMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Sectores_dot_gestor__mundo__service__pb2.GetSnapshotInfoRequest.FromString,
                     response_serializer=Sectores_dot_gestor__mundo__service__pb2.GetSnapshotInfoResponse.SerializeToString,
             ),
+            'EjecutarComandoConsola': grpc.unary_unary_rpc_method_handler(
+                    servicer.EjecutarComandoConsola,
+                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaRequest.FromString,
+                    response_serializer=Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaResponse.SerializeToString,
+            ),
             'Pause': grpc.unary_unary_rpc_method_handler(
                     servicer.Pause,
                     request_deserializer=Sectores_dot_gestor__mundo__service__pb2.PauseRequest.FromString,
@@ -163,9 +179,9 @@ def add_GestorMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Sectores_dot_gestor__mundo__service__pb2.ResumeRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
-            'SetTickRate': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetTickRate,
-                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.SetTickRateRequest.FromString,
+            'AdvanceTick': grpc.unary_unary_rpc_method_handler(
+                    servicer.AdvanceTick,
+                    request_deserializer=Sectores_dot_gestor__mundo__service__pb2.AdvanceTickRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
             'TriggerDeepSave': grpc.unary_unary_rpc_method_handler(
@@ -275,6 +291,33 @@ class GestorMundoService(object):
             _registered_method=True)
 
     @staticmethod
+    def EjecutarComandoConsola(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/gestor_mundo.GestorMundoService/EjecutarComandoConsola',
+            Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaRequest.SerializeToString,
+            Sectores_dot_gestor__mundo__service__pb2.ComandoConsolaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def Pause(request,
             target,
             options=(),
@@ -329,7 +372,7 @@ class GestorMundoService(object):
             _registered_method=True)
 
     @staticmethod
-    def SetTickRate(request,
+    def AdvanceTick(request,
             target,
             options=(),
             channel_credentials=None,
@@ -342,8 +385,8 @@ class GestorMundoService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/gestor_mundo.GestorMundoService/SetTickRate',
-            Sectores_dot_gestor__mundo__service__pb2.SetTickRateRequest.SerializeToString,
+            '/gestor_mundo.GestorMundoService/AdvanceTick',
+            Sectores_dot_gestor__mundo__service__pb2.AdvanceTickRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,

@@ -43,3 +43,27 @@ class Equipable(Interaccion):
 
     @abstractmethod
     def desequipar(self, por: Elemento) -> Elemento: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "provoca_equiparlo",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser incorporado por otro sin ser consumido.
+
+Atributos:
+\tprovoca_equiparlo: dict[Elemento, Accion] = None
+
+Métodos:
+\t@abstractmethod equipar(self, por: Elemento) -> bool
+\t--------------------------------------
+\tSe equipa.
+
+\t@abstractmethod desequipar(self, por: Elemento) -> Elemento
+\t--------------------------------------
+\tSe desequipa.
+            """

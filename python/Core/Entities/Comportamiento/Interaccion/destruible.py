@@ -47,3 +47,32 @@ class Destruible(Interaccion):
 
     @abstractmethod
     def _destruir(self, danho: float): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "durabilidad_max_destruible",
+            "durabilidad_actual_destruible",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser destruido como consecuencia de una acción directa.
+
+Atributos:
+\tdurabilidad_max_destruible: float
+
+Métodos:
+\t@abstractmethod danhar(self, danho: float)
+\t--------------------------------------
+\tConsume carga de energía.
+
+\t@abstractmethod restaurar(self, danho: float)
+\t--------------------------------------
+\tRecarga energía.
+
+\t@abstractmethod _destruir(self, danho: float)
+\t--------------------------------------
+\tRecarga energía.
+            """

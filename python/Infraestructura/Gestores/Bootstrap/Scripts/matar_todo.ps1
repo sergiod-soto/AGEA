@@ -10,7 +10,10 @@
 # NO tocar otros procesos python.exe ajenos al proyecto (ej. el
 # lsp_server de la extension de VSCode) aunque esten corriendo a la
 # vez.
-
+'''
+Ejecucion en terminal:
+.\Infraestructura\Gestores\Bootstrap\Scripts\matar_todo.ps1
+'''
 $patron = "Infraestructura\\Gestores"
 
 $procesos = Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |

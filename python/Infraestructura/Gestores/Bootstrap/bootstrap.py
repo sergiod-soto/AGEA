@@ -254,52 +254,11 @@ def ejecutar_modo_local(escenario: str | None = None) -> None:
         direcciones["comunicaciones_remoto"],
     )
 
-    def _run_consola() -> None:
-        from Infraestructura.Gestores.Consola.consola import iniciar
-
-        asyncio.run(iniciar(comunicaciones_local))
-
-    def _lanzar_consola(comunicaciones_remoto_address: str) -> None:
-        """
-        Abre la consola de administración como ventana cmd APARTE en
-        Windows (subprocess.CREATE_NEW_CONSOLE). Fuera de Windows no hay
-        un equivalente fiable a "ventana nueva" sin adivinar qué emulador
-        de terminal hay instalado — por ahora solo se soporta Windows (ver
-        decisión explícita); en cualquier otro SO se avisa y no se lanza
-        nada, en vez de fingir que funciona.
-
-        No se añade a la lista de procesos vigilados por el bucle de
-        salud de ejecutar_modo_local(): que alguien cierre la ventana de
-        la consola no debe tumbar el resto del stack, al revés que un
-        sector o un hypervisor.
-        """
-        if sys.platform != "win32":
-            logger.warning(
-                "Consola de administración no soportada fuera de Windows por "
-                "ahora — no se lanzará ninguna ventana. (Ver decisión: "
-                "solo Windows.)"
-            )
-            return
-
-        env = os.environ.copy()
-        env["COMUNICACIONES_REMOTO_ADDRESS"] = comunicaciones_remoto_address
-
-        proc = subprocess.Popen(
-            [sys.executable, str(SCRIPT_CONSOLA)],
-            env=env,
-            cwd=str(ROOT),
-            creationflags=subprocess.CREATE_NEW_CONSOLE,
-        )
-        logger.info(
-            "Consola de administración lanzada en ventana aparte (pid %d).", proc.pid
-        )
+    _lanzar_consola(direcciones["comunicaciones_remoto"])
 
     def _shutdown(sig, frame):
         logger.info("Señal %s recibida. Apagando...", sig)
         apagar_solicitado.set()
-
-    _lanzar_consola(direcciones["comunicaciones_remoto"])
-    logger.info("Consola de administración arrancada.")
 
     apagar_solicitado = threading.Event()
 
@@ -323,6 +282,48 @@ def ejecutar_modo_local(escenario: str | None = None) -> None:
                 sys.exit(1)
 
         time.sleep(1)
+
+
+def _lanzar_consola(comunicaciones_remoto_address: str) -> None:
+    """
+    Abre la consola de administración como ventana APARTE en Windows,
+    invocando python.exe directamente (sin envolver en cmd.exe — ver
+    historial: un wrapper "cmd /c" causaba un bug de doble escapado de
+    comillas, y además dejaba abierta la posibilidad de un prompt de
+    shell real, que es justo lo que no se quiere aquí).
+
+    No soportado fuera de Windows por ahora (ver decisión explícita):
+    no hay equivalente fiable a "ventana nueva" sin adivinar qué
+    emulador de terminal hay instalado.
+    """
+    if sys.platform != "win32":
+        logger.warning(
+            "Consola de administración no soportada fuera de Windows por "
+            "ahora — no se lanzará ninguna ventana. (Ver decisión: "
+            "solo Windows.)"
+        )
+        return
+
+    if not SCRIPT_CONSOLA.exists():
+        logger.error(
+            "SCRIPT_CONSOLA no existe en %s — revisa Config/rutas.py. "
+            "El stack seguirá arrancando sin consola.",
+            SCRIPT_CONSOLA,
+        )
+        return
+
+    env = os.environ.copy()
+    env["COMUNICACIONES_REMOTO_ADDRESS"] = comunicaciones_remoto_address
+
+    proc = subprocess.Popen(
+        [sys.executable, str(SCRIPT_CONSOLA)],
+        env=env,
+        cwd=str(ROOT),
+        creationflags=subprocess.CREATE_NEW_CONSOLE,
+    )
+    logger.info(
+        "Consola de administración lanzada en ventana aparte (pid %d).", proc.pid
+    )
 
 
 # ─────────────────────────────────────────────────────────────

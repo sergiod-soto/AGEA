@@ -27,6 +27,7 @@ service LogicaMundoService {
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
+  rpc ConstruirElemento (ConstruirElementoRequest) returns (ConstruirElementoResponse);
 }
 
 message LogicaMundoHeartbeatResponse {
@@ -51,9 +52,9 @@ message CrearElementoRequest {
 }
 
 message ModificarElementoRequest {
-  common.Position pos     = 1;
-  string          type_id = 2;
-  bytes           patch   = 3;
+  common.Position pos        = 1;
+  uint64          element_id = 2;
+  bytes           patch      = 3;
 }
 
 message EliminarElementoRequest {
@@ -125,6 +126,18 @@ message AvanzarElementosGlobalesResponse {
   bytes  cambios = 3;
 }
 
+message ConstruirElementoRequest {
+  common.Position pos          = 1;
+  string          nombre_clase = 2;
+  bytes           campos       = 3;
+}
+
+message ConstruirElementoResponse {
+  bool   ok          = 1;
+  string error       = 2;
+  uint64 id_elemento = 3;
+}
+
 message ObtenerCeldasEnRegionRequest {
   common.Position min             = 1;
   common.Position max             = 2;
@@ -177,6 +190,6 @@ message ObtenerAudioRequest {
 message ObtenerAudioResponse {
   bool   ok    = 1;
   string error = 2;
-  
-  bytes  audio  = 3;
+
+  bytes audio = 3;
 }

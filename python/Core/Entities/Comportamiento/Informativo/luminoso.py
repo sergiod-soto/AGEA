@@ -36,3 +36,25 @@ class Luminoso(Informativo):
         else:
             self.area_luz = area_luz
             self.direccion_luz = direccion_luz
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "distancia_luz",
+            "area_luz",
+            "direccion_luz",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede emitir luz.
+
+Atributos:
+\tdistancia_luz: float,
+\tarea_luz: float = 360,
+\tdireccion_luz: float = 0,
+
+Métodos:
+\t-
+        """

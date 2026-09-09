@@ -5,6 +5,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     actualizar_celdas,
     avanzar_elementos_globales,
     consultar_representacion,
+    construir_elemento,
     crear_elemento,
     despawn_global_event,
     eliminar_avatar_bot,
@@ -25,6 +26,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
 FUNCIONES = [
     asignar_id,
     crear_elemento,
+    construir_elemento,
     modificar_elemento,
     eliminar_elemento,
     eliminar_avatar_bot,

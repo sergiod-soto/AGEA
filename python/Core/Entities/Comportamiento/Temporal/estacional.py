@@ -29,3 +29,21 @@ class Estacional(Temporal):
 
     @abstractmethod
     def on_cambio_estacion(estacion: Estacion) -> None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "acciones_por_estacion",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento tiene características que dependen de la estación.
+
+Atributos:
+\tacciones_por_estacion: dict[Estacion, list[Accion]]
+
+Métodos:
+\t-
+        """

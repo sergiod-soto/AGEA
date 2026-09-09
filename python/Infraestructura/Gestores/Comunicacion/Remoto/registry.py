@@ -25,6 +25,8 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
     set_tick_rate,
     spawn_global_event,
     trigger_deep_save,
+    comando_consola,
+    advance_tick,
 )
 
 FUNCIONES = [
@@ -50,4 +52,7 @@ FUNCIONES = [
     freeze_all,
     resume_all,
     save_snapshot,
+    # Consola
+    comando_consola,
+    advance_tick,
 ]

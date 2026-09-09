@@ -20,3 +20,21 @@ class Volumen(Fisico):
     def __init__(self, volumen: float, **kwargs):
         super().__init__(**kwargs)
         self.volumen = volumen
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "volumen",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento tiene volumen espacial.
+
+Atributos:
+\tvolumen: float
+
+Métodos:
+\t-
+        """

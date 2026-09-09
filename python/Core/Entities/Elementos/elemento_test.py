@@ -52,3 +52,12 @@ class Elemento_Test(Elemento_Simple, comportamientos):
         }
 
         return campos
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        # Todos los parámetros obligatorios de __init__, en el mismo
+        # orden que aparecen ahí (facilita comparar visualmente si
+        # cambia la firma del constructor).
+        return [
+            Peso.campos_para_creacion(),
+        ]

@@ -25,3 +25,23 @@ class Comestible(Salud):
 
     @abstractmethod
     def comer(self, por: Elemento): ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•Puede ser asimilado (comido).
+
+Atributos:
+\t-
+
+Métodos:
+\t@abstractmethod comer(self, por: Elemento)
+\t--------------------------------------
+\tEl efecto que produce al Elemento ser asimilado.
+        """

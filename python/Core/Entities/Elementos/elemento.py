@@ -33,10 +33,11 @@ class Elemento(ABC, Comportamiento):
         self.excluyente_en_celda = False
         self.mundo: Mundo | None = None
 
-    def _get_comportamientos(self) -> list[type]:
+    @classmethod
+    def _get_comportamientos(cls) -> list[type]:
         return [
             c
-            for c in self.__class__.__mro__
+            for c in cls.__mro__
             if issubclass(c, Comportamiento)
             and c is not Comportamiento
             and c._es_comportamiento_real()
@@ -209,3 +210,70 @@ class Elemento(ABC, Comportamiento):
             abstractos.update(getattr(base, "ABSTRACTOS", set()))
 
         return requiere, abstractos
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        """
+        Nombres de los atributos que hacen falta para construir esta
+        clase desde fuera (ej. consola de administración): son los
+        parámetros del __init__ SIN valor por defecto y que además son
+        representables como texto simple (int, float, str, tuplas de
+        primitivos...). No incluye 'id_elemento' (lo asigna el propio
+        sistema vía asignar_id(), nunca lo pide el usuario) ni 'mundo'
+        ni 'tipo' (los gestiona Elemento internamente).
+
+        Cada tipo concreto que quiera ser creable desde consola DEBE
+        sobrescribir este método. Se deja sin implementar a propósito
+        (en vez de devolver [] por defecto) para que crear un elemento
+        de un tipo que no lo declara falle con un error explícito en
+        vez de, por ejemplo, abrir un cuestionario vacío o crear el
+        objeto a medias.
+        """
+        raise NotImplementedError(
+            f"{cls.__name__} no implementa campos_para_creacion(); no se puede "
+            "crear este tipo de elemento desde la consola todavía."
+        )
+
+    def aplicar_patch(self, patch: dict) -> None:
+        """
+        Aplica un patch PARCIAL (solo los campos que cambian, a diferencia
+        de deserializar() que espera el elemento completo con 'comportamientos'
+        y reasigna 'mundo'). Usa el mismo mecanismo de hooks deserialize_X
+        que ya existe para no perder conversiones de formato -- ver
+        Elemento_Simple.deserializar_casilla, que convierte {"x":,"y":} a
+        tupla: un setattr directo dejaría 'casilla' como dict, rompiendo
+        cualquier código que luego haga x, y = elemento.casilla.
+        """
+        for atributo, valor in patch.items():
+            deserializador = getattr(self, f"deserialize_{atributo}", None)
+            if deserializador:
+                deserializador(valor)
+            else:
+                setattr(self, atributo, valor)
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        raise NotImplementedError(
+            f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
+            "de ayuda definido para este tipo de elemento todavía."
+        )
+
+    @classmethod
+    def _comportamiento_de_campo(cls, nombre: str):
+        """
+        Busca qué Comportamiento del MRO de esta clase declara 'nombre'
+        entre sus _campos_serializables() -- así la consola sabe a quién
+        preguntarle la ayuda de un campo concreto de
+        campos_para_creacion() sin que Piedra tenga que decírselo ella
+        misma (ver Consola/consola.py::_mostrar_ayuda).
+        """
+        for c in cls.__mro__:
+            if (
+                issubclass(c, Comportamiento)
+                and c is not Comportamiento
+                and c._es_comportamiento_real()
+                and "__init__" in c.__dict__
+                and nombre in c._campos_serializables()
+            ):
+                return c
+        return None

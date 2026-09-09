@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#Sectores/gestor_mundo_service.proto\x12\x0cgestor_mundo\x1a\x0c\x63ommon.proto\"h\n\x1cGestorMundoHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12-\n\x0fsector_statuses\x18\x03 \x03(\x0b\x32\x14.common.SectorStatus\"\x18\n\x16GetSnapshotInfoRequest\"\x8c\x01\n\x17GetSnapshotInfoResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x12\x16\n\x0etimestamp_unix\x18\x05 \x01(\x03\x12\x18\n\x10is_deep_snapshot\x18\x06 \x01(\x08\"\x0e\n\x0cPauseRequest\"\x0f\n\rResumeRequest\".\n\x12SetTickRateRequest\x12\x18\n\x10ticks_per_second\x18\x01 \x01(\x05\"\x18\n\x16TriggerDeepSaveRequest\"I\n\x17TriggerDeepSaveResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t2\x8a\x04\n\x12GestorMundoService\x12Q\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a*.gestor_mundo.GestorMundoHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12^\n\x0fGetSnapshotInfo\x12$.gestor_mundo.GetSnapshotInfoRequest\x1a%.gestor_mundo.GetSnapshotInfoResponse\x12\x30\n\x05Pause\x12\x1a.gestor_mundo.PauseRequest\x1a\x0b.common.Ack\x12\x32\n\x06Resume\x12\x1b.gestor_mundo.ResumeRequest\x1a\x0b.common.Ack\x12<\n\x0bSetTickRate\x12 .gestor_mundo.SetTickRateRequest\x1a\x0b.common.Ack\x12^\n\x0fTriggerDeepSave\x12$.gestor_mundo.TriggerDeepSaveRequest\x1a%.gestor_mundo.TriggerDeepSaveResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n#Sectores/gestor_mundo_service.proto\x12\x0cgestor_mundo\x1a\x0c\x63ommon.proto\"h\n\x1cGestorMundoHeartbeatResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12-\n\x0fsector_statuses\x18\x03 \x03(\x0b\x32\x14.common.SectorStatus\"\x18\n\x16GetSnapshotInfoRequest\"\x8c\x01\n\x17GetSnapshotInfoResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t\x12\x0f\n\x07tick_id\x18\x04 \x01(\x03\x12\x16\n\x0etimestamp_unix\x18\x05 \x01(\x03\x12\x18\n\x10is_deep_snapshot\x18\x06 \x01(\x08\"\x0e\n\x0cPauseRequest\"\x0f\n\rResumeRequest\"6\n\x15\x43omandoConsolaRequest\x12\x0c\n\x04tipo\x18\x01 \x01(\t\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"D\n\x16\x43omandoConsolaResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x0f\n\x07payload\x18\x03 \x01(\x0c\"%\n\x12SetStepModeRequest\x12\x0f\n\x07\x61\x63tivar\x18\x01 \x01(\x08\"\x14\n\x12\x41\x64vanceTickRequest\"\x18\n\x16TriggerDeepSaveRequest\"I\n\x17TriggerDeepSaveResponse\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\x12\x13\n\x0bsnapshot_id\x18\x03 \x01(\t2\xef\x04\n\x12GestorMundoService\x12Q\n\tHeartbeat\x12\x18.common.HeartbeatRequest\x1a*.gestor_mundo.GestorMundoHeartbeatResponse\x12=\n\x08Shutdown\x12\x17.common.ShutdownRequest\x1a\x18.common.ShutdownResponse\x12^\n\x0fGetSnapshotInfo\x12$.gestor_mundo.GetSnapshotInfoRequest\x1a%.gestor_mundo.GetSnapshotInfoResponse\x12\x63\n\x16\x45jecutarComandoConsola\x12#.gestor_mundo.ComandoConsolaRequest\x1a$.gestor_mundo.ComandoConsolaResponse\x12\x30\n\x05Pause\x12\x1a.gestor_mundo.PauseRequest\x1a\x0b.common.Ack\x12\x32\n\x06Resume\x12\x1b.gestor_mundo.ResumeRequest\x1a\x0b.common.Ack\x12<\n\x0b\x41\x64vanceTick\x12 .gestor_mundo.AdvanceTickRequest\x1a\x0b.common.Ack\x12^\n\x0fTriggerDeepSave\x12$.gestor_mundo.TriggerDeepSaveRequest\x1a%.gestor_mundo.TriggerDeepSaveResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -42,12 +42,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PAUSEREQUEST']._serialized_end=356
   _globals['_RESUMEREQUEST']._serialized_start=358
   _globals['_RESUMEREQUEST']._serialized_end=373
-  _globals['_SETTICKRATEREQUEST']._serialized_start=375
-  _globals['_SETTICKRATEREQUEST']._serialized_end=421
-  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_start=423
-  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_end=447
-  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_start=449
-  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_end=522
-  _globals['_GESTORMUNDOSERVICE']._serialized_start=525
-  _globals['_GESTORMUNDOSERVICE']._serialized_end=1047
+  _globals['_COMANDOCONSOLAREQUEST']._serialized_start=375
+  _globals['_COMANDOCONSOLAREQUEST']._serialized_end=429
+  _globals['_COMANDOCONSOLARESPONSE']._serialized_start=431
+  _globals['_COMANDOCONSOLARESPONSE']._serialized_end=499
+  _globals['_SETSTEPMODEREQUEST']._serialized_start=501
+  _globals['_SETSTEPMODEREQUEST']._serialized_end=538
+  _globals['_ADVANCETICKREQUEST']._serialized_start=540
+  _globals['_ADVANCETICKREQUEST']._serialized_end=560
+  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_start=562
+  _globals['_TRIGGERDEEPSAVEREQUEST']._serialized_end=586
+  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_start=588
+  _globals['_TRIGGERDEEPSAVERESPONSE']._serialized_end=661
+  _globals['_GESTORMUNDOSERVICE']._serialized_start=664
+  _globals['_GESTORMUNDOSERVICE']._serialized_end=1287
 # @@protoc_insertion_point(module_scope)

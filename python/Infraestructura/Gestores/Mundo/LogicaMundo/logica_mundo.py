@@ -359,25 +359,82 @@ class LogicaMundo:
             logger.debug("Elemento %s creado en %s (type_id=%s)", eid, pos, type_id)
             return True, ""
 
+    async def construir_elemento(
+        self,
+        pos: tuple[int, int],
+        nombre_clase: str,
+        campos: dict,
+    ) -> tuple[bool, str, Optional[uint64]]:
+        """
+        Crea un elemento NUEVO llamando a su __init__ real (ver
+        Core.Entities.Elementos.registry.construir_elemento) -- a diferencia
+        de crear_elemento(), que reensambla un elemento ya construido en
+        otro proceso (reubicación entre sectores), esto es para cuando algo
+        (la consola, una acción del mundo) decide que un elemento empieza a
+        existir ahora mismo. El id se asigna aquí, no lo trae 'campos'.
+        """
+        from Core.Entities.Elementos.registry import construir_elemento
+
+        async with self._lock:
+            self._id_counter += 1
+            eid = self._id_counter
+
+            # JSON no tiene tuplas: cualquier lista que llegue en 'campos'
+            # (casilla, rgb_base...) se asume tupla -- ninguno de los
+            # constructores vistos hasta ahora espera una lista de verdad
+            # como parámetro. Si algún comportamiento futuro sí necesitara
+            # una lista real, esta conversión habría que exceptuarla para
+            # ese campo.
+            campos_normalizados = {
+                k: tuple(v) if isinstance(v, list) else v for k, v in campos.items()
+            }
+
+            try:
+                elemento = construir_elemento(
+                    nombre_clase, id_elemento=eid, **campos_normalizados
+                )
+            except (ValueError, TypeError) as exc:
+                return False, f"No se pudo construir '{nombre_clase}': {exc}", None
+
+            self._elements[eid] = elemento
+            self._registrar_sonidos_de(elemento)
+
+            celda = self._gold_cells.setdefault(pos, Celda())
+            tipo_slot = elemento.tipo_slot()
+            if tipo_slot == "suelo":
+                celda.suelo = eid
+            elif tipo_slot == "bot":
+                celda.bot = eid
+            else:
+                celda.resto.append(eid)
+
+            logger.debug(
+                "Elemento %s (%s) construido en %s (slot=%s)",
+                eid,
+                nombre_clase,
+                pos,
+                tipo_slot,
+            )
+            return True, "", eid
+
     async def modificar_elemento(
-        self, pos: tuple[int, int], type_id: str, patch: dict
+        self, pos: tuple[int, int], element_id: uint64, patch: dict
     ) -> tuple[bool, str]:
         async with self._lock:
             celda = self._gold_cells.get(pos)
             if celda is None:
                 return False, f"No hay celda en {pos}."
 
-            eid = {"suelo": celda.suelo, "bot": celda.bot}.get(type_id)
-            if eid is None:
-                return False, f"No hay elemento de tipo '{type_id}' en {pos}."
+            # Comprueba en los tres slots posibles -- antes solo miraba
+            # suelo/bot, dejando 'resto' sin poder modificarse nunca.
+            if element_id not in (celda.suelo, celda.bot, *celda.resto):
+                return False, f"Elemento {element_id} no encontrado en {pos}."
 
-            elemento = self._elements.get(eid)
+            elemento = self._elements.get(element_id)
             if elemento is None:
-                return False, f"Elemento {eid} no encontrado en _elements."
+                return False, f"Elemento {element_id} no encontrado en _elements."
 
-            for attr, valor in patch.items():
-                setattr(elemento, attr, valor)
-
+            elemento.aplicar_patch(patch)
             return True, ""
 
     async def eliminar_elemento(
@@ -494,7 +551,7 @@ class LogicaMundo:
     async def resolver_accion(
         self, bot_id: int, action_type: str, payload: bytes
     ) -> ActionResult:
-        from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
+        from Infraestructura.Gestores.Mundo.LogicaMundo.api_acciones import (
             ACCIONES,
             AccionContext,
         )

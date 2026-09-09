@@ -52,11 +52,47 @@ class Sonoro(Informativo):
         Contraparte de serialize_sonidos(): reconstruye Sonido reales a
         partir del dict de audio completo, para que todos_los_sonidos() siga
         devolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
-        reconstruir un elemento (ver piedra.py, bug detectado al revisar el
-        fichero real). NO llama a guardar_en_biblioteca() aquí -- ver aviso
-        sobre el contador de referencias más abajo en la conversación.
+        reconstruir un elemento (ver piedra.py, bug detectado). NO llama a 
+        guardar_en_biblioteca() aquí.
         """
         self.sonidos = {
             categoria: [Sonido.desde_audio_dict(d) for d in lista]
             for categoria, lista in valor.items()
         }
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "peso",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento emite sonidos. Demasiado complejo para crearlo por consola.
+
+Atributos:
+\tsonidos: dict[str, list[Sonido]]
+
+Métodos:
+\ttodos_los_sonidos(self) -> list
+\t--------------------------------------
+\tLista de todos los sonidos que puede emitir.
+
+\tserialize_sonidos(self) -> dict
+\t--------------------------------------
+\tRecarga energía.
+
+\tserialize_sonidos_representacion(self) -> dict
+\t--------------------------------------
+\tModo 'representacion' (Unity, cada tick): solo referencias -- el
+\taudio completo se pide aparte bajo demanda vía CacheAudio.
+
+\tdeserialize_sonidos(self, valor: dict) -> None
+\t--------------------------------------
+\tContraparte de serialize_sonidos(): reconstruye Sonido reales a
+\tpartir del dict de audio completo, para que todos_los_sonidos() siga
+\tdevolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
+\treconstruir un elemento (ver piedra.py, bug detectado). NO llama a 
+\tguardar_en_biblioteca() aquí.
+        """

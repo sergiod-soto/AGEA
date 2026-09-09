@@ -174,6 +174,25 @@ def reconstruir_elemento(data: dict, mundo: "Mundo | None" = None):
     obj.deserializar(data, mundo)
     return obj
 
+def construir_elemento(nombre_clase: str, **campos):
+    """
+    Construye un elemento NUEVO llamando a su __init__ real -- se
+    ejecutan sus validaciones (ej. Peso_Zero en Piedra) y efectos
+    secundarios propios del constructor (ej. la generación de sonido
+    de Piedra), justo lo que reconstruir_elemento() NO hace a
+    propósito (ver su docstring: usa __new__ + deserializar() porque
+    restaura un elemento que ya pasó por __init__ en algún momento
+    anterior de su vida, no vuelve a repetirlo).
+
+    Se usa cuando la creación es "mágica": alguien decide, ahora
+    mismo, que este elemento empieza a existir con estos datos (una
+    acción del mundo, un comando de consola...) -- no cuando se está
+    restaurando algo que ya existía.
+    """
+    clase = ELEMENTOS.get(nombre_clase)
+    if clase is None:
+        raise ValueError(f"Clase de elemento desconocida: '{nombre_clase}'")
+    return clase(**campos)
 
 def _todas_las_subclases(cls: type) -> set[type]:
     directas = set(cls.__subclasses__())

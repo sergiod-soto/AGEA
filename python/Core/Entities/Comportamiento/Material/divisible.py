@@ -26,3 +26,24 @@ class Divisible(Material):
 
     @abstractmethod
     def dividir(self, cantidad: float) -> Elemento | None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return [
+            "cantidad_minima_divisible",
+        ]
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        return """
+•El Elemento puede ser dividido en otros, 
+con las mismas características pero menor cantidad.
+
+Atributos:
+\tcantidad_minima_divisible: float
+
+Métodos:
+\t@abstractmethod dividir(self, cantidad: float) -> Elemento | None
+\t--------------------------------------
+\tDivide el elemento en 'cantidad' y resto, es caso de ser posible.
+        """

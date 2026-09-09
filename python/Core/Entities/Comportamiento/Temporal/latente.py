@@ -12,8 +12,7 @@ class Latente(Temporal):
 
     Parametros:
 
-    - condiciones: list[Condicion]
-    - accion_latente: Accion
+    - condiciones: list[tuple(Condicion, Accion)]
 
     Metodos abstractos:
 
@@ -38,3 +37,17 @@ class Latente(Temporal):
 
     @abstractmethod
     def tick(self) -> None: ...
+
+    @classmethod
+    def campos_para_creacion(cls) -> list[str]:
+        return """
+•El Elemento tiene características que se activan al darse determinadas condiciones.
+
+Atributos:
+\tcondiciones: list[tuple(Condicion, Accion)]
+
+Métodos:
+\t@abstractmethod tick(self) -> None
+\t--------------------------------------
+\tComputa el siguiente tick.
+            """

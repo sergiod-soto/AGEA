@@ -50,5 +50,5 @@ SCRIPT_COMUNICACIONES_REMOTO = (
 )
 
 SCRIPT_CONSOLA = (
-    ROOT / "Infraestructura" / "Gestores" / "Consola" / "consola_main.py",
+    ROOT / "Infraestructura" / "Gestores" / "Consola" / "consola_main.py"
 )
