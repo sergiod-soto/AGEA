@@ -877,7 +877,8 @@ class LogicaMundo:
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
 
     def _poblar_suelo(self) -> None:
-        # TODO: esto es un parche temporal para tener suelo. hay que hacer un generador de suelo en condiciones
+        # TODO: esto es un parche temporal para tener suelo. hay que hacer un 
+        # generador de suelo en condiciones
         """
         Crea una instancia de Suelo por cada celda del grid, usando
         Config.settings.ANCHO/ALTO (tamaño del mundo — el mismo en
@@ -900,7 +901,7 @@ class LogicaMundo:
 
         logger.info(
             "Suelo poblado: %d x %d celdas (%d elementos Suelo creados).",
-            config.ANCHO,
-            config.ALTO,
-            config.ANCHO * config.ALTO,
+            config.GRID_WIDTH,
+            config.GRID_HEIGHT,
+            config.GRID_WIDTH * config.GRID_HEIGHT,
         )

@@ -39,7 +39,9 @@ MAX_VISION_DISTANCE: int = int(os.getenv("MAX_VISION_DISTANCE", "50"))
 GRID_WIDTH = int(os.getenv("GRID_WIDTH", 1000))
 GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 1000))
 SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50)) # la distancia de vision es la maxima distancia de interaccion
+MAX_VISION_DISTANCE = int(
+    os.getenv("MAX_VISION_DISTANCE", 50)
+)  # la distancia de vision es la maxima distancia de interaccion
 SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
 TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
 TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
@@ -48,9 +50,16 @@ SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
 DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
 SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
 GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
+HYPERVISOR_COUNT = int(os.getenv("HYPERVISOR_COUNT", 1))
+HYPERVISOR_BASE_PORT = int(os.getenv("HYPERVISOR_BASE_PORT", 50300))
+HYPERVISOR_PROXY_BASE_PORT = int(os.getenv("HYPERVISOR_PROXY_BASE_PORT", 50400))
+LOGICA_MUNDO_PORT=int(os.getenv("LOGICA_MUNDO_PORT", 50250))
+GESTOR_MUNDO_PORT=int(os.getenv("GESTOR_MUNDO_PORT", 50200))
 
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
 DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 2))  # 0 = sin límite
+SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 50100))
+
 
 # ── Loop principal ────────────────────────────────────────────────────────────
 MS_POR_FRAME: int = int(os.getenv("MS_POR_FRAME", "500"))

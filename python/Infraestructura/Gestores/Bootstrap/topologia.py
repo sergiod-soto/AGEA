@@ -74,24 +74,21 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
     de mundo, igual en local y en AWS. El resto (SECTOR_SIZE, puertos,
     HYPERVISOR_COUNT) sigue siendo config de despliegue, en entorno.
     """
-    grid_w = config.ANCHO
-    grid_h = config.ALTO
-    sector_size = int(os.getenv("SECTOR_SIZE", 100))
-    sector_base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
-    hv_count = int(os.getenv("HYPERVISOR_COUNT", 1))
-    if hv_count < 1:
-        raise ValueError(f"HYPERVISOR_COUNT debe ser >= 1, recibido: {hv_count}")
-    hv_base_port = int(os.getenv("HYPERVISOR_BASE_PORT", 50300))
-    hv_proxy_base_port = int(os.getenv("HYPERVISOR_PROXY_BASE_PORT", 50400))
+    grid_w = config.GRID_WIDTH
+    grid_h = config.GRID_HEIGHT
+    if config.HYPERVISOR_COUNT < 1:
+        raise ValueError(
+            f"HYPERVISOR_COUNT debe ser >= 1, recibido: {config.HYPERVISOR_COUNT}"
+        )
 
-    sectores = _sectores(grid_w, grid_h, sector_size, sector_base_port)
+    sectores = _sectores(grid_w, grid_h, config.SECTOR_SIZE, config.SECTOR_BASE_PORT)
 
     logica_mundo = ComponenteSpec(
         nombre="logica_mundo",
         tipo="logica_mundo",
         host_env_var="LOGICA_MUNDO_HOST",
         port_env_var="LOGICA_MUNDO_PORT",
-        default_port=int(os.getenv("LOGICA_MUNDO_PORT", 50250)),
+        default_port=config.LOGICA_MUNDO_PORT,
     )
 
     gestor_mundo = ComponenteSpec(
@@ -99,7 +96,7 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
         tipo="gestor_mundo",
         host_env_var="GESTOR_MUNDO_HOST",
         port_env_var="GESTOR_MUNDO_PORT",
-        default_port=int(os.getenv("GESTOR_MUNDO_PORT", 50200)),
+        default_port=config.GESTOR_MUNDO_PORT,
     )
 
     gestor_bots = ComponenteSpec(
@@ -107,7 +104,7 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
         tipo="gestor_bots",
         host_env_var="GESTOR_BOTS_HOST",
         port_env_var="GESTOR_BOTS_PORT",
-        default_port=int(os.getenv("GESTOR_BOTS_PORT", 50051)),
+        default_port=config.GESTOR_BOTS_PORT,
     )
 
     hypervisores = [
@@ -116,13 +113,13 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
             tipo="hypervisor",
             host_env_var="HYPERVISOR_HOST",
             port_env_var="HYPERVISOR_PORT",
-            default_port=hv_base_port + i,
+            default_port=config.HYPERVISOR_BASE_PORT + i,
             extra_env={
                 "HYPERVISOR_ID": f"hv_{i:03d}",
-                "HYPERVISOR_PROXY_PORT": str(hv_proxy_base_port + i),
+                "HYPERVISOR_PROXY_PORT": str(config.HYPERVISOR_PROXY_BASE_PORT + i),
             },
         )
-        for i in range(hv_count)
+        for i in range(config.HYPERVISOR_COUNT)
     ]
 
     comunicaciones_remoto = ComponenteSpec(
@@ -130,7 +127,7 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
         tipo="comunicaciones_remoto",
         host_env_var="COMUNICACIONES_REMOTO_HOST",
         port_env_var="COMUNICACIONES_REMOTO_PORT",
-        default_port=int(os.getenv("COMUNICACIONES_REMOTO_PORT", 50500)),
+        default_port=config.COMUNICACIONES_REMOTO_PORT,
     )
 
     return [
