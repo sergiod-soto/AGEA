@@ -4,6 +4,7 @@
 # Los valores pueden sobreescribirse mediante variables de entorno (útil en AWS).
 
 import os
+from pathlib import Path
 
 # ── Modo de ejecución ─────────────────────────────────────────────────────────
 DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
@@ -34,9 +35,19 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 
 # ── Mundo ─────────────────────────────────────────────────────────────────────
-ANCHO: int = int(os.getenv("ANCHO", "500"))
-ALTO: int = int(os.getenv("ALTO", "500"))
 MAX_VISION_DISTANCE: int = int(os.getenv("MAX_VISION_DISTANCE", "50"))
+GRID_WIDTH = int(os.getenv("GRID_WIDTH", 1000))
+GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 1000))
+SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
+MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50)) # la distancia de vision es la maxima distancia de interaccion
+SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
+TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
+TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
+UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
+SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
+DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
+SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
+GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
 
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
 DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 2))  # 0 = sin límite

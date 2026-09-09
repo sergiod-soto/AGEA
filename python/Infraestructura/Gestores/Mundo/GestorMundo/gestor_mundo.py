@@ -15,7 +15,7 @@ from typing import Optional
 import grpc
 from numpy import uint64
 
-from Config.settings import DEFAULT_TICK_RATE
+from Config.settings import DEEP_SAVE_INTERVAL_TICKS, DEFAULT_TICK_RATE, GESTOR_BOTS_ADDRESS, GRID_HEIGHT, GRID_WIDTH, MAX_VISION_DISTANCE, SECTOR_SIZE, SNAPSHOT_DIR, SNAPSHOT_INTERVAL_TICKS, SOUND_MAP_CELL_SIZE, TICK_TIMEOUT_MS, TICKS_ANTES_DE_DORMIR
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
 )
@@ -62,21 +62,8 @@ class SectorInfo:
 class GestorMundo:
 
     def __init__(self, logica_client):
-        self.GRID_WIDTH = int(os.getenv("GRID_WIDTH", 1000))
-        self.GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 1000))
-        self.SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-        self.MAX_VISION_DISTANCE = int(os.getenv("MAX_VISION_DISTANCE", 50))
-        self.SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
-        self.TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
-        self.TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
-        self.UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
-        self.SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
-        self.DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
-        self.SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
-        self.GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
-
-        self.COLS = math.ceil(self.GRID_WIDTH / self.SECTOR_SIZE)
-        self.ROWS = math.ceil(self.GRID_HEIGHT / self.SECTOR_SIZE)
+        self.COLS = math.ceil(GRID_WIDTH / SECTOR_SIZE)
+        self.ROWS = math.ceil(GRID_HEIGHT / SECTOR_SIZE)
 
         self._sectores: dict[tuple[int, int], SectorInfo] = {}
 
@@ -104,9 +91,9 @@ class GestorMundo:
         return bool(delta.changed_cells or delta.outgoing_bots or delta.emitted_sounds)
 
     async def start(self, fresh: bool = False) -> None:
-        self.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+        SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
-        self._bots_channel = grpc.aio.insecure_channel(self.GESTOR_BOTS_ADDRESS)
+        self._bots_channel = grpc.aio.insecure_channel(GESTOR_BOTS_ADDRESS)
         self._bots_stub = bots_grpc.GestorBotsServiceStub(self._bots_channel)
 
         if fresh:
@@ -174,10 +161,10 @@ class GestorMundo:
 
             self._tick_id += 1
 
-            if self._tick_id % self.SNAPSHOT_INTERVAL_TICKS == 0:
+            if self._tick_id % SNAPSHOT_INTERVAL_TICKS == 0:
                 asyncio.create_task(self._save_snapshot())
 
-            if self._tick_id % self.DEEP_SAVE_INTERVAL_TICKS == 0:
+            if self._tick_id % DEEP_SAVE_INTERVAL_TICKS == 0:
                 await self._deep_save()
 
             logger.debug("Tick %d completado en %.3fs", self._tick_id, elapsed)
@@ -280,7 +267,7 @@ class GestorMundo:
     async def _start_tick_sector(self, sector: SectorInfo):
         req = sector_pb.StartTickRequest(
             tick_id=self._tick_id,
-            timeout_ms=self.TICK_TIMEOUT_MS,
+            timeout_ms=TICK_TIMEOUT_MS,
         )
         return await sector.stub.StartTick(req)
 
@@ -409,19 +396,19 @@ class GestorMundo:
         return True, ""
 
     def _distribuir_sonido(self, sound: common_pb.SoundEvent) -> None:
-        lx = sound.origin.x // self.SOUND_MAP_CELL_SIZE
-        ly = sound.origin.y // self.SOUND_MAP_CELL_SIZE
+        lx = sound.origin.x // SOUND_MAP_CELL_SIZE
+        ly = sound.origin.y // SOUND_MAP_CELL_SIZE
 
         from Core.Entities.Mundo.mapa_config import (
             MAX_SOUND_DISTANCE,
         )
 
-        radio_lr = math.ceil(MAX_SOUND_DISTANCE / self.SOUND_MAP_CELL_SIZE)
+        radio_lr = math.ceil(MAX_SOUND_DISTANCE / SOUND_MAP_CELL_SIZE)
 
         for col in range(self.COLS):
             for row in range(self.ROWS):
-                sx = (col * self.SECTOR_SIZE) // self.SOUND_MAP_CELL_SIZE
-                sy = (row * self.SECTOR_SIZE) // self.SOUND_MAP_CELL_SIZE
+                sx = (col * SECTOR_SIZE) // SOUND_MAP_CELL_SIZE
+                sy = (row * SECTOR_SIZE) // SOUND_MAP_CELL_SIZE
                 if abs(sx - lx) <= radio_lr and abs(sy - ly) <= radio_lr:
                     key = (col, row)
                     self._pending_sounds.setdefault(key, []).append(sound)
@@ -430,7 +417,7 @@ class GestorMundo:
         for info in self._sectores.values():
             if info.mode == SectorMode.ACTIVO:
                 info.ticks_sin_actividad += 1
-                if info.ticks_sin_actividad >= self.TICKS_ANTES_DE_DORMIR:
+                if info.ticks_sin_actividad >= TICKS_ANTES_DE_DORMIR:
                     await self._set_sector_mode(info, SectorMode.DORMIDO)
                 else:
                     for vecino in self._vecinos(info):
@@ -536,7 +523,7 @@ class GestorMundo:
         import json
 
         snapshot_id = f"{self._tick_id:010d}"
-        path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
+        path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
 
         async with self._consolidacion_lock:
             data = {
@@ -565,7 +552,7 @@ class GestorMundo:
 
     def _purgar_snapshots_antiguos(self) -> None:
         snapshots = sorted(
-            self.SNAPSHOT_DIR.glob("mundo_*.json"),
+            SNAPSHOT_DIR.glob("mundo_*.json"),
             key=lambda p: p.stem.removeprefix("mundo_"),
         )
         sobrantes = len(snapshots) - SNAPSHOT_MAX
@@ -585,7 +572,7 @@ class GestorMundo:
 
             import json
 
-            path = self.SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
+            path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
             async with self._consolidacion_lock:
                 data = {
                     "tick_id": int(self._tick_id),  # FIX: uint64 -> int
@@ -642,7 +629,7 @@ class GestorMundo:
                 await self.resume()
 
     def _latest_snapshot_path(self) -> Optional[Path]:
-        snapshots = sorted(self.SNAPSHOT_DIR.glob("mundo_*.json"))
+        snapshots = sorted(SNAPSHOT_DIR.glob("mundo_*.json"))
         return snapshots[-1] if snapshots else None
 
     async def _distribute_gold_to_sectors(self) -> None:
@@ -653,10 +640,10 @@ class GestorMundo:
         await asyncio.gather(*tareas, return_exceptions=True)
 
     async def _load_sector_state(self, info: SectorInfo) -> None:
-        x0 = info.col * self.SECTOR_SIZE
-        y0 = info.row * self.SECTOR_SIZE
-        x1 = x0 + self.SECTOR_SIZE
-        y1 = y0 + self.SECTOR_SIZE
+        x0 = info.col * SECTOR_SIZE
+        y0 = info.row * SECTOR_SIZE
+        x1 = x0 + SECTOR_SIZE
+        y1 = y0 + SECTOR_SIZE
 
         cells = await self._logica_client.obtener_celdas_en_region(
             min_pos=(x0, y0), max_pos=(x1, y1)
@@ -678,14 +665,14 @@ class GestorMundo:
             logger.error("Error al resetear presupuestos: %s", e)
 
     async def _calcular_ghost_zone(self, info: SectorInfo) -> list:
-        x0 = info.col * self.SECTOR_SIZE
-        y0 = info.row * self.SECTOR_SIZE
-        x1 = x0 + self.SECTOR_SIZE
-        y1 = y0 + self.SECTOR_SIZE
-        gx0 = x0 - self.MAX_VISION_DISTANCE
-        gy0 = y0 - self.MAX_VISION_DISTANCE
-        gx1 = x1 + self.MAX_VISION_DISTANCE
-        gy1 = y1 + self.MAX_VISION_DISTANCE
+        x0 = info.col * SECTOR_SIZE
+        y0 = info.row * SECTOR_SIZE
+        x1 = x0 + SECTOR_SIZE
+        y1 = y0 + SECTOR_SIZE
+        gx0 = x0 - MAX_VISION_DISTANCE
+        gy0 = y0 - MAX_VISION_DISTANCE
+        gx1 = x1 + MAX_VISION_DISTANCE
+        gy1 = y1 + MAX_VISION_DISTANCE
 
         return await self._logica_client.obtener_celdas_en_region(
             min_pos=(gx0, gy0),
@@ -695,8 +682,8 @@ class GestorMundo:
         )
 
     def _sector_para_posicion(self, x: int, y: int) -> Optional[SectorInfo]:
-        col = x // self.SECTOR_SIZE
-        row = y // self.SECTOR_SIZE
+        col = x // SECTOR_SIZE
+        row = y // SECTOR_SIZE
         return self._sectores.get((col, row))
 
     def _vecinos(self, info: SectorInfo) -> list[SectorInfo]:

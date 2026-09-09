@@ -741,28 +741,28 @@ class LogicaMundo:
 
                     elementos.append({**campos})
 
-            SQ_MIN = (0, 0)  # <-- esquina inferior-izquierda real del cuadrado
-            SQ_MAX = (100, 100)  # <-- exclusivo, igual que x1/y1 (SQ_MIN + tamaño)
+            # SQ_MIN = (0, 0)  # <-- esquina inferior-izquierda real del cuadrado
+            # SQ_MAX = (100, 100)  # <-- exclusivo, igual que x1/y1 (SQ_MIN + tamaño)
 
-            ix0, iy0 = max(x0, SQ_MIN[0]), max(y0, SQ_MIN[1])
-            ix1, iy1 = min(x1, SQ_MAX[0]), min(y1, SQ_MAX[1])
-            esperado = {(x, y) for x in range(ix0, ix1) for y in range(iy0, iy1)}
-            servido = {
-                (c["elemento"]["casilla"]["x"], c["elemento"]["casilla"]["y"])
-                for c in suelo_resultado
-                if SQ_MIN[0] <= c["elemento"]["casilla"]["x"] < SQ_MAX[0]
-                and SQ_MIN[1] <= c["elemento"]["casilla"]["y"] < SQ_MAX[1]
-            }
-            faltantes = esperado - servido
-            logger.warning(
-                "[DEBUG-FOCO] cuadrado: foco=[%s,%s) esperado=%d servido=%d faltantes=%d %s",
-                (x0, y0),
-                (x1, y1),
-                len(esperado),
-                len(servido),
-                len(faltantes),
-                sorted(faltantes)[:20],  # primeras 20 para no inundar el log
-            )
+            # ix0, iy0 = max(x0, SQ_MIN[0]), max(y0, SQ_MIN[1])
+            # ix1, iy1 = min(x1, SQ_MAX[0]), min(y1, SQ_MAX[1])
+            # esperado = {(x, y) for x in range(ix0, ix1) for y in range(iy0, iy1)}
+            # servido = {
+            #     (c["elemento"]["casilla"]["x"], c["elemento"]["casilla"]["y"])
+            #     for c in suelo_resultado
+            #     if SQ_MIN[0] <= c["elemento"]["casilla"]["x"] < SQ_MAX[0]
+            #     and SQ_MIN[1] <= c["elemento"]["casilla"]["y"] < SQ_MAX[1]
+            # }
+            # faltantes = esperado - servido
+            # logger.warning(
+            #     "[DEBUG-FOCO] cuadrado: foco=[%s,%s) esperado=%d servido=%d faltantes=%d %s",
+            #     (x0, y0),
+            #     (x1, y1),
+            #     len(esperado),
+            #     len(servido),
+            #     len(faltantes),
+            #     sorted(faltantes)[:20],  # primeras 20 para no inundar el log
+            # )
 
             return json.dumps(
                 {
