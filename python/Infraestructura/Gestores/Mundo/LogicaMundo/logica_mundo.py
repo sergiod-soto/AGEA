@@ -33,8 +33,6 @@ from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 logger = logging.getLogger(__name__)
 
-SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
-
 
 @dataclass
 class Celda:
@@ -73,7 +71,7 @@ class LogicaMundo:
         gestor_bots_client: "GestorBotsClientAsync | None" = None,
         poblar_suelo: bool = False,
     ):
-        self.SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots_logica"))
+        self.SNAPSHOT_DIR = Path(config.SNAPSHOT_DIR)
 
         self._gold_cells: dict[tuple[int, int], Celda] = {}
         self._elements: dict[uint64, Any] = {}
@@ -711,17 +709,6 @@ class LogicaMundo:
                     ):
                         campos = suelo_elemento.representacion(modo, incluir)
 
-                        # LOG TEMPORAL — diagnóstico bug foco: para la celda de
-                        # prueba, confirmar si sobrevive al filtro de contenido
-                        # (campos vacíos == se descarta aunque esté en rango).
-                        if (x, y) == (50, 50):  # <-- misma posición que arriba
-                            logger.warning(
-                                "[DEBUG-FOCO] consultar_representacion: celda test %s "
-                                "encontrada, campos=%s",
-                                (x, y),
-                                campos,
-                            )
-
                         if campos.get("elemento") or campos.get("comportamientos"):
                             suelo_resultado.append({**campos})
 
@@ -826,7 +813,7 @@ class LogicaMundo:
             self.SNAPSHOT_DIR.glob("logica_mundo_*.json"),
             key=lambda p: p.stem.removeprefix("logica_mundo_"),
         )
-        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        sobrantes = len(snapshots) - config.SNAPSHOT_MAX
         for path in snapshots[:sobrantes]:
             path.unlink(missing_ok=True)
             logger.debug("Snapshot antiguo purgado: %s", path)
@@ -877,7 +864,7 @@ class LogicaMundo:
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
 
     def _poblar_suelo(self) -> None:
-        # TODO: esto es un parche temporal para tener suelo. hay que hacer un 
+        # TODO: esto es un parche temporal para tener suelo. hay que hacer un
         # generador de suelo en condiciones
         """
         Crea una instancia de Suelo por cada celda del grid, usando

@@ -42,7 +42,7 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import MODO, LOG_DIR, FRESH
+from Config.settings import GESTOR_BOTS_ADDRESS, LOG_LEVEL, LOGICA_MUNDO_HOST, LOGICA_MUNDO_PORT, MODO, LOG_DIR, FRESH
 
 logger = logging.getLogger("logica_mundo_server")
 
@@ -50,10 +50,10 @@ _COMPONENT_ID = "logica_mundo"
 
 
 async def serve() -> None:
-    host = os.getenv("LOGICA_MUNDO_HOST", "[::]")
-    port = int(os.getenv("LOGICA_MUNDO_PORT", 50250))
-    gestor_bots_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
-    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO"))
+    host = LOGICA_MUNDO_HOST
+    port = LOGICA_MUNDO_PORT
+    gestor_bots_address = GESTOR_BOTS_ADDRESS
+    log_level = getattr(logging, LOG_LEVEL)
 
     if MODO == "local":
         setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)

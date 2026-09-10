@@ -53,7 +53,17 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import MODO, LOG_DIR
+from Config.settings import (
+    GESTOR_BOTS_ADDRESS,
+    HYPERVISOR_CAPACITY,
+    HYPERVISOR_HOST,
+    HYPERVISOR_ID,
+    HYPERVISOR_PORT,
+    HYPERVISOR_PROXY_PORT,
+    LOG_LEVEL,
+    MODO,
+    LOG_DIR,
+)
 
 logger = logging.getLogger("hypervisor_server")
 
@@ -127,13 +137,13 @@ async def _heartbeat_loop(hv: Hypervisor) -> None:
 
 
 async def serve() -> None:
-    hv_id = os.getenv("HYPERVISOR_ID", "hv_00")
-    my_address = os.getenv("HYPERVISOR_HOST", "localhost")
-    my_port = int(os.getenv("HYPERVISOR_PORT", 50300))
-    my_proxy_port = int(os.getenv("HYPERVISOR_PROXY_PORT", 50400))
-    capacity = int(os.getenv("HYPERVISOR_CAPACITY", 32))
-    gestor_address = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
-    log_level = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper())
+    hv_id = HYPERVISOR_ID
+    my_address = HYPERVISOR_HOST
+    my_port = HYPERVISOR_PORT
+    my_proxy_port = HYPERVISOR_PROXY_PORT
+    capacity = HYPERVISOR_CAPACITY
+    gestor_address = GESTOR_BOTS_ADDRESS
+    log_level = getattr(logging, LOG_LEVEL.upper())
 
     if MODO == "local":
         setup_local_logging(component=hv_id, log_dir=LOG_DIR, level=log_level)

@@ -12,6 +12,7 @@ from typing import Optional
 
 from numpy import uint64
 
+from Config.settings import UMBRAL_HV_CAIDO_SEGUNDOS
 from Infraestructura.Gestores.tipos_comunes import (
     ActionResult,
     BotInfo,
@@ -28,7 +29,6 @@ logger = logging.getLogger(__name__)
 # hypervisor_server.py) — mismo margen "3 fallos" que ya usa
 # MonitorComponentes vía heartbeat_perdidos_max, aplicado aquí a un
 # mecanismo pasivo en vez de polling activo.
-UMBRAL_HV_CAIDO_SEGUNDOS = float(os.getenv("UMBRAL_HV_CAIDO_SEGUNDOS", 90))
 
 
 class Gestor_Bots:

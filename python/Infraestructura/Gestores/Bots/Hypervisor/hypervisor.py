@@ -33,6 +33,7 @@ from typing import Optional
 
 import psutil
 
+from Config.settings import DEFAULT_HV_BUDGET, SNAPSHOT_MAX
 from Infraestructura.Gestores.tipos_comunes import (
     ActionResult,
     BotInfo,
@@ -42,10 +43,6 @@ from Infraestructura.Gestores.tipos_comunes import (
 )
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_BUDGET = 100
-
-SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
 
 
 @dataclass
@@ -191,7 +188,7 @@ class Hypervisor:
     async def spawn_bot(self, config: dict) -> SpawnResult:
         bot_id = config.get("bot_id", "")
         codigo_gz = config.get("codigo_gz", b"")
-        budget = int(config.get("budget", DEFAULT_BUDGET))
+        budget = int(config.get("budget", DEFAULT_HV_BUDGET))
 
         if not bot_id:
             return SpawnResult(ok=False, error="bot_id vacío")

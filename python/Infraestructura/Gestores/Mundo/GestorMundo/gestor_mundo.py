@@ -15,7 +15,24 @@ from typing import Optional
 import grpc
 from numpy import uint64
 
-from Config.settings import DEEP_SAVE_INTERVAL_TICKS, DEFAULT_TICK_RATE, GESTOR_BOTS_ADDRESS, GRID_HEIGHT, GRID_WIDTH, MAX_VISION_DISTANCE, SECTOR_SIZE, SNAPSHOT_DIR, SNAPSHOT_INTERVAL_TICKS, SOUND_MAP_CELL_SIZE, TICK_TIMEOUT_MS, TICKS_ANTES_DE_DORMIR
+from Config.settings import (
+    DEEP_SAVE_INTERVAL_TICKS,
+    DEFAULT_TICK_RATE,
+    FALLOS_CONSECUTIVOS_SECTOR_CAIDO,
+    GESTOR_BOTS_ADDRESS,
+    GRID_HEIGHT,
+    GRID_WIDTH,
+    MAX_VISION_DISTANCE,
+    SECTOR_BASE_PORT,
+    SECTOR_HOST,
+    SECTOR_SIZE,
+    SNAPSHOT_DIR,
+    SNAPSHOT_INTERVAL_TICKS,
+    SNAPSHOT_MAX,
+    SOUND_MAP_CELL_SIZE,
+    TICK_TIMEOUT_MS,
+    TICKS_ANTES_DE_DORMIR,
+)
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
 )
@@ -32,10 +49,6 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
 
 logger = logging.getLogger(__name__)
-
-
-FALLOS_CONSECUTIVOS_SECTOR_CAIDO = int(os.getenv("FALLOS_CONSECUTIVOS_SECTOR_CAIDO", 3))
-SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
 
 
 class SystemState(Enum):
@@ -706,7 +719,5 @@ class GestorMundo:
         addr = os.getenv(env_key)
         if addr:
             return addr
-        base_port = int(os.getenv("SECTOR_BASE_PORT", 50100))
-        host = os.getenv("SECTOR_HOST", "localhost")
-        port = base_port + col * self.ROWS + row
-        return f"{host}:{port}"
+        port = SECTOR_BASE_PORT + col * self.ROWS + row
+        return f"{SECTOR_HOST}:{port}"

@@ -33,6 +33,7 @@ from enum import Enum
 from typing import Any, Optional
 
 
+from Config.settings import S3_BUCKET, S3_PREFIX, SECTOR_COL, SECTOR_ROW, SECTOR_SIZE
 from Core.Entities.Elementos.registry import reconstruir_elemento
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
@@ -49,16 +50,6 @@ from Infraestructura.Gestores.Transporte.Proto_Generated import (
 )
 
 logger = logging.getLogger(__name__)
-
-# ─────────────────────────────────────────────
-#  Configuración
-# ─────────────────────────────────────────────
-
-SECTOR_COL = int(os.getenv("SECTOR_COL", 0))
-SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
-SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-S3_BUCKET = os.getenv("S3_BUCKET", "")
-S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
 
 # ─────────────────────────────────────────────
@@ -233,9 +224,9 @@ class Sector:
         # sobreescribir las variables antes de crear la instancia.
         # Fallback a los valores por defecto hardcodeados, no a las
         # constantes de módulo (que se fijan en el primer import).
-        self._col = int(os.getenv("SECTOR_COL", "0"))
-        self._row = int(os.getenv("SECTOR_ROW", "0"))
-        self._size = int(os.getenv("SECTOR_SIZE", "100"))
+        self._col = SECTOR_COL
+        self._row = SECTOR_ROW
+        self._size = SECTOR_SIZE
 
         self._mode = SectorMode.INACTIVO
 

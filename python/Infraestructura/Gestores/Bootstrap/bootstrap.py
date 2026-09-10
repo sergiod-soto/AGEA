@@ -112,17 +112,30 @@ def configurar_entorno(modo: str) -> None:
 # ─────────────────────────────────────────────────────────────
 
 
+def _host_puerto_local(spec: ComponenteSpec) -> tuple[str, str]:
+    """
+    Host y puerto de BIND para un componente en modo local. Única
+    fuente de verdad: tanto _env_extra_local (lo que el propio proceso
+    usa para escuchar) como _direcciones_locales (lo que los demás
+    usan para conectarse a él) llaman aquí, así que no pueden divergir
+    en modo local — a diferencia de producción/AWS, donde host de bind
+    y dirección de conexión sí son cosas distintas (ver remote.py).
+    """
+    return "localhost", str(spec.default_port)
+
+
 def _direcciones_locales(grupos: list[list[ComponenteSpec]]) -> dict[str, str]:
     """
     En local, todas las direcciones se conocen de antemano (los puertos
     son deterministas, no hay que esperar a que AWS asigne una IP) —
     a diferencia de remote.py, que sí tiene que esperar por fases.
     """
-    return {
-        spec.nombre: f"localhost:{spec.default_port}"
-        for grupo in grupos
-        for spec in grupo
-    }
+    resultado: dict[str, str] = {}
+    for grupo in grupos:
+        for spec in grupo:
+            host, port = _host_puerto_local(spec)
+            resultado[spec.nombre] = f"{host}:{port}"
+    return resultado
 
 
 def _env_extra_local(
@@ -130,7 +143,8 @@ def _env_extra_local(
 ) -> dict[str, str]:
     """Variables propias del proceso (host/puerto de sí mismo) + las
     direcciones ajenas que necesite (ver topologia.resolver_env_extra)."""
-    propio = {spec.host_env_var: "localhost", spec.port_env_var: str(spec.default_port)}
+    host, port = _host_puerto_local(spec)
+    propio = {spec.host_env_var: host, spec.port_env_var: port}
     return {**propio, **resolver_env_extra(spec, direcciones)}
 
 

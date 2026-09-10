@@ -28,7 +28,7 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2_grpc,
 )
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
-from Config.settings import FRESH, MODO, LOG_DIR
+from Config.settings import FRESH, LOG_LEVEL, LOGICA_MUNDO_ADDRESS, MODO, LOG_DIR
 from Utils.Sistema.sistema import registrar_signals
 from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import GestorMundo
 from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo_servicer import (
@@ -40,9 +40,6 @@ from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 
 logger = logging.getLogger(__name__)
 
-GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
-GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
-GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 10))
 
 # Nombre fijo: ya registrado en log_categorias._CARPETA_POR_COMPONENTE
 # como "mundo" → carpeta Logs/Mundo/. En modo remoto, gestor_mundo corre
@@ -67,8 +64,7 @@ async def serve(fresh: bool, log_level: int) -> None:
     # gestor_bots_server.py/comunicaciones_remoto_server.py: dirección
     # vía env var, conexión perezosa (el propio cliente no abre canal
     # hasta la primera llamada).
-    logica_mundo_address = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
-    logica_client = LogicaMundoClient(logica_mundo_address)
+    logica_client = LogicaMundoClient(LOGICA_MUNDO_ADDRESS)
 
     gestor = GestorMundo(logica_client=logica_client)
     servicer = GestorMundoServicer(gestor)
@@ -136,7 +132,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--log-level",
-        default=os.getenv("LOG_LEVEL", "INFO"),
+        default=LOG_LEVEL,
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     args = parser.parse_args()

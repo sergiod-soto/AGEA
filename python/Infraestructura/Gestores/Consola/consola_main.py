@@ -18,6 +18,8 @@ import sys
 import traceback
 from pathlib import Path
 
+from Config.settings import COMUNICACIONES_REMOTO_ADDRESS
+
 # Debe ir ANTES de cualquier import "Infraestructura...." — ver docstring.
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
@@ -34,7 +36,7 @@ async def _main() -> None:
     )
     from Infraestructura.Gestores.Consola.consola import iniciar
 
-    address = os.getenv("COMUNICACIONES_REMOTO_ADDRESS")
+    address = COMUNICACIONES_REMOTO_ADDRESS
     if not address:
         logger.error(
             "COMUNICACIONES_REMOTO_ADDRESS no está definida. "

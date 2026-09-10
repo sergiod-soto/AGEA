@@ -24,20 +24,21 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import MODO, LOG_DIR
+from Config.settings import (
+    LOG_LEVEL,
+    MODO,
+    LOG_DIR,
+    SECTOR_COL,
+    SECTOR_HOST,
+    SECTOR_PORT,
+    SECTOR_ROW,
+)
 
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────
 #  Configuración
 # ─────────────────────────────────────────────
-
-SECTOR_COL = int(os.getenv("SECTOR_COL", 0))
-SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
-SECTOR_HOST = os.getenv("SECTOR_HOST", "[::]")
-# CORREGIDO: se lee directamente, ya no se recalcula con ROWS.
-SECTOR_PORT = int(os.getenv("SECTOR_PORT", 50100))
-SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
 
 
 def _component_id() -> str:
@@ -113,7 +114,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--log-level",
-        default=os.getenv("LOG_LEVEL", "INFO"),
+        default=LOG_LEVEL,
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
     )
     args = parser.parse_args()

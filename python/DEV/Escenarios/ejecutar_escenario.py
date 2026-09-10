@@ -13,14 +13,14 @@ import os
 import sys
 import time
 
-from Config.settings import DEFAULT_TICK_RATE
+from Config.settings import DEFAULT_TICK_RATE, LOGICA_MUNDO_ADDRESS
 from Dev.Escenarios.serie_estados import Serie_Estados
 from Dev.Escenarios.escenarios import cargar_escenario
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
 
 
 async def main(nombre_escenario: str) -> None:
-    address = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
+    address = LOGICA_MUNDO_ADDRESS
     cliente = LogicaMundoClient(address)
 
     serie = Serie_Estados(cliente)
