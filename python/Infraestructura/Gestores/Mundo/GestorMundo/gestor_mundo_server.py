@@ -28,7 +28,7 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2_grpc,
 )
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
-from Config.settings import FRESH, LOG_LEVEL, LOGICA_MUNDO_ADDRESS, MODO, LOG_DIR
+from Config.settings import FRESH, GESTOR_MUNDO_HOST, GESTOR_MUNDO_PORT, LOG_LEVEL, LOGICA_MUNDO_ADDRESS, MODO, LOG_DIR
 from Utils.Sistema.sistema import registrar_signals
 from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import GestorMundo
 from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo_servicer import (

@@ -146,20 +146,6 @@ class FocoBroadcaster:
                 self._ultimo_tick = globales_resp.tick_actual
                 foco = self._foco
 
-                POSICION_CUADRADO_TEST = (100, 100)
-                px, py = POSICION_CUADRADO_TEST
-                dentro_de_rango = (
-                    foco.min_pos[0] <= px < foco.max_pos[0]
-                    and foco.min_pos[1] <= py < foco.max_pos[1]
-                )
-                logger.warning(
-                    "[DEBUG-FOCO] vigilar: usando foco min=%s max=%s -- celda test %s dentro_de_rango=%s",
-                    foco.min_pos,
-                    foco.max_pos,
-                    POSICION_CUADRADO_TEST,
-                    dentro_de_rango,
-                )
-
                 representacion = (
                     await self._clientes.logica_mundo.consultar_representacion(
                         foco.min_pos, foco.max_pos, foco.incluir, foco.modo

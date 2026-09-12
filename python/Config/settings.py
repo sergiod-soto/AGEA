@@ -56,9 +56,8 @@ UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
 SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
 DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
 SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
-HYPERVISOR_COUNT = int(os.getenv("HYPERVISOR_COUNT", 1))
 GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
-HYPERVISOR_BASE_PORT = int(os.getenv("HYPERVISOR_BASE_PORT", 50300))
+HYPERVISOR_PORT = int(os.getenv("HYPERVISOR_PORT", 50300))
 HYPERVISOR_PROXY_BASE_PORT = int(os.getenv("HYPERVISOR_PROXY_BASE_PORT", 50400))
 DEFAULT_HV_BUDGET = int(os.getenv("DEFAULT_HV_BUDGET", 100))
 
@@ -80,6 +79,7 @@ SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_HOST = os.getenv("SECTOR_HOST", "localhost")
 SECTOR_PORT = int(os.getenv("SECTOR_PORT", 50100))
 SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
+HYPERVISOR_COUNT = int(os.getenv("HYPERVISOR_COUNT", 1))
 
 # ── Consola ──────────────────────────────────────────────────────────────
 COMUNICACIONES_REMOTO_ADDRESS = os.getenv("COMUNICACIONES_REMOTO_ADDRESS")

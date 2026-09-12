@@ -24,7 +24,7 @@ def _escenario_suelo(serie: Serie_Estados) -> None:
     Malla de NxN Suelos, desde (0,0) hasta (n-1, n-1).
     N se define aquí mismo (n=4); para otro tamaño, cambiar este valor.
     """
-    n = 100
+    n = 10
 
     async def crear():
         for i in range(n):

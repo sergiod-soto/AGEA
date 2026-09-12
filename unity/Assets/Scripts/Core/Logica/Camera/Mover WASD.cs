@@ -27,6 +27,8 @@ public class MoverCamaraWASD : MonoBehaviour
 
     void Awake()
     {
+        transform.position = new Vector3(0f, 0f, transform.position.z);
+
         actualZoom = Camera.main.orthographicSize;
         velocidad = factorVelocidad * actualZoom / zoomMin;
         zoomSpeed = factorZoom * actualZoom / zoomMin;

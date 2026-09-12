@@ -1,4 +1,4 @@
-// Assets/Scripts/Core/Logica/Foco/VistaFoco/FocoMasterController.cs
+// Assets/Scripts/Core/Logica/Foco/FocoMasterController.cs
 using System;
 using System.Threading.Tasks;
 using Grpc.Core;
@@ -29,6 +29,17 @@ namespace Assets.Scripts.Core.Logica.Foco
         [SerializeField] private string[] incluir = Array.Empty<string>();
 
         [SerializeField] private string modo = "unity_debug";
+
+        [Tooltip(
+            "Nº de celdas de margen que se añaden por cada lado del " +
+            "encuadre real de la cámara, para pedir de más y evitar " +
+            "'popping' (que aparezcan/desaparezcan casillas de golpe al " +
+            "mover la cámara) mientras llega la siguiente actualización. " +
+            "NO corrige el desajuste real entre unidadesPorCelda y el " +
+            "tamaño de celda del Tilemap -- solo da margen de tolerancia " +
+            "a ese error mientras no se corrija de raíz."
+        )]
+        [SerializeField] private int margenCeldas = 2;
 
         private float _acumulado;
 
@@ -80,7 +91,8 @@ namespace Assets.Scripts.Core.Logica.Foco
 
         /// <summary>
         /// Traduce el encuadre de la cámara ortográfica a coordenadas de
-        /// grid, aplicando el factor de escala configurable.
+        /// grid, aplicando el factor de escala configurable, y añade un
+        /// margen fijo de <see cref="margenCeldas"/> celdas por cada lado.
         /// Asume cámara ortográfica (coherente con Tilemap 2D); si el
         /// proyecto llegara a usar perspectiva habría que revisar esto.
         /// </summary>
@@ -96,15 +108,18 @@ namespace Assets.Scripts.Core.Logica.Foco
             float minYMundo = centro.y - altoMundo / 2f;
             float maxYMundo = centro.y + altoMundo / 2f;
 
+            // Margen en celdas de grid, no en unidades de Unity -- así el
+            // margen pedido es exacto independientemente de la escala
+            // (unidadesPorCelda) configurada.
             var min = new Position
             {
-                X = Mathf.FloorToInt(minXMundo / unidadesPorCelda),
-                Y = Mathf.FloorToInt(minYMundo / unidadesPorCelda),
+                X = Mathf.FloorToInt(minXMundo / unidadesPorCelda) - margenCeldas,
+                Y = Mathf.FloorToInt(minYMundo / unidadesPorCelda) - margenCeldas,
             };
             var max = new Position
             {
-                X = Mathf.CeilToInt(maxXMundo / unidadesPorCelda),
-                Y = Mathf.CeilToInt(maxYMundo / unidadesPorCelda),
+                X = Mathf.CeilToInt(maxXMundo / unidadesPorCelda) + margenCeldas,
+                Y = Mathf.CeilToInt(maxYMundo / unidadesPorCelda) + margenCeldas,
             };
             return (min, max);
         }

@@ -92,7 +92,7 @@ def test_construir_topologia_multiples_sectores_en_grid_no_cuadrado(monkeypatch)
 def test_construir_topologia_varios_hypervisores(monkeypatch):
     _entorno_grid_1_sector(monkeypatch)
     monkeypatch.setenv("HYPERVISOR_COUNT", "3")
-    monkeypatch.setenv("HYPERVISOR_BASE_PORT", "50300")
+    monkeypatch.setenv("HYPERVISOR_PORT", "50300")
     monkeypatch.setenv("HYPERVISOR_PROXY_BASE_PORT", "50400")
 
     grupos = construir_topologia()

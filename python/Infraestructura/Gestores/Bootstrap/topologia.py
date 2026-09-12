@@ -113,7 +113,7 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
             tipo="hypervisor",
             host_env_var="HYPERVISOR_HOST",
             port_env_var="HYPERVISOR_PORT",
-            default_port=config.HYPERVISOR_BASE_PORT + i,
+            default_port=config.HYPERVISOR_PORT + i,
             extra_env={
                 "HYPERVISOR_ID": f"hv_{i:03d}",
                 "HYPERVISOR_PROXY_PORT": str(config.HYPERVISOR_PROXY_BASE_PORT + i),

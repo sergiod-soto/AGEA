@@ -1,0 +1,1912 @@
+{
+  "snapshot_id": "0000016600",
+  "fecha": "2026-09-12T21:37:14.029067",
+  "id_counter": 100,
+  "gold_cells": {
+    "0,0": {
+      "suelo": 1,
+      "bot": null,
+      "resto": []
+    },
+    "0,1": {
+      "suelo": 2,
+      "bot": null,
+      "resto": []
+    },
+    "0,2": {
+      "suelo": 3,
+      "bot": null,
+      "resto": []
+    },
+    "0,3": {
+      "suelo": 4,
+      "bot": null,
+      "resto": []
+    },
+    "0,4": {
+      "suelo": 5,
+      "bot": null,
+      "resto": []
+    },
+    "0,5": {
+      "suelo": 6,
+      "bot": null,
+      "resto": []
+    },
+    "0,6": {
+      "suelo": 7,
+      "bot": null,
+      "resto": []
+    },
+    "0,7": {
+      "suelo": 8,
+      "bot": null,
+      "resto": []
+    },
+    "0,8": {
+      "suelo": 9,
+      "bot": null,
+      "resto": []
+    },
+    "0,9": {
+      "suelo": 10,
+      "bot": null,
+      "resto": []
+    },
+    "1,0": {
+      "suelo": 11,
+      "bot": null,
+      "resto": []
+    },
+    "1,1": {
+      "suelo": 12,
+      "bot": null,
+      "resto": []
+    },
+    "1,2": {
+      "suelo": 13,
+      "bot": null,
+      "resto": []
+    },
+    "1,3": {
+      "suelo": 14,
+      "bot": null,
+      "resto": []
+    },
+    "1,4": {
+      "suelo": 15,
+      "bot": null,
+      "resto": []
+    },
+    "1,5": {
+      "suelo": 16,
+      "bot": null,
+      "resto": []
+    },
+    "1,6": {
+      "suelo": 17,
+      "bot": null,
+      "resto": []
+    },
+    "1,7": {
+      "suelo": 18,
+      "bot": null,
+      "resto": []
+    },
+    "1,8": {
+      "suelo": 19,
+      "bot": null,
+      "resto": []
+    },
+    "1,9": {
+      "suelo": 20,
+      "bot": null,
+      "resto": []
+    },
+    "2,0": {
+      "suelo": 21,
+      "bot": null,
+      "resto": []
+    },
+    "2,1": {
+      "suelo": 22,
+      "bot": null,
+      "resto": []
+    },
+    "2,2": {
+      "suelo": 23,
+      "bot": null,
+      "resto": []
+    },
+    "2,3": {
+      "suelo": 24,
+      "bot": null,
+      "resto": []
+    },
+    "2,4": {
+      "suelo": 25,
+      "bot": null,
+      "resto": []
+    },
+    "2,5": {
+      "suelo": 26,
+      "bot": null,
+      "resto": []
+    },
+    "2,6": {
+      "suelo": 27,
+      "bot": null,
+      "resto": []
+    },
+    "2,7": {
+      "suelo": 28,
+      "bot": null,
+      "resto": []
+    },
+    "2,8": {
+      "suelo": 29,
+      "bot": null,
+      "resto": []
+    },
+    "2,9": {
+      "suelo": 30,
+      "bot": null,
+      "resto": []
+    },
+    "3,0": {
+      "suelo": 31,
+      "bot": null,
+      "resto": []
+    },
+    "3,1": {
+      "suelo": 32,
+      "bot": null,
+      "resto": []
+    },
+    "3,2": {
+      "suelo": 33,
+      "bot": null,
+      "resto": []
+    },
+    "3,3": {
+      "suelo": 34,
+      "bot": null,
+      "resto": []
+    },
+    "3,4": {
+      "suelo": 35,
+      "bot": null,
+      "resto": []
+    },
+    "3,5": {
+      "suelo": 36,
+      "bot": null,
+      "resto": []
+    },
+    "3,6": {
+      "suelo": 37,
+      "bot": null,
+      "resto": []
+    },
+    "3,7": {
+      "suelo": 38,
+      "bot": null,
+      "resto": []
+    },
+    "3,8": {
+      "suelo": 39,
+      "bot": null,
+      "resto": []
+    },
+    "3,9": {
+      "suelo": 40,
+      "bot": null,
+      "resto": []
+    },
+    "4,0": {
+      "suelo": 41,
+      "bot": null,
+      "resto": []
+    },
+    "4,1": {
+      "suelo": 42,
+      "bot": null,
+      "resto": []
+    },
+    "4,2": {
+      "suelo": 43,
+      "bot": null,
+      "resto": []
+    },
+    "4,3": {
+      "suelo": 44,
+      "bot": null,
+      "resto": []
+    },
+    "4,4": {
+      "suelo": 45,
+      "bot": null,
+      "resto": []
+    },
+    "4,5": {
+      "suelo": 46,
+      "bot": null,
+      "resto": []
+    },
+    "4,6": {
+      "suelo": 47,
+      "bot": null,
+      "resto": []
+    },
+    "4,7": {
+      "suelo": 48,
+      "bot": null,
+      "resto": []
+    },
+    "4,8": {
+      "suelo": 49,
+      "bot": null,
+      "resto": []
+    },
+    "4,9": {
+      "suelo": 50,
+      "bot": null,
+      "resto": []
+    },
+    "5,0": {
+      "suelo": 51,
+      "bot": null,
+      "resto": []
+    },
+    "5,1": {
+      "suelo": 52,
+      "bot": null,
+      "resto": []
+    },
+    "5,2": {
+      "suelo": 53,
+      "bot": null,
+      "resto": []
+    },
+    "5,3": {
+      "suelo": 54,
+      "bot": null,
+      "resto": []
+    },
+    "5,4": {
+      "suelo": 55,
+      "bot": null,
+      "resto": []
+    },
+    "5,5": {
+      "suelo": 56,
+      "bot": null,
+      "resto": []
+    },
+    "5,6": {
+      "suelo": 57,
+      "bot": null,
+      "resto": []
+    },
+    "5,7": {
+      "suelo": 58,
+      "bot": null,
+      "resto": []
+    },
+    "5,8": {
+      "suelo": 59,
+      "bot": null,
+      "resto": []
+    },
+    "5,9": {
+      "suelo": 60,
+      "bot": null,
+      "resto": []
+    },
+    "6,0": {
+      "suelo": 61,
+      "bot": null,
+      "resto": []
+    },
+    "6,1": {
+      "suelo": 62,
+      "bot": null,
+      "resto": []
+    },
+    "6,2": {
+      "suelo": 63,
+      "bot": null,
+      "resto": []
+    },
+    "6,3": {
+      "suelo": 64,
+      "bot": null,
+      "resto": []
+    },
+    "6,4": {
+      "suelo": 65,
+      "bot": null,
+      "resto": []
+    },
+    "6,5": {
+      "suelo": 66,
+      "bot": null,
+      "resto": []
+    },
+    "6,6": {
+      "suelo": 67,
+      "bot": null,
+      "resto": []
+    },
+    "6,7": {
+      "suelo": 68,
+      "bot": null,
+      "resto": []
+    },
+    "6,8": {
+      "suelo": 69,
+      "bot": null,
+      "resto": []
+    },
+    "6,9": {
+      "suelo": 70,
+      "bot": null,
+      "resto": []
+    },
+    "7,0": {
+      "suelo": 71,
+      "bot": null,
+      "resto": []
+    },
+    "7,1": {
+      "suelo": 72,
+      "bot": null,
+      "resto": []
+    },
+    "7,2": {
+      "suelo": 73,
+      "bot": null,
+      "resto": []
+    },
+    "7,3": {
+      "suelo": 74,
+      "bot": null,
+      "resto": []
+    },
+    "7,4": {
+      "suelo": 75,
+      "bot": null,
+      "resto": []
+    },
+    "7,5": {
+      "suelo": 76,
+      "bot": null,
+      "resto": []
+    },
+    "7,6": {
+      "suelo": 77,
+      "bot": null,
+      "resto": []
+    },
+    "7,7": {
+      "suelo": 78,
+      "bot": null,
+      "resto": []
+    },
+    "7,8": {
+      "suelo": 79,
+      "bot": null,
+      "resto": []
+    },
+    "7,9": {
+      "suelo": 80,
+      "bot": null,
+      "resto": []
+    },
+    "8,0": {
+      "suelo": 81,
+      "bot": null,
+      "resto": []
+    },
+    "8,1": {
+      "suelo": 82,
+      "bot": null,
+      "resto": []
+    },
+    "8,2": {
+      "suelo": 83,
+      "bot": null,
+      "resto": []
+    },
+    "8,3": {
+      "suelo": 84,
+      "bot": null,
+      "resto": []
+    },
+    "8,4": {
+      "suelo": 85,
+      "bot": null,
+      "resto": []
+    },
+    "8,5": {
+      "suelo": 86,
+      "bot": null,
+      "resto": []
+    },
+    "8,6": {
+      "suelo": 87,
+      "bot": null,
+      "resto": []
+    },
+    "8,7": {
+      "suelo": 88,
+      "bot": null,
+      "resto": []
+    },
+    "8,8": {
+      "suelo": 89,
+      "bot": null,
+      "resto": []
+    },
+    "8,9": {
+      "suelo": 90,
+      "bot": null,
+      "resto": []
+    },
+    "9,0": {
+      "suelo": 91,
+      "bot": null,
+      "resto": []
+    },
+    "9,1": {
+      "suelo": 92,
+      "bot": null,
+      "resto": []
+    },
+    "9,2": {
+      "suelo": 93,
+      "bot": null,
+      "resto": []
+    },
+    "9,3": {
+      "suelo": 94,
+      "bot": null,
+      "resto": []
+    },
+    "9,4": {
+      "suelo": 95,
+      "bot": null,
+      "resto": []
+    },
+    "9,5": {
+      "suelo": 96,
+      "bot": null,
+      "resto": []
+    },
+    "9,6": {
+      "suelo": 97,
+      "bot": null,
+      "resto": []
+    },
+    "9,7": {
+      "suelo": 98,
+      "bot": null,
+      "resto": []
+    },
+    "9,8": {
+      "suelo": 99,
+      "bot": null,
+      "resto": []
+    },
+    "9,9": {
+      "suelo": 100,
+      "bot": null,
+      "resto": []
+    }
+  },
+  "elements": {
+    "1": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 1,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "2": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 2,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "3": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 3,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "4": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 4,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "5": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 5,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "6": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 6,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "7": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 7,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "8": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 8,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "9": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 9,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "10": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 10,
+      "excluyente_en_celda": false,
+      "casilla": [
+        0,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "11": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 11,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "12": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 12,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "13": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 13,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "14": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 14,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "15": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 15,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "16": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 16,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "17": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 17,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "18": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 18,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "19": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 19,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "20": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 20,
+      "excluyente_en_celda": false,
+      "casilla": [
+        1,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "21": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 21,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "22": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 22,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "23": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 23,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "24": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 24,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "25": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 25,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "26": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 26,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "27": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 27,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "28": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 28,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "29": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 29,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "30": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 30,
+      "excluyente_en_celda": false,
+      "casilla": [
+        2,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "31": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 31,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "32": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 32,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "33": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 33,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "34": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 34,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "35": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 35,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "36": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 36,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "37": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 37,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "38": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 38,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "39": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 39,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "40": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 40,
+      "excluyente_en_celda": false,
+      "casilla": [
+        3,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "41": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 41,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "42": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 42,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "43": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 43,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "44": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 44,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "45": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 45,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "46": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 46,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "47": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 47,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "48": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 48,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "49": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 49,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "50": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 50,
+      "excluyente_en_celda": false,
+      "casilla": [
+        4,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "51": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 51,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "52": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 52,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "53": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 53,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "54": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 54,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "55": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 55,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "56": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 56,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "57": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 57,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "58": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 58,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "59": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 59,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "60": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 60,
+      "excluyente_en_celda": false,
+      "casilla": [
+        5,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "61": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 61,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "62": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 62,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "63": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 63,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "64": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 64,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "65": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 65,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "66": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 66,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "67": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 67,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "68": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 68,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "69": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 69,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "70": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 70,
+      "excluyente_en_celda": false,
+      "casilla": [
+        6,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "71": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 71,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "72": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 72,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "73": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 73,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "74": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 74,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "75": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 75,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "76": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 76,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "77": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 77,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "78": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 78,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "79": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 79,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "80": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 80,
+      "excluyente_en_celda": false,
+      "casilla": [
+        7,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "81": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 81,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "82": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 82,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "83": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 83,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "84": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 84,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "85": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 85,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "86": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 86,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "87": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 87,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "88": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 88,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "89": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 89,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "90": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 90,
+      "excluyente_en_celda": false,
+      "casilla": [
+        8,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "91": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 91,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        0
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "92": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 92,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        1
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "93": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 93,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        2
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "94": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 94,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        3
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "95": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 95,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        4
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "96": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 96,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        5
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "97": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 97,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        6
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "98": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 98,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        7
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "99": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 99,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        8
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    },
+    "100": {
+      "__clase__": "Suelo_Piedra",
+      "capa": 0,
+      "id_elemento": 100,
+      "excluyente_en_celda": false,
+      "casilla": [
+        9,
+        9
+      ],
+      "comportamientos": {
+        "Rocoso": {},
+        "Terreno": {}
+      }
+    }
+  },
+  "bot_positions": {},
+  "active_events": {},
+  "elementos_globales": {}
+}

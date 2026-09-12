@@ -1,7 +1,7 @@
 # Infraestructura/Gestores/Mundo/Logica_Mundo/api_acciones.py
 from __future__ import annotations
 from dataclasses import dataclass
-from Infraestructura.Gestores.Mundo.Logica_Mundo.Acciones.mirar import mirar
+from Infraestructura.Gestores.Mundo.LogicaMundo.Acciones.mirar import mirar
 
 
 @dataclass

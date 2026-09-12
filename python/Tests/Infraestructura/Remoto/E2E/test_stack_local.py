@@ -61,7 +61,7 @@ def _entorno_aislado(tmp_path: Path) -> dict:
             "LOGICA_MUNDO_PORT": "58250",
             "LOGICA_MUNDO_ADDRESS": "localhost:58250",
             "HYPERVISOR_HOST": "localhost",
-            "HYPERVISOR_BASE_PORT": "58300",
+            "HYPERVISOR_PORT": "58300",
             "HYPERVISOR_PROXY_BASE_PORT": "58400",
             "HYPERVISOR_COUNT": "1",
             "COMUNICACIONES_REMOTO_HOST": "localhost",
