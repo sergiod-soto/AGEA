@@ -12,6 +12,7 @@ import pytest
 
 from Core.Entities.Elementos.elemento_test import Elemento_Test
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
+from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo_servicer import (
     LogicaMundoServicer,
@@ -27,7 +28,7 @@ def _elemento_bytes(eid: int) -> bytes:
     Blob que crear_elemento() espera para un elemento cualquiera.
     """
     elemento = Elemento_Test(casilla=(0, 0), id_elemento=eid, peso=1.0)
-    return json.dumps(elemento.serializar(modo="guardar")).encode()
+    return json.dumps(elemento.serializar(modo=Modos.guardado)).encode()
 
 
 def _bot_bytes(id_elemento: int, id_bot: int) -> bytes:
@@ -54,7 +55,7 @@ def _bot_bytes(id_elemento: int, id_bot: int) -> bytes:
         casilla=(0, 0),
         rotacion=0.0,
     )
-    return json.dumps(bot.serializar(modo="guardar")).encode()
+    return json.dumps(bot.serializar(modo=Modos.guardado)).encode()
 
 
 @pytest.fixture
@@ -277,7 +278,7 @@ async def test_consultar_representacion_via_grpc_devuelve_json_valido(
     )
 
     datos = await client.consultar_representacion(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=["Color"], modo="test"
+        min_pos=(0, 0), max_pos=(10, 10), incluir=["Color"], modo=Modos.transporte
     )
 
     parsed = json.loads(datos.decode())

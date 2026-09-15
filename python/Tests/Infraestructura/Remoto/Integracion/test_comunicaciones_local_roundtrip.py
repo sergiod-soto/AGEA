@@ -26,6 +26,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Comunicacion.Local.comunicaciones_local import (
     ComunicacionesLocal,
 )
@@ -176,7 +177,7 @@ async def test_actualizar_foco_via_grpc_responde_ok(stack_foco):
     master, _, _, _ = stack_foco
 
     ok, error = await master.actualizar_foco(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=["Color"], modo="test"
+        min_pos=(0, 0), max_pos=(10, 10), incluir=["Color"], modo=Modos.transporte
     )
 
     assert ok is True
@@ -196,7 +197,7 @@ async def test_master_y_espectador_reciben_la_misma_actualizacion_via_grpc_real(
     master, espectador, logica_mundo_fake, foco_broadcaster = stack_foco
 
     await master.actualizar_foco(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=[], modo="modo_real"
+        min_pos=(0, 0), max_pos=(10, 10), incluir=[], modo=Modos.transporte
     )
 
     # FocoBroadcaster arranca con _ultimo_tick=None, así que en cuanto

@@ -19,6 +19,7 @@ from Core.Entities.Comportamiento.Fisico.peso import Peso
 from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
 from Core.Entities.Elementos.elemento_test import Elemento_Test
 from Core.Entities.Elementos.registry import ELEMENTOS, reconstruir_elemento
+from Core.Entities.entity import Modos
 
 # Valor por defecto para el parámetro obligatorio de Comportamiento_Test en
 # todos los tests que no lo estén probando explícitamente — su contenido no
@@ -59,7 +60,7 @@ class _MundoFalso:
 def test_serializar_incluye_clase(elemento_basico):
     """__clase__ debe existir y coincidir con el nombre real de la clase,
     porque reconstruir_elemento() lo usa para resolver en ELEMENTOS."""
-    data = elemento_basico.serializar(modo="guardado")
+    data = elemento_basico.serializar(modo=Modos.guardado)
     assert data["__clase__"] == "Elemento_Test"
 
 
@@ -69,7 +70,7 @@ def test_serializar_excluye_tipo_y_mundo(elemento_basico):
     deben aparecer en el dict serializado: no son JSON-serializables
     (tipo) o arrastrarían el grafo completo del mundo (mundo).
     """
-    data = elemento_basico.serializar(modo="guardado")
+    data = elemento_basico.serializar(modo=Modos.guardado)
     assert "tipo" not in data
     assert "mundo" not in data
 
@@ -85,7 +86,7 @@ def test_deserializar_restaura_tipo_como_clase_real():
     """Tras reconstruir, self.tipo debe ser exactamente type(self), no un
     valor heredado de 'data' (porque nunca estuvo en 'data')."""
     original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
 
     reconstruido = reconstruir_elemento(data)
 
@@ -97,7 +98,7 @@ def test_deserializar_asigna_mundo_recibido_como_parametro():
     """mundo no viaja en el JSON: quien reconstruye decide qué mundo
     asignar, pasándolo explícitamente a reconstruir_elemento/deserializar."""
     original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
     mundo_falso = _MundoFalso()
 
     reconstruido = reconstruir_elemento(data, mundo=mundo_falso)
@@ -109,7 +110,7 @@ def test_deserializar_sin_mundo_lo_deja_en_none():
     """Si no se pasa mundo explícitamente, el default es None (elemento
     'huérfano', pendiente de que alguien lo reinserte en un Mundo)."""
     original = Elemento_Test(casilla=(0, 0), id_elemento=1, peso=5.0)
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
 
     reconstruido = reconstruir_elemento(data)
 
@@ -134,7 +135,7 @@ def test_casilla_roundtrip_reconstruye_tupla():
     """El valor debe volver a ser una tupla (x, y) tras deserializar,
     no el dict intermedio usado para el transporte."""
     original = Elemento_Test(casilla=(7, 9), id_elemento=1, peso=1.0)
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
 
     reconstruido = reconstruir_elemento(data)
 
@@ -170,7 +171,7 @@ def test_rotacion_se_normaliza_a_0_360():
 def test_comportamiento_peso_se_serializa_bajo_su_propio_nombre(elemento_basico):
     """Cada comportamiento aporta sus atributos propios bajo su nombre de
     clase en 'comportamientos', vía Comportamiento.serializar (no vars(self))."""
-    data = elemento_basico.serializar(modo="guardado")
+    data = elemento_basico.serializar(modo=Modos.guardado)
     assert data["comportamientos"]["Peso"] == {"peso": 10.0}
 
 
@@ -178,14 +179,14 @@ def test_comportamiento_categoria_sin_atributos_sale_vacio(elemento_basico):
     """Fisico no declara parámetros propios en su __init__ (solo agrupa
     por herencia), así que su entrada debe existir pero vacía — no debe
     fallar ni desaparecer solo por no tener datos propios."""
-    data = elemento_basico.serializar(modo="guardado")
+    data = elemento_basico.serializar(modo=Modos.guardado)
     assert data["comportamientos"]["Fisico"] == {}
 
 
 def test_comportamiento_test_se_serializa_bajo_su_propio_nombre(elemento_basico):
     """Mismo mecanismo que Peso, para el segundo comportamiento propio
     de Elemento_Test: Comportamiento_Test."""
-    data = elemento_basico.serializar(modo="guardado")
+    data = elemento_basico.serializar(modo=Modos.guardado)
     assert data["comportamientos"]["Comportamiento_Test"] == {
         "atributo_test": ATRIBUTO_TEST_DEFAULT
     }
@@ -203,7 +204,7 @@ def test_roundtrip_completo_conserva_todos_los_valores():
         peso=7.5,
         rotacion=90,
     )
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
 
     reconstruido = reconstruir_elemento(data)
 
@@ -227,7 +228,7 @@ def test_reconstruir_elemento_clase_desconocida_lanza_value_error():
 
 
 def test_get_comportamiento_sobre_elemento_real(elemento_basico):
-    resultado = elemento_basico.get_comportamiento("Peso", modo="representacion")
+    resultado = elemento_basico.get_comportamiento("Peso", modo=Modos.transporte)
     assert resultado == {"peso": 10.0}
 
 
@@ -237,7 +238,7 @@ def test_get_comportamiento_sobre_elemento_real(elemento_basico):
     fix de 'cls=None' en Elemento.serializar, esto lanzaba TypeError en
     vez de devolver el dict del comportamiento pedido.
     """
-    resultado = elemento_basico.get_comportamiento("Peso", modo="representacion")
+    resultado = elemento_basico.get_comportamiento("Peso", modo=Modos.transporte)
     assert resultado == {"peso": 10.0}
 
 
@@ -245,7 +246,7 @@ def test_get_comportamiento_nombre_inexistente_lanza_value_error(elemento_basico
     """Comportamiento que el elemento no tiene -> ValueError, que es
     justo lo que consultar_representacion sabe capturar y saltarse."""
     with pytest.raises(ValueError):
-        elemento_basico.get_comportamiento("Volumen", modo="representacion")
+        elemento_basico.get_comportamiento("Volumen", modo=Modos.transporte)
 
 
 def test_get_comportamiento_devuelve_mismo_resultado_en_los_tres_modos(elemento_basico):
@@ -258,10 +259,10 @@ def test_get_comportamiento_devuelve_mismo_resultado_en_los_tres_modos(elemento_
     purpose -- momento de revisar si el test debe actualizarse o si el
     cambio fue accidental.
     """
-    en_guardado = elemento_basico.get_comportamiento("Peso", modo="guardado")
-    en_transporte = elemento_basico.get_comportamiento("Peso", modo="transporte")
+    en_guardado = elemento_basico.get_comportamiento("Peso", modo=Modos.guardado)
+    en_transporte = elemento_basico.get_comportamiento("Peso", modo=Modos.transporte)
     en_representacion = elemento_basico.get_comportamiento(
-        "Peso", modo="representacion"
+        "Peso", modo=Modos.representacion
     )
 
     assert en_guardado == en_transporte == en_representacion == {"peso": 10.0}
@@ -288,7 +289,7 @@ def test_quitar_comportamiento_dinamicamente_se_conserva_tras_roundtrip():
     assert not isinstance(original, Peso)
     assert not hasattr(original, "peso")
 
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
     assert "Peso" not in data["comportamientos"]
 
     reconstruido = reconstruir_elemento(data)
@@ -319,7 +320,7 @@ def test_anhadir_comportamiento_dinamicamente_se_conserva_tras_roundtrip(monkeyp
     )
     assert isinstance(original, Comportamiento_Dinamico_De_Prueba)
 
-    data = original.serializar(modo="guardado")
+    data = original.serializar(modo=Modos.guardado)
     assert data["comportamientos"]["Comportamiento_Dinamico_De_Prueba"] == {
         "valor_prueba": 12.5
     }

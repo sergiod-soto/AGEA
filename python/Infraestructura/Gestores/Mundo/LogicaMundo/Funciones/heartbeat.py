@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/heartbeat.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/heartbeat.py
 """
 heartbeat.py — Implementación mínima del RPC Heartbeat.
 

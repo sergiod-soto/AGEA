@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 import inspect
 
+from Core.Entities.entity import Modos
+
 
 class _NoSerializar:
     """
@@ -48,7 +50,7 @@ class Comportamiento:
         aunque NO sean parámetros de su __init__ — p.ej. estado interno
         (privado, con guion bajo) que se inicializa en el cuerpo del
         constructor en vez de recibirse como argumento (self._enterrado,
-        self.comportamiento_activo...).
+        self._comportamiento_activo...).
 
         Por defecto vacío: la mayoría de comportamientos no lo necesitan,
         porque todos sus datos ya son parámetros de __init__ (p.ej. Peso).
@@ -213,7 +215,7 @@ class Comportamiento:
         """
         return isinstance(self, comportamiento)
 
-    def get_comportamiento(self, nombre: str, *, modo: str) -> dict:
+    def get_comportamiento(self, nombre: str, *, modo: Modos) -> dict:
         for cls in self.comportamientos():
             if cls.__name__ == nombre:
                 return self.serializar(cls, modo=modo)
@@ -228,7 +230,7 @@ class Comportamiento:
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
         return type("Comportamientos", clases, {})
 
-    def serializar(self, cls=None, *, modo: str) -> dict:
+    def serializar(self, cls=None, *, modo: Modos) -> dict:
         """
         modo distingue PARA QUÉ se serializa, porque un campo pesado (como
         'sonidos' en Sonoro) puede necesitar una representación distinta
@@ -250,7 +252,7 @@ class Comportamiento:
         atributos = cls._campos_serializables()
         resultado = {}
         for nombre in atributos:
-            especifico = getattr(self, f"serialize_{nombre}_{modo}", None)
+            especifico = getattr(self, f"serialize_{nombre}_{modo.value}", None)
             generico = getattr(self, f"serialize_{nombre}", None)
             serializador = especifico or generico
             if serializador:
@@ -301,3 +303,5 @@ class Comportamiento:
         raise NotImplementedError(
             f"{cls.__name__} no implementa campos_para_creacion(). No puede ser creado por consola."
         )
+
+

@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/registry.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/registry.py
 
 from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     asignar_id,

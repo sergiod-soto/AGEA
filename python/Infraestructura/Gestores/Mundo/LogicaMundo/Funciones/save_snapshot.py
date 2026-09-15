@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/save_snapshot.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/save_snapshot.py
 """
 save_snapshot.py — Implementación del RPC SaveSnapshot.
 """

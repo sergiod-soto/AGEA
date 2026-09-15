@@ -28,6 +28,7 @@ service LogicaMundoService {
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
   rpc ConstruirElemento (ConstruirElementoRequest) returns (ConstruirElementoResponse);
+  rpc EjecutarComandoConsola (ComandoConsolaRequest) returns (ComandoConsolaResponse);
 }
 
 message LogicaMundoHeartbeatResponse {
@@ -192,4 +193,27 @@ message ObtenerAudioResponse {
   string error = 2;
 
   bytes audio = 3;
+}
+
+message ComandoConsolaRequest {
+  string tipo    = 1;
+  bytes  payload = 2;
+}
+
+message ComandoConsolaResponse {
+  bool   ok      = 1;
+  string error   = 2;
+  bytes  payload = 3;
+}
+
+message ObtenerElementoRequest {
+  uint64          element_id = 1;
+  string          tipo_datos = 2;  // "representacion" (default) o "serializacion"
+  repeated string incluir    = 3;  // solo aplica si tipo_datos="representacion"
+}
+
+message ObtenerElementoResponse {
+  bool   ok    = 1;
+  string error = 2;
+  bytes  datos = 3;  // JSON del dict devuelto por representacion()/serializar()
 }

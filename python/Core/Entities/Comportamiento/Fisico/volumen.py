@@ -38,3 +38,10 @@ Atributos:
 Métodos:
 \t-
         """
+
+    def representar_volumen(self) -> list[str]:
+        """
+        Informacion pasada a Unity para representar el Elemento
+        """
+        representacion = {"volumen": {"volumen": self.volumen}}
+        return representacion

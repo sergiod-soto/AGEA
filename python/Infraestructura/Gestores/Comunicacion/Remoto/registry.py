@@ -27,6 +27,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
     trigger_deep_save,
     comando_consola,
     advance_tick,
+    comando_consola_logica,
 )
 
 FUNCIONES = [
@@ -55,4 +56,5 @@ FUNCIONES = [
     # Consola
     comando_consola,
     advance_tick,
+    comando_consola_logica,
 ]

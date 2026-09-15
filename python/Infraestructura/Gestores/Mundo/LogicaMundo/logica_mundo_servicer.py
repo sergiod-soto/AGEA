@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/logica_mundo_servicer.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo_servicer.py
 """
 logica_mundo_servicer.py — Servicer gRPC de LogicaMundoService.
 
@@ -114,3 +114,22 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         return await self._dispatch["ObtenerAudio"].handle(
             self._logica, request, context
         )
+        
+    async def EjecutarComandoConsola(self, request, context):
+        from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
+            logica_mundo_service_pb2 as pb,
+        )
+        from Infraestructura.Gestores.Mundo.LogicaMundo.ComandosConsola.registry_consola import (
+            COMANDOS_CONSOLA,
+        )
+
+        handler = COMANDOS_CONSOLA.get(request.tipo)
+        if handler is None:
+            return pb.ComandoConsolaResponse(
+                ok=False, error=f"Comando de consola desconocido: {request.tipo}"
+            )
+        try:
+            payload = await handler.handle(self._logica, request.payload)
+            return pb.ComandoConsolaResponse(ok=True, error="", payload=payload)
+        except Exception as e:
+            return pb.ComandoConsolaResponse(ok=False, error=str(e), payload=b"")

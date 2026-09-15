@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/modificar_elemento.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/modificar_elemento.py
 """
 modificar_elemento.py — Implementación del RPC ModificarElemento.
 

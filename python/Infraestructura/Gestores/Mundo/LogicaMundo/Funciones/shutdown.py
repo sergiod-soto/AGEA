@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/shutdown.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/shutdown.py
 
 
 import asyncio

@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/logica_mundo_server.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo_server.py
 """
 logica_mundo_server.py
 
@@ -62,7 +62,7 @@ async def serve() -> None:
 
     # Cliente hacia Gestor_Bots — usado solo por LogicaMundo.matar_bot()
     # para notificar la muerte de un bot decidida por la lógica del
-    # mundo (ver logica_mundo.py). Async porque Logica_Mundo es
+    # mundo (ver logicaMundo.py). Async porque Logica_Mundo es
     # enteramente asyncio.
     from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
         GestorBotsClientAsync,

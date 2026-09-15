@@ -11,7 +11,7 @@ async def _handler(comunicaciones: ComunicacionesLocal) -> str:
 
 
 ACCION = AccionConsola(
-    nombre="avanzar_tick",
-    descripcion="Avanza exactamente un tick (requiere modo_paso activado antes).",
+    nombre="tick",
+    descripcion="Avanza un tick del servidor (requiere modo_paso activado antes).",
     handler=_handler,
 )

@@ -50,7 +50,7 @@ class Suelo(Elemento_Abstracto):
         campos = {
             "elemento": {
                 "casilla": self.serializar_casilla(),
-                **self.serializar_elemento(modo=modo),
+                **self.serializar_elemento(),
             },
             "comportamientos": {
                 cls.__name__: self.serializar(cls, modo=modo)

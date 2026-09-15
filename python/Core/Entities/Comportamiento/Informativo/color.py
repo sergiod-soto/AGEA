@@ -125,3 +125,15 @@ Métodos:
 \tRetorna el RGB de la luz total reflejada
 \tnormalizada a 255 para representacion, no uso.
         """
+
+    def representar_color(self) -> list[str]:
+        """
+        Informacion pasada a Unity para representar el Elemento
+        """
+        representacion = {
+            "color": {
+                "rgb_base": self.rgb_base,
+                "transparente": self.transparente,
+            }
+        }
+        return representacion

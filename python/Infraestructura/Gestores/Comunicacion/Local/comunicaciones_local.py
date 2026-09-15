@@ -260,6 +260,45 @@ class ComunicacionesLocal:
             raise RuntimeError(resp.error)
         return resp.payload
 
+    async def ejecutar_comando_consola_logica(self, tipo: str, request_msg) -> bytes:
+        req = logica_pb.ComandoConsolaRequest(
+            tipo=tipo, payload=request_msg.SerializeToString()
+        )
+        raw = await self._ejecutar(bridge_pb.LOGICA_MUNDO, "ComandoConsola", req)
+        resp = logica_pb.ComandoConsolaResponse()
+        resp.ParseFromString(raw)
+        if not resp.ok:
+            raise RuntimeError(resp.error)
+        return resp.payload
+
+    async def obtener_elemento(
+        self,
+        element_id: int,
+        tipo_datos: str = "representacion",
+        incluir: list[str] | None = None,
+    ) -> tuple[bool, str, bytes]:
+        """
+        tipo_datos: "representacion" (lo que se manda a Unity) o
+        "serializacion" (info completa, como en un snapshot).
+        Devuelve (ok, error, datos_json_bytes) — ok=False también si el
+        id no existe, no solo si falla la red.
+        """
+        try:
+            raw = await self.ejecutar_comando_consola_logica(
+                "ObtenerElemento",
+                logica_pb.ObtenerElementoRequest(
+                    element_id=element_id,
+                    tipo_datos=tipo_datos,
+                    incluir=incluir or [],
+                ),
+            )
+        except RuntimeError as exc:
+            return False, str(exc), b""
+
+        resp = logica_pb.ObtenerElementoResponse()
+        resp.ParseFromString(raw)
+        return resp.ok, resp.error, resp.datos
+
     async def set_step_mode(self, activar: bool) -> tuple[bool, str]:
         try:
             await self.ejecutar_comando_consola(

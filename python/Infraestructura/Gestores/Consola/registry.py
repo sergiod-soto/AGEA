@@ -15,6 +15,7 @@ from Infraestructura.Gestores.Consola.Acciones import (
     crear_elemento,
     datos,
     leer_salida_unity,
+    obtener_elemento,
 )
 
 _MODULOS = (
@@ -26,6 +27,7 @@ _MODULOS = (
     crear_elemento,
     datos,
     leer_salida_unity,
+    obtener_elemento,
 )
 
 ACCIONES = {modulo.ACCION.nombre: modulo.ACCION for modulo in _MODULOS}

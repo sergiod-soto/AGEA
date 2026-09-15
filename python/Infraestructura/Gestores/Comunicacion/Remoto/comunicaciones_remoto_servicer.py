@@ -93,17 +93,6 @@ class ComunicacionesRemotoServicer(pb_grpc.ComunicacionRemotaServiceServicer):
         min_pos = (request.min.x, request.min.y)
         max_pos = (request.max.x, request.max.y)
 
-        # LOG TEMPORAL — diagnóstico bug foco: confirmar si el master sigue
-        # mandando una región correcta tras la desaparición, o si se queda
-        # mal (p.ej. no cubre ya la posición del cuadrado de prueba).
-        logger.warning(
-            "[DEBUG-FOCO] ActualizarFoco recibido: min=%s max=%s incluir=%s modo=%s",
-            min_pos,
-            max_pos,
-            list(request.incluir),
-            request.modo,
-        )
-
         self._logica.actualizar_foco(
             min_pos, max_pos, list(request.incluir), request.modo
         )

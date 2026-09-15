@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/actualizar_celdas.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/actualizar_celdas.py
 """
 actualizar_celdas.py — Implementación del RPC ActualizarCeldas.
 """

@@ -45,8 +45,8 @@ class Elemento_Simple(Elemento):
     def serializar_rotacion(self):
         return self.rotacion % 360
 
-    def serializar_elemento_simple(self, modo):
-        serializacion = self.serializar_elemento(modo=modo)
+    def serializar_elemento_simple(self) -> dict:
+        serializacion = self.serializar_elemento()
         s_simple = {
             "tipo_elemento": "elemento_simple",
             "tamanho": self.serializar_tamanho(),

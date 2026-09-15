@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/avanzar_elementos_globales.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/avanzar_elementos_globales.py
 """
 avanzar_elementos_globales.py — Implementación del RPC AvanzarElementosGlobales.
 """

@@ -19,6 +19,7 @@ from functools import partial
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
 from Core.Entities.Mundo import datos
+from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
 
 
@@ -121,7 +122,7 @@ class Serie_Estados:
             )
 
         elemento.casilla = pos_destino
-        elemento_bytes = json.dumps(elemento.serializar(modo="transporte")).encode()
+        elemento_bytes = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
         ok, error = await self._logica.crear_elemento(
             pos_destino, type_id, elemento_bytes
         )
@@ -146,7 +147,7 @@ class Serie_Estados:
         Crea un elemento real en Logica_Mundo (vía gRPC): pide un id
         nuevo con AsignarId, instancia `clase` con ese id, lo
         serializa igual que lo hace el propio LogicaMundoClient
-        internamente (modo="transporte") y lo registra con
+        internamente (modo=Modos.transporte) y lo registra con
         CrearElemento.
 
         type_id es el SLOT de la celda en Logica_Mundo ("suelo",
@@ -159,7 +160,7 @@ class Serie_Estados:
         id_elemento = await self._logica.asignar_id()
         elemento = clase(id_elemento=id_elemento, casilla=casilla, **kwargs)
 
-        elemento_bytes = json.dumps(elemento.serializar(modo="transporte")).encode()
+        elemento_bytes = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
         ok, error = await self._logica.crear_elemento(casilla, type_id, elemento_bytes)
         if not ok:
             raise RuntimeError(

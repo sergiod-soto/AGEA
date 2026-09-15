@@ -568,7 +568,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 34192656}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6319457064d82a543b472588e3f4e867, type: 3}
   m_Name: 
@@ -580,7 +580,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 34192656}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 022282c7b1ad88e4599da9a9edaf2f64, type: 3}
   m_Name: 
@@ -2312,10 +2312,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MoverCamara
   cam: {fileID: 519420031}
-  zoomMin: 10
+  zoomMin: 1
   zoomMax: 200
-  factorVelocidad: 40
-  factorZoom: 200
+  factorVelocidad: 3
+  factorZoom: 50
   esquinaInferiorIzquierda: {x: 0, y: 0, z: 0}
   esquinaInferiorDerecha: {x: 0, y: 0, z: 0}
   esquinaSuperiorIzquierda: {x: 0, y: 0, z: 0}
@@ -2327,7 +2327,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 44c62355aec50bd4d9fa788943580c13, type: 3}
   m_Name: 
@@ -2339,7 +2339,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bb1a81b89d008494ca92fbd2823db847, type: 3}
   m_Name: 
@@ -3260,6 +3260,7 @@ MonoBehaviour:
   intervaloSegundos: 0.5
   incluir: []
   modo: unity_debug
+  margenCeldas: 10
 --- !u!114 &804476117
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4195,7 +4196,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 958366124}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d041612849429540aa4bef399873fc5, type: 3}
   m_Name: 
@@ -4207,7 +4208,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 958366124}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1855e0ded912c4845b485815b23a1265, type: 3}
   m_Name: 
@@ -8455,7 +8456,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -400.64835, y: -250.11465, z: 20}
-  m_LocalScale: {x: 3.76, y: 3.76, z: 3.76}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 903244324}

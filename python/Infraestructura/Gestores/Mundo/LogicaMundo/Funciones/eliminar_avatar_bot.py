@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/eliminar_avatar_bot.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/eliminar_avatar_bot.py
 """
 eliminar_avatar_bot.py — Implementación del RPC EliminarAvatarBot.
 

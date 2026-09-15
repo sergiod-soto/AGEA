@@ -205,3 +205,21 @@ class Piedra(Elemento_Simple, comportamientos):
             "\tdurabilidad_max_destruible: float = None\n"
             "\tdurabilidad_max_erosion=1 (a cambiar)\n"
         )
+
+    def representacion(self, modo, incluir: list[str] = None) -> dict:
+        if incluir == None:
+
+            serializacion = {
+                "elemento": self.serializar_elemento_simple(),
+                "comportamientos": {},
+            }
+
+            volumen = Volumen.representar_volumen(self)
+            sonoro = Sonoro.representar_sonoro(self)
+            color = Color.representar_color(self)
+
+            serializacion["comportamientos"].update(volumen)
+            serializacion["comportamientos"].update(sonoro)
+            serializacion["comportamientos"].update(color)
+
+            return serializacion

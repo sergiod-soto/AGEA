@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/despawn_global_event.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/despawn_global_event.py
 """
 despawn_global_event.py — Implementación del RPC DespawnGlobalEvent.
 """

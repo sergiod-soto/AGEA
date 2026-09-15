@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/crear_elemento.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/crear_elemento.py
 """
 crear_elemento.py — Implementación del RPC CrearElemento.
 """

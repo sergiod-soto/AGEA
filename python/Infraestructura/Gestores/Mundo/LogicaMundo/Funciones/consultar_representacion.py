@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/consultar_representacion.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/consultar_representacion.py
 """
 consultar_representacion.py — Implementación del RPC ConsultarRepresentacion.
 """

@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/resolver_accion.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/resolver_accion.py
 """
 resolver_accion.py — Implementación del RPC ResolverAccion.
 """

@@ -42,3 +42,7 @@ Atributos:
 Métodos:
 \t-
             """
+            
+    def representar(self):
+        representar = {}
+        return 

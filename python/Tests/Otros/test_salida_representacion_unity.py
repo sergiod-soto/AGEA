@@ -27,6 +27,7 @@ import json
 from dataclasses import dataclass, field
 
 from Core.Entities.Elementos.elemento_test import Elemento_Test
+from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
 
 # ─────────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ async def _colocar_elemento(logica: LogicaMundo, e: ElementoAColocar) -> None:
 
     # Ruta real de transporte: el mismo formato de bytes que usaría
     # _id_a_slot_bytes al mandar un elemento entre sectores.
-    payload = json.dumps(elemento.serializar(modo="transporte")).encode()
+    payload = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
 
     ok, error = await logica.crear_elemento(e.pos, e.tipo_slot, payload)
     if not ok:
@@ -165,7 +166,7 @@ async def _ejecutar_caso(caso: Caso) -> dict:
     await logica.avanzar_elementos_globales(caso.tick_id)
 
     salida_bytes = await logica.consultar_representacion(
-        caso.min_pos, caso.max_pos, incluir=caso.incluir, modo="representacion"
+        caso.min_pos, caso.max_pos, incluir=caso.incluir, modo=Modos.transporte
     )
     return json.loads(salida_bytes.decode())
 

@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/eliminar_elemento.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/eliminar_elemento.py
 """
 eliminar_elemento.py — Implementación del RPC EliminarElemento.
 

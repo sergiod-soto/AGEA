@@ -5,6 +5,7 @@ import pytest
 from Core.Entities.Comportamiento.Stats.stat import Stat
 from Core.Entities.Comportamiento.Stats.stat_derivado import Stat_Derivado
 from Core.Entities.Comportamiento.Stats.tiene_stats import Tiene_Stats
+from Core.Entities.entity import Modos
 
 
 # NOTA: la anotacion de tipo usaba "Stat_Complejo", una clase que no
@@ -92,5 +93,5 @@ class TestTieneStatsSerializacion:
         # Comportamiento.serializar() debe usar el hook serialize_stats,
         # no el parametro crudo 'stats' que se paso a __init__
         e = Elemento_De_Prueba(stats=[Stat("vida", 100)])
-        resultado = e.serializar(modo="transporte")
+        resultado = e.serializar(modo=Modos.transporte)
         assert resultado["stats"] == {"vida": 100}

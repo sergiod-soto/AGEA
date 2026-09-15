@@ -24,7 +24,8 @@ import pytest
 
 from Core.Entities.Elementos.elemento_test import Elemento_Test
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
+from Core.Entities.entity import Modos
+from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import LogicaMundo
 
 
 def _elemento_test_dict(eid: int, casilla: tuple[int, int] = (0, 0)) -> dict:
@@ -35,7 +36,7 @@ def _elemento_test_dict(eid: int, casilla: tuple[int, int] = (0, 0)) -> dict:
     de lo que Elemento_Test.serializar() produce de verdad.
     """
     elemento = Elemento_Test(casilla=casilla, id_elemento=eid, peso=1.0)
-    return elemento.serializar(modo="guardar")
+    return elemento.serializar(modo=Modos.transporte)
 
 
 def _elemento_test_bytes(eid: int, casilla: tuple[int, int] = (0, 0)) -> bytes:
@@ -70,7 +71,7 @@ def _bot_test_bytes(
         casilla=casilla,
         rotacion=0.0,
     )
-    return json.dumps(bot.serializar(modo="guardar")).encode()
+    return json.dumps(bot.serializar(modo=Modos.transporte)).encode()
 
 
 @pytest.fixture

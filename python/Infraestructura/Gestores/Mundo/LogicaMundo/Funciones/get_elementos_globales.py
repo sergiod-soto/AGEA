@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/get_elementos_globales.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/get_elementos_globales.py
 
 
 import json

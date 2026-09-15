@@ -25,7 +25,8 @@ import json
 from google.protobuf.json_format import MessageToDict
 
 from Core.Entities.Elementos.elemento_test import Elemento_Test
-from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo
+from Core.Entities.entity import Modos
+from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import LogicaMundo
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
     comunicacion_remota_service_pb2 as bridge_pb,
     logica_mundo_service_pb2 as logica_pb,
@@ -42,12 +43,12 @@ async def _colocar_elemento(
     """
     Mismo patrón que test_salida_representacion_unity.py::
     _colocar_elemento: se construye el elemento real vía su __init__
-    (no un JSON a mano) y se serializa con serializar(modo="transporte")
+    (no un JSON a mano) y se serializa con serializar(modo=Modos.transporte)
     — el mismo formato de bytes que usaría _id_a_slot_bytes al mandar
     un elemento entre sectores, que es la ruta real de transporte.
     """
     elemento = Elemento_Test(id_elemento=id_elemento, casilla=pos, peso=peso)
-    payload = json.dumps(elemento.serializar(modo="transporte")).encode()
+    payload = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
 
     ok, error = await logica.crear_elemento(pos, tipo_slot, payload)
     if not ok:
@@ -79,7 +80,7 @@ async def _main() -> None:
     # cada pulso — ver vista_foco.py.
     celdas = await logica.obtener_celdas_en_region(min_pos=(0, 0), max_pos=(10, 10))
     representacion_bytes = await logica.consultar_representacion(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=["Peso"], modo="unity_debug"
+        min_pos=(0, 0), max_pos=(10, 10), incluir=["Peso"], modo=Modos.transporte
     )
     globales_dict = await logica.get_elementos_globales()
     tick_actual = await logica.get_tick_actual()

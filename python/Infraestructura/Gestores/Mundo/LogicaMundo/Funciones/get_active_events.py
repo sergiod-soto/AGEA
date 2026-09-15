@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/get_active_events.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/get_active_events.py
 """
 get_active_events.py — Implementación del RPC GetActiveEvents.
 """

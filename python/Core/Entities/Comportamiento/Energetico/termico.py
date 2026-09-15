@@ -90,3 +90,10 @@ Métodos:
 \t--------------------------------------
 \tComputa el siguiente tick.
         """
+
+    def representar_termico(self) -> list[str]:
+        """
+        Informacion pasada a Unity para representar el Elemento
+        """
+        representacion = {"termico": "TODO"}
+        return representacion

@@ -5,6 +5,7 @@ from abc import ABC
 from typing import TYPE_CHECKING
 from numpy import uint64
 from Core.Entities.Comportamiento.comportamiento import Comportamiento, NO_SERIALIZAR
+from Core.Entities.entity import Modos
 
 if TYPE_CHECKING:
     from Core.Entities.Mundo.mundo import Mundo
@@ -75,14 +76,14 @@ class Elemento(ABC, Comportamiento):
     def serialize_mundo(self):
         return NO_SERIALIZAR
 
-    def _serializar_cadena_elemento(self, *, modo: str) -> dict:
+    def _serializar_cadena_elemento(self, *, modo: Modos) -> dict:
 
         atributos_comportamientos = self._atributos_de_comportamientos()
         resultado = {}
         for k, v in vars(self).items():
             if k.startswith("_") or k in atributos_comportamientos:
                 continue
-            especifico = getattr(self, f"serialize_{k}_{modo}", None)
+            especifico = getattr(self, f"serialize_{k}_{modo.value}", None)
             generico = getattr(self, f"serialize_{k}", None)
             serializador = especifico or generico
             valor = serializador() if serializador else v
@@ -94,7 +95,7 @@ class Elemento(ABC, Comportamiento):
     def serialize_id_elemento(self):
         return int(self.id_elemento)
 
-    def serializar(self, cls: type | None = None, *, modo: str) -> dict:
+    def serializar(self, cls: type | None = None, *, modo: Modos) -> dict:
         """
         Serialización PLANA para snapshot/transporte (save_snapshot,
         _id_a_slot_bytes, crear_elemento...). Es la que necesita
@@ -130,20 +131,14 @@ class Elemento(ABC, Comportamiento):
             },
         }
 
-    def serializar_elemento(self, cls: type | None = None, *, modo: str) -> dict:
+    def serializar_elemento(self, cls: type | None = None) -> dict:
 
         return {
             "__clase__": type(self).__name__,
+            "entidad": "elemento",
             "capa": self.capa,
             "id_elemento": self.serialize_id_elemento(),
         }
-
-    def representacion(self, modo: str, incluir: list[str]) -> dict:
-
-        raise NotImplementedError(
-            f"{type(self).__name__} no implementa representacion(); "
-            "cada tipo concreto debe definir explícitamente qué manda a Unity."
-        )
 
     def deserializar(self, data: dict, mundo: Mundo | None):
         # Deserializa atributos propios del elemento
@@ -252,13 +247,6 @@ class Elemento(ABC, Comportamiento):
                 setattr(self, atributo, valor)
 
     @classmethod
-    def ayuda_creacion(cls) -> str:
-        raise NotImplementedError(
-            f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
-            "de ayuda definido para este tipo de elemento todavía."
-        )
-
-    @classmethod
     def _comportamiento_de_campo(cls, nombre: str):
         """
         Busca qué Comportamiento del MRO de esta clase declara 'nombre'
@@ -277,3 +265,17 @@ class Elemento(ABC, Comportamiento):
             ):
                 return c
         return None
+
+    @classmethod
+    def ayuda_creacion(cls) -> str:
+        raise NotImplementedError(
+            f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
+            "de ayuda definido para este tipo de elemento todavía."
+        )
+
+    def representacion(self, incluir: list[str]) -> dict:
+
+        raise NotImplementedError(
+            f"{type(self).__name__} no implementa representacion(); "
+            "cada tipo concreto debe definir explícitamente qué manda a Unity."
+        )

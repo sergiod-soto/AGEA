@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/load_state.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/load_state.py
 """
 load_state.py — Implementación del RPC LoadState.
 """

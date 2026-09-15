@@ -5,6 +5,7 @@ import pytest
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.Stats.stat import Stat
 from Core.Entities.Comportamiento.Stats.tiene_stats import Tiene_Stats
+from Core.Entities.entity import Modos
 
 
 # Comportamientos minimos de prueba, con la misma forma que Peso/Color en
@@ -68,13 +69,13 @@ class TestTieneComportamiento:
 class TestGetComportamiento:
     def test_devuelve_el_estado_serializado_del_comportamiento_pedido(self):
         c = Cosa(peso=10, color="rojo")
-        assert c.get_comportamiento("Peso", modo="transporte") == {"peso": 10}
-        assert c.get_comportamiento("Color", modo="transporte") == {"color": "rojo"}
+        assert c.get_comportamiento("Peso", modo=Modos.transporte) == {"peso": 10}
+        assert c.get_comportamiento("Color", modo=Modos.transporte) == {"color": "rojo"}
 
     def test_nombre_inexistente_lanza_error(self):
         c = Cosa(peso=10, color="rojo")
         with pytest.raises(ValueError):
-            c.get_comportamiento("Volumen", modo="transporte")
+            c.get_comportamiento("Volumen", modo=Modos.transporte)
 
     def test_no_sirve_para_pedir_un_stat_individual(self):
         # "Vida" no es un comportamiento propio en el MRO (vive en
@@ -82,5 +83,5 @@ class TestGetComportamiento:
         # no puede encontrarlo, y hay que usar get_stat en su lugar.
         c = Cosa(peso=10, color="rojo", stats=[Stat("vida", 100)])
         with pytest.raises(ValueError):
-            c.get_comportamiento("vida", modo="transporte")
+            c.get_comportamiento("vida", modo=Modos.transporte)
         assert c.get_stat("vida") == 100

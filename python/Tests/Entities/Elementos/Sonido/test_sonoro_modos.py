@@ -9,6 +9,7 @@ referencias (lo que ve Unity cada tick).
 import pytest
 from Core.Entities.Comportamiento.Informativo.sonoro import Sonoro
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido, SonidoBase
+from Core.Entities.entity import Modos
 from Services.Elemento.cache_audio import CacheAudio
 
 
@@ -28,7 +29,7 @@ def _sonoro_de_ejemplo():
 class TestModoRepresentacion:
     def test_solo_referencias_sin_vector_ni_pcm(self):
         s = _sonoro_de_ejemplo()
-        data = s.serializar(modo="representacion")
+        data = s.serializar(modo=Modos.transporte)
         for lista in data["sonidos"].values():
             for entrada in lista:
                 assert set(entrada.keys()) == {"id", "duracion", "vol"}
@@ -37,7 +38,7 @@ class TestModoRepresentacion:
         import json
 
         s = _sonoro_de_ejemplo()
-        json.dumps(s.serializar(modo="representacion"))  # no debe lanzar
+        json.dumps(s.serializar(modo=Modos.transporte))  # no debe lanzar
 
 
 class TestModosCompletoFidelidad:
@@ -63,7 +64,7 @@ class TestModosCompletoFidelidad:
         # día divergen, este test debe romperse a propósito -- señal de
         # que hay que revisar si el cambio fue intencional.
         s = _sonoro_de_ejemplo()
-        assert s.serializar(modo="guardado") == s.serializar(modo="transporte")
+        assert s.serializar(modo=Modos.guardado) == s.serializar(modo=Modos.transporte)
 
 
 class TestModoEsObligatorio:
@@ -79,7 +80,7 @@ class TestDeserializarSonidos:
 
     def test_reconstruye_objetos_sonido_reales(self):
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo="transporte")
+        data = original.serializar(modo=Modos.transporte)
 
         reconstruido = Sonoro(sonidos={})
         reconstruido.deserialize_sonidos(data["sonidos"])
@@ -90,7 +91,7 @@ class TestDeserializarSonidos:
 
     def test_conserva_los_mismos_ids(self):
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo="transporte")
+        data = original.serializar(modo=Modos.transporte)
         reconstruido = Sonoro(sonidos={})
         reconstruido.deserialize_sonidos(data["sonidos"])
 
@@ -105,7 +106,7 @@ class TestDeserializarSonidos:
         # deben poder liberarse igual que uno recién creado (necesario
         # para _liberar_sonidos_de en LogicaMundo).
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo="transporte")
+        data = original.serializar(modo=Modos.transporte)
         reconstruido = Sonoro(sonidos={})
         reconstruido.deserialize_sonidos(data["sonidos"])
 
@@ -127,7 +128,7 @@ class TestDeserializarSonidos:
         Sonido.configurar_cache(cache)
 
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo="transporte")
+        data = original.serializar(modo=Modos.transporte)
 
         reconstruido = Sonoro(sonidos={})
         reconstruido.deserialize_sonidos(data["sonidos"])

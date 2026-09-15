@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/obtener_audio.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/obtener_audio.py
 
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (

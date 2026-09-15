@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Acciones/mirar.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Acciones/mirar.py
 from __future__ import annotations
 import json
 import math

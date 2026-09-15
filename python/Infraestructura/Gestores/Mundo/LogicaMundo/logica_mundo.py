@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/logica_mundo.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo.py
 
 
 from __future__ import annotations
@@ -16,7 +16,9 @@ from numpy import uint64
 
 from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_cesped import Suelo_Cesped
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
+from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
+from Core.Entities.entity import Modos
 from Services.Elemento.cache_audio import CacheAudio
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
@@ -287,7 +289,7 @@ class LogicaMundo:
         if elemento is None:
             logger.warning("_id_a_slot_bytes: elemento %s no encontrado.", eid)
             return b""
-        return json.dumps(elemento.serializar(modo="transporte")).encode()
+        return json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
 
     def _cell_a_celda(self, cell) -> Celda:
         return Celda(
@@ -697,6 +699,8 @@ class LogicaMundo:
 
         elementos = []
         suelo_resultado = []
+        atmosfera = [] # TODO: representar sistema atmosferico
+
         async with self._lock:
             for (x, y), celda in self._gold_cells.items():
                 if not (x0 <= x < x1 and y0 <= y < y1):
@@ -715,49 +719,55 @@ class LogicaMundo:
                 # bot/resto: igual que antes, solo que ya sin celda.suelo
                 # mezclado en la misma lista de ids.
                 for eid in (celda.bot, *celda.resto):
-                    elemento = self._elements.get(eid)
+                    elemento: Elemento = self._elements.get(eid)
                     if elemento is None:
                         continue
                     if tipos is not None and type(elemento).__name__ not in tipos:
                         continue
 
-                    campos = elemento.representacion(modo, incluir)
+                    campos = elemento.representacion(incluir)
 
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
 
                     elementos.append({**campos})
 
-            # SQ_MIN = (0, 0)  # <-- esquina inferior-izquierda real del cuadrado
-            # SQ_MAX = (100, 100)  # <-- exclusivo, igual que x1/y1 (SQ_MIN + tamaño)
-
-            # ix0, iy0 = max(x0, SQ_MIN[0]), max(y0, SQ_MIN[1])
-            # ix1, iy1 = min(x1, SQ_MAX[0]), min(y1, SQ_MAX[1])
-            # esperado = {(x, y) for x in range(ix0, ix1) for y in range(iy0, iy1)}
-            # servido = {
-            #     (c["elemento"]["casilla"]["x"], c["elemento"]["casilla"]["y"])
-            #     for c in suelo_resultado
-            #     if SQ_MIN[0] <= c["elemento"]["casilla"]["x"] < SQ_MAX[0]
-            #     and SQ_MIN[1] <= c["elemento"]["casilla"]["y"] < SQ_MAX[1]
-            # }
-            # faltantes = esperado - servido
-            # logger.warning(
-            #     "[DEBUG-FOCO] cuadrado: foco=[%s,%s) esperado=%d servido=%d faltantes=%d %s",
-            #     (x0, y0),
-            #     (x1, y1),
-            #     len(esperado),
-            #     len(servido),
-            #     len(faltantes),
-            #     sorted(faltantes)[:20],  # primeras 20 para no inundar el log
-            # )
-
             return json.dumps(
                 {
                     "modo": modo,
                     "elementos": elementos,
                     "suelo": suelo_resultado,
+                    "atmosfera": atmosfera,
                 }
             ).encode()
+
+    async def obtener_elemento(
+        self,
+        element_id: uint64,
+        tipo_datos: str = "representacion",
+        incluir: list[str] | None = None,
+    ) -> tuple[bool, str, bytes]:
+
+        async with self._lock:
+            elemento = self._elements.get(element_id)
+            if elemento is None:
+                return False, f"Elemento {element_id} no encontrado.", b""
+
+            if tipo_datos == "serializacion":
+                datos = elemento.serializar(modo=Modos.guardado)
+            elif tipo_datos == "representacion":
+                datos = elemento.representacion(
+                    modo=Modos.transporte, incluir=incluir or []
+                )
+            else:
+                return (
+                    False,
+                    f"tipo_datos desconocido: '{tipo_datos}' "
+                    "(usa 'representacion' o 'serializacion').",
+                    b"",
+                )
+
+        return True, "", json.dumps(datos, ensure_ascii=False).encode()
 
     async def save_snapshot(self, snapshot_id: str) -> None:
         self.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -777,7 +787,7 @@ class LogicaMundo:
                     for (x, y), celda in self._gold_cells.items()
                 },
                 "elements": {
-                    str(eid): elemento.serializar(modo="guardado")
+                    str(eid): elemento.serializar(modo=Modos.guardado)
                     for eid, elemento in self._elements.items()
                 },
                 "bot_positions": {

@@ -52,7 +52,7 @@ class Sonoro(Informativo):
         Contraparte de serialize_sonidos(): reconstruye Sonido reales a
         partir del dict de audio completo, para que todos_los_sonidos() siga
         devolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
-        reconstruir un elemento (ver piedra.py, bug detectado). NO llama a 
+        reconstruir un elemento (ver piedra.py, bug detectado). NO llama a
         guardar_en_biblioteca() aquí.
         """
         self.sonidos = {
@@ -96,3 +96,13 @@ Métodos:
 \treconstruir un elemento (ver piedra.py, bug detectado). NO llama a 
 \tguardar_en_biblioteca() aquí.
         """
+
+    def representar_sonoro(self) -> list[str]:
+        """
+        Informacion pasada a Unity para representar el Elemento
+        """
+
+        representacion = {
+            "sonoro": self.serialize_sonidos_representacion(),
+        }
+        return representacion

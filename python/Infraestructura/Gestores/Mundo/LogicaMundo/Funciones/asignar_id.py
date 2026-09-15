@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/asignar_id.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/asignar_id.py
 """
 asignar_id.py — Implementación del RPC AsignarId.
 """

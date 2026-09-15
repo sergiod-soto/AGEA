@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Logica_Mundo/Funciones/spawn_global_event.py
+# Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/spawn_global_event.py
 """
 spawn_global_event.py — Implementación del RPC SpawnGlobalEvent.
 """
