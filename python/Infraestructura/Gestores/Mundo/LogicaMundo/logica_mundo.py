@@ -1,25 +1,23 @@
 # Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo.py
 
-
 from __future__ import annotations
 
 import asyncio
 import datetime
 import json
 import logging
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 from numpy import uint64
 
-from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_cesped import Suelo_Cesped
-from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
+from Core.Entities.Mundo.mundo import Mundo
+from Core.Entities.Mundo.Celda.celda import Celda
+from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
 from Core.Entities.entity import Modos
-from Services.Elemento.cache_audio import CacheAudio
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -31,16 +29,8 @@ from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
 )
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 import Config.settings as config
-from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo import Suelo
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class Celda:
-    suelo: Optional[uint64] = None
-    bot: Optional[uint64] = None
-    resto: list[uint64] = field(default_factory=list)
 
 
 @dataclass
@@ -53,16 +43,13 @@ class GlobalEvent:
 
 class ElementoGlobal:
     def tick(self, tick_id: int) -> dict:
-        """TODO: tick()"""
         raise NotImplementedError
 
     def to_snapshot(self) -> dict:
-        """TODO: to_snapshot()"""
         raise NotImplementedError
 
     @classmethod
     def from_snapshot(cls, data: dict) -> "ElementoGlobal":
-        """TODO: from_snapshot()"""
         raise NotImplementedError
 
 
@@ -72,12 +59,17 @@ class LogicaMundo:
         self,
         gestor_bots_client: "GestorBotsClientAsync | None" = None,
         poblar_suelo: bool = False,
+        mundo: "Mundo | None" = None,
     ):
         self.SNAPSHOT_DIR = Path(config.SNAPSHOT_DIR)
 
-        self._gold_cells: dict[tuple[int, int], Celda] = {}
-        self._elements: dict[uint64, Any] = {}
-        self._bot_positions: dict[str, tuple[int, int]] = {}
+        # Todo el estado espacial (celdas de terreno, celdas de atmósfera,
+        # elementos por id, posiciones, y la traducción bot_id -> id_elemento)
+        # vive en Mundo -- síncrono, sin lock propio. LogicaMundo se queda con
+        # lo que no es "grid": el lock async, el contador de ids, snapshots,
+        # sonido, eventos globales y ciclo de vida de bots.
+        self.mundo: Mundo = mundo or Mundo()
+
         self._id_counter: uint64 = uint64(0)
 
         self._active_events: dict[str, GlobalEvent] = {}
@@ -97,25 +89,18 @@ class LogicaMundo:
 
     @staticmethod
     def _bot_id_de(elemento: Any) -> Optional[int]:
-        """
-        Extrae el bot_id (stat 'id', ver Bot.__init__ / serialize_all) de un
-        elemento ya reconstruido. Devuelve None solo en el caso legítimo:
-        el elemento no es un Bot o no tiene ese stat.
-
-        FIX: la versión anterior usaba "except Exception: return None",
-        que se tragaba cualquier error real (p.ej. el AttributeError que
-        salía de _stats sin inicializar antes de que Tiene_Stats tuviera
-        deserialize_stats) y lo disfrazaba de "no es un bot". Ahora se
-        comprueba explícitamente con tiene_stat(), que ya existe para
-        esto — así un fallo real sigue reventando en vez de esconderse.
-        """
+        """Extrae el bot_id (stat 'id') de un elemento ya reconstruido.
+        Devuelve None solo si el elemento no es un Bot o no tiene ese stat --
+        se comprueba explícitamente con tiene_stat() para que un fallo real
+        (p.ej. stats sin inicializar) siga reventando en vez de esconderse
+        detrás de un "no es un bot"."""
         if not hasattr(elemento, "tiene_stat") or not elemento.tiene_stat("id"):
             return None
         return int(elemento.get_stat("id"))
 
+    # ---- Aplicación de deltas de Sector ----
+
     async def aplicar_delta_sector(self, mutaciones: list[Mutacion]) -> None:
-        """Aplica, en orden y bajo un único lock, todas las mutaciones que un
-        Sector devolvió en su TickDelta."""
         async with self._lock:
             for m in mutaciones:
                 if isinstance(m, CrearElemento):
@@ -130,146 +115,66 @@ class LogicaMundo:
                     )
 
     def _aplicar_crear_sin_lock(self, m: CrearElemento) -> None:
-        """Asigna id real (reutilizando el mismo contador que asignar_id) y
-        registra el elemento nuevo. Solo debe llamarse ya dentro de self._lock."""
+        """Solo debe llamarse ya dentro de self._lock."""
         self._id_counter += 1
         eid = self._id_counter
-        m.elemento.id_elemento = eid  # el objeto llega sin id — se le asigna aquí
-        self._elements[eid] = m.elemento
+        m.elemento.id_elemento = eid  # el objeto llega sin id -- se asigna aquí
         self._registrar_sonidos_de(m.elemento)
 
-        celda = self._gold_cells.setdefault(m.pos, Celda())
-        if m.tipo_slot == "suelo":
-            celda.suelo = eid
-        elif m.tipo_slot == "bot":
-            celda.bot = eid
-            # FIX: bot_id, no eid (ver _bot_id_de).
+        bot_id = None
+        if m.tipo_slot == "bot":
             bot_id = self._bot_id_de(m.elemento)
-            if bot_id is not None:
-                self._bot_positions[bot_id] = m.pos
-            else:
+            if bot_id is None:
                 logger.warning(
                     "aplicar_delta_sector: elemento bot en %s sin bot_id "
-                    "extraíble — no se indexa en _bot_positions.",
+                    "extraíble -- no se indexa por bot_id.",
                     m.pos,
                 )
-        else:
-            celda.resto.append(eid)
 
+        self.mundo.crear_elemento(eid, m.pos, m.tipo_slot, m.elemento, bot_id=bot_id)
         logger.debug(
-            "Elemento %s creado en %s (marcador_local=%s)",
-            eid,
-            m.pos,
-            m.marcador_local,
+            "Elemento %s creado en %s (marcador_local=%s)", eid, m.pos, m.marcador_local
         )
 
     def _aplicar_eliminar_sin_lock(self, m: EliminarElemento) -> None:
         """Solo debe llamarse ya dentro de self._lock."""
-        celda = self._gold_cells.get(m.pos)
-        if celda is None:
+        elemento = self.mundo.obtener_elemento(m.id_elemento)
+        if elemento is None:
             logger.warning(
-                "aplicar_delta_sector: no hay celda en %s para eliminar %s",
-                m.pos,
+                "aplicar_delta_sector: elemento %s no encontrado para eliminar en %s",
                 m.id_elemento,
+                m.pos,
             )
             return
 
-        elemento = self._elements.get(m.id_elemento)
-        if elemento is not None:
-            try:
-                self._liberar_sonidos_de(elemento)
-            except Exception as exc:
-                raise ValueError(f"Error eliminando sonidos de {elemento}") from exc
+        try:
+            self._liberar_sonidos_de(elemento)
+        except Exception as exc:
+            raise ValueError(f"Error eliminando sonidos de {elemento}") from exc
 
-        if celda.suelo == m.id_elemento:
-            celda.suelo = None
-        elif celda.bot == m.id_elemento:
-            celda.bot = None
-            # FIX: hay que resolver el bot_id ANTES de hacer pop en
-            # self._elements más abajo, o ya no habría forma de recuperar
-            # el objeto para extraer su stat "id".
-            elemento = self._elements.get(m.id_elemento)
-            bot_id = self._bot_id_de(elemento) if elemento is not None else None
-            if bot_id is not None:
-                self._bot_positions.pop(bot_id, None)
-        elif m.id_elemento in celda.resto:
-            celda.resto.remove(m.id_elemento)
-        else:
+        # bot_id se resuelve ANTES de eliminar, a partir del objeto que aún
+        # tenemos -- después de eliminar ya no habría forma de recuperarlo.
+        bot_id = self._bot_id_de(elemento)
+        if not self.mundo.eliminar_elemento(m.id_elemento, bot_id=bot_id):
             logger.warning(
                 "aplicar_delta_sector: elemento %s no encontrado en %s",
                 m.id_elemento,
                 m.pos,
             )
-            return
-
-        self._elements.pop(m.id_elemento, None)
-        if celda.suelo is None and celda.bot is None and not celda.resto:
-            self._gold_cells.pop(m.pos, None)
 
     def _aplicar_mover_sin_lock(self, m: MoverElemento) -> None:
-        """Mueve un elemento de pos_origen a pos_destino, conservando su id.
-        pos_destino puede caer en la región de otro sector: aquí no importa,
-        porque _gold_cells es único y global — la noción de "a qué sector
-        pertenece" solo existe al construir el siguiente delta de ENTRADA
-        (obtener_celdas_en_región ya filtra por región). Solo debe llamarse
-        ya dentro de self._lock."""
-        celda_origen = self._gold_cells.get(m.pos_origen)
-        if celda_origen is None:
-            logger.warning(
-                "aplicar_delta_sector: no hay celda en %s para mover %s",
-                m.pos_origen,
-                m.id_elemento,
-            )
-            return
-
-        tipo_slot = None
-        if celda_origen.suelo == m.id_elemento:
-            celda_origen.suelo = None
-            tipo_slot = "suelo"
-        elif celda_origen.bot == m.id_elemento:
-            celda_origen.bot = None
-            tipo_slot = "bot"
-        elif m.id_elemento in celda_origen.resto:
-            celda_origen.resto.remove(m.id_elemento)
-            tipo_slot = "resto"
-        else:
+        """Solo debe llamarse ya dentro de self._lock."""
+        if not self.mundo.mover_elemento(m.id_elemento, m.pos_destino):
             logger.warning(
                 "aplicar_delta_sector: elemento %s no encontrado en %s",
                 m.id_elemento,
                 m.pos_origen,
             )
-            return
-
-        if (
-            celda_origen.suelo is None
-            and celda_origen.bot is None
-            and not celda_origen.resto
-        ):
-            self._gold_cells.pop(m.pos_origen, None)
-
-        celda_destino = self._gold_cells.setdefault(m.pos_destino, Celda())
-        if tipo_slot == "suelo":
-            celda_destino.suelo = m.id_elemento
-        elif tipo_slot == "bot":
-            celda_destino.bot = m.id_elemento
-            # FIX: bot_id, no id_elemento — se resuelve a partir del objeto
-            # ya guardado en self._elements (todavía no se ha tocado aquí).
-            elemento = self._elements.get(m.id_elemento)
-            bot_id = self._bot_id_de(elemento) if elemento is not None else None
-            if bot_id is not None:
-                self._bot_positions[bot_id] = m.pos_destino
-        else:
-            celda_destino.resto.append(m.id_elemento)
 
     # ---- Traducción Cell (proto) <-> Celda (interno) ----
 
     def _slot_bytes_a_id(self, blob: bytes) -> Optional[uint64]:
-        # FIX: un blob vacío significa "slot desocupado" (ver comentario en
-        # common.proto: "vacío si no hay elemento en este slot"), no un
-        # error — antes se lanzaba ValueError aquí, lo cual contradecía el
-        # propio _cell_a_celda, que ya filtraba resto con "if eid is not
-        # None" dando por hecho (incorrectamente, hasta este fix) que este
-        # método podía devolver None.
+        # Blob vacío = "slot desocupado" (ver common.proto), no un error.
         if not blob:
             return None
         data = json.loads(blob.decode())
@@ -279,13 +184,13 @@ class LogicaMundo:
             raise ValueError(
                 f"Elemento deserializado sin 'id_elemento' (clase={data.get('__clase__')!r})."
             )
-        self._elements[eid] = elemento
+        self.mundo.registrar_elemento_reconstruido(eid, elemento)
         return eid
 
     def _id_a_slot_bytes(self, eid: Optional[uint64]) -> bytes:
         if eid is None:
             return b""
-        elemento = self._elements.get(eid)
+        elemento = self.mundo.obtener_elemento(eid)
         if elemento is None:
             logger.warning("_id_a_slot_bytes: elemento %s no encontrado.", eid)
             return b""
@@ -336,26 +241,20 @@ class LogicaMundo:
             if eid is None:
                 return False, "El elemento no tiene 'id' asignado."
 
-            self._registrar_sonidos_de(self._elements[eid])
+            elemento = self.mundo.obtener_elemento(eid)
+            self._registrar_sonidos_de(elemento)
 
-            celda = self._gold_cells.setdefault(pos, Celda())
-            if type_id == "suelo":
-                celda.suelo = eid
-            elif type_id == "bot":
-                celda.bot = eid
-                elemento = self._elements.get(eid)
-                bot_id = self._bot_id_de(elemento) if elemento is not None else None
-                if bot_id is not None:
-                    self._bot_positions[bot_id] = pos
-                else:
+            bot_id = None
+            if type_id == "bot":
+                bot_id = self._bot_id_de(elemento)
+                if bot_id is None:
                     logger.warning(
-                        "crear_elemento: bot en %s sin bot_id extraíble — "
-                        "no se indexa en _bot_positions.",
+                        "crear_elemento: bot en %s sin bot_id extraíble -- "
+                        "no se indexa por bot_id.",
                         pos,
                     )
-            else:
-                celda.resto.append(eid)
 
+            self.mundo.crear_elemento(eid, pos, type_id, elemento, bot_id=bot_id)
             logger.debug("Elemento %s creado en %s (type_id=%s)", eid, pos, type_id)
             return True, ""
 
@@ -365,26 +264,17 @@ class LogicaMundo:
         nombre_clase: str,
         campos: dict,
     ) -> tuple[bool, str, Optional[uint64]]:
-        """
-        Crea un elemento NUEVO llamando a su __init__ real (ver
-        Core.Entities.Elementos.registry.construir_elemento) -- a diferencia
-        de crear_elemento(), que reensambla un elemento ya construido en
-        otro proceso (reubicación entre sectores), esto es para cuando algo
-        (la consola, una acción del mundo) decide que un elemento empieza a
-        existir ahora mismo. El id se asigna aquí, no lo trae 'campos'.
-        """
+        """Crea un elemento NUEVO llamando a su __init__ real.
+
+        FIX respecto al original: si el elemento construido es un bot,
+        ahora SÍ se indexa su bot_id (antes no se hacía, dejando ese bot
+        invisible para eliminar_avatar_bot/matar_bot/resolver_accion)."""
         from Core.Entities.Elementos.registry import construir_elemento
 
         async with self._lock:
             self._id_counter += 1
             eid = self._id_counter
 
-            # JSON no tiene tuplas: cualquier lista que llegue en 'campos'
-            # (casilla, rgb_base...) se asume tupla -- ninguno de los
-            # constructores vistos hasta ahora espera una lista de verdad
-            # como parámetro. Si algún comportamiento futuro sí necesitara
-            # una lista real, esta conversión habría que exceptuarla para
-            # ese campo.
             campos_normalizados = {
                 k: tuple(v) if isinstance(v, list) else v for k, v in campos.items()
             }
@@ -396,18 +286,20 @@ class LogicaMundo:
             except (ValueError, TypeError) as exc:
                 return False, f"No se pudo construir '{nombre_clase}': {exc}", None
 
-            self._elements[eid] = elemento
             self._registrar_sonidos_de(elemento)
 
-            celda = self._gold_cells.setdefault(pos, Celda())
             tipo_slot = elemento.tipo_slot()
-            if tipo_slot == "suelo":
-                celda.suelo = eid
-            elif tipo_slot == "bot":
-                celda.bot = eid
-            else:
-                celda.resto.append(eid)
+            bot_id = None
+            if tipo_slot == "bot":
+                bot_id = self._bot_id_de(elemento)
+                if bot_id is None:
+                    logger.warning(
+                        "construir_elemento: bot en %s sin bot_id extraíble -- "
+                        "no se indexa por bot_id.",
+                        pos,
+                    )
 
+            self.mundo.crear_elemento(eid, pos, tipo_slot, elemento, bot_id=bot_id)
             logger.debug(
                 "Elemento %s (%s) construido en %s (slot=%s)",
                 eid,
@@ -421,68 +313,51 @@ class LogicaMundo:
         self, pos: tuple[int, int], element_id: uint64, patch: dict
     ) -> tuple[bool, str]:
         async with self._lock:
-            celda = self._gold_cells.get(pos)
-            if celda is None:
-                return False, f"No hay celda en {pos}."
-
-            # Comprueba en los tres slots posibles -- antes solo miraba
-            # suelo/bot, dejando 'resto' sin poder modificarse nunca.
-            if element_id not in (celda.suelo, celda.bot, *celda.resto):
+            if not self.mundo.contiene(pos, element_id):
                 return False, f"Elemento {element_id} no encontrado en {pos}."
 
-            elemento = self._elements.get(element_id)
+            elemento = self.mundo.obtener_elemento(element_id)
             if elemento is None:
-                return False, f"Elemento {element_id} no encontrado en _elements."
+                return False, f"Elemento {element_id} no encontrado en el registro."
 
             elemento.aplicar_patch(patch)
             return True, ""
+
+    def _eliminar_elemento_sin_lock(
+        self, pos: tuple[int, int], element_id: uint64
+    ) -> tuple[bool, str]:
+        """Cuerpo real de eliminar_elemento, factorizado para poder llamarlo
+        también desde eliminar_avatar_bot bajo el MISMO lock -- así se evita
+        la race condition del original, donde resolver bot_id->pos y borrar
+        eran dos secciones de lock separadas y otra corrutina podía mover o
+        eliminar el elemento justo entre medias."""
+        if not self.mundo.contiene(pos, element_id):
+            return False, f"Elemento {element_id} no encontrado en {pos}."
+
+        elemento = self.mundo.obtener_elemento(element_id)
+        if elemento is not None:
+            self._liberar_sonidos_de(elemento)
+
+        bot_id = self._bot_id_de(elemento) if elemento is not None else None
+        self.mundo.eliminar_elemento(element_id, bot_id=bot_id)
+        return True, ""
 
     async def eliminar_elemento(
         self, pos: tuple[int, int], element_id: uint64
     ) -> tuple[bool, str]:
         async with self._lock:
-            celda = self._gold_cells.get(pos)
-            if celda is None:
-                return False, f"No hay celda en {pos}."
-
-            elemento = self._elements.get(element_id)
-            if elemento is not None:
-                self._liberar_sonidos_de(elemento)
-
-            if celda.suelo == element_id:
-                celda.suelo = None
-            elif celda.bot == element_id:
-                celda.bot = None
-                elemento = self._elements.get(element_id)
-                bot_id = self._bot_id_de(elemento) if elemento is not None else None
-                if bot_id is not None:
-                    self._bot_positions.pop(bot_id, None)
-            elif element_id in celda.resto:
-                celda.resto.remove(element_id)
-            else:
-                return False, f"Elemento {element_id} no encontrado en {pos}."
-
-            self._elements.pop(element_id, None)
-
-            if celda.suelo is None and celda.bot is None and not celda.resto:
-                self._gold_cells.pop(pos, None)
-
-            return True, ""
+            return self._eliminar_elemento_sin_lock(pos, element_id)
 
     async def eliminar_avatar_bot(self, bot_id: int) -> tuple[bool, str]:
-
         bot_id = int(bot_id)
-        pos = self._bot_positions.get(bot_id)
-        if pos is None:
-            return False, f"Bot {bot_id!r} no encontrado en bot_positions."
-
         async with self._lock:
-            celda = self._gold_cells.get(pos)
-            if celda is None or celda.bot is None:
-                return False, f"No hay avatar de bot en {pos}."
-            element_id = celda.bot
-
-        return await self.eliminar_elemento(pos, element_id)
+            eid = self.mundo.id_elemento_de_bot(bot_id)
+            if eid is None:
+                return False, f"Bot {bot_id!r} no encontrado."
+            pos = self.mundo.obtener_posicion(eid)
+            if pos is None:
+                return False, f"Bot {bot_id!r} sin posición registrada."
+            return self._eliminar_elemento_sin_lock(pos, eid)
 
     async def matar_bot(
         self, bot_id: int, cause: str, tick_id: int
@@ -496,7 +371,8 @@ class LogicaMundo:
 
         if self._gestor_bots_client is None:
             logger.warning(
-                "matar_bot: sin gestor_bots_client configurado — el script del bot %s no será terminado.",
+                "matar_bot: sin gestor_bots_client configurado -- el script "
+                "del bot %s no será terminado.",
                 bot_id,
             )
             return True, ""
@@ -512,21 +388,9 @@ class LogicaMundo:
         logger.info("Bot %s eliminado (causa=%s, tick=%d).", bot_id, cause, tick_id)
         return True, ""
 
-    # ---- Sonido ------------
+    # ---- Sonido ----
 
     async def obtener_audio(self, id_sonido: str) -> tuple[bool, str, bytes]:
-        """
-        Sirve el audio completo de un id_sonido ya registrado en el
-        CacheAudio de este proceso -- lo pide Unity cuando recibe una
-        referencia (id/duracion/vol) en consultar_representacion y no tiene
-        ese id cacheado en su lado.
-
-        No usa self._lock: CacheAudio no forma parte del estado mutado por
-        aplicar_delta_sector/crear_elemento/etc. (no hay sectores ni
-        posiciones involucradas), así que no hay condición de carrera que
-        proteger aquí -- registrar() solo añade entradas nuevas, nunca las
-        modifica ni las borra.
-        """
         if not self._cache_audio.tiene(id_sonido):
             return (
                 False,
@@ -565,22 +429,27 @@ class LogicaMundo:
 
         fn = entrada.get("funcion")
         if fn is None:
-            logger.warning(
-                "resolver_accion: acción '%s' no tiene funcion (bot %s)",
-                action_type,
-                bot_id,
-            )
             return ActionResult(
                 ok=False,
                 error=f"Acción '{action_type}' no ejecutable por Logica_Mundo.",
             )
 
+        # TODO(rendimiento): con miles de bots, reconstruir bot_positions
+        # ENTERO en cada acción de un solo bot es O(n_bots) desperdiciado
+        # por llamada. Pendiente de ver api_acciones.py para saber si
+        # ACCIONES realmente necesita el dict completo o solo la posición
+        # del bot que actúa -- si es lo segundo, esto se sustituye por un
+        # simple self.mundo.obtener_posicion(eid) bajo demanda.
         ctx = AccionContext(
             bot_id=bot_id,
             payload=payload,
-            gold_cells=self._gold_cells,
-            elements=self._elements,
-            bot_positions=self._bot_positions,
+            gold_cells=self.mundo.malla_terreno,
+            elements=self.mundo.elementos,
+            bot_positions={
+                bid: self.mundo.ids[eid]
+                for bid, eid in self.mundo.bots.items()
+                if eid in self.mundo.ids
+            },
         )
 
         try:
@@ -623,12 +492,12 @@ class LogicaMundo:
         async with self._lock:
             return list(self._active_events.values())
 
-        # ---- Elementos globales (ciclo día/noche, lunar, clima...) ----
+    # ---- Elementos globales ----
 
     async def avanzar_elementos_globales(self, tick_id: int) -> dict:
         cambios: dict = {}
         async with self._lock:
-            self._tick_actual = tick_id  # NUEVO: se guarda para que Vista_Foco pueda detectar "tick nuevo"
+            self._tick_actual = tick_id
             for elem in self._elementos_globales.values():
                 cambios.update(elem.tick(tick_id))
         return cambios
@@ -638,18 +507,69 @@ class LogicaMundo:
             return self._tick_actual
 
     async def get_elementos_globales(self) -> dict[str, dict]:
-        """
-        Devuelve un snapshot serializable (nombre → dict) de todos los
-        elementos globales. Sustituye a GestorMundo.GetGlobalState
-        (retirado, ver decisión "elementos_globales: B") — ahora vive
-        aquí porque el estado de estos elementos siempre vivió en
-        Logica_Mundo, no en Gestor_Mundo.
-        """
         async with self._lock:
             return {
                 nombre: elem.to_snapshot()
                 for nombre, elem in self._elementos_globales.items()
             }
+
+    # ---- Atmósfera (una sola definición de cada método -- el original
+    # tenía crear_atmosfera/obtener_atmosfera/actualizar_atmosfera
+    # duplicados literalmente dos veces; era código muerto inofensivo
+    # pero confuso, se elimina la copia) ----
+
+    async def crear_atmosfera(
+        self,
+        pos_atmosfera: tuple[int, int],
+        resistencia_viento: float,
+        direccion_preferente_viento: Any,
+        fuerza_viento: Any,
+        bioma: Any,
+    ) -> tuple[bool, str]:
+        async with self._lock:
+            if self.mundo.obtener_atmosfera(pos_atmosfera) is not None:
+                logger.warning(
+                    "crear_atmosfera: ya existía una celda en %s -- se sobrescribe.",
+                    pos_atmosfera,
+                )
+            self.mundo.crear_atmosfera(
+                pos_atmosfera,
+                resistencia_viento,
+                direccion_preferente_viento,
+                fuerza_viento,
+                bioma,
+            )
+            return True, ""
+
+    async def obtener_atmosfera(
+        self, pos_suelo: tuple[int, int]
+    ) -> tuple[bool, str, Optional[Celda_Atmosfera]]:
+        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos_suelo)
+        async with self._lock:
+            celda = self.mundo.obtener_atmosfera(pos_atmosfera)
+            if celda is None:
+                return (
+                    False,
+                    f"No hay celda de atmósfera para {pos_suelo} (bloque {pos_atmosfera}).",
+                    None,
+                )
+            return True, "", celda
+
+    async def actualizar_atmosfera(
+        self, pos_suelo: tuple[int, int], patch: dict
+    ) -> tuple[bool, str]:
+        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos_suelo)
+        async with self._lock:
+            celda = self.mundo.obtener_atmosfera(pos_atmosfera)
+            if celda is None:
+                return (
+                    False,
+                    f"No hay celda de atmósfera para {pos_suelo} (bloque {pos_atmosfera}).",
+                )
+            celda.aplicar_patch(patch)
+            return True, ""
+
+    # ---- Región / representación ----
 
     async def obtener_celdas_en_region(
         self,
@@ -658,33 +578,20 @@ class LogicaMundo:
         excluir_min: Optional[tuple[int, int]] = None,
         excluir_max: Optional[tuple[int, int]] = None,
     ) -> list:
-        x0, y0 = min_pos
-        x1, y1 = max_pos
-
-        tiene_exclusion = excluir_min is not None and excluir_max is not None
-        if tiene_exclusion:
-            ex0, ey0 = excluir_min  # type: ignore
-            ex1, ey1 = excluir_max  # type: ignore
-
         async with self._lock:
-            resultado = []
-            for (x, y), celda in self._gold_cells.items():
-                if not (x0 <= x < x1 and y0 <= y < y1):
-                    continue
-                if tiene_exclusion and (ex0 <= x < ex1 and ey0 <= y < ey1):
-                    continue
-                resultado.append(self._celda_a_cell((x, y), celda))
-            return resultado
+            return [
+                self._celda_a_cell(pos, celda)
+                for pos, celda in self.mundo.celdas_en_region(
+                    min_pos, max_pos, excluir_min, excluir_max
+                )
+            ]
 
     async def actualizar_celdas(self, changed_cells: list) -> None:
         async with self._lock:
             for cell in changed_cells:
                 pos = (cell.pos.x, cell.pos.y)
                 celda = self._cell_a_celda(cell)
-                if celda.suelo is None and celda.bot is None and not celda.resto:
-                    self._gold_cells.pop(pos, None)
-                else:
-                    self._gold_cells[pos] = celda
+                self.mundo.actualizar_celda(pos, celda)
 
     async def consultar_representacion(
         self,
@@ -692,44 +599,38 @@ class LogicaMundo:
         max_pos: tuple[int, int],
         incluir: list[str],
         modo: str,
-        tipos: list[str] | None = None,  # None = sin filtro de tipo
+        tipos: list[str] | None = None,
     ) -> bytes:
         x0, y0 = min_pos
         x1, y1 = max_pos
 
         elementos = []
         suelo_resultado = []
-        atmosfera = [] # TODO: representar sistema atmosferico
+        atmosfera = []  # TODO: representar sistema atmosferico
 
         async with self._lock:
-            for (x, y), celda in self._gold_cells.items():
+            for (x, y), celda in self.mundo.malla_terreno.items():
                 if not (x0 <= x < x1 and y0 <= y < y1):
                     continue
 
                 if celda.suelo is not None:
-                    suelo_elemento = self._elements.get(celda.suelo)
+                    suelo_elemento = self.mundo.obtener_elemento(celda.suelo)
                     if suelo_elemento is not None and (
                         tipos is None or type(suelo_elemento).__name__ in tipos
                     ):
                         campos = suelo_elemento.representacion(modo, incluir)
-
                         if campos.get("elemento") or campos.get("comportamientos"):
                             suelo_resultado.append({**campos})
 
-                # bot/resto: igual que antes, solo que ya sin celda.suelo
-                # mezclado en la misma lista de ids.
                 for eid in (celda.bot, *celda.resto):
-                    elemento: Elemento = self._elements.get(eid)
+                    elemento: Elemento = self.mundo.obtener_elemento(eid)
                     if elemento is None:
                         continue
                     if tipos is not None and type(elemento).__name__ not in tipos:
                         continue
-
                     campos = elemento.representacion(incluir)
-
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
-
                     elementos.append({**campos})
 
             return json.dumps(
@@ -747,9 +648,8 @@ class LogicaMundo:
         tipo_datos: str = "representacion",
         incluir: list[str] | None = None,
     ) -> tuple[bool, str, bytes]:
-
         async with self._lock:
-            elemento = self._elements.get(element_id)
+            elemento = self.mundo.obtener_elemento(element_id)
             if elemento is None:
                 return False, f"Elemento {element_id} no encontrado.", b""
 
@@ -769,6 +669,8 @@ class LogicaMundo:
 
         return True, "", json.dumps(datos, ensure_ascii=False).encode()
 
+    # ---- Snapshots ----
+
     async def save_snapshot(self, snapshot_id: str) -> None:
         self.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
         path = self.SNAPSHOT_DIR / f"logica_mundo_{snapshot_id}.json"
@@ -784,14 +686,18 @@ class LogicaMundo:
                         "bot": int(celda.bot) if celda.bot is not None else None,
                         "resto": [int(eid) for eid in celda.resto],
                     }
-                    for (x, y), celda in self._gold_cells.items()
+                    for (x, y), celda in self.mundo.malla_terreno.items()
                 },
                 "elements": {
                     str(eid): elemento.serializar(modo=Modos.guardado)
-                    for eid, elemento in self._elements.items()
+                    for eid, elemento in self.mundo.elementos.items()
                 },
+                # Se deriva de ids+bots -- ya no existe un dict propio de
+                # posiciones de bot, ver decisión de mantener 2 dicts (A).
                 "bot_positions": {
-                    bid: list(pos) for bid, pos in self._bot_positions.items()
+                    bid: list(self.mundo.ids[eid])
+                    for bid, eid in self.mundo.bots.items()
+                    if eid in self.mundo.ids
                 },
                 "active_events": {
                     eid: {
@@ -809,16 +715,9 @@ class LogicaMundo:
 
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         logger.info("Snapshot de Logica_Mundo guardado: %s", path)
-
         self._purgar_snapshots_antiguos()
 
     def _purgar_snapshots_antiguos(self) -> None:
-        """
-        Mantiene como máximo SNAPSHOT_MAX ficheros en SNAPSHOT_DIR, borrando
-        los más antiguos por número de snapshot (no por fecha de disco, para
-        no depender de que el reloj/mtime sea fiable). Se llama tras cada
-        guardado — así el límite se aplica de forma incremental, sin picos.
-        """
         snapshots = sorted(
             self.SNAPSHOT_DIR.glob("logica_mundo_*.json"),
             key=lambda p: p.stem.removeprefix("logica_mundo_"),
@@ -837,24 +736,46 @@ class LogicaMundo:
         data = json.loads(path.read_text())
 
         async with self._lock:
+            # NOTA (pendiente, no crítico): esto asigna un int normal,
+            # rompiendo el invariante "siempre uint64" que se mantiene en
+            # el resto del ciclo de vida. No falla porque uint64 e int se
+            # comparan/hashean igual para el mismo valor, pero conviene
+            # normalizarlo si en algún momento se añade un isinstance().
             self._id_counter = data.get("id_counter", 0)
 
-            self._elements = {
+            self.mundo.elementos = {
                 int(eid): reconstruir_elemento(edata)
                 for eid, edata in data.get("elements", {}).items()
             }
 
-            self._gold_cells = {
+            self.mundo.malla_terreno = {
                 tuple(map(int, k.split(","))): Celda(
                     suelo=v["suelo"], bot=v["bot"], resto=v["resto"]
                 )
                 for k, v in data.get("gold_cells", {}).items()
             }
 
-            self._bot_positions = {
-                int(bid): tuple(pos)
-                for bid, pos in data.get("bot_positions", {}).items()
-            }
+            self.mundo.ids = {}
+            for pos, celda in self.mundo.malla_terreno.items():
+                for eid in (celda.suelo, celda.bot, *celda.resto):
+                    if eid is not None:
+                        self.mundo.ids[eid] = pos
+
+            self.mundo.bots = {}
+            for bid_str, pos in data.get("bot_positions", {}).items():
+                bid = int(bid_str)
+                pos_t = tuple(pos)
+                celda = self.mundo.malla_terreno.get(pos_t)
+                eid = celda.bot if celda is not None else None
+                if eid is not None:
+                    self.mundo.bots[bid] = eid
+                else:
+                    logger.warning(
+                        "load_state: bot %s en %s sin elemento 'bot' en esa "
+                        "celda -- no se restaura.",
+                        bid,
+                        pos_t,
+                    )
 
             self._active_events = {
                 eid: GlobalEvent(
@@ -874,28 +795,7 @@ class LogicaMundo:
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
 
     def _poblar_suelo(self) -> None:
-        # TODO: esto es un parche temporal para tener suelo. hay que hacer un
-        # generador de suelo en condiciones
-        """
-        Crea una instancia de Suelo por cada celda del grid, usando
-        Config.settings.ANCHO/ALTO (tamaño del mundo — el mismo en
-        local que en AWS, ver topologia.py). Se ejecuta síncronamente
-        dentro de __init__: no hace falta await ni self._lock porque
-        el objeto todavía no es accesible desde ningún otro sitio en
-        este punto (nadie más puede tener una referencia a self aún).
-
-        No usa asignar_id() (que sí es async y sí toma el lock) por el
-        mismo motivo — sería tomar un lock que no puede tener
-        contención posible todavía, solo overhead sin beneficio.
-        """
-        # for x in range(config.ANCHO):
-        #     for y in range(config.ALTO):
-        #         self._id_counter += 1
-        #         eid = self._id_counter
-        #         suelo = Suelo_Cesped(casilla=(x, y), id_elemento=eid)
-        #         self._elements[eid] = suelo
-        #         self._gold_cells[(x, y)] = Celda(suelo=eid)
-
+        # TODO: parche temporal. Falta un generador de suelo en condiciones.
         logger.info(
             "Suelo poblado: %d x %d celdas (%d elementos Suelo creados).",
             config.GRID_WIDTH,

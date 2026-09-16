@@ -49,6 +49,9 @@ MAX_VISION_DISTANCE = int(
 GRID_WIDTH = int(os.getenv("GRID_WIDTH", 100))
 GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 100))
 SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
+ATMOSFERA_ESCALA: int = int(os.getenv(
+    "ATMOSFERA_ESCALA", 2
+))  # tamaño relativo del grid atmosferico respecto al grid del suelo
 
 SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
 TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
@@ -78,7 +81,6 @@ SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_HOST = os.getenv("SECTOR_HOST", "localhost")
 SECTOR_PORT = int(os.getenv("SECTOR_PORT", 50100))
 SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
-
 
 
 # ── Consola ──────────────────────────────────────────────────────────────

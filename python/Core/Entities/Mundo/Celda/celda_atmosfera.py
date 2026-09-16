@@ -33,4 +33,17 @@ class Celda_Atmosfera:
             direccion_preferente_viento  # dirección preferente opcional
         )
         self.fuerza_viento = fuerza_viento  # fuerza artificial opcional
-        self.bioma = bioma
+        self.bioma = bioma  # referencia compartida -- varias celdas del
+        # mismo terreno apuntan al mismo objeto Bioma, no se duplica.
+
+    def aplicar_patch(self, patch: dict) -> None:
+        """
+        Actualiza atributos existentes por nombre (setattr) -- espejo de
+        Elemento.aplicar_patch, para que Logica_Mundo pueda tratar la
+        atmósfera igual que trata cualquier otro elemento modificable.
+        No valida el contenido del patch: quien lo llama es responsable
+        de mandar claves válidas (temperatura, humedad_absoluta,
+        presion, radiacion, viento...).
+        """
+        for nombre, valor in patch.items():
+            setattr(self, nombre, valor)

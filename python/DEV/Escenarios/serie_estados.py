@@ -18,7 +18,6 @@ from functools import partial
 
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Core.Entities.Mundo import datos
 from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
 
@@ -194,31 +193,44 @@ class Serie_Estados:
     #####################################################################
 
     # region   BOT
-    def Crear_Bot(self, id_elemento, id_bot, casilla):
-        # AVISO: a diferencia de Crear_Elemento, esto sigue escribiendo
-        # solo en datos.bots (local a este proceso) -- no llega a
-        # Logica_Mundo ni por tanto a Unity. Es el mismo problema que
-        # se identificó al principio de esta conversación; no se ha
-        # tocado porque no era el objetivo de este cambio, pero un bot
-        # creado así no será visible para el resto del sistema.
-        print("\t⚪ Serie_Estados.Crear_Bot")
-        bot = Bot(
-            id_elemento=id_elemento,
-            stats_script=None,
-            id_bot=id_bot,
-            tamanho=1,
-            casilla=casilla,
-            capa=1,
-            rotacion=0,
-        )
-        datos.bots[id_bot] = bot
-        return bot
+    async def Crear_Bot(
+        self,
+        id_bot,
+        casilla: tuple[int, int],
+        stats_script=None,
+        tamanho: int = 1,
+        capa: int = 1,
+        rotacion: int = 0,
+    ):
+        """
+        Crea un Bot real en Logica_Mundo (vía gRPC) -- reemplaza al viejo
+        Crear_Bot, que solo escribía en Core.Entities.Mundo.datos.bots
+        (local a este proceso, invisible para el resto del sistema).
 
-    def Crear_Bot_Basico(self, id_bot):
-        print("\t⚪ Serie_Estados.Creando bot basico. ID: [" + id_bot + "]")
-        return self.Crear_Bot(0, id_bot, (0, 0))
-        # (se quitó la asignación duplicada a datos.bots[id_bot]: ya la
-        # hace Crear_Bot, hacerla dos veces era ruido sin efecto)
+        Envoltorio fino sobre Crear_Elemento con type_id="bot" fijo, igual
+        que Crear_Suelo lo es con type_id="suelo": a nivel de Logica_Mundo
+        un Bot viaja por el mismo RPC CrearElemento, solo cambia a qué
+        slot de Celda se cuelga.
+
+        IMPORTANTE (sin confirmar todavía, pendiente de ver Bot.py): esto
+        asume que Bot.__init__ guarda id_bot de forma que, tras
+        serializar/deserializar, el elemento reconstruido responde
+        tiene_stat("id") == True y get_stat("id") == id_bot -- es de ahí
+        de donde LogicaMundo._bot_id_de() lo extrae para indexarlo en
+        mundo.bots. Si Bot no expone ese stat así, el bot se crea pero
+        queda invisible para eliminar_avatar_bot/matar_bot/resolver_accion,
+        igual que el bug que ya corregimos en construir_elemento.
+        """
+        return await self.Crear_Elemento(
+            Bot,
+            casilla,
+            type_id="bot",
+            id_bot=id_bot,
+            stats_script=stats_script,
+            tamanho=tamanho,
+            capa=capa,
+            rotacion=rotacion,
+        )
 
     # endregion
     #####################################################################
