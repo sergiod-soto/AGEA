@@ -7,7 +7,7 @@ from Core.Entities.Elementos.elemento import Elemento
 
 
 class Celda:
-    suelo: Suelo
+    suelo: uint64
     bot: uint64 | None
     contenido: list[uint64]
     inocupable: bool
@@ -15,6 +15,7 @@ class Celda:
     def __init__(self, suelo) -> None:
         self.suelo = suelo
         self.inocupable = False
+        self.contenido = []
 
     def put_elemento(self, elemento: Elemento) -> bool:
         if elemento.excluyente_en_celda:
