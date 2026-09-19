@@ -12,9 +12,9 @@ from typing import Any, Optional
 
 from numpy import uint64
 
+from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Mundo.mundo import Mundo
-from Core.Entities.Mundo.Celda.celda import Celda
-from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Mundo.Suelo.celda import Celda
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
 from Core.Entities.entity import Modos
@@ -569,6 +569,35 @@ class LogicaMundo:
             celda.aplicar_patch(patch)
             return True, ""
 
+    async def obtener_progreso_ciclos(self) -> tuple[float, float, float]:
+        """
+        Progreso (0.0-1.0) de los ciclos solar/lunar/anual, para que
+        Gestor_Mundo se lo mande a cada Sector (ver
+        Sector.set_ciclos_globales).
+
+        BLOQUEADO hasta que se resuelvan dos cosas fuera de este
+        fichero: (a) los 3 bugs de reloj.py (Reloj.ciclos debe arrancar
+        vacío; Mundo.reloj/ciclo_solar/ciclo_lunar deben ser instancias
+        Reloj()/Ciclo_Solar()/Ciclo_Lunar(), no las clases), y (b) que
+        Mundo.__init__ tenga una instancia real de Estacion
+        (self.estacion = Estacion()) -- hoy no existe. Con los bugs
+        activos, este método revienta al leer .ciclo de una clase en
+        vez de una instancia.
+        """
+        async with self._lock:
+            progreso_solar = (
+                self.mundo.ciclo_solar.ciclo.tick_actual
+                / self.mundo.ciclo_solar.ciclo._end
+            )
+            progreso_lunar = (
+                self.mundo.ciclo_lunar.ciclo.tick_actual
+                / self.mundo.ciclo_lunar.ciclo._end
+            )
+            progreso_anual = (
+                self.mundo.estacion.ciclo.tick_actual / self.mundo.estacion.ciclo._end
+            )
+            return progreso_solar, progreso_lunar, progreso_anual
+
     # ---- Región / representación ----
 
     async def obtener_celdas_en_region(
@@ -592,6 +621,107 @@ class LogicaMundo:
                 pos = (cell.pos.x, cell.pos.y)
                 celda = self._cell_a_celda(cell)
                 self.mundo.actualizar_celda(pos, celda)
+
+    def _celda_atmosfera_a_atmosphere_cell(self, pos: tuple[int, int], celda):
+        """Espejo de Sector.CeldaAtmosferaStore.to_proto_cells (ver
+        nota de duplicación) -- serializa una Celda_Atmosfera a
+        AtmosphereCell proto."""
+        from Infraestructura.Gestores.Transporte.Proto_Generated import (
+            common_pb2 as common_pb,
+        )
+
+        x, y = pos
+        bioma_bytes = (
+            json.dumps(celda.bioma.serializar()).encode()
+            if celda.bioma is not None
+            else b""
+        )
+        return common_pb.AtmosphereCell(  # type: ignore
+            pos=common_pb.Position(x=x, y=y),  # type: ignore
+            resistencia_viento=celda.resistencia_viento,
+            direccion_preferente_viento=common_pb.Vector2(  # type: ignore
+                x=celda.direccion_preferente_viento.x,
+                y=celda.direccion_preferente_viento.y,
+            ),
+            fuerza_viento=common_pb.Vector2(  # type: ignore
+                x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
+            ),
+            bioma=bioma_bytes,
+            radiacion=celda.radiacion,
+            temperatura=celda.temperatura.valor,
+            presion=celda.presion.valor,
+            viento_intensidad=celda.viento.intensidad,
+            viento_direccion=common_pb.Vector2(  # type: ignore
+                x=celda.viento.direccion.x, y=celda.viento.direccion.y
+            ),
+            humedad_absoluta=celda.humedad_absoluta.valor,
+            humedad_relativa=celda.humedad_relativa.valor,
+        )
+
+    def _atmosphere_cell_a_celda_atmosfera(self, cell):
+        """Espejo de Sector.CeldaAtmosferaStore.from_proto_cell (ver
+        nota de duplicación) -- reconstruye una Celda_Atmosfera a
+        partir de un AtmosphereCell proto."""
+        from vectors import Vector2
+
+        pos = (cell.pos.x, cell.pos.y)
+        bioma = (
+            reconstruir_elemento(json.loads(cell.bioma.decode()))
+            if cell.bioma
+            else None
+        )
+
+        celda = Celda_Atmosfera(
+            posicion=pos,
+            resistencia_viento=cell.resistencia_viento,
+            direccion_preferente_viento=Vector2(
+                cell.direccion_preferente_viento.x,
+                cell.direccion_preferente_viento.y,
+            ),
+            fuerza_viento=Vector2(cell.fuerza_viento.x, cell.fuerza_viento.y),
+            bioma=bioma,
+        )
+        celda.radiacion = cell.radiacion
+        celda.temperatura.valor = cell.temperatura
+        celda.presion.valor = cell.presion
+        celda.viento.intensidad = cell.viento_intensidad
+        celda.viento.direccion = Vector2(
+            cell.viento_direccion.x, cell.viento_direccion.y
+        )
+        celda.humedad_absoluta.valor = cell.humedad_absoluta
+        celda.humedad_relativa.valor = cell.humedad_relativa
+        return celda
+
+    async def obtener_celdas_atmosfera_en_region(
+        self,
+        min_pos: tuple[int, int],
+        max_pos: tuple[int, int],
+        excluir_min: Optional[tuple[int, int]] = None,
+        excluir_max: Optional[tuple[int, int]] = None,
+    ) -> list:
+        """Espejo de obtener_celdas_en_region, para atmósfera -- lo usa
+        Gestor_Mundo para construir el ghost-zone de atmósfera de cada
+        Sector."""
+        async with self._lock:
+            return [
+                self._celda_atmosfera_a_atmosphere_cell(pos, celda)
+                for pos, celda in self.mundo.celdas_atmosfera_en_region(
+                    min_pos, max_pos, excluir_min, excluir_max
+                )
+            ]
+
+    async def actualizar_celdas_atmosfera(self, changed_atmosphere_cells: list) -> None:
+        """Espejo de actualizar_celdas, para atmósfera -- a diferencia
+        de actualizar_celdas (que aplica mutaciones sobre terreno), aquí
+        se SOBREESCRIBE directamente cada celda con lo que el Sector
+        computó: la física de atmósfera corre entera dentro del Sector,
+        no hay mutaciones parciales que resolver aquí."""
+        async with self._lock:
+            for cell in changed_atmosphere_cells:
+                pos = (cell.pos.x, cell.pos.y)
+                self.mundo.malla_atmosfera[pos] = (
+                    self._atmosphere_cell_a_celda_atmosfera(cell)
+                )
 
     async def consultar_representacion(
         self,

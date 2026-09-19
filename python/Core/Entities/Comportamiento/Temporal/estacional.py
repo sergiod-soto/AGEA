@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.estacion import Estacion
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import Estacion
 
 
 class Estacional(Temporal):

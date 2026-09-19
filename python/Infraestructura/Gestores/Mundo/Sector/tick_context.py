@@ -40,7 +40,7 @@ class TickContext:
 
     def __init__(
         self,
-        celdas_inicio_tick,  # CeldaStore (o equivalente) — instantánea de este tick, no se modifica
+        celdas_inicio_tick,  # CeldaSectorStore (o equivalente) — instantánea de este tick, no se modifica
         ghost: dict,
         x0: int,
         y0: int,

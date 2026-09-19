@@ -16,9 +16,9 @@ import struct
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Logica_Mundo.Acciones.mirar import mirar
-from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import AccionContext
-from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import Celda
+from Infraestructura.Gestores.Mundo.LogicaMundo.Acciones.mirar import mirar
+from Infraestructura.Gestores.Mundo.LogicaMundo.api_acciones import AccionContext
+from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import Celda
 
 
 class FakeColor:

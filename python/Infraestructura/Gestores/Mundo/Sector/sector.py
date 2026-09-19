@@ -1,19 +1,22 @@
+# Infraestructura/Gestores/Mundo/Sector/sector.py
+
 """
-sector.py
----------
 Lógica principal de un sector del mundo.
 
 Responsabilidades:
   - Mantener el estado de las celdas de su región en memoria (objetos deserializados)
+  - Mantener el estado de las celdas de atmósfera de su región y
+    avanzar su tick (ver _avanzar_atmosfera)
   - Ejecutar el tick de computación (solo si ACTIVO)
-  - Gestionar ghost zones recibidas del Gestor_Mundo
+  - Gestionar ghost zones recibidas del Gestor_Mundo (terreno y atmósfera)
   - Procesar sonidos cross-border
   - Detectar y reportar migraciones de bots
   - Persistir su estado en S3 cuando recibe SaveSnapshot
 
-La serialización/deserialización de elementos está desacoplada en CeldaStore.
-Para cambiar la estrategia de almacenamiento, reimplementar CeldaStore sin
-tocar este fichero.
+La serialización/deserialización de elementos está desacoplada en
+CeldaSectorStore (terreno) y CeldaAtmosferaStore (atmósfera).
+Para cambiar la estrategia de almacenamiento, reimplementar esos
+stores sin tocar este fichero.
 
 Carpeta: Gestores/Mundo/Sector/
 
@@ -26,15 +29,28 @@ Variables de entorno:
   S3_BUCKET, S3_PREFIX          (para snapshots)
 """
 
+import json
 import logging
+import math
 import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
+from vectors import Vector2
 
-from Config.settings import S3_BUCKET, S3_PREFIX, SECTOR_COL, SECTOR_ROW, SECTOR_SIZE
+from Config.settings import (
+    ATMOSFERA_ESCALA,
+    S3_BUCKET,
+    S3_PREFIX,
+    SECTOR_COL,
+    SECTOR_ROW,
+    SECTOR_SIZE,
+)
 from Core.Entities.Elementos.registry import reconstruir_elemento
+from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
+from Infraestructura.Gestores.Mundo.Atmosfera import sistema_atmosferico
+from Infraestructura.Gestores.Mundo.Atmosfera.sistema_atmosferico import EstadoVecino
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -42,8 +58,6 @@ from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     Mutacion,
 )
 from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
-
-import json
 
 from Infraestructura.Gestores.Transporte.Proto_Generated import (
     common_pb2 as common_pb,
@@ -64,7 +78,7 @@ class SectorMode(Enum):
 
 
 # ─────────────────────────────────────────────
-#  CeldaStore
+#  CeldaSectorStore (terreno)
 # ─────────────────────────────────────────────
 
 
@@ -79,7 +93,7 @@ class CeldaSector:
     resto: list = field(default_factory=list)
 
 
-class CeldaStore:
+class CeldaSectorStore:
     """Almacén de celdas deserializadas del sector, reconstruido en cada
     LoadState a partir del delta de entrada — sin persistencia propia."""
 
@@ -87,14 +101,9 @@ class CeldaStore:
         self._celdas: dict[tuple[int, int], CeldaSector] = {}
 
     def __contains__(self, pos: tuple[int, int]) -> bool:
-        # Permite `(x, y) in celda_store`, usado tanto en tests como
-        # en cualquier código que quiera comprobar existencia de una
-        # celda sin pasar por .get() y comparar con None.
         return pos in self._celdas
 
     def __len__(self) -> int:
-        # Complementa __contains__: sin esto, len(celda_store) también
-        # fallaría de forma inconsistente si algún test/código lo usa.
         return len(self._celdas)
 
     def get(self, x: int, y: int) -> Optional[CeldaSector]:
@@ -167,9 +176,138 @@ class CeldaStore:
     def _deserializar_slot(blob: bytes):
         if not blob:
             return None
-        import json
-
         return reconstruir_elemento(json.loads(blob.decode()))
+
+
+# ─────────────────────────────────────────────
+#  CeldaAtmosferaStore (atmósfera)
+# ─────────────────────────────────────────────
+
+
+class CeldaAtmosferaStore:
+    """
+    Análogo de CeldaSectorStore pero para celdas de atmósfera. A
+    diferencia de CeldaSectorStore, aquí no hay slots (suelo/bot/resto):
+    una celda de atmósfera no es un contenedor de elementos, es un único
+    objeto con su propio estado (temperatura, presion, viento...). Cada
+    posición -- en espacio de atmósfera, no de terreno; ver
+    Mundo.pos_suelo_a_atmosfera -- mapea a UNA Celda_Atmosfera.
+
+    Reconstruido en cada LoadState a partir de lo que envíe Gestor_Mundo,
+    igual que CeldaSectorStore -- sin persistencia propia.
+    """
+
+    def __init__(self):
+        self._celdas: dict[tuple[int, int], Celda_Atmosfera] = {}
+
+    def __contains__(self, pos: tuple[int, int]) -> bool:
+        return pos in self._celdas
+
+    def __len__(self) -> int:
+        return len(self._celdas)
+
+    def get(self, x: int, y: int) -> Optional[Celda_Atmosfera]:
+        return self._celdas.get((x, y))
+
+    def set(self, x: int, y: int, celda: Celda_Atmosfera) -> None:
+        """No hay equivalente a get_or_create(): a diferencia de una
+        CeldaSector (que puede empezar vacía y rellenarse), una
+        Celda_Atmosfera siempre llega completa (con su bioma,
+        resistencia_viento...) desde quien la construya -- no tiene
+        sentido inventar una "a medias"."""
+        self._celdas[(x, y)] = celda
+
+    def items(self):
+        return self._celdas.items()
+
+    def from_proto_cell(self, cell) -> None:
+        """
+        Reconstruye una Celda_Atmosfera completa (terreno + estado
+        simulado) a partir de un AtmosphereCell proto, y la indexa por
+        posición.
+
+        A diferencia de CeldaSectorStore._deserializar_slot (que confía
+        en que el __init__ del elemento deje el estado correcto), aquí
+        se reconstruye "a mano": Celda_Atmosfera.__init__ crea sus
+        Sistema_Atmosferico con valores iniciales por defecto (20.0,
+        1000.0...) -- después de construirla hay que sobreescribir cada
+        .valor con lo que realmente venía en el proto, o se perdería el
+        estado real de la celda en cada LoadState.
+        """
+        pos = (cell.pos.x, cell.pos.y)
+
+        bioma = None
+        if cell.bioma:
+            bioma = reconstruir_elemento(json.loads(cell.bioma.decode()))
+        else:
+            logger.warning(
+                "CeldaAtmosferaStore.from_proto_cell: celda en %s sin "
+                "bioma -- esto no debería pasar (bioma es obligatorio "
+                "en Celda_Atmosfera.__init__).",
+                pos,
+            )
+
+        celda = Celda_Atmosfera(
+            posicion=pos,
+            resistencia_viento=cell.resistencia_viento,
+            direccion_preferente_viento=Vector2(
+                cell.direccion_preferente_viento.x,
+                cell.direccion_preferente_viento.y,
+            ),
+            fuerza_viento=Vector2(cell.fuerza_viento.x, cell.fuerza_viento.y),
+            bioma=bioma,
+        )
+
+        celda.radiacion = cell.radiacion
+        celda.temperatura.valor = cell.temperatura
+        celda.presion.valor = cell.presion
+        celda.viento.intensidad = cell.viento_intensidad
+        celda.viento.direccion = Vector2(
+            cell.viento_direccion.x, cell.viento_direccion.y
+        )
+        celda.humedad_absoluta.valor = cell.humedad_absoluta
+        celda.humedad_relativa.valor = cell.humedad_relativa
+
+        self._celdas[pos] = celda
+
+    def to_proto_cells(self) -> list:
+        """Serializa todas las celdas propias a AtmosphereCell proto,
+        volcando tanto terreno como estado simulado actual.
+
+        NOTA / asunción: asume bioma.serializar() sin argumentos, igual
+        que CeldaSectorStore._serializar_slot. Si Bioma necesita un
+        `modo=` explícito, ajustar solo esa línea."""
+        result = []
+        for (x, y), celda in self._celdas.items():
+            bioma_bytes = (
+                json.dumps(celda.bioma.serializar()).encode()
+                if celda.bioma is not None
+                else b""
+            )
+            result.append(
+                common_pb.AtmosphereCell(
+                    pos=common_pb.Position(x=x, y=y),
+                    resistencia_viento=celda.resistencia_viento,
+                    direccion_preferente_viento=common_pb.Vector2(
+                        x=celda.direccion_preferente_viento.x,
+                        y=celda.direccion_preferente_viento.y,
+                    ),
+                    fuerza_viento=common_pb.Vector2(
+                        x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
+                    ),
+                    bioma=bioma_bytes,
+                    radiacion=celda.radiacion,
+                    temperatura=celda.temperatura.valor,
+                    presion=celda.presion.valor,
+                    viento_intensidad=celda.viento.intensidad,
+                    viento_direccion=common_pb.Vector2(
+                        x=celda.viento.direccion.x, y=celda.viento.direccion.y
+                    ),
+                    humedad_absoluta=celda.humedad_absoluta.valor,
+                    humedad_relativa=celda.humedad_relativa.valor,
+                )
+            )
+        return result
 
 
 # ─────────────────────────────────────────────
@@ -211,6 +349,13 @@ class TickDelta:
 
     outgoing_bots: list = field(default_factory=list)
 
+    # Celdas de atmósfera propias, YA avanzadas este tick -- se manda
+    # el estado completo de todas las propias en vez de intentar
+    # detectar "cuáles cambiaron" (con este modelo físico, virtualmente
+    # todas cambian algo cada tick, así que filtrar no ahorraría nada
+    # y sí añadiría código).
+    changed_atmosphere_cells: list = field(default_factory=list)
+
 
 # ─────────────────────────────────────────────
 #  Sector
@@ -228,16 +373,39 @@ class Sector:
         self._row = SECTOR_ROW
         self._size = SECTOR_SIZE
 
+        self._validar_escala_atmosfera()
+
         self._mode = SectorMode.INACTIVO
 
-        # Celdas propias del sector
-        self._celdas = CeldaStore()
+        # Celdas propias del sector (terreno)
+        self._celdas = CeldaSectorStore()
 
-        # Ghost zone: celdas de sectores vecinos dentro de MAX_VISION_DISTANCE
+        # Celdas de atmósfera propias del sector -- qué posiciones
+        # "pertenecen" a este Sector se calcula en
+        # _posiciones_atmosfera_propias(), no aquí; esto solo
+        # inicializa el almacén vacío.
+        self._atmosfera = CeldaAtmosferaStore()
+
+        # Ghost zone de terreno: celdas de sectores vecinos dentro de
+        # MAX_VISION_DISTANCE.
         self._ghost: dict[tuple[int, int], Any] = {}
+
+        # Ghost zone de ATMÓSFERA: celdas de atmósfera de sectores
+        # vecinos (adyacencia-8), de solo lectura, del tick anterior.
+        # Separada de self._ghost -- ver set_ghost_zone_atmosfera.
+        self._ghost_atmosfera: dict[tuple[int, int], Any] = {}
 
         # Sonidos cross-border recibidos para el tick actual
         self._sounds_pendientes: list = []
+
+        # Progreso de los ciclos globales (solar, lunar, anual) para el
+        # tick actual. Son los MISMOS para todos los Sectores -- se
+        # guardan como float plano (no como instancias de
+        # Ciclo_Solar/Ciclo_Lunar/Estacion, que dependen de Mundo/Reloj
+        # y no existen en este proceso).
+        self._progreso_solar: float = 0.0
+        self._progreso_lunar: float = 0.0
+        self._progreso_anual: float = 0.0
 
         # Delta del último tick completado — listo para GetDelta
         self._last_delta: Optional[TickDelta] = None
@@ -277,6 +445,66 @@ class Sector:
     def _y1(self) -> int:
         return self._y0 + self._size
 
+    # ---- Región en espacio de atmósfera (bloques de ATMOSFERA_ESCALA
+    # celdas de terreno) -- análogas a las de arriba, en unidades
+    # distintas. Solo son exactas (ningún bloque a caballo entre
+    # sectores) gracias a _validar_escala_atmosfera. ----
+
+    @property
+    def _atmosfera_x0(self) -> int:
+        return self._x0 // ATMOSFERA_ESCALA
+
+    @property
+    def _atmosfera_y0(self) -> int:
+        return self._y0 // ATMOSFERA_ESCALA
+
+    @property
+    def _atmosfera_x1(self) -> int:
+        return self._x1 // ATMOSFERA_ESCALA
+
+    @property
+    def _atmosfera_y1(self) -> int:
+        return self._y1 // ATMOSFERA_ESCALA
+
+    def _posiciones_atmosfera_propias(self) -> list[tuple[int, int]]:
+        """
+        Posiciones (en espacio de atmósfera, no de terreno) que
+        pertenecen a este Sector. Es un rectángulo exacto -- ninguna
+        celda de atmósfera queda a caballo entre sectores -- porque
+        _validar_escala_atmosfera ya impide que ATMOSFERA_ESCALA no
+        divida SECTOR_SIZE. Si esa comprobación se quitara alguna vez,
+        este método dejaría de ser correcto en los bordes.
+        """
+        return [
+            (x, y)
+            for x in range(self._atmosfera_x0, self._atmosfera_x1)
+            for y in range(self._atmosfera_y0, self._atmosfera_y1)
+        ]
+
+    def _validar_escala_atmosfera(self) -> None:
+        """
+        Comprueba que ATMOSFERA_ESCALA divide exactamente a SECTOR_SIZE.
+
+        Por qué es obligatorio y no solo deseable: Sectores y celdas de
+        atmósfera parten el MISMO grid, ambos con origen en (0,0). Si
+        ATMOSFERA_ESCALA no divide SECTOR_SIZE, habría celdas de
+        atmósfera cuyo bloque de terreno cae parte en este Sector y
+        parte en el Sector vecino -- ¿cuál de los dos la calcula? Con
+        el reparto actual (cada Sector calcula sobre su propia región +
+        ghost zone de solo lectura) eso no tiene respuesta correcta.
+
+        Se falla rápido y explícito al arrancar el Sector, en vez de
+        dejar que el problema aparezca más tarde como una celda de
+        atmósfera duplicada o inconsistente en mitad de una partida.
+        """
+        if self._size % ATMOSFERA_ESCALA != 0:
+            raise ValueError(
+                f"ATMOSFERA_ESCALA ({ATMOSFERA_ESCALA}) debe ser divisor de "
+                f"SECTOR_SIZE ({self._size}) -- si no, hay celdas de "
+                "atmósfera repartidas entre dos Sectores sin ninguna regla "
+                "de quién las calcula. Ajusta Config.settings."
+            )
+
     # ─────────────────────────────────────────
     #  Ciclo de vida
     # ─────────────────────────────────────────
@@ -289,38 +517,54 @@ class Sector:
         )
         self._mode = mode
 
-    def load_state(self, cells: list, bots: list) -> None:
+    def load_state(self, cells: list, celdas_atmosfera: list, bots: list) -> None:
         """
-        Carga el estado gold enviado por Gestor_Mundo.
-        Usado en arranque o tras recuperación de spot caído.
+        Carga el estado gold enviado por Gestor_Mundo: terreno,
+        atmósfera y bots. Usado en arranque o tras recuperación de spot
+        caído.
+
+        AVISO DE RUPTURA: esta firma cambió respecto a la versión
+        anterior (cells, bots) -- quien llame a esto (el servicer gRPC
+        de LoadState) debe construir/pasar también celdas_atmosfera.
         """
-        self._celdas = CeldaStore()
+        self._celdas = CeldaSectorStore()
         for cell in cells:
             self._celdas.from_proto_cell(cell)
 
+        self._atmosfera = CeldaAtmosferaStore()
+        for cell_atm in celdas_atmosfera:
+            self._atmosfera.from_proto_cell(cell_atm)
+
         self._bots = {bot.bot_id: bot for bot in bots}
         logger.info(
-            "Sector (%d,%d): estado cargado — %d celdas, %d bots",
+            "Sector (%d,%d): estado cargado — %d celdas, %d celdas de "
+            "atmósfera, %d bots",
             self._col,
             self._row,
             len(list(self._celdas.items())),
+            len(list(self._atmosfera.items())),
             len(self._bots),
         )
 
     def get_state(self):
         """
-        Devuelve el estado completo del sector (para GetState del servicer).
+        Devuelve el estado completo del sector (para GetState del
+        servicer): terreno, atmósfera y bots.
+
+        AVISO DE RUPTURA: mismo cambio de firma que load_state -- ahora
+        devuelve una tupla de 3 elementos en vez de 2.
         """
         cells = self._celdas.to_proto_cells()
+        celdas_atmosfera = self._atmosfera.to_proto_cells()
         bots = list(self._bots.values())
-        return cells, bots
+        return cells, celdas_atmosfera, bots
 
     # ─────────────────────────────────────────
     #  FASE 0 — Preparación del tick
     # ─────────────────────────────────────────
 
     def set_ghost_zone(self, tick_id: int, ghost_cells: list) -> None:
-        """Recibe y almacena la ghost zone para este tick."""
+        """Recibe y almacena la ghost zone de TERRENO para este tick."""
         self._ghost = {}
         for cell in ghost_cells:
             key = (cell.pos.x, cell.pos.y)
@@ -333,6 +577,24 @@ class Sector:
             tick_id,
         )
 
+    def set_ghost_zone_atmosfera(self, tick_id: int, ghost_cells: list) -> None:
+        """Recibe y almacena la ghost zone de ATMÓSFERA (adyacencia-8,
+        celdas de solo lectura del tick anterior) para este tick.
+        Separada de self._ghost (terreno): son conceptos distintos que
+        solo comparten el nombre por analogía -- ver sector.proto,
+        SetAtmosphereGhostZone."""
+        self._ghost_atmosfera = {}
+        for cell in ghost_cells:
+            key = (cell.pos.x, cell.pos.y)
+            self._ghost_atmosfera[key] = cell
+        logger.debug(
+            "Sector (%d,%d): ghost zone de atmósfera cargada — %d celdas (tick %d)",
+            self._col,
+            self._row,
+            len(self._ghost_atmosfera),
+            tick_id,
+        )
+
     def set_sounds(self, tick_id: int, sounds: list) -> None:
         """Recibe los sonidos cross-border para este tick."""
         self._sounds_pendientes = sounds
@@ -341,6 +603,37 @@ class Sector:
             self._col,
             self._row,
             len(sounds),
+            tick_id,
+        )
+
+    def set_ciclos_globales(
+        self,
+        tick_id: int,
+        progreso_solar: float,
+        progreso_lunar: float,
+        progreso_anual: float,
+    ) -> None:
+        """
+        Recibe el progreso (0.0-1.0) de los ciclos solar/lunar/anual
+        para este tick, ya calculado por quien tiene el Ciclo real
+        (Reloj.Ciclo.tick_actual / duración -- en Logica_Mundo/Mundo,
+        vía Gestor_Mundo). Sector no conoce ni necesita conocer cuántos
+        ticks dura un día o un año, solo el ratio.
+
+        progreso_lunar se guarda para cuando exista algún sistema que
+        lo necesite -- hoy ningún Sistema_Atmosferico lo usa todavía.
+        """
+        self._progreso_solar = progreso_solar
+        self._progreso_lunar = progreso_lunar
+        self._progreso_anual = progreso_anual
+        logger.debug(
+            "Sector (%d,%d): ciclos globales actualizados -- solar=%.3f, "
+            "lunar=%.3f, anual=%.3f (tick %d)",
+            self._col,
+            self._row,
+            progreso_solar,
+            progreso_lunar,
+            progreso_anual,
             tick_id,
         )
 
@@ -362,8 +655,8 @@ class Sector:
 
     def compute_tick(self, tick_id: int) -> TickDelta:
         """Ejecuta tick() de cada elemento propio del sector (solo si el
-        sector está ACTIVO), acumulando lo que piden en un único TickContext,
-        y devuelve el TickDelta resultante para Logica_Mundo."""
+        sector está ACTIVO), avanza la atmósfera propia, y devuelve el
+        TickDelta resultante para Logica_Mundo."""
 
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
@@ -398,6 +691,9 @@ class Sector:
         self._resolver_mutaciones(delta.mutaciones, delta)
         delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
 
+        self._avanzar_atmosfera(tick_id)
+        delta.changed_atmosphere_cells = self._atmosfera.to_proto_cells()
+
         # Detectar bots que, tras el tick, quedaron fuera de la región
         # propia del sector — deben viajar a Logica_Mundo para
         # reasignarse al sector correcto.
@@ -406,11 +702,88 @@ class Sector:
         self._last_delta = delta
         return delta
 
+    def _avanzar_atmosfera(self, tick_id: int) -> None:
+        """
+        Recorre las celdas de atmósfera propias de este Sector y avanza
+        cada una un tick con sistema_atmosferico.avanzar_celda().
+
+        Se congela un snapshot de self._atmosfera ANTES de avanzar
+        ninguna celda: si no se hiciera, una celda procesada más tarde
+        en este mismo bucle vería a un vecino "propio" ya con el valor
+        de ESTE tick en vez del anterior, rompiendo el modelo acordado
+        ("vecinos siempre del tick anterior"). El ghost zone
+        (self._ghost_atmosfera) ya es del tick anterior por construcción
+        (lo manda Gestor_Mundo al principio de la Fase 0).
+        """
+        posiciones_propias = self._posiciones_atmosfera_propias()
+        snapshot_propio = {pos: self._atmosfera.get(*pos) for pos in posiciones_propias}
+
+        for pos in posiciones_propias:
+            celda = snapshot_propio[pos]
+            if celda is None:
+                # Puede pasar si Gestor_Mundo todavía no ha creado la
+                # celda de atmósfera para este bloque (p. ej. mundo
+                # recién arrancado, LoadState parcial).
+                continue
+
+            vecinos = self._vecinos_atmosfera(pos, snapshot_propio)
+
+            sistema_atmosferico.avanzar_celda(
+                celda, self._progreso_solar, self._progreso_anual, vecinos
+            )
+
+    def _vecinos_atmosfera(
+        self, pos: tuple[int, int], snapshot_propio: dict
+    ) -> list[EstadoVecino]:
+        """
+        Construye los EstadoVecino (adyacencia-8) de `pos`, del tick
+        anterior. Busca primero en snapshot_propio (vecino dentro de
+        este mismo Sector); si no está ahí, en self._ghost_atmosfera
+        (vecino de un Sector vecino). Si no está en ninguno de los dos
+        se omite -- puede pasar en el borde del mundo (no hay nada más
+        allá) o si el ghost zone de ese Sector vecino aún no ha llegado.
+        """
+        x, y = pos
+        vecinos: list[EstadoVecino] = []
+
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                if dx == 0 and dy == 0:
+                    continue
+                vecino_pos = (x + dx, y + dy)
+
+                vecino_celda = snapshot_propio.get(vecino_pos)
+                if vecino_celda is not None:
+                    temperatura = vecino_celda.temperatura.valor
+                    presion = vecino_celda.presion.valor
+                    humedad_absoluta = vecino_celda.humedad_absoluta.valor
+                else:
+                    vecino_proto = self._ghost_atmosfera.get(vecino_pos)
+                    if vecino_proto is None:
+                        continue
+                    temperatura = vecino_proto.temperatura
+                    presion = vecino_proto.presion
+                    humedad_absoluta = vecino_proto.humedad_absoluta
+
+                distancia = math.hypot(dx, dy)
+                direccion = Vector2(dx / distancia, dy / distancia)
+
+                vecinos.append(
+                    EstadoVecino(
+                        temperatura=temperatura,
+                        presion=presion,
+                        humedad_absoluta=humedad_absoluta,
+                        direccion=direccion,
+                    )
+                )
+
+        return vecinos
+
     def _resolver_mutaciones(
         self, mutaciones: list[Mutacion], delta: TickDelta
     ) -> None:
-        """Aplica cada mutación sobre self._celdas (CeldaStore), mantiene
-        sincronizado self._bots (índice posición-only usado por
+        """Aplica cada mutación sobre self._celdas (CeldaSectorStore),
+        mantiene sincronizado self._bots (índice posición-only usado por
         _detectar_migraciones) y rellena delta.changed_cells /
         delta.dead_bot_ids."""
         posiciones_cambiadas: set[tuple[int, int]] = set()
@@ -566,8 +939,6 @@ class Sector:
         Persiste el estado del sector en S3 con el snapshot_id dado.
         TODO: implementar con aioboto3 cuando se decida el cliente AWS.
         """
-        import json
-
         cells_raw = []
         for (x, y), elemento in self._celdas.items():
             cells_raw.append({"x": x, "y": y, "element": ""})

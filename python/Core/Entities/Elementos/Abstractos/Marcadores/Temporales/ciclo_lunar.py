@@ -1,3 +1,6 @@
+# Core/Entities/Elementos/Abstractos/Marcadores/Temporales/ciclo_lunar.py
+
+
 import math
 
 from Config.parametros_simulacion import TICKS_POR_DIA
@@ -8,10 +11,6 @@ from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
 
 
 class Ciclo_Lunar(Marcador_Temporal):
-    """
-    Requiere que, el elemento que lo implemente,
-    implemente tambien el comportamiento 'Reloj'
-    """
 
     def __init__(self, frecuencia_lunar=30, **kwargs):
         super().__init__(Ciclo_Lunar, **kwargs)

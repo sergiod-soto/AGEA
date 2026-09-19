@@ -58,7 +58,7 @@ class Reloj(Marcador_Temporal):
             if self.tick_actual >= self._end:
                 self.tick_actual = 0
 
-    ciclos = [Ciclo]
+    ciclos: list["Reloj.Ciclo"] = []
 
     def __init__(self, **kwargs):
         super().__init__(Reloj, **kwargs)

@@ -1,3 +1,6 @@
+# Core/Entities/Elementos/Abstractos/Sistema_Atmosferico/Sistema_Primario/radiacion.py
+
+
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )

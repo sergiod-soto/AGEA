@@ -39,6 +39,22 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
                 self._sector, request, context
             )
 
+    # NUEVO -- sistema atmosférico. Mismo lock que SetGhostZone: es
+    # otra llamada de Fase 0 y puede llegar en paralelo con las demás.
+    async def SetAtmosphereGhostZone(self, request, context):
+        async with self._fase0_lock:
+            return await self._dispatch["SetAtmosphereGhostZone"].handle(
+                self._sector, request, context
+            )
+
+    # NUEVO -- sistema atmosférico. También Fase 0, mismo lock por el
+    # mismo motivo (puede llegar solapada con SetGhostZone/SetSounds).
+    async def SetGlobalCycles(self, request, context):
+        async with self._fase0_lock:
+            return await self._dispatch["SetGlobalCycles"].handle(
+                self._sector, request, context
+            )
+
     async def AddMigratingBot(self, request, context):
         async with self._fase0_lock:
             return await self._dispatch["AddMigratingBot"].handle(
@@ -59,8 +75,4 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
     async def SetSounds(self, request, context):
         return await self._dispatch["SetSounds"].handle(self._sector, request, context)
 
-    # NOTA: GetElementAttributes sigue sin implementar — está declarado en
-    # el .proto pero no es parte de "arrancar" (es una consulta de
-    # debug/dev sobre elementos, y hoy no hay elementos). Se deja
-    # pendiente a propósito, no es un descuido — confirmar si se quiere
-    # abordar ahora o más adelante.
+

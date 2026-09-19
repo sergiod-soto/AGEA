@@ -16,12 +16,14 @@ import grpc
 from numpy import uint64
 
 from Config.settings import (
+    ATMOSFERA_ESCALA,
     DEEP_SAVE_INTERVAL_TICKS,
     DEFAULT_TICK_RATE,
     FALLOS_CONSECUTIVOS_SECTOR_CAIDO,
     GESTOR_BOTS_ADDRESS,
     GRID_HEIGHT,
     GRID_WIDTH,
+    MAX_SOUND_DISTANCE,
     MAX_VISION_DISTANCE,
     SECTOR_BASE_PORT,
     SECTOR_HOST,
@@ -200,10 +202,25 @@ class GestorMundo:
 
         self._pending_sounds: dict[tuple[int, int], list] = {}
 
+        # Un único fetch para todos los sectores -- el progreso de los
+        # ciclos es el MISMO en todo el mundo, no hace falta pedirlo
+        # por sector.
+        (
+            progreso_solar,
+            progreso_lunar,
+            progreso_anual,
+        ) = await self._logica_client.obtener_progreso_ciclos()
+
         tareas = []
         for sector in activos_y_dormidos:
             tareas.append(self._enviar_ghost_zone(sector))
             tareas.append(self._enviar_sonidos(sector))
+            tareas.append(self._enviar_ghost_zone_atmosfera(sector))
+            tareas.append(
+                self._enviar_ciclos_globales(
+                    sector, progreso_solar, progreso_lunar, progreso_anual
+                )
+            )
 
         await asyncio.gather(*tareas, return_exceptions=True)
 
@@ -227,6 +244,58 @@ class GestorMundo:
         except grpc.aio.AioRpcError as e:
             logger.error(
                 "gRPC error SetGhostZone (%d,%d): %s", sector.col, sector.row, e
+            )
+
+    async def _enviar_ghost_zone_atmosfera(self, sector: SectorInfo) -> None:
+        ghost_cells = await self._calcular_ghost_zone_atmosfera(sector)
+        if not ghost_cells:
+            return
+        req = sector_pb.SetAtmosphereGhostZoneRequest(  # type: ignore
+            tick_id=self._tick_id,
+            ghost_cells=ghost_cells,
+        )
+        try:
+            resp = await sector.stub.SetAtmosphereGhostZone(req)  # type: ignore
+            if not resp.ok:
+                logger.warning(
+                    "SetAtmosphereGhostZone falló en (%d,%d): %s",
+                    sector.col,
+                    sector.row,
+                    resp.error,
+                )
+        except grpc.aio.AioRpcError as e:
+            logger.error(
+                "gRPC error SetAtmosphereGhostZone (%d,%d): %s",
+                sector.col,
+                sector.row,
+                e,
+            )
+
+    async def _enviar_ciclos_globales(
+        self,
+        sector: SectorInfo,
+        progreso_solar: float,
+        progreso_lunar: float,
+        progreso_anual: float,
+    ) -> None:
+        req = sector_pb.SetGlobalCyclesRequest(  # type: ignore
+            tick_id=self._tick_id,
+            progreso_solar=progreso_solar,
+            progreso_lunar=progreso_lunar,
+            progreso_anual=progreso_anual,
+        )
+        try:
+            resp = await sector.stub.SetGlobalCycles(req)  # type: ignore
+            if not resp.ok:
+                logger.warning(
+                    "SetGlobalCycles falló en (%d,%d): %s",
+                    sector.col,
+                    sector.row,
+                    resp.error,
+                )
+        except grpc.aio.AioRpcError as e:
+            logger.error(
+                "gRPC error SetGlobalCycles (%d,%d): %s", sector.col, sector.row, e
             )
 
     async def _enviar_sonidos(self, sector: SectorInfo) -> None:
@@ -293,6 +362,7 @@ class GestorMundo:
         self._pending_sounds: dict[tuple[int, int], list] = {}
         bots_migrando: list[tuple[SectorInfo, sector_pb.MigratingBot]] = []
         celdas_cambiadas: list = []
+        celdas_atmosfera_cambiadas: list = []
 
         async with self._consolidacion_lock:
             for sector, resultado in zip(activos, resultados):
@@ -316,6 +386,7 @@ class GestorMundo:
                     continue
 
                 celdas_cambiadas.extend(resultado.changed_cells)
+                celdas_atmosfera_cambiadas.extend(resultado.changed_atmosphere_cells)
 
                 for bot in resultado.outgoing_bots:
                     bots_migrando.append((sector, bot))
@@ -328,6 +399,11 @@ class GestorMundo:
 
             if celdas_cambiadas:
                 await self._logica_client.actualizar_celdas(celdas_cambiadas)
+
+            if celdas_atmosfera_cambiadas:
+                await self._logica_client.actualizar_celdas_atmosfera(
+                    celdas_atmosfera_cambiadas
+                )
 
             await self._resolver_migraciones(bots_migrando)
 
@@ -411,10 +487,6 @@ class GestorMundo:
     def _distribuir_sonido(self, sound: common_pb.SoundEvent) -> None:
         lx = sound.origin.x // SOUND_MAP_CELL_SIZE
         ly = sound.origin.y // SOUND_MAP_CELL_SIZE
-
-        from Core.Entities.Mundo.mapa_config import (
-            MAX_SOUND_DISTANCE,
-        )
 
         radio_lr = math.ceil(MAX_SOUND_DISTANCE / SOUND_MAP_CELL_SIZE)
 
@@ -692,6 +764,28 @@ class GestorMundo:
             max_pos=(gx1, gy1),
             excluir_min=(x0, y0),
             excluir_max=(x1, y1),
+        )
+
+    async def _calcular_ghost_zone_atmosfera(self, info: SectorInfo) -> list:
+        """
+        Análogo a _calcular_ghost_zone, pero en espacio de atmósfera y
+        con margen 1 (adyacencia-8) en vez de MAX_VISION_DISTANCE -- la
+        difusión atmosférica solo mira al vecino inmediato, no hace
+        falta ver más lejos. El rectángulo propio del sector en espacio
+        de atmósfera es exacto (sin bloques a caballo) gracias a que
+        Sector._validar_escala_atmosfera exige que ATMOSFERA_ESCALA
+        divida SECTOR_SIZE.
+        """
+        ax0 = (info.col * SECTOR_SIZE) // ATMOSFERA_ESCALA
+        ay0 = (info.row * SECTOR_SIZE) // ATMOSFERA_ESCALA
+        ax1 = ((info.col + 1) * SECTOR_SIZE) // ATMOSFERA_ESCALA
+        ay1 = ((info.row + 1) * SECTOR_SIZE) // ATMOSFERA_ESCALA
+
+        return await self._logica_client.obtener_celdas_atmosfera_en_region(
+            min_pos=(ax0 - 1, ay0 - 1),
+            max_pos=(ax1 + 1, ay1 + 1),
+            excluir_min=(ax0, ay0),
+            excluir_max=(ax1, ay1),
         )
 
     def _sector_para_posicion(self, x: int, y: int) -> Optional[SectorInfo]:

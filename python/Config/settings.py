@@ -49,11 +49,13 @@ MAX_VISION_DISTANCE = int(
 GRID_WIDTH = int(os.getenv("GRID_WIDTH", 100))
 GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 100))
 SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-ATMOSFERA_ESCALA: int = int(os.getenv(
-    "ATMOSFERA_ESCALA", 2
-))  # tamaño relativo del grid atmosferico respecto al grid del suelo
+ATMOSFERA_ESCALA: int = int(
+    os.getenv("ATMOSFERA_ESCALA", 2)
+)  # tamaño relativo del grid atmosferico respecto al grid del suelo
+
 
 SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
+MAX_SOUND_DISTANCE = int(os.getenv("MAX_SOUND_DISTANCE", 50))
 TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
 TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
 UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))

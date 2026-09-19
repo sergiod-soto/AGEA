@@ -13,6 +13,10 @@ from Infraestructura.Gestores.Mundo.Sector.Funciones import (
     set_sector_mode,
     set_sounds,
 )
+from Infraestructura.Gestores.Mundo.Sector.Funciones import (
+    set_atmosphere_ghost_zone,
+    set_global_cycles,
+)
 
 FUNCIONES = [
     set_sector_mode,
@@ -27,4 +31,8 @@ FUNCIONES = [
     #
     # ----- funciones añadidas --------
     set_sounds,
+    #
+    # ----- sistema atmosférico --------
+    set_atmosphere_ghost_zone,
+    set_global_cycles,
 ]

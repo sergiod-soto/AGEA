@@ -19,8 +19,15 @@ from typing import Any, Optional
 from numpy import uint64
 
 import Config.settings as config
-from Core.Entities.Mundo.Celda.celda import Celda
-from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_lunar import (
+    Ciclo_Lunar,
+)
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import (
+    Ciclo_Solar,
+)
+from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
+from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Mundo.Suelo.celda import Celda
 from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
 
@@ -69,6 +76,13 @@ class Mundo:
         # atmósfera. Con escala 2, una Celda_Atmosfera engloba un bloque
         # de 2x2 celdas de suelo (mismo origen 0,0 en ambos grids).
         self.escala_atmosfera: int = config.ATMOSFERA_ESCALA
+
+        # Reloj encargado de controlar los eventos guiados por el tiempo.
+        self.reloj = Reloj
+
+        # Ciclos astrales
+        self.ciclo_solar = Ciclo_Solar()
+        self.ciclo_lunar = Ciclo_Lunar()
 
     # ---- Elementos: alta / baja / movimiento ----
 
@@ -173,6 +187,36 @@ class Mundo:
 
         resultado = []
         for (x, y), celda in self.malla_terreno.items():
+            if not (x0 <= x < x1 and y0 <= y < y1):
+                continue
+            if tiene_exclusion and (ex0 <= x < ex1 and ey0 <= y < ey1):
+                continue
+            resultado.append(((x, y), celda))
+        return resultado
+
+    def celdas_atmosfera_en_region(
+        self,
+        min_pos: tuple[int, int],
+        max_pos: tuple[int, int],
+        excluir_min: Optional[tuple[int, int]] = None,
+        excluir_max: Optional[tuple[int, int]] = None,
+    ) -> list[tuple[tuple[int, int], Celda_Atmosfera]]:
+        """
+        Análogo a celdas_en_region, pero sobre malla_atmosfera. A
+        diferencia de esa, min_pos/max_pos ya están en espacio de
+        atmósfera (no hace falta pos_suelo_a_atmosfera) -- quien llama
+        (Gestor_Mundo, calculando el rectángulo de un Sector) ya sabe
+        convertir.
+        """
+        x0, y0 = min_pos
+        x1, y1 = max_pos
+        tiene_exclusion = excluir_min is not None and excluir_max is not None
+        if tiene_exclusion:
+            ex0, ey0 = excluir_min  # type: ignore
+            ex1, ey1 = excluir_max  # type: ignore
+
+        resultado = []
+        for (x, y), celda in self.malla_atmosfera.items():
             if not (x0 <= x < x1 and y0 <= y < y1):
                 continue
             if tiene_exclusion and (ex0 <= x < ex1 and ey0 <= y < ey1):

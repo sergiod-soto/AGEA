@@ -25,6 +25,19 @@ service SectorService {
   rpc SetSounds        (SetSoundsRequest)          returns (SetSoundsResponse);
   rpc AddMigratingBot  (AddMigratingBotRequest)    returns (AddMigratingBotResponse);
 
+  // NUEVO -- ghost zone de atmósfera. Separada de SetGhostZone (terreno)
+  // a propósito: la adyacencia de atmósfera es 8 (fija, alrededor del
+  // bloque propio) y no depende de MAX_VISION_DISTANCE como la de
+  // terreno -- son conceptos distintos que solo comparten el nombre
+  // "ghost zone" por analogía, mezclarlos en un único mensaje habría
+  // forzado a uno de los dos a cargar campos que no usa.
+  rpc SetAtmosphereGhostZone (SetAtmosphereGhostZoneRequest) returns (SetAtmosphereGhostZoneResponse);
+
+  // NUEVO -- progreso de los ciclos globales (solar, lunar, anual).
+  // Ver Sector.set_ciclos_globales: llega ya como float 0.0-1.0,
+  // calculado por quien tiene el Reloj.Ciclo real (Mundo/Logica_Mundo).
+  rpc SetGlobalCycles  (SetGlobalCyclesRequest)     returns (SetGlobalCyclesResponse);
+
   // ----- FASE 1 — computación -----
   rpc StartTick        (StartTickRequest)          returns (StartTickResponse);
 
@@ -68,6 +81,8 @@ message SetSectorModeResponse {
 message LoadStateRequest {
   repeated common.Cell        cells = 1;
   repeated common.BotSnapshot bots  = 2;
+  // NUEVO -- ver Sector.load_state(cells, celdas_atmosfera, bots).
+  repeated common.AtmosphereCell atmosphere_cells = 3;
 }
 
 message LoadStateResponse {
@@ -78,10 +93,12 @@ message LoadStateResponse {
 message GetStateRequest {}
 
 message GetStateResponse {
-  bool   ok    = 1;
-  string error = 2;
+  bool                        ok    = 1;
+  string                      error = 2;
   repeated common.Cell        cells = 3;
   repeated common.BotSnapshot bots  = 4;
+  // NUEVO -- ver Sector.get_state() -> (cells, celdas_atmosfera, bots).
+  repeated common.AtmosphereCell atmosphere_cells = 5;
 }
 
 // ============================================================
@@ -89,8 +106,8 @@ message GetStateResponse {
 // ============================================================
 
 message SetGhostZoneRequest {
-  uint64                   tick_id     = 1;
-  repeated common.Cell    ghost_cells = 2;
+  uint64               tick_id     = 1;
+  repeated common.Cell ghost_cells = 2;
 }
 
 message SetGhostZoneResponse {
@@ -98,9 +115,23 @@ message SetGhostZoneResponse {
   string error = 2;
 }
 
+// NUEVO
+message SetAtmosphereGhostZoneRequest {
+  uint64 tick_id = 1;
+  // Celdas de atmósfera vecinas (adyacencia-8, ver decisión tomada),
+  // de solo lectura -- mismo rol que ghost_cells para terreno, pero
+  // en espacio de atmósfera y sin relación con MAX_VISION_DISTANCE.
+  repeated common.AtmosphereCell ghost_cells = 2;
+}
+
+message SetAtmosphereGhostZoneResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
 message SetSoundsRequest {
-  uint64                        tick_id = 1;
-  repeated common.SoundEvent   sounds  = 2;
+  uint64                     tick_id = 1;
+  repeated common.SoundEvent sounds  = 2;
 }
 
 message SetSoundsResponse {
@@ -108,9 +139,25 @@ message SetSoundsResponse {
   string error = 2;
 }
 
+// NUEVO
+message SetGlobalCyclesRequest {
+  uint64 tick_id = 1;
+  // Progreso 0.0-1.0 de cada ciclo, ya calculado por quien tiene el
+  // Reloj.Ciclo real (ver Sector.set_ciclos_globales) -- Sector no
+  // conoce ni necesita conocer cuántos ticks dura un día/año.
+  double progreso_solar = 2;
+  double progreso_lunar = 3;
+  double progreso_anual = 4;
+}
+
+message SetGlobalCyclesResponse {
+  bool   ok    = 1;
+  string error = 2;
+}
+
 message AddMigratingBotRequest {
-  uint64               tick_id = 1;
-  common.BotSnapshot  bot     = 2;
+  uint64             tick_id = 1;
+  common.BotSnapshot bot     = 2;
 }
 
 message AddMigratingBotResponse {
@@ -124,7 +171,7 @@ message AddMigratingBotResponse {
 
 message StartTickRequest {
   uint64 tick_id    = 1;
-  int32 timeout_ms = 2;
+  int32  timeout_ms = 2;
 }
 
 message StartTickResponse {
@@ -149,12 +196,15 @@ message GetDeltaRequest {
 message GetDeltaResponse {
   bool   ok      = 1;
   string error   = 2;
-  uint64  tick_id = 3;
+  uint64 tick_id = 3;
 
-  repeated common.Cell         changed_cells  = 4;
-  repeated MigratingBot        outgoing_bots  = 5;
-  repeated uint64              dead_bot_ids   = 6;
-  repeated common.SoundEvent   emitted_sounds = 7;
+  repeated common.Cell       changed_cells  = 4;
+  repeated MigratingBot      outgoing_bots  = 5;
+  repeated uint64            dead_bot_ids   = 6;
+  repeated common.SoundEvent emitted_sounds = 7;
+  // NUEVO -- ver TickDelta.changed_atmosphere_cells (comentado hoy en
+  // sector.py a la espera de este mensaje; descomentar al regenerar).
+  repeated common.AtmosphereCell changed_atmosphere_cells = 8;
 }
 
 // ============================================================
@@ -189,13 +239,13 @@ message Valor {
 }
 
 message ElementAttributes {
-  uint64              element_id      = 1;
-  repeated string     comportamientos = 2;
-  map<string, Valor>  atributos       = 3;
+  uint64             element_id      = 1;
+  repeated string    comportamientos = 2;
+  map<string, Valor> atributos       = 3;
 }
 
 message GetElementAttributesResponse {
-  bool   ok    = 1;
-  string error = 2;
+  bool                       ok        = 1;
+  string                     error     = 2;
   repeated ElementAttributes elementos = 3;
 }

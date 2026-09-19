@@ -20,6 +20,11 @@ message Position {
   int32 y = 2;
 }
 
+message Vector2 {
+  double x = 1;
+  double y = 2;
+}
+
 // Celda del grid.
 //
 // CAMBIO (antes: un único campo `element`): una celda puede tener hasta
@@ -38,6 +43,27 @@ message Cell {
   bytes          suelo = 2;   // vacío si no hay elemento en este slot
   bytes          bot   = 3;   // vacío si no hay bot en esta celda
   repeated bytes resto = 4;   // lista de elementos sueltos, puede ser vacía
+}
+
+message AtmosphereCell {
+  Position pos = 1;
+
+  // Terreno: fijo, no cambia salvo reconfiguración explícita del mapa
+  // (igual naturaleza que "suelo" en Cell, pero aquí no es un slot de
+  // elemento removible, es intrínseco a la celda de atmósfera).
+  double  resistencia_viento          = 2;
+  Vector2 direccion_preferente_viento = 3;
+  Vector2 fuerza_viento               = 4;
+  bytes   bioma                       = 5;  // Bioma serializado -- mismo formato que los slots de Cell
+
+  // Estado simulado: cambia cada tick
+  double  radiacion         = 6;
+  double  temperatura       = 7;
+  double  presion           = 8;
+  double  viento_intensidad = 9;
+  Vector2 viento_direccion  = 10;
+  double  humedad_absoluta  = 11;
+  double  humedad_relativa  = 12;
 }
 
 // ============================================================

@@ -8,7 +8,7 @@ sin ningún test hasta ahora.
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Logica_Mundo.api_acciones import (
+from Infraestructura.Gestores.Mundo.LogicaMundo.api_acciones import (
     accion_conocida,
     get_coste,
     listar,

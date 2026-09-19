@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from Core.Entities.Elementos.Abstractos.Bioma.Suelo.suelo_piedra import Suelo_Piedra
+from Core.Entities.Mundo.Suelo.suelo_piedra import Suelo_Piedra
 from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
 from Dev.Escenarios.serie_estados import Serie_Estados
 from Core.Entities.Elementos.elemento_test import Elemento_Test
