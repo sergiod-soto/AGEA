@@ -9,8 +9,9 @@ mixin completo de Sonoro para probar esta parte.
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Logica_Mundo.logica_mundo import LogicaMundo, Celda
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import SonidoBase
+from Core.Entities.Mundo.Suelo.celda import Celda
+from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import LogicaMundo
 
 
 class _ElementoConSonidos:

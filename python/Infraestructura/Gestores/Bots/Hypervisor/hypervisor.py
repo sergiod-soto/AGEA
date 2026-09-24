@@ -2,20 +2,6 @@
 """
 Migrado a asyncio, para que Hypervisor sea consistente con el resto de
 componentes (todos asyncio salvo este, que era el único síncrono).
-
-Cambios de fondo respecto a la versión síncrona:
-  - threading.Lock -> asyncio.Lock (todos los métodos que tocan estado
-    compartido pasan a ser async).
-  - subprocess.Popen -> asyncio.create_subprocess_exec
-    (LanzadorProcesosBot.lanzar ahora es async).
-  - El hilo daemon _watch_bot_process se sustituye por una asyncio.Task
-    que espera `await proceso.wait()` — no bloquea el loop de eventos,
-    no necesita un hilo aparte.
-  - gestor_client pasa a ser GestorBotsClientAsync (await en todas las
-    llamadas), en vez del cliente síncrono.
-
-Limpieza: se retira _codigo_path (método muerto — nunca se llamaba;
-duplicaba LanzadorProcesosBot.codigo_path, que es la versión real en uso).
 """
 
 from __future__ import annotations
@@ -485,7 +471,7 @@ class Hypervisor:
             carpeta.glob(f"{self.hypervisor_id}_*.json"),
             key=lambda p: p.stem.removeprefix(f"{self.hypervisor_id}_"),
         )
-        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        sobrantes = max(0, len(snapshots) - SNAPSHOT_MAX)
         for path in snapshots[:sobrantes]:
             path.unlink(missing_ok=True)
             logger.debug("Snapshot antiguo purgado: %s", path)

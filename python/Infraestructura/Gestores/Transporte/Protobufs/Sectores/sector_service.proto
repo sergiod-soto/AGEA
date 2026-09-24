@@ -142,9 +142,10 @@ message SetSoundsResponse {
 // NUEVO
 message SetGlobalCyclesRequest {
   uint64 tick_id = 1;
-  // Progreso 0.0-1.0 de cada ciclo, ya calculado por quien tiene el
+  // tick_id: Progreso 0.0-1.0 de cada ciclo, ya calculado por quien tiene el
   // Reloj.Ciclo real (ver Sector.set_ciclos_globales) -- Sector no
   // conoce ni necesita conocer cuántos ticks dura un día/año.
+
   double progreso_solar = 2;
   double progreso_lunar = 3;
   double progreso_anual = 4;
@@ -156,8 +157,15 @@ message SetGlobalCyclesResponse {
 }
 
 message AddMigratingBotRequest {
-  uint64             tick_id = 1;
-  common.BotSnapshot bot     = 2;
+  uint64             tick_id  = 1;
+  common.BotSnapshot bot      = 2;
+  bytes              elemento = 3;
+}
+
+message MovimientoRechazado {
+  uint64          id_elemento  = 1;
+  common.Position pos_devuelta = 2;
+  bool            eliminado    = 3;
 }
 
 message AddMigratingBotResponse {
@@ -187,6 +195,14 @@ message StartTickResponse {
 message MigratingBot {
   common.BotSnapshot bot        = 1;
   common.Position    target_pos = 2;
+}
+
+message MovimientoExterno {
+  uint64          id_elemento = 1;
+  string          tipo_slot   = 2;
+  common.Position pos_destino = 3;
+  bytes           elemento    = 4;
+  common.Position pos_origen  = 5;
 }
 
 message GetDeltaRequest {

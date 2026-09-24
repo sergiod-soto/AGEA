@@ -18,6 +18,8 @@ async def mirar(ctx) -> "ActionResult":
     except struct.error:
         return ActionResult(ok=False, error="Payload inválido para 'mirar'.")
 
+    if distancia <= 0:
+        return ActionResult(ok=False, error="'mirar' exige distancia > 0.")
     distancia = min(distancia, MAX_VISION_DISTANCE)
 
     pos = ctx.bot_positions.get(ctx.bot_id)
@@ -71,9 +73,9 @@ def _bresenham_celdas(x0, y0, angulo, distancia):
     sy = 1 if y0 < y1 else -1
     err = dx - dy
     x, y = x0, y0
-    max_pasos = dx + dy
     celdas = []
-    for _ in range(max_pasos):
+
+    for _ in range(dx + dy + 1):
         if (x, y) != (x0, y0):
             celdas.append((x, y))
         if x == x1 and y == y1:
@@ -85,6 +87,7 @@ def _bresenham_celdas(x0, y0, angulo, distancia):
         if e2 < dx:
             err += dx
             y += sy
+
     return celdas
 
 

@@ -22,6 +22,11 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     shutdown,
     spawn_global_event,
 )
+from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
+    obtener_celdas_atmosfera_en_region,
+    actualizar_celdas_atmosfera,
+    obtener_progreso_ciclos,
+)
 
 FUNCIONES = [
     asignar_id,
@@ -44,4 +49,9 @@ FUNCIONES = [
     heartbeat,
     get_elementos_globales,
     shutdown,
+    #
+    # ----- sistema atmosférico --------
+    obtener_celdas_atmosfera_en_region,
+    actualizar_celdas_atmosfera,
+    obtener_progreso_ciclos,
 ]

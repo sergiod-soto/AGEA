@@ -102,8 +102,18 @@ class GestorMundo:
 
         self._pending_sounds = {}
 
+        self._modos_previos_freeze: dict[tuple[int, int], SectorMode] = {}
+
+        self._tareas_fondo: set[asyncio.Task] = set()
+
     def _delta_tiene_actividad(self, delta) -> bool:
-        return bool(delta.changed_cells or delta.outgoing_bots or delta.emitted_sounds)
+        return bool(
+            delta.changed_cells
+            or delta.outgoing_bots
+            or delta.emitted_sounds
+            or delta.movimientos_externos
+            or delta.dead_bot_ids
+        )
 
     async def start(self, fresh: bool = False) -> None:
         SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -148,19 +158,31 @@ class GestorMundo:
         self._tick_id = data["tick_id"]
         self._snapshot_id = data["snapshot_id"]
 
+        modos_guardados: dict[tuple[int, int], SectorMode] = {}
         for s in data["sectores"]:
             col, row = s["col"], s["row"]
-            info = SectorInfo(
-                col=col,
-                row=row,
-                address=s["address"],
-                mode=SectorMode(s["mode"]),
-            )
+            info = SectorInfo(col=col, row=row, address=s["address"])
+            modos_guardados[(col, row)] = SectorMode(s["mode"])
             self._sectores[(col, row)] = info
             await self._connect_sector(info)
 
         await self._logica_client.load_state(self._snapshot_id)
         await self._distribute_gold_to_sectors()
+
+        # Con el estado ya cargado en cada sector, se restaura su modo.
+        for clave, modo in modos_guardados.items():
+            await self._set_sector_mode(self._sectores[clave], modo)
+
+    async def _activar_sector(self, info: SectorInfo) -> None:
+
+        if info.mode == SectorMode.ACTIVO:
+            return
+        if info.mode == SectorMode.INACTIVO:
+            await self._load_sector_state(info)
+        # Sin resetear esto, un sector que llevaba mucho tiempo sin actividad
+        # volvería a DORMIDO en cuanto acabase este mismo tick.
+        info.ticks_sin_actividad = 0
+        await self._set_sector_mode(info, SectorMode.ACTIVO)
 
     async def run_loop(self) -> None:
         while True:
@@ -171,13 +193,17 @@ class GestorMundo:
                 self._step_event.clear()
 
             t0 = time.monotonic()
-            await self._run_tick()
+            try:
+                await self._run_tick()
+            except Exception:
+                logger.exception("Tick %d abortado por excepción.", self._tick_id)
             elapsed = time.monotonic() - t0
 
             self._tick_id += 1
 
             if self._tick_id % SNAPSHOT_INTERVAL_TICKS == 0:
-                asyncio.create_task(self._save_snapshot())
+                # FIX B3: con referencia guardada y fallo registrado.
+                self._lanzar_en_segundo_plano(self._save_snapshot())
 
             if self._tick_id % DEEP_SAVE_INTERVAL_TICKS == 0:
                 await self._deep_save()
@@ -200,11 +226,6 @@ class GestorMundo:
             if s.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO)
         ]
 
-        self._pending_sounds: dict[tuple[int, int], list] = {}
-
-        # Un único fetch para todos los sectores -- el progreso de los
-        # ciclos es el MISMO en todo el mundo, no hace falta pedirlo
-        # por sector.
         (
             progreso_solar,
             progreso_lunar,
@@ -226,14 +247,13 @@ class GestorMundo:
 
     async def _enviar_ghost_zone(self, sector: SectorInfo) -> None:
         ghost_cells = await self._calcular_ghost_zone(sector)
-        if not ghost_cells:
-            return
-        req = sector_pb.SetGhostZoneRequest(  # type: ignore
+
+        req = sector_pb.SetGhostZoneRequest(
             tick_id=self._tick_id,
             ghost_cells=ghost_cells,
         )
         try:
-            resp = await sector.stub.SetGhostZone(req)  # type: ignore
+            resp = await sector.stub.SetGhostZone(req)
             if not resp.ok:
                 logger.warning(
                     "SetGhostZone falló en (%d,%d): %s",
@@ -247,9 +267,8 @@ class GestorMundo:
             )
 
     async def _enviar_ghost_zone_atmosfera(self, sector: SectorInfo) -> None:
+
         ghost_cells = await self._calcular_ghost_zone_atmosfera(sector)
-        if not ghost_cells:
-            return
         req = sector_pb.SetAtmosphereGhostZoneRequest(  # type: ignore
             tick_id=self._tick_id,
             ghost_cells=ghost_cells,
@@ -278,6 +297,8 @@ class GestorMundo:
         progreso_lunar: float,
         progreso_anual: float,
     ) -> None:
+        """Manda el progreso (mismo para todos los sectores) de los
+        ciclos solar/lunar/anual -- ver Sector.set_ciclos_globales."""
         req = sector_pb.SetGlobalCyclesRequest(  # type: ignore
             tick_id=self._tick_id,
             progreso_solar=progreso_solar,
@@ -363,6 +384,8 @@ class GestorMundo:
         bots_migrando: list[tuple[SectorInfo, sector_pb.MigratingBot]] = []
         celdas_cambiadas: list = []
         celdas_atmosfera_cambiadas: list = []
+        movimientos_externos: list = []
+        bots_muertos: list[int] = []
 
         async with self._consolidacion_lock:
             for sector, resultado in zip(activos, resultados):
@@ -373,7 +396,7 @@ class GestorMundo:
                         sector.row,
                         resultado,
                     )
-                    # NUEVO: cuenta también como fallo de comunicación.
+                    # Cuenta también como fallo de comunicación.
                     sector.fallos_consecutivos += 1
                     continue
                 if not resultado.ok:
@@ -387,9 +410,9 @@ class GestorMundo:
 
                 celdas_cambiadas.extend(resultado.changed_cells)
                 celdas_atmosfera_cambiadas.extend(resultado.changed_atmosphere_cells)
-
-                for bot in resultado.outgoing_bots:
-                    bots_migrando.append((sector, bot))
+                movimientos_externos.extend(resultado.movimientos_externos)
+                bots_muertos.extend(resultado.dead_bot_ids)
+                bots_migrando.extend((sector, b) for b in resultado.outgoing_bots)
 
                 for sound in resultado.emitted_sounds:
                     self._distribuir_sonido(sound)
@@ -397,15 +420,25 @@ class GestorMundo:
                 if self._delta_tiene_actividad(resultado):
                     sector.ticks_sin_actividad = 0
 
-            if celdas_cambiadas:
-                await self._logica_client.actualizar_celdas(celdas_cambiadas)
+            rechazados: dict[int, Optional[tuple[int, int]]] = {}
+            if celdas_cambiadas or movimientos_externos:
+                rechazados = await self._logica_client.actualizar_celdas(
+                    celdas_cambiadas, movimientos_externos
+                )
 
             if celdas_atmosfera_cambiadas:
                 await self._logica_client.actualizar_celdas_atmosfera(
                     celdas_atmosfera_cambiadas
                 )
 
-            await self._resolver_migraciones(bots_migrando)
+            for bot_id in bots_muertos:
+                await self._logica_client.matar_bot(
+                    bot_id, "avatar eliminado en sector", int(self._tick_id)
+                )
+
+            await self._resolver_migraciones(
+                bots_migrando, movimientos_externos, rechazados
+            )
 
             await self._actualizar_modos_sector()
 
@@ -423,36 +456,69 @@ class GestorMundo:
     async def _resolver_migraciones(
         self,
         bots_migrando: list[tuple[SectorInfo, sector_pb.MigratingBot]],
+        movimientos_externos: list,
+        rechazados: dict[int, Optional[tuple[int, int]]],
     ) -> None:
+        """Entrega cada bot migrante a su Sector destino, junto con su avatar
+        serializado. Si Logica rechazó el movimiento, el bot NO migra: se devuelve
+        a su Sector origen.
+        """
+
+        movs = {int(m.id_elemento): m for m in movimientos_externos}
+
         for origen, mbot in bots_migrando:
+            eid = int(mbot.bot.id_elemento)
+            mov = movs.get(eid)
+            avatar = mov.elemento if mov is not None else b""
+
+            if eid in rechazados:
+                pos_devuelta = rechazados[eid]
+                if pos_devuelta is None:
+                    # Caso residual: no cupo ni en destino ni en origen y
+                    # Logica eliminó el avatar -> hay que terminar el script.
+                    await self._logica_client.matar_bot(
+                        mbot.bot.bot_id, "colisión sin sitio", int(self._tick_id)
+                    )
+                    continue
+
+                mbot.bot.pos.x, mbot.bot.pos.y = pos_devuelta
+                await self._enviar_bot(origen, mbot.bot, avatar)
+                continue
+
             destino = self._sector_para_posicion(mbot.target_pos.x, mbot.target_pos.y)
             if destino is None:
+                # TODO: hoy el avatar SÍ queda colocado en Mundo
+                # fuera del mapa, aunque este log diga otra cosa.
                 logger.warning(
-                    "Bot %s migró fuera del mapa (%d,%d) — eliminado",
+                    "Bot %s migró fuera del mapa (%d,%d).",
                     mbot.bot.bot_id,
                     mbot.target_pos.x,
                     mbot.target_pos.y,
                 )
                 continue
-            if destino.mode == SectorMode.INACTIVO:
-                await self._set_sector_mode(destino, SectorMode.ACTIVO)
 
-            req = sector_pb.AddMigratingBotRequest(
-                tick_id=self._tick_id,
-                bot=mbot.bot,
-            )
-            try:
-                resp = await destino.stub.AddMigratingBot(req)
-                if not resp.ok:
-                    logger.warning(
-                        "AddMigratingBot falló para bot %s en (%d,%d): %s",
-                        mbot.bot.bot_id,
-                        destino.col,
-                        destino.row,
-                        resp.error,
-                    )
-            except grpc.aio.AioRpcError as e:
-                logger.error("gRPC error AddMigratingBot: %s", e)
+            await self._activar_sector(destino)
+            await self._enviar_bot(destino, mbot.bot, avatar)
+
+    async def _enviar_bot(self, sector: SectorInfo, bot, avatar: bytes) -> None:
+        """Envía un bot (con su avatar serializado) a un Sector. Se
+        factoriza porque lo usan dos caminos: la migración normal y la
+        devolución al origen cuando Logica rechazó el movimiento."""
+        req = sector_pb.AddMigratingBotRequest(
+            tick_id=self._tick_id, bot=bot, elemento=avatar
+        )
+        try:
+            resp = await sector.stub.AddMigratingBot(req)
+            if not resp.ok:
+                logger.warning(
+                    "AddMigratingBot falló para bot %s en (%d,%d): %s",
+                    bot.bot_id,
+                    sector.col,
+                    sector.row,
+                    resp.error,
+                )
+        except grpc.aio.AioRpcError as e:
+            logger.error("gRPC error AddMigratingBot: %s", e)
 
     def activar_modo_paso(self, activar: bool) -> tuple[bool, str]:
         """
@@ -527,8 +593,19 @@ class GestorMundo:
 
     def activar_sector_en_posicion(self, x: int, y: int) -> None:
         info = self._sector_para_posicion(x, y)
-        if info and info.mode == SectorMode.INACTIVO:
-            asyncio.create_task(self._set_sector_mode(info, SectorMode.ACTIVO))
+        if info and info.mode != SectorMode.ACTIVO:
+            self._lanzar_en_segundo_plano(self._activar_sector(info))
+
+    def _lanzar_en_segundo_plano(self, coro) -> None:
+        tarea = asyncio.create_task(coro)
+        self._tareas_fondo.add(tarea)
+
+        def _al_terminar(t: asyncio.Task) -> None:
+            self._tareas_fondo.discard(t)
+            if not t.cancelled() and t.exception() is not None:
+                logger.error("Tarea en segundo plano falló: %r", t.exception())
+
+        tarea.add_done_callback(_al_terminar)
 
     def sectores_caidos(self) -> list[str]:
         """
@@ -557,16 +634,15 @@ class GestorMundo:
         except grpc.aio.AioRpcError as e:
             logger.error("Error al congelar Gestor_Bots: %s", e)
 
-        tareas = []
-        for info in self._sectores.values():
-            if info.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO):
-                tareas.append(
-                    info.stub.SetSectorMode(
-                        sector_pb.SetSectorModeRequest(
-                            mode=sector_pb.SectorMode.Value("INACTIVO")
-                        )
-                    )
-                )
+        self._modos_previos_freeze = {
+            (info.col, info.row): info.mode
+            for info in self._sectores.values()
+            if info.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO)
+        }
+        tareas = [
+            self._set_sector_mode(self._sectores[clave], SectorMode.INACTIVO)
+            for clave in self._modos_previos_freeze
+        ]
         if tareas:
             await asyncio.gather(*tareas, return_exceptions=True)
 
@@ -581,6 +657,10 @@ class GestorMundo:
         self._state = SystemState.RESUMING
 
         await self._distribute_gold_to_sectors()
+
+        for clave, modo in self._modos_previos_freeze.items():
+            await self._set_sector_mode(self._sectores[clave], modo)
+        self._modos_previos_freeze = {}
 
         try:
             await self._bots_stub.ResumeAll(bots_pb.ResumeAllRequest())
@@ -635,12 +715,13 @@ class GestorMundo:
 
         self._purgar_snapshots_antiguos()
 
+    # Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo.py
     def _purgar_snapshots_antiguos(self) -> None:
         snapshots = sorted(
             SNAPSHOT_DIR.glob("mundo_*.json"),
             key=lambda p: p.stem.removeprefix("mundo_"),
         )
-        sobrantes = len(snapshots) - SNAPSHOT_MAX
+        sobrantes = max(0, len(snapshots) - SNAPSHOT_MAX)
         for path in snapshots[:sobrantes]:
             path.unlink(missing_ok=True)
             logger.debug("Snapshot antiguo purgado: %s", path)
@@ -733,7 +814,19 @@ class GestorMundo:
         cells = await self._logica_client.obtener_celdas_en_region(
             min_pos=(x0, y0), max_pos=(x1, y1)
         )
-        req = sector_pb.LoadStateRequest(cells=cells)
+
+        # Rectángulo del sector en espacio de atmósfera -- exacto (sin
+        # bloques a caballo) gracias a que Sector._validar_escala_atmosfera
+        # exige que ATMOSFERA_ESCALA divida SECTOR_SIZE.
+        ax0 = x0 // ATMOSFERA_ESCALA
+        ay0 = y0 // ATMOSFERA_ESCALA
+        ax1 = x1 // ATMOSFERA_ESCALA
+        ay1 = y1 // ATMOSFERA_ESCALA
+        atmosphere_cells = await self._logica_client.obtener_celdas_atmosfera_en_region(
+            min_pos=(ax0, ay0), max_pos=(ax1, ay1)
+        )
+
+        req = sector_pb.LoadStateRequest(cells=cells, atmosphere_cells=atmosphere_cells)
         try:
             resp = await info.stub.LoadState(req)
             if not resp.ok:
@@ -770,11 +863,10 @@ class GestorMundo:
         """
         Análogo a _calcular_ghost_zone, pero en espacio de atmósfera y
         con margen 1 (adyacencia-8) en vez de MAX_VISION_DISTANCE -- la
-        difusión atmosférica solo mira al vecino inmediato, no hace
-        falta ver más lejos. El rectángulo propio del sector en espacio
-        de atmósfera es exacto (sin bloques a caballo) gracias a que
-        Sector._validar_escala_atmosfera exige que ATMOSFERA_ESCALA
-        divida SECTOR_SIZE.
+        difusión atmosférica solo mira al vecino inmediato. El
+        rectángulo propio del sector en espacio de atmósfera es exacto
+        (sin bloques a caballo) gracias a
+        Sector._validar_escala_atmosfera.
         """
         ax0 = (info.col * SECTOR_SIZE) // ATMOSFERA_ESCALA
         ay0 = (info.row * SECTOR_SIZE) // ATMOSFERA_ESCALA

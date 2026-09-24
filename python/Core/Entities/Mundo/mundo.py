@@ -19,6 +19,9 @@ from typing import Any, Optional
 from numpy import uint64
 
 import Config.settings as config
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import (
+    Estacion,
+)
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_lunar import (
     Ciclo_Lunar,
 )
@@ -78,11 +81,14 @@ class Mundo:
         self.escala_atmosfera: int = config.ATMOSFERA_ESCALA
 
         # Reloj encargado de controlar los eventos guiados por el tiempo.
-        self.reloj = Reloj
+        self.reloj = Reloj()
 
         # Ciclos astrales
-        self.ciclo_solar = Ciclo_Solar()
-        self.ciclo_lunar = Ciclo_Lunar()
+        self.ciclo_solar = Ciclo_Solar(self)
+        self.ciclo_lunar = Ciclo_Lunar(self)
+
+        # Estacion
+        self.estacion = Estacion(self)
 
     # ---- Elementos: alta / baja / movimiento ----
 
@@ -144,6 +150,31 @@ class Mundo:
         celda_destino = self.malla_terreno.setdefault(pos_destino, Celda())
         celda_destino.put_elemento(eid, tipo_slot)
         self.ids[eid] = pos_destino
+        return True
+
+    def colocar_elemento(
+        self, eid: uint64, pos: tuple[int, int], tipo_slot: str
+    ) -> bool:
+        """
+        Coloca 'eid' en 'pos' FUSIONÁNDOLO con lo que ya haya (nunca
+        reemplaza la celda). No toca la celda de origen: de eso se encarga
+        actualizar_celda con el estado que manda el Sector origen.
+
+        False, sin cambiar nada, si el slot es de ocupación única (suelo/bot)
+        y ya está ocupado: Celda.put_elemento sobrescribe sin avisar, y
+        dejaría al ocupante anterior huérfano en 'elementos'/'ids'.
+        """
+        celda = self.malla_terreno.get(pos)
+        if (
+            celda is not None
+            and tipo_slot in ("suelo", "bot")
+            and getattr(celda, tipo_slot) is not None
+        ):
+            return False
+        if celda is None:
+            celda = self.malla_terreno[pos] = Celda()
+        celda.put_elemento(eid, tipo_slot)
+        self.ids[eid] = pos
         return True
 
     # ---- Consultas ----
@@ -224,15 +255,16 @@ class Mundo:
             resultado.append(((x, y), celda))
         return resultado
 
-    def actualizar_celda(self, pos: tuple[int, int], celda: Celda) -> None:
+    def actualizar_celda(self, pos: tuple[int, int], celda: Celda) -> set[uint64]:
         """
         Reemplaza la celda completa en 'pos' (sincronización con otro
-        proceso/sector). Sincroniza 'ids' para todos los elementos de la
-        celda nueva, y libera las entradas de 'ids' que apuntaban a
-        'pos' para elementos que ya no están en la celda que llega --
-        necesario porque 'ids' es ahora el único índice de posición: si
-        no se sincroniza aquí, un elemento introducido por esta vía
-        quedaría con posición en la malla pero sin entrada en 'ids'.
+        proceso/sector). Sincroniza 'ids' para los elementos de la celda
+        nueva y libera el índice de los que ya no están.
+
+        Devuelve los ids que SALIERON de esta celda. No se puede saber aquí
+        si se eliminaron o solo se movieron a otra celda del mismo lote (el
+        orden de llegada es arbitrario), así que quien llama decide cuando
+        haya aplicado todo el lote (ver Logica_Mundo.actualizar_celdas).
         """
         anterior = self.malla_terreno.get(pos)
         ids_anteriores = (
@@ -242,8 +274,13 @@ class Mundo:
         )
         ids_nuevos = {celda.suelo, celda.bot, *celda.resto} - {None}
 
-        for eid in ids_anteriores - ids_nuevos:
-            self.ids.pop(eid, None)
+        salientes = ids_anteriores - ids_nuevos
+        for eid in salientes:
+            # FIX M1: solo se borra el índice si sigue apuntando a ESTA
+            # posición. Si otra celda del mismo lote ya lo situó en su
+            # destino, ids[eid] != pos y no se toca.
+            if self.ids.get(eid) == pos:
+                self.ids.pop(eid, None)
 
         if celda.vacia():
             self.malla_terreno.pop(pos, None)
@@ -251,6 +288,16 @@ class Mundo:
             self.malla_terreno[pos] = celda
             for eid in ids_nuevos:
                 self.ids[eid] = pos
+
+        return salientes
+
+    def olvidar_elemento(self, eid: uint64, bot_id: Optional[int] = None) -> None:
+        """Borra el objeto y su entrada en 'bots' SIN tocar malla ni 'ids'
+        (ya sincronizados por actualizar_celda). Para elementos eliminados
+        por un Sector, cuya baja llega como "la celda ya no lo contiene"."""
+        self.elementos.pop(eid, None)
+        if bot_id is not None:
+            self.bots.pop(bot_id, None)
 
     # ---- Atmósfera ----
 

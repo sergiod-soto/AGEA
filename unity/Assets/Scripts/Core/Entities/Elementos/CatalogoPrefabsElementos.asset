@@ -17,3 +17,5 @@ MonoBehaviour:
     prefab: {fileID: 6734217021923115399, guid: dc55c24580a0ce14ea57b6bc4dbafa12, type: 3}
   - clase: Bot
     prefab: {fileID: 8256855989151442394, guid: 256ff5e2e70a8d747b516bfe9a8726b0, type: 3}
+  - clase: Piedra
+    prefab: {fileID: 8440239827886448391, guid: 8a085bb1306c3ff4b9eba07e1799d697, type: 3}

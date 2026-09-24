@@ -22,6 +22,15 @@ service LogicaMundoService {
   rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
+
+  // NUEVO -- sistema atmosférico. Mismo trío de responsabilidad que
+  // ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
+  // ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
+  // todos los Sectores en un tick dado).
+  rpc ObtenerCeldasAtmosferaEnRegion (ObtenerCeldasAtmosferaEnRegionRequest) returns (ObtenerCeldasAtmosferaEnRegionResponse);
+  rpc ActualizarCeldasAtmosfera (ActualizarCeldasAtmosferaRequest) returns (common.Ack);
+  rpc ObtenerProgresoCiclos (ObtenerProgresoCiclosRequest) returns (ObtenerProgresoCiclosResponse);
+
   rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
   rpc ObtenerAudio (ObtenerAudioRequest) returns (ObtenerAudioResponse);
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
@@ -155,6 +164,38 @@ message ObtenerCeldasEnRegionResponse {
 
 message ActualizarCeldasRequest {
   repeated common.Cell changed_cells = 1;
+}
+
+// ============================================================
+//  Sistema atmosférico (NUEVO)
+// ============================================================
+
+message ObtenerCeldasAtmosferaEnRegionRequest {
+  common.Position min             = 1;
+  common.Position max             = 2;
+  common.Position excluir_min     = 3;
+  common.Position excluir_max     = 4;
+  bool            tiene_exclusion = 5;
+}
+
+message ObtenerCeldasAtmosferaEnRegionResponse {
+  bool                           ok    = 1;
+  string                         error = 2;
+  repeated common.AtmosphereCell cells = 3;
+}
+
+message ActualizarCeldasAtmosferaRequest {
+  repeated common.AtmosphereCell changed_atmosphere_cells = 1;
+}
+
+message ObtenerProgresoCiclosRequest {}
+
+message ObtenerProgresoCiclosResponse {
+  bool   ok             = 1;
+  string error          = 2;
+  double progreso_solar = 3;
+  double progreso_lunar = 4;
+  double progreso_anual = 5;
 }
 
 message ConsultarRepresentacionRequest {

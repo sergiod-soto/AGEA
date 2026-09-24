@@ -15,6 +15,14 @@ FRESH: bool = os.getenv("FRESH", "false").lower() == "true"
 # ── LOG LEVEL ────────────────────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
+
+# ── IDs especiales ────────────────────────────────────────────────────────
+ID_CICLO_SOLAR: int = int(os.getenv("ID_CICLO_SOLAR", "1"))
+ID_CICLO_LUNAR: int = int(os.getenv("ID_CICLO_LUNAR", "2"))
+ID_RELOJ: int = int(os.getenv("ID_RELOJ", "3"))
+ID_ESTACION: int = int(os.getenv("ID_ESTACION", "4"))
+
+
 # ── Conexión con Unity ────────────────────────────────────────────────────────
 UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")
 UNITY_PORT: int = int(os.getenv("UNITY_PORT", "5069" if DEBUG else "5001"))

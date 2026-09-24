@@ -68,7 +68,7 @@ from dataclasses import dataclass
 from vectors import Vector2
 
 from Config.settings import ATMOSFERA_ESCALA, GRID_HEIGHT
-from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 
 
 @dataclass(frozen=True)

@@ -3,7 +3,8 @@
 logica_mundo_client.py — Cliente async gRPC hacia LogicaMundo.
 
 Usado por:
-  - Gestor_Mundo   → celdas de región, actualizar celdas, elementos
+  - Gestor_Mundo   → celdas de región, actualizar celdas, celdas de
+                      atmósfera, progreso de ciclos globales, elementos
                       globales, snapshots (ver gestor_mundo.py)
   - Gestor_Bots    → resolver_accion (reenvío de acciones de bots)
   - Comunicacion_Remoto (local) → consultar_representacion, eventos
@@ -111,10 +112,6 @@ class LogicaMundoClient:
         except grpc.aio.AioRpcError as exc:
             logger.error("EjecutarComandoConsola(%s) falló: %s", tipo, exc)
             return False, str(exc), b""
-
-    # ------------------------------------------------------------------
-    # Suelos
-    # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
     # Elementos
@@ -320,6 +317,90 @@ class LogicaMundoClient:
         except grpc.aio.AioRpcError as exc:
             logger.error("ActualizarCeldas falló: %s", exc)
             return False
+
+    # ---- Sistema atmosférico (NUEVO) ----
+    #
+    # Mismo trío que obtener_celdas_en_region/actualizar_celdas, en
+    # versión atmósfera, más obtener_progreso_ciclos (sin equivalente
+    # de terreno -- es un dato global, no por región).
+
+    async def obtener_celdas_atmosfera_en_region(
+        self,
+        min_pos: tuple[int, int],
+        max_pos: tuple[int, int],
+        excluir_min: Optional[tuple[int, int]] = None,
+        excluir_max: Optional[tuple[int, int]] = None,
+        timeout: float | None = None,
+    ) -> list:
+        await self._ensure_channel()
+
+        tiene_exclusion = excluir_min is not None and excluir_max is not None
+        req = pb.ObtenerCeldasAtmosferaEnRegionRequest(
+            min=self._pos_to_pb(min_pos),
+            max=self._pos_to_pb(max_pos),
+            tiene_exclusion=tiene_exclusion,
+        )
+        if tiene_exclusion:
+            req.excluir_min.CopyFrom(self._pos_to_pb(excluir_min))
+            req.excluir_max.CopyFrom(self._pos_to_pb(excluir_max))
+
+        try:
+            resp = await self._stub.ObtenerCeldasAtmosferaEnRegion(
+                req, timeout=self._t(timeout)
+            )
+            if not resp.ok:
+                logger.warning(
+                    "ObtenerCeldasAtmosferaEnRegion respondió error: %s", resp.error
+                )
+                return []
+            return list(resp.cells)
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ObtenerCeldasAtmosferaEnRegion falló: %s", exc)
+            return []
+
+    async def actualizar_celdas_atmosfera(
+        self, changed_atmosphere_cells: list, timeout: float | None = None
+    ) -> bool:
+        await self._ensure_channel()
+        req = pb.ActualizarCeldasAtmosferaRequest(
+            changed_atmosphere_cells=changed_atmosphere_cells
+        )
+        try:
+            resp = await self._stub.ActualizarCeldasAtmosfera(
+                req, timeout=self._t(timeout)
+            )
+            return resp.ok
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ActualizarCeldasAtmosfera falló: %s", exc)
+            return False
+
+    async def obtener_progreso_ciclos(
+        self, timeout: float | None = None
+    ) -> tuple[float, float, float]:
+        """
+        Progreso (0.0-1.0) de los ciclos solar/lunar/anual. AVISO: a
+        diferencia del resto de métodos "blandos" de este cliente (que
+        devuelven [] o False sin ambigüedad ante un fallo), aquí
+        (0.0, 0.0, 0.0) es un valor con forma válida -- significa
+        "medianoche + equinoccio" para TODOS los sectores si
+        Logica_Mundo no responde durante un tick, en vez de fallar de
+        forma visible. Se deja así por consistencia con el resto del
+        cliente; si se prefiere un fallo más ruidoso aquí (propagar la
+        excepción, o que Gestor_Mundo se salte esa fase del tick),
+        cambiar solo este método.
+        """
+        await self._ensure_channel()
+        try:
+            resp = await self._stub.ObtenerProgresoCiclos(
+                pb.ObtenerProgresoCiclosRequest(), timeout=self._t(timeout)
+            )
+            if not resp.ok:
+                logger.warning("ObtenerProgresoCiclos respondió error: %s", resp.error)
+                return 0.0, 0.0, 0.0
+            return resp.progreso_solar, resp.progreso_lunar, resp.progreso_anual
+        except grpc.aio.AioRpcError as exc:
+            logger.error("ObtenerProgresoCiclos falló: %s", exc)
+            return 0.0, 0.0, 0.0
 
     # ------------------------------------------------------------------
     # Representación (Vista_Foco / Unity)

@@ -1,8 +1,11 @@
+# Core/Entities/Elementos/Abstractos/Tiempo/reloj.py
+
 from typing import Tuple
 
 from numpy import uint64
 
 from Config.parametros_simulacion import TICKS_POR_SEGUNDO
+from Config.settings import ID_RELOJ
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
 )
@@ -61,7 +64,7 @@ class Reloj(Marcador_Temporal):
     ciclos: list["Reloj.Ciclo"] = []
 
     def __init__(self, **kwargs):
-        super().__init__(Reloj, **kwargs)
+        super().__init__(Reloj, id_elemento=ID_RELOJ, **kwargs)
 
     def avanzar_un_segundo(self) -> None:
         self.segundos += 1

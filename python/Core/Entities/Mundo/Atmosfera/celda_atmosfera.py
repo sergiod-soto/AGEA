@@ -17,7 +17,6 @@ from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.hum
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Derivado.humedad_relativa import (
     Humedad_Relativa,
 )
-from Core.Entities.Mundo.Bioma.bioma import Bioma
 
 
 class Celda_Atmosfera:
@@ -28,7 +27,6 @@ class Celda_Atmosfera:
         resistencia_viento: float,
         direccion_preferente_viento: Vector2,
         fuerza_viento: Vector2,
-        bioma: Bioma,
     ) -> None:
         self.posicion = posicion
 
@@ -56,8 +54,6 @@ class Celda_Atmosfera:
         self.resistencia_viento = resistencia_viento  # 0 = libre, 1 = bloqueado
         self.direccion_preferente_viento = direccion_preferente_viento
         self.fuerza_viento = fuerza_viento
-        self.bioma = bioma  # referencia compartida -- varias celdas del
-        # mismo terreno apuntan al mismo objeto Bioma, no se duplica.
 
     def aplicar_patch(self, patch: dict) -> None:
         """
@@ -66,8 +62,8 @@ class Celda_Atmosfera:
         alguien lo use para sincronizar atmósfera por red:
 
         Sigue haciendo setattr(self, nombre, valor) plano, que es
-        correcto para resistencia_viento, direccion_preferente_viento,
-        fuerza_viento y bioma (no han cambiado). Pero
+        correcto para resistencia_viento, direccion_preferente_viento y
+        fuerza_viento. Pero
         temperatura/presion/viento/humedad_absoluta/humedad_relativa ya
         NO son floats/Vector2 sueltos, sino objetos Sistema_Atmosferico
         con su propio estado -- un patch tipo {"temperatura": 25.0}
@@ -82,3 +78,4 @@ class Celda_Atmosfera:
         """
         for nombre, valor in patch.items():
             setattr(self, nombre, valor)
+

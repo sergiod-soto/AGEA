@@ -87,6 +87,25 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
+    # NUEVO -- sistema atmosférico. Mismo patrón exacto que
+    # ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera.
+    async def ObtenerCeldasAtmosferaEnRegion(self, request, context):
+        return await self._dispatch["ObtenerCeldasAtmosferaEnRegion"].handle(
+            self._logica, request, context
+        )
+
+    async def ActualizarCeldasAtmosfera(self, request, context):
+        return await self._dispatch["ActualizarCeldasAtmosfera"].handle(
+            self._logica, request, context
+        )
+
+    # NUEVO -- sistema atmosférico. Progreso de los ciclos globales
+    # (solar/lunar/anual) que Gestor_Mundo reenvía a cada Sector.
+    async def ObtenerProgresoCiclos(self, request, context):
+        return await self._dispatch["ObtenerProgresoCiclos"].handle(
+            self._logica, request, context
+        )
+
     async def ConsultarRepresentacion(self, request, context):
         return await self._dispatch["ConsultarRepresentacion"].handle(
             self._logica, request, context
@@ -114,7 +133,7 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         return await self._dispatch["ObtenerAudio"].handle(
             self._logica, request, context
         )
-        
+
     async def EjecutarComandoConsola(self, request, context):
         from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
             logica_mundo_service_pb2 as pb,

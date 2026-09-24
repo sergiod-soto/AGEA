@@ -48,9 +48,9 @@ from Config.settings import (
     SECTOR_SIZE,
 )
 from Core.Entities.Elementos.registry import reconstruir_elemento
-from Core.Entities.Mundo.Celda.celda_atmosfera import Celda_Atmosfera
-from Infraestructura.Gestores.Mundo.Atmosfera import sistema_atmosferico
-from Infraestructura.Gestores.Mundo.Atmosfera.sistema_atmosferico import EstadoVecino
+
+from Core.Entities.Mundo.Atmosfera import sistema_atmosferico
+from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -334,6 +334,7 @@ class TickDelta:
     # mismo — ver Sector._resolver_mutaciones — para poder paralelizar
     # el tick del mundo sector-por-sector).
     mutaciones: list[Mutacion] = field(default_factory=list)
+    movimientos_externos: list = field(default_factory=list)
 
     # Celdas ya resueltas — esto es lo que de verdad viaja a
     # Logica_Mundo en GetDeltaResponse.changed_cells.
@@ -505,6 +506,77 @@ class Sector:
                 "de quién las calcula. Ajusta Config.settings."
             )
 
+    def _en_region_propia(self, pos: tuple[int, int]) -> bool:
+        """True si pos (espacio de terreno) cae dentro de la región de este
+        Sector. Un Sector solo puede escribir celdas de su región."""
+        x, y = pos
+        return self._x0 <= x < self._x1 and self._y0 <= y < self._y1
+
+    def _registrar_movimiento_externo(
+        self, delta: TickDelta, mutacion: MoverElemento, elemento: Any, slot: str
+    ) -> None:
+        """Declara un movimiento hacia una celda ajena. Se serializa el
+        elemento porque su estado pudo cambiar durante este tick y
+        Logica_Mundo debe quedarse con la versión actualizada."""
+        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+            MovimientoExterno,
+        )
+
+        x, y = mutacion.pos_destino
+        delta.movimientos_externos.append(
+            MovimientoExterno(
+                id_elemento=mutacion.id_elemento,
+                tipo_slot=slot,
+                pos_destino=common_pb.Position(x=x, y=y),
+                elemento=CeldaSectorStore._serializar_slot(elemento),
+            )
+        )
+
+    def _en_region_propia(self, pos: tuple[int, int]) -> bool:
+        """True si pos (espacio de terreno) cae en la región de este Sector.
+        Un Sector solo puede escribir celdas de su región."""
+        x, y = pos
+        return self._x0 <= x < self._x1 and self._y0 <= y < self._y1
+
+    @staticmethod
+    def _asignar_slot(celda: CeldaSector, slot: str, elemento: Any) -> bool:
+        """Coloca 'elemento' en el slot de 'celda'. False, sin cambiar nada,
+        si el slot es de ocupación única (suelo/bot) y ya está ocupado: así
+        no se sobrescribe en silencio al ocupante anterior."""
+        if slot == "suelo":
+            if celda.suelo is not None:
+                return False
+            celda.suelo = elemento
+        elif slot == "bot":
+            if celda.bot is not None:
+                return False
+            celda.bot = elemento
+        else:
+            celda.resto.append(elemento)
+        return True
+
+    def _registrar_movimiento_externo(
+        self, delta: TickDelta, mutacion: MoverElemento, elemento: Any, slot: str
+    ) -> None:
+        """Declara un movimiento hacia una celda ajena. Se serializa el
+        elemento porque su estado pudo cambiar durante este tick, y
+        Logica_Mundo debe quedarse con la versión actualizada."""
+        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
+            MovimientoExterno,
+        )
+
+        dx, dy = mutacion.pos_destino
+        ox, oy = mutacion.pos_origen
+        delta.movimientos_externos.append(
+            MovimientoExterno(
+                id_elemento=mutacion.id_elemento,
+                tipo_slot=slot,
+                pos_destino=common_pb.Position(x=dx, y=dy),
+                elemento=CeldaSectorStore._serializar_slot(elemento),
+                pos_origen=common_pb.Position(x=ox, y=oy),
+            )
+        )
+
     # ─────────────────────────────────────────
     #  Ciclo de vida
     # ─────────────────────────────────────────
@@ -545,6 +617,7 @@ class Sector:
             len(list(self._atmosfera.items())),
             len(self._bots),
         )
+        self._elemento_a_bot = {bot.id_elemento: bot.bot_id for bot in bots}
 
     def get_state(self):
         """
@@ -637,10 +710,46 @@ class Sector:
             tick_id,
         )
 
-    def add_migrating_bot(self, tick_id: int, bot) -> None:
-        """Registra un bot que acaba de migrar a este sector."""
+    def add_migrating_bot(self, tick_id: int, bot, elemento: bytes = b"") -> None:
+        """Registra un bot que llega a este sector y coloca su avatar en el
+        store. Sin lo segundo el avatar no ejecutaría tick() aquí, y la
+        próxima celda que este sector reporte en esa posición lo borraría de
+        Mundo (actualizar_celda sustituye la celda entera).
+
+        `elemento` es el avatar serializado (mismo formato que un slot de
+        Cell). Por defecto vacío para no romper a los llamadores actuales:
+        en ese caso solo se registra el bot, como antes."""
         self._bots[bot.bot_id] = bot
         self._elemento_a_bot[bot.id_elemento] = bot.bot_id
+
+        if elemento:
+            pos = (bot.pos.x, bot.pos.y)
+            if not self._en_region_propia(pos):
+                logger.warning(
+                    "Sector (%d,%d): avatar %s llega a %s, fuera de su región.",
+                    self._col,
+                    self._row,
+                    bot.id_elemento,
+                    pos,
+                )
+            else:
+                celda = self._celdas.get_or_create(*pos)
+                if celda.bot is not None and celda.bot.id_elemento == bot.id_elemento:
+                    # Ya cargado por un LoadState reciente (p. ej. la
+                    # activación de un sector INACTIVO, que carga antes de
+                    # recibir al bot): la operación es idempotente.
+                    pass
+                elif not self._asignar_slot(
+                    celda, "bot", CeldaSectorStore._deserializar_slot(elemento)
+                ):
+                    logger.error(
+                        "Sector (%d,%d): slot bot de %s ocupado al recibir %s.",
+                        self._col,
+                        self._row,
+                        pos,
+                        bot.id_elemento,
+                    )
+
         logger.debug(
             "Sector (%d,%d): bot %s migrado (tick %d)",
             self._col,
@@ -672,6 +781,9 @@ class Sector:
             y0=self._y0,
             x1=self._x1,
             y1=self._y1,
+            atmosfera=self._atmosfera,
+            ghost_atmosfera=self._ghost_atmosfera,
+            escala_atmosfera=ATMOSFERA_ESCALA,
         )
 
         self._procesar_sonidos(ctx)
@@ -703,48 +815,45 @@ class Sector:
         return delta
 
     def _avanzar_atmosfera(self, tick_id: int) -> None:
-        """
-        Recorre las celdas de atmósfera propias de este Sector y avanza
-        cada una un tick con sistema_atmosferico.avanzar_celda().
-
-        Se congela un snapshot de self._atmosfera ANTES de avanzar
-        ninguna celda: si no se hiciera, una celda procesada más tarde
-        en este mismo bucle vería a un vecino "propio" ya con el valor
-        de ESTE tick en vez del anterior, rompiendo el modelo acordado
-        ("vecinos siempre del tick anterior"). El ghost zone
-        (self._ghost_atmosfera) ya es del tick anterior por construcción
-        (lo manda Gestor_Mundo al principio de la Fase 0).
-        """
+        """Avanza un tick cada celda de atmósfera propia. Los vecinos se
+        leen SIEMPRE del tick anterior (modelo acordado)."""
         posiciones_propias = self._posiciones_atmosfera_propias()
-        snapshot_propio = {pos: self._atmosfera.get(*pos) for pos in posiciones_propias}
+
+        # FIX S1: se congelan ANTES de mutar nada los únicos valores que leen
+        # los vecinos. Son floats (inmutables), así que la copia es real.
+        # Guardar las celdas en un dict NO congelaba nada: avanzar_celda las
+        # muta in-place y el dict apuntaba a los mismos objetos, con lo que
+        # el resultado dependía del orden del bucle.
+        estados_previos: dict[tuple[int, int], tuple[float, float, float]] = {}
+        for pos in posiciones_propias:
+            celda = self._atmosfera.get(*pos)
+            if celda is not None:
+                estados_previos[pos] = (
+                    celda.temperatura.valor,
+                    celda.presion.valor,
+                    celda.humedad_absoluta.valor,
+                )
 
         for pos in posiciones_propias:
-            celda = snapshot_propio[pos]
+            celda = self._atmosfera.get(*pos)
             if celda is None:
-                # Puede pasar si Gestor_Mundo todavía no ha creado la
-                # celda de atmósfera para este bloque (p. ej. mundo
-                # recién arrancado, LoadState parcial).
-                continue
-
-            vecinos = self._vecinos_atmosfera(pos, snapshot_propio)
-
+                continue  # bloque aún sin crear (mundo recién arrancado)
+            vecinos = self._vecinos_atmosfera(pos, estados_previos)
             sistema_atmosferico.avanzar_celda(
                 celda, self._progreso_solar, self._progreso_anual, vecinos
             )
 
     def _vecinos_atmosfera(
-        self, pos: tuple[int, int], snapshot_propio: dict
-    ) -> list[EstadoVecino]:
-        """
-        Construye los EstadoVecino (adyacencia-8) de `pos`, del tick
-        anterior. Busca primero en snapshot_propio (vecino dentro de
-        este mismo Sector); si no está ahí, en self._ghost_atmosfera
-        (vecino de un Sector vecino). Si no está en ninguno de los dos
-        se omite -- puede pasar en el borde del mundo (no hay nada más
-        allá) o si el ghost zone de ese Sector vecino aún no ha llegado.
-        """
+        self,
+        pos: tuple[int, int],
+        estados_previos: dict[tuple[int, int], tuple[float, float, float]],
+    ) -> list[sistema_atmosferico.EstadoVecino]:
+        """EstadoVecino (adyacencia-8) de `pos`, del tick anterior. Primero
+        estados_previos (vecino propio, congelado); si no, la ghost zone
+        (vecino de otro Sector, ya del tick anterior). Se omite si no está
+        en ninguna (borde del mundo, o ghost zone aún sin llegar)."""
         x, y = pos
-        vecinos: list[EstadoVecino] = []
+        vecinos: list[sistema_atmosferico.EstadoVecino] = []
 
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
@@ -752,11 +861,9 @@ class Sector:
                     continue
                 vecino_pos = (x + dx, y + dy)
 
-                vecino_celda = snapshot_propio.get(vecino_pos)
-                if vecino_celda is not None:
-                    temperatura = vecino_celda.temperatura.valor
-                    presion = vecino_celda.presion.valor
-                    humedad_absoluta = vecino_celda.humedad_absoluta.valor
+                estado = estados_previos.get(vecino_pos)
+                if estado is not None:
+                    temperatura, presion, humedad_absoluta = estado
                 else:
                     vecino_proto = self._ghost_atmosfera.get(vecino_pos)
                     if vecino_proto is None:
@@ -766,17 +873,14 @@ class Sector:
                     humedad_absoluta = vecino_proto.humedad_absoluta
 
                 distancia = math.hypot(dx, dy)
-                direccion = Vector2(dx / distancia, dy / distancia)
-
                 vecinos.append(
-                    EstadoVecino(
+                    sistema_atmosferico.EstadoVecino(
                         temperatura=temperatura,
                         presion=presion,
                         humedad_absoluta=humedad_absoluta,
-                        direccion=direccion,
+                        direccion=Vector2(dx / distancia, dy / distancia),
                     )
                 )
-
         return vecinos
 
     def _resolver_mutaciones(
@@ -791,8 +895,18 @@ class Sector:
         for mutacion in mutaciones:
             if isinstance(mutacion, CrearElemento):
                 celda = self._celdas.get_or_create(*mutacion.pos)
-                self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento)
-                posiciones_cambiadas.add(mutacion.pos)
+                if self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
+                    posiciones_cambiadas.add(mutacion.pos)
+                else:
+                    # Slot único ocupado: la creación se descarta (no hay un "origen"
+                    # al que devolver un elemento que aún no existía).
+                    logger.warning(
+                        "Sector (%d,%d): creación descartada en %s, slot '%s' ocupado.",
+                        self._col,
+                        self._row,
+                        mutacion.pos,
+                        mutacion.tipo_slot,
+                    )
                 # NOTA / LIMITACIÓN CONOCIDA: si tipo_slot == "bot", el
                 # elemento todavía no tiene id real (solo marcador_local,
                 # ver mutaciones.CrearElemento) — no se puede indexar en
@@ -833,20 +947,61 @@ class Sector:
                     mutacion.pos_origen, mutacion.id_elemento
                 )
                 posiciones_cambiadas.add(mutacion.pos_origen)
-                if elemento is not None:
+                if elemento is None:
+                    continue
+
+                movido = True  # False si el destino propio estaba ocupado (G1)
+                if self._en_region_propia(mutacion.pos_destino):
                     celda_destino = self._celdas.get_or_create(*mutacion.pos_destino)
-                    self._asignar_slot(celda_destino, slot, elemento)
-                    posiciones_cambiadas.add(mutacion.pos_destino)
-                    if slot == "bot":
-                        bot_id = (
-                            mutacion.bot_id
-                            if mutacion.bot_id is not None
-                            else self._elemento_a_bot.get(mutacion.id_elemento)
+                    if self._asignar_slot(celda_destino, slot, elemento):
+                        posiciones_cambiadas.add(mutacion.pos_destino)
+                    else:
+                        # G1 dentro del Sector: el origen se acaba de vaciar arriba,
+                        # así que devolverlo siempre cabe.
+                        logger.warning(
+                            "Sector (%d,%d): movimiento de %s rechazado, slot '%s' de %s "
+                            "ocupado; vuelve a %s.",
+                            self._col,
+                            self._row,
+                            mutacion.id_elemento,
+                            slot,
+                            mutacion.pos_destino,
+                            mutacion.pos_origen,
                         )
-                        if bot_id is not None:
-                            x, y = mutacion.pos_destino
-                            self._bots[bot_id].pos.x = x
-                            self._bots[bot_id].pos.y = y
+                        self._asignar_slot(
+                            self._celdas.get_or_create(*mutacion.pos_origen),
+                            slot,
+                            elemento,
+                        )
+                        movido = False
+                else:
+                    # F1: nunca se crea la celda ajena en nuestro store (sustituiría
+                    # la celda real del vecino, perdiendo su suelo).
+                    self._registrar_movimiento_externo(delta, mutacion, elemento, slot)
+
+                # Solo si el elemento se movió de verdad: _detectar_migraciones
+                # necesita la pos nueva para reportar al bot que salió.
+                if slot == "bot" and movido:
+                    bot_id = (
+                        mutacion.bot_id
+                        if mutacion.bot_id is not None
+                        else self._elemento_a_bot.get(mutacion.id_elemento)
+                    )
+                    bot_snapshot = (
+                        self._bots.get(bot_id) if bot_id is not None else None
+                    )
+                    if (
+                        bot_snapshot is None
+                    ):  # S3: antes era KeyError o fallo silencioso
+                        logger.warning(
+                            "Sector (%d,%d): avatar %s movido pero sin bot asociado en "
+                            "_bots -- su pos no se actualiza.",
+                            self._col,
+                            self._row,
+                            mutacion.id_elemento,
+                        )
+                    else:
+                        bot_snapshot.pos.x, bot_snapshot.pos.y = mutacion.pos_destino
 
         delta.changed_cells = [
             self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas

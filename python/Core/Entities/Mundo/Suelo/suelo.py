@@ -21,13 +21,23 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 
 class Suelo(Elemento_Abstracto):
 
-    def __init__(self, casilla: tuple[int, int], id_elemento, tipo, **kwargs):
+    def __init__(
+        self,
+        casilla: tuple[int, int],
+        id_elemento,
+        tipo,
+        tasa_conversion_radiacion_calor,
+        inercia_termica,
+        **kwargs,
+    ):
         super().__init__(
             tipo=tipo,
             id_elemento=id_elemento,
             **kwargs,
         )
         self.casilla = casilla
+        self.tasa_conversion_radiacion_calor = tasa_conversion_radiacion_calor
+        self.inercia_termica = inercia_termica
 
     def serializar_casilla(self) -> dict:
         """

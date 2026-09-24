@@ -1,5 +1,8 @@
 # Core/Entities/Elementos/Abstractos/Marcadores/Temporales/Estacion/estacion.py
 
+from numpy import uint64
+
+from Config.settings import ID_ESTACION
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
 )
@@ -34,8 +37,9 @@ class Estacion(Marcador_Temporal):
     revienta.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(Estacion, **kwargs)
+    def __init__(self, mundo, **kwargs):
+        super().__init__(Estacion, ID_ESTACION, **kwargs)
+        self.mundo = mundo
         self.ciclo: Reloj.Ciclo = self.mundo.reloj.agregar_ciclo(
             Estacion, self.mundo.reloj.Anho(1)
         )

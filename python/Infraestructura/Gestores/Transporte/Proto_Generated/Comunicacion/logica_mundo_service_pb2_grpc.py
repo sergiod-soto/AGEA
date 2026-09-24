@@ -109,6 +109,21 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
+        self.ObtenerCeldasAtmosferaEnRegion = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ObtenerCeldasAtmosferaEnRegion',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionResponse.FromString,
+                _registered_method=True)
+        self.ActualizarCeldasAtmosfera = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ActualizarCeldasAtmosfera',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasAtmosferaRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.ObtenerProgresoCiclos = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ObtenerProgresoCiclos',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
+                _registered_method=True)
         self.ConsultarRepresentacion = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.SerializeToString,
@@ -237,6 +252,28 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ObtenerCeldasAtmosferaEnRegion(self, request, context):
+        """NUEVO -- sistema atmosférico. Mismo trío de responsabilidad que
+        ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
+        ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
+        todos los Sectores en un tick dado).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ActualizarCeldasAtmosfera(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ObtenerProgresoCiclos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ConsultarRepresentacion(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -351,6 +388,21 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ActualizarCeldas,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'ObtenerCeldasAtmosferaEnRegion': grpc.unary_unary_rpc_method_handler(
+                    servicer.ObtenerCeldasAtmosferaEnRegion,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionResponse.SerializeToString,
+            ),
+            'ActualizarCeldasAtmosfera': grpc.unary_unary_rpc_method_handler(
+                    servicer.ActualizarCeldasAtmosfera,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasAtmosferaRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'ObtenerProgresoCiclos': grpc.unary_unary_rpc_method_handler(
+                    servicer.ObtenerProgresoCiclos,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.SerializeToString,
             ),
             'ConsultarRepresentacion': grpc.unary_unary_rpc_method_handler(
                     servicer.ConsultarRepresentacion,
@@ -770,6 +822,87 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/ActualizarCeldas',
             Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.SerializeToString,
             common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ObtenerCeldasAtmosferaEnRegion(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/ObtenerCeldasAtmosferaEnRegion',
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasAtmosferaEnRegionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ActualizarCeldasAtmosfera(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/ActualizarCeldasAtmosfera',
+            Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasAtmosferaRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ObtenerProgresoCiclos(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/ObtenerProgresoCiclos',
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
             options,
             channel_credentials,
             insecure,

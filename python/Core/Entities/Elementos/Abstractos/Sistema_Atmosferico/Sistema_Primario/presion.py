@@ -12,7 +12,7 @@ DIFUSION_PRESION: float = 0.05
 class Presion(Sistema_Atmosferico):
     def __init__(self, valor_inicial: float = 1000.0, **kwargs):
         super().__init__(Presion, **kwargs)
-        self.bares: float = valor_inicial
+        self.valor: float = valor_inicial
 
     def actualizar(self, temperatura: float, vecinos: list) -> None:
         """
@@ -28,6 +28,6 @@ class Presion(Sistema_Atmosferico):
         mientras se resuelve el modelo real.
         """
         difusion = sum(
-            (vecino.presion - self.bares) * DIFUSION_PRESION for vecino in vecinos
+            (vecino.presion - self.valor) * DIFUSION_PRESION for vecino in vecinos
         )
-        self.bares += difusion
+        self.valor += difusion

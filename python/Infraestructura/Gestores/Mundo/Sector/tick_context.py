@@ -40,25 +40,23 @@ class TickContext:
 
     def __init__(
         self,
-        celdas_inicio_tick,  # CeldaSectorStore (o equivalente) — instantánea de este tick, no se modifica
+        celdas_inicio_tick,
         ghost: dict,
         x0: int,
         y0: int,
         x1: int,
         y1: int,
+        atmosfera=None,  # CeldaAtmosferaStore propio del Sector
+        ghost_atmosfera: dict = None,
+        escala_atmosfera: int = 1,
     ):
-        # Estado de solo lectura: instantánea de comienzo de tick.
-        # get_celda nunca refleja mutaciones pedidas durante este mismo tick.
         self._celdas = celdas_inicio_tick
         self._ghost = ghost
         self._x0, self._y0, self._x1, self._y1 = x0, y0, x1, y1
-
-        # Mutaciones pedidas durante este tick, en el orden en que se pidieron.
-        # Sector las traduce al TickDelta al terminar; aquí no se aplican.
+        self._atmosfera = atmosfera
+        self._ghost_atmosfera = ghost_atmosfera or {}
+        self._escala_atmosfera = escala_atmosfera
         self._mutaciones: list[Mutacion] = []
-
-        # Contador para generar marcadores locales únicos dentro de este tick,
-        # necesario porque un mismo sector puede crear varios elementos a la vez.
         self._contador_nuevos = 0
 
     # ─────────────────────────────────────────
@@ -72,6 +70,36 @@ class TickContext:
         if self.en_region_propia(x, y):
             return self._celdas.get(x, y)
         return self._ghost.get((x, y))
+
+    def get_atmosfera(self, x: int, y: int):
+        """
+        Devuelve la Celda_Atmosfera que cubre la posición de TERRENO (x, y)
+        -- quien llama no necesita conocer ATMOSFERA_ESCALA, la conversión
+        se hace aquí (igual que Mundo.pos_suelo_a_atmosfera).
+
+        Devuelve la celda VIVA (no una copia): en compute_tick, tick() de
+        los elementos corre ANTES de _avanzar_atmosfera, así que esto ya
+        es consistente con leer "estado de inicio de tick" sin necesidad
+        de congelar nada. No mutar lo que devuelve este método.
+
+        None si la posición no está en la malla propia del Sector.
+
+        LIMITACIÓN CONOCIDA, sin resolver a propósito: la ghost zone de
+        atmósfera (self._ghost_atmosfera) solo tiene margen de 1 bloque,
+        y además guarda AtmosphereCell (proto), no Celda_Atmosfera -- un
+        tipo distinto al que se devuelve para la malla propia. Hoy no hace
+        falta resolverlo: el único consumidor (Suelo.tick, vía
+        Transformable) siempre consulta su PROPIA posición, que por
+        definición cae dentro de la malla propia del Sector, nunca en la
+        ghost zone. Si en el futuro algo (p.ej. un bot con visión) necesita
+        consultar atmósfera fuera de su propio bloque, esto habrá que
+        revisarlo: o se unifica el tipo devuelto, o se documenta que
+        get_atmosfera solo sirve para "mi propia celda".
+        """
+        pos_atmosfera = (x // self._escala_atmosfera, y // self._escala_atmosfera)
+        if self._atmosfera is None:
+            return None
+        return self._atmosfera.get(*pos_atmosfera)
 
     def en_region_propia(self, x: int, y: int) -> bool:
         return self._x0 <= x < self._x1 and self._y0 <= y < self._y1
@@ -117,20 +145,17 @@ class TickContext:
             )
         )
 
-    def mover_elemento(
+    def eliminar_elemento(
         self,
         id_elemento: int,
-        pos_origen: tuple[int, int],
-        pos_destino: tuple[int, int],
+        pos: tuple[int, int],
+        bot_id: Optional[int] = None,
     ) -> None:
-        """Pide mover un elemento existente. Si pos_destino cae fuera de
-        este sector, Logica_Mundo se encarga de la migración al aplicar
-        la mutación — este método no necesita saberlo."""
         self._mutaciones.append(
-            MoverElemento(
+            EliminarElemento(
                 id_elemento=id_elemento,
-                pos_origen=pos_origen,
-                pos_destino=pos_destino,
+                pos=pos,
+                bot_id=bot_id,
             )
         )
 

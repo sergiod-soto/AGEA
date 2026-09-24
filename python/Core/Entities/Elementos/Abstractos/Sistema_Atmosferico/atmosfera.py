@@ -1,20 +1,11 @@
+from Core.Entities.Comportamiento.Stats.Simples.temperatura import Temperatura
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Clima.clima import Clima
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Fenomenos.nubes import Nubes
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistemas_Primarios.humedad_absoluta import (
-    Humedad_Absoluta,
-)
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistemas_Primarios.presion import (
-    Presion,
-)
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistemas_Primarios.radiacion import (
-    Radiacion,
-)
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistemas_Primarios.temperatura import (
-    Temperatura,
-)
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistemas_Primarios.viento import (
-    Viento,
-)
+
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.humedad_absoluta import Humedad_Absoluta
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.presion import Presion
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.radiacion import Radiacion
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.viento import Viento
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )

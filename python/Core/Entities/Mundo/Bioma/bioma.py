@@ -1,16 +1,22 @@
+# bioma.py
+
+
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
 class Bioma:
-
-    def __init__(
-        self,
-        tipo,
-        tasa_conversion_radiacion_calor,
-        inercia_termica,
-        **kwargs,
-    ):
-        super().__init__(
-            tipo,
-            **kwargs,
-        )
-
-        self.inercia_termica = inercia_termica
-        self.tasa_conversion_radiacion_calor = tasa_conversion_radiacion_calor
+    
+  
+    nombre: str
+    
+    # Termodinámica
+    tasa_conversion_radiacion_calor: float
+    inercia_termica: float
+    albedo: float                        # Factor [0.0 - 1.0] de reflexión solar
+    
+    # Hidrología / Atmósfera
+    tasa_evaporacion_base: float        # Aporte base de vegetación/suelo a Humedad_Absoluta
+    capacidad_retencion_humedad: float   # Límite o freno de saturación
+    
+    # Aerodinámica
+    resistencia_viento: float           # Rugosidad del terreno / rozamiento
