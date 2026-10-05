@@ -1,6 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/condicion.py
+from abc import abstractmethod
 from enum import Enum, auto
-from typing import Callable
 
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 from Core.Entities.Elementos.elemento import Elemento
@@ -8,25 +8,25 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Condicion(Elemento_Abstracto):
     """
-    Modo LOCAL: evaluar() se llama a mano por quien posee la Condicion
-    (p. ej. Transformable.tick), en el propio tick del elemento. No
-    toca el bus, no depende de Elemento.mundo -- funciona igual dentro
-    de un proceso de Sector que en Logica_Mundo. Es el modo que
-    necesita Suelo (y cualquier elemento cuya transformación se
-    resuelva vía TickContext).
+    Base para condiciones serializables. Ya NO guarda un Callable
+    (_evaluar) -- eso es lo que la hacía imposible de reconstruir.
+    Cada subtipo concreto implementa evaluar() como método real, leyendo
+    SOLO sus propios campos de instancia (umbral, tick_objetivo...),
+    que ya viajan solos por el mecanismo genérico de
+    Elemento.serializar()/deserializar() -- son datos planos (int,
+    float, tuplas), nada que necesite un hook especial.
 
-    Modo DISTRIBUIDO: para condiciones que dependen de estado que un
-    Sector no puede ver por sí mismo (candidato: ElementoGlobal).
-    Requiere Elemento.mundo, que SOLO existe en el proceso de
-    Logica_Mundo -- construir una Condicion en este modo dentro de un
-    Sector es un error de programación, no un caso de uso válido.
+    'propietario' y 'ctx' se pasan en cada llamada a evaluar(), nunca se
+    guardan como campo: así una condición sobre "mi propia humedad" o
+    "mi propia temperatura" no necesita capturar una referencia al
+    elemento dueño en un closure -- se la da quien la evalúa
+    (Transformable.tick, que ya tiene 'self' porque es su propio
+    comportamiento).
 
-    IMPORTANTE: el circuito que lleva el evento de entrada desde un
-    Sector hasta Logica_Mundo, y el de salida de vuelta al Sector
-    (Sector -> Gestor -> Logica -> Gestor -> Sector), NO EXISTE
-    todavía -- ver nota de diseño pendiente. Este modo hoy solo sirve
-    para condiciones que se evalúan y disparan enteramente dentro del
-    proceso de Logica_Mundo, sin necesidad de ese circuito.
+    IMPORTANTE: cada subtipo concreto (no "Condicion" a secas) debe
+    registrarse en Core/Entities/Elementos/registry.py -- reconstruir
+    una CondicionUmbralHumedad requiere que el registro sepa
+    instanciar ESA clase, "Condicion" sola no basta.
     """
 
     class Modo(Enum):
@@ -35,37 +35,32 @@ class Condicion(Elemento_Abstracto):
 
     def __init__(
         self,
-        evaluar: Callable[..., bool],
         modo: "Condicion.Modo" = None,
         evento: str = None,
         nombre: str = None,
+        id_elemento=None,
         **kwargs,
     ):
-        super().__init__(Condicion, **kwargs)
-        self._evaluar = evaluar
+        super().__init__(tipo=type(self), id_elemento=id_elemento, **kwargs)
         self.modo = modo or Condicion.Modo.LOCAL
         self.activa: bool = False
         self.nombre = nombre
 
         if self.modo is Condicion.Modo.DISTRIBUIDO:
             if evento is None or nombre is None:
-                raise ValueError(
-                    "Condicion en modo DISTRIBUIDO requiere 'evento' y 'nombre'."
-                )
+                raise ValueError("Condicion DISTRIBUIDA requiere 'evento' y 'nombre'.")
             Elemento.mundo.bus_eventos.suscribir(evento, self._on_evento)
 
     def _on_evento(self, *args, **kwargs) -> None:
-        """Solo relevante en modo DISTRIBUIDO -- el bus llama aquí
-        cuando llega el evento de entrada al que nos suscribimos."""
-        self.activa = self._evaluar(*args, **kwargs)
+        # Solo relevante en modo DISTRIBUIDO. 'propietario'/'ctx' no
+        # existen aquí -- pendiente de resolver junto con el resto del
+        # circuito distribuido, que sigue aparcado.
+        self.activa = self.evaluar(*args, **kwargs)
         if self.activa:
             Elemento.mundo.bus_eventos.emitir(f"{self.nombre}{id(self)}")
 
-    def evaluar(self, *args, **kwargs) -> bool:
-        """Uso directo (modo LOCAL): quien posee la Condicion la llama
-        explícitamente, sin pasar por el bus."""
-        self.activa = self._evaluar(*args, **kwargs)
-        return self.activa
+    @abstractmethod
+    def evaluar(self, propietario, ctx) -> bool: ...
 
     def __hash__(self) -> int:
         return id(self)

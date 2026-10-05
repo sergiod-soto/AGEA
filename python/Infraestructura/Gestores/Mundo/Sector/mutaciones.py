@@ -4,7 +4,7 @@ Tipos de mutación que un elemento puede pedir durante su tick().
 
 Por qué existen como tipos separados en vez de aplicar el cambio directamente:
   Sector nunca es la fuente de verdad del estado del mundo (eso vive en
-  Logica_Mundo, ver logica_mundo.py: _gold_cells / _elements). Si tick()
+  Logica_Mundo, ver logica_mundo: _gold_cells / _elements). Si tick()
   escribiera directamente sobre algún diccionario del Sector, ese cambio se
   perdería al final del tick (Sector no persiste nada — se retiraron los
   snapshots de sector por ser estado transitorio) y Logica_Mundo nunca se

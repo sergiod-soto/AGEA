@@ -1,20 +1,5 @@
 # Core/Entities/Elementos/Abstractos/Bioma/Suelo/suelo.py
-"""
-Suelo — elemento que ocupa el slot 'suelo' de cada Celda del mundo.
 
-Representa el terreno de una casilla concreta. Por sí solo no declara
-ningún comportamiento (la clase está vacía a propósito): los biomas o
-tipos de terreno concretos se añaden dinámicamente vía
-Comportamiento.anhadir(suelo_instancia, Piedra, ...), igual que se
-haría con cualquier otro Elemento — Suelo solo aporta la identidad
-("esta casilla tiene terreno") y su posición.
-
-No hereda de Elemento_Simple: 'tamanho' y 'rotacion' no tienen sentido
-para una casilla de terreno (una casilla no "rota" ni tiene un tamaño
-distinto de 1x1 por definición). Por eso Suelo añade 'casilla' él
-mismo, igual que hace Elemento_Simple, pero sin arrastrar los otros
-dos campos que no le sirven de nada.
-"""
 
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 

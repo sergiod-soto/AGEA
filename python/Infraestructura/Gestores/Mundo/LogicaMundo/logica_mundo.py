@@ -6,24 +6,27 @@ import asyncio
 import datetime
 import json
 import logging
+import math
 from dataclasses import dataclass
+from enum import IntEnum
 from pathlib import Path
 from typing import Any, Optional
 
-from numpy import uint64
+from vectors import Vector2
 
+# TODO(verificar ruta): Celda_Atmosfera vive en Mundo/Celda/; si Celda
+# (terreno) está en el mismo sitio, este import debe ser
+# Core.Entities.Mundo.Celda.celda.
+from Core.Entities.Mundo.mundo import Mundo
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Mundo.Suelo.celda import Celda
-from Core.Entities.Mundo.mundo import Mundo
 from Core.Entities.Elementos.elemento import Elemento
-from Core.Entities.Elementos.registry import reconstruir_elemento
-from Core.Entities.entity import Modos
-from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
-    CrearElemento,
-    EliminarElemento,
-    MoverElemento,
-    Mutacion,
+from Core.Entities.Elementos.registry import (
+    construir_elemento as construir_desde_registro,
+    reconstruir_elemento,
 )
+from Core.Entities.entity import Modos
+
 from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
     GestorBotsClientAsync,
 )
@@ -31,6 +34,29 @@ from Infraestructura.Gestores.tipos_comunes import ActionResult
 import Config.settings as config
 
 logger = logging.getLogger(__name__)
+
+
+# ---- Generación del mundo ----
+
+# Cada cuántas celdas creadas se cede el control al bucle de eventos. Mundo
+# no es seguro entre hilos, así que la generación NO va a un hilo aparte:
+# corre en esta misma corrutina y cede cada tanto para que el proceso siga
+# respondiendo (Heartbeat, EstadoGeneracionMundo...).
+CELDAS_POR_CESION: int = 500
+
+# Clase de suelo con la que se rellena el mundo de prueba. Es el nombre con
+# el que está registrada en Core/Entities/Elementos/registry.py.
+TIPO_SUELO_BASE: str = "Suelo_Piedra"
+
+
+class EstadoGeneracion(IntEnum):
+    """Valores numéricos IGUALES a los del enum EstadoGeneracion del .proto
+    (NO_INICIADA debe ser 0, el valor por defecto de un enum proto3)."""
+
+    NO_INICIADA = 0
+    EN_CURSO = 1
+    COMPLETADA = 2
+    ERROR = 3
 
 
 @dataclass
@@ -58,7 +84,6 @@ class LogicaMundo:
     def __init__(
         self,
         gestor_bots_client: "GestorBotsClientAsync | None" = None,
-        poblar_suelo: bool = False,
         mundo: "Mundo | None" = None,
     ):
         self.SNAPSHOT_DIR = Path(config.SNAPSHOT_DIR)
@@ -67,10 +92,12 @@ class LogicaMundo:
         # elementos por id, posiciones, y la traducción bot_id -> id_elemento)
         # vive en Mundo -- síncrono, sin lock propio. LogicaMundo se queda con
         # lo que no es "grid": el lock async, el contador de ids, snapshots,
-        # sonido, eventos globales y ciclo de vida de bots.
+        # sonido, eventos globales, ciclo de vida de bots y generación.
         self.mundo: Mundo = mundo or Mundo()
 
-        self._id_counter: uint64 = uint64(100)
+        # int de Python, NO numpy.uint64: con NumPy 1.x, uint64 + int da
+        # float64 y los ids dejarían de ser enteros.
+        self._id_counter: int = 100
 
         self._active_events: dict[str, GlobalEvent] = {}
         self._event_counter: int = 0
@@ -82,8 +109,16 @@ class LogicaMundo:
 
         self._lock: asyncio.Lock = asyncio.Lock()
 
-        if poblar_suelo:
-            self._poblar_suelo()
+        # Estado de la generación del mundo. Se lee SIN lock (ver
+        # estado_generacion): el generador mantiene el lock durante toda la
+        # generación y, si el sondeo lo pidiera, se bloquearía hasta el final.
+        self._estado_generacion: EstadoGeneracion = EstadoGeneracion.NO_INICIADA
+        self._generacion_hechas: int = 0
+        self._generacion_total: int = 0
+        self._generacion_error: str = ""
+        # Referencia a la tarea: asyncio solo guarda referencias débiles y una
+        # tarea sin referencia puede ser recogida por el GC a mitad de camino.
+        self._tarea_generacion: Optional[asyncio.Task] = None
 
         logger.info("LogicaMundo inicializado.")
 
@@ -98,82 +133,9 @@ class LogicaMundo:
             return None
         return int(elemento.get_stat("id"))
 
-    # ---- Aplicación de deltas de Sector ----
-
-    async def aplicar_delta_sector(self, mutaciones: list[Mutacion]) -> None:
-        async with self._lock:
-            for m in mutaciones:
-                if isinstance(m, CrearElemento):
-                    self._aplicar_crear_sin_lock(m)
-                elif isinstance(m, EliminarElemento):
-                    self._aplicar_eliminar_sin_lock(m)
-                elif isinstance(m, MoverElemento):
-                    self._aplicar_mover_sin_lock(m)
-                else:
-                    logger.warning(
-                        "aplicar_delta_sector: tipo de mutación desconocido: %r", m
-                    )
-
-    def _aplicar_crear_sin_lock(self, m: CrearElemento) -> None:
-        """Solo debe llamarse ya dentro de self._lock."""
-        self._id_counter += 1
-        eid = self._id_counter
-        m.elemento.id_elemento = eid  # el objeto llega sin id -- se asigna aquí
-        self._registrar_sonidos_de(m.elemento)
-
-        bot_id = None
-        if m.tipo_slot == "bot":
-            bot_id = self._bot_id_de(m.elemento)
-            if bot_id is None:
-                logger.warning(
-                    "aplicar_delta_sector: elemento bot en %s sin bot_id "
-                    "extraíble -- no se indexa por bot_id.",
-                    m.pos,
-                )
-
-        self.mundo.crear_elemento(eid, m.pos, m.tipo_slot, m.elemento, bot_id=bot_id)
-        logger.debug(
-            "Elemento %s creado en %s (marcador_local=%s)", eid, m.pos, m.marcador_local
-        )
-
-    def _aplicar_eliminar_sin_lock(self, m: EliminarElemento) -> None:
-        """Solo debe llamarse ya dentro de self._lock."""
-        elemento = self.mundo.obtener_elemento(m.id_elemento)
-        if elemento is None:
-            logger.warning(
-                "aplicar_delta_sector: elemento %s no encontrado para eliminar en %s",
-                m.id_elemento,
-                m.pos,
-            )
-            return
-
-        try:
-            self._liberar_sonidos_de(elemento)
-        except Exception as exc:
-            raise ValueError(f"Error eliminando sonidos de {elemento}") from exc
-
-        # bot_id se resuelve ANTES de eliminar, a partir del objeto que aún
-        # tenemos -- después de eliminar ya no habría forma de recuperarlo.
-        bot_id = self._bot_id_de(elemento)
-        if not self.mundo.eliminar_elemento(m.id_elemento, bot_id=bot_id):
-            logger.warning(
-                "aplicar_delta_sector: elemento %s no encontrado en %s",
-                m.id_elemento,
-                m.pos,
-            )
-
-    def _aplicar_mover_sin_lock(self, m: MoverElemento) -> None:
-        """Solo debe llamarse ya dentro de self._lock."""
-        if not self.mundo.mover_elemento(m.id_elemento, m.pos_destino):
-            logger.warning(
-                "aplicar_delta_sector: elemento %s no encontrado en %s",
-                m.id_elemento,
-                m.pos_origen,
-            )
-
     # ---- Traducción Cell (proto) <-> Celda (interno) ----
 
-    def _slot_bytes_a_id(self, blob: bytes) -> Optional[uint64]:
+    def _slot_bytes_a_id(self, blob: bytes) -> Optional[int]:
         # Blob vacío = "slot desocupado" (ver common.proto), no un error.
         if not blob:
             return None
@@ -187,7 +149,7 @@ class LogicaMundo:
         self.mundo.registrar_elemento_reconstruido(eid, elemento)
         return eid
 
-    def _id_a_slot_bytes(self, eid: Optional[uint64]) -> bytes:
+    def _id_a_slot_bytes(self, eid: Optional[int]) -> bytes:
         if eid is None:
             return b""
         elemento = self.mundo.obtener_elemento(eid)
@@ -224,11 +186,11 @@ class LogicaMundo:
     #
     # NOTA DE DUPLICACIÓN: esta pareja de métodos es prácticamente
     # idéntica a Sector.CeldaAtmosferaStore.to_proto_cells/
-    # from_proto_cell. Se duplica a propósito por ahora en vez de
-    # bloquear la integración -- pendiente de extraer a un módulo
-    # compartido (p.ej. Core/Entities/Mundo/Celda/celda_atmosfera_proto.py
-    # con a_proto(celda)/desde_proto(cell)) para que un cambio futuro en
-    # el proto no se pueda actualizar en un sitio y olvidar en el otro.
+    # from_proto_cell. Se duplica a propósito por ahora -- pendiente de
+    # extraer a un módulo compartido (p.ej.
+    # Core/Entities/Mundo/Celda/celda_atmosfera_proto.py con
+    # a_proto(celda)/desde_proto(cell)) para que un cambio futuro en el
+    # proto no se pueda actualizar en un sitio y olvidar en el otro.
 
     def _celda_atmosfera_a_atmosphere_cell(self, pos: tuple[int, int], celda):
         from Infraestructura.Gestores.Transporte.Proto_Generated import (
@@ -236,10 +198,14 @@ class LogicaMundo:
         )
 
         x, y = pos
-      
+
+        # REQUIERE el proto regenerado: bloqueo_total_viento es un campo
+        # nuevo de AtmosphereCell. Quien lea resistencia_viento debe mirar
+        # SIEMPRE bloqueo_total_viento primero.
         return common_pb.AtmosphereCell(  # type: ignore
             pos=common_pb.Position(x=x, y=y),  # type: ignore
             resistencia_viento=celda.resistencia_viento,
+            bloqueo_total_viento=celda.bloqueo_total_viento,
             direccion_preferente_viento=common_pb.Vector2(  # type: ignore
                 x=celda.direccion_preferente_viento.x,
                 y=celda.direccion_preferente_viento.y,
@@ -248,8 +214,8 @@ class LogicaMundo:
                 x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
             ),
             radiacion=celda.radiacion,
-            temperatura=celda.temperatura.valor,
-            presion=celda.presion.valor,
+            temperatura=celda.temperatura.valor,  # K
+            presion=celda.presion.valor,  # Pa
             viento_intensidad=celda.viento.intensidad,
             viento_direccion=common_pb.Vector2(  # type: ignore
                 x=celda.viento.direccion.x, y=celda.viento.direccion.y
@@ -259,13 +225,10 @@ class LogicaMundo:
         )
 
     def _atmosphere_cell_a_celda_atmosfera(self, cell) -> Celda_Atmosfera:
-        from vectors import Vector2
-
         pos = (cell.pos.x, cell.pos.y)
 
         celda = Celda_Atmosfera(
             posicion=pos,
-            resistencia_viento=cell.resistencia_viento,
             direccion_preferente_viento=Vector2(
                 cell.direccion_preferente_viento.x,
                 cell.direccion_preferente_viento.y,
@@ -285,10 +248,16 @@ class LogicaMundo:
 
     # ---- Identidad ----
 
-    async def asignar_id(self) -> uint64:
+    def _siguiente_id(self) -> int:
+        """Siguiente id de elemento. Síncrono y SIN lock: lo llaman tanto
+        asignar_id (que toma el lock) como el generador del mundo (que ya lo
+        tiene, y asyncio.Lock no es reentrante)."""
+        self._id_counter += 1
+        return self._id_counter
+
+    async def asignar_id(self) -> int:
         async with self._lock:
-            self._id_counter += 1
-            return self._id_counter
+            return self._siguiente_id()
 
     # ---- Elementos ----
 
@@ -321,59 +290,67 @@ class LogicaMundo:
             logger.debug("Elemento %s creado en %s (type_id=%s)", eid, pos, type_id)
             return True, ""
 
+    def _construir_elemento_sin_lock(
+        self,
+        pos: tuple[int, int],
+        nombre_clase: str,
+        campos: dict,
+    ) -> tuple[bool, str, Optional[int]]:
+        """Cuerpo real de construir_elemento. Va sin lock porque lo llaman dos
+        sitios: construir_elemento (que lo toma) y el generador del mundo (que
+        ya lo tiene desde el principio; asyncio.Lock no es reentrante, así que
+        volver a pedirlo desde dentro sería un deadlock). Es síncrono: no
+        cede el control en ningún punto, así que es atómico en el bucle."""
+        eid = self._siguiente_id()
+
+        campos_normalizados = {
+            k: tuple(v) if isinstance(v, list) else v for k, v in campos.items()
+        }
+
+        try:
+            elemento = construir_desde_registro(
+                nombre_clase, id_elemento=eid, **campos_normalizados
+            )
+        except (ValueError, TypeError) as exc:
+            return False, f"No se pudo construir '{nombre_clase}': {exc}", None
+
+        self._registrar_sonidos_de(elemento)
+
+        tipo_slot = elemento.tipo_slot()
+        bot_id = None
+        if tipo_slot == "bot":
+            bot_id = self._bot_id_de(elemento)
+            if bot_id is None:
+                logger.warning(
+                    "construir_elemento: bot en %s sin bot_id extraíble -- "
+                    "no se indexa por bot_id.",
+                    pos,
+                )
+
+        self.mundo.crear_elemento(eid, pos, tipo_slot, elemento, bot_id=bot_id)
+        logger.debug(
+            "Elemento %s (%s) construido en %s (slot=%s)",
+            eid,
+            nombre_clase,
+            pos,
+            tipo_slot,
+        )
+        return True, "", eid
+
     async def construir_elemento(
         self,
         pos: tuple[int, int],
         nombre_clase: str,
         campos: dict,
-    ) -> tuple[bool, str, Optional[uint64]]:
-        """Crea un elemento NUEVO llamando a su __init__ real.
-
-        FIX respecto al original: si el elemento construido es un bot,
-        ahora SÍ se indexa su bot_id (antes no se hacía, dejando ese bot
-        invisible para eliminar_avatar_bot/matar_bot/resolver_accion)."""
-        from Core.Entities.Elementos.registry import construir_elemento
-
+    ) -> tuple[bool, str, Optional[int]]:
+        """Crea un elemento NUEVO llamando a su __init__ real. Si es un bot,
+        se indexa su bot_id (si no, quedaría invisible para
+        eliminar_avatar_bot/matar_bot/resolver_accion)."""
         async with self._lock:
-            self._id_counter += 1
-            eid = self._id_counter
-
-            campos_normalizados = {
-                k: tuple(v) if isinstance(v, list) else v for k, v in campos.items()
-            }
-
-            try:
-                elemento = construir_elemento(
-                    nombre_clase, id_elemento=eid, **campos_normalizados
-                )
-            except (ValueError, TypeError) as exc:
-                return False, f"No se pudo construir '{nombre_clase}': {exc}", None
-
-            self._registrar_sonidos_de(elemento)
-
-            tipo_slot = elemento.tipo_slot()
-            bot_id = None
-            if tipo_slot == "bot":
-                bot_id = self._bot_id_de(elemento)
-                if bot_id is None:
-                    logger.warning(
-                        "construir_elemento: bot en %s sin bot_id extraíble -- "
-                        "no se indexa por bot_id.",
-                        pos,
-                    )
-
-            self.mundo.crear_elemento(eid, pos, tipo_slot, elemento, bot_id=bot_id)
-            logger.debug(
-                "Elemento %s (%s) construido en %s (slot=%s)",
-                eid,
-                nombre_clase,
-                pos,
-                tipo_slot,
-            )
-            return True, "", eid
+            return self._construir_elemento_sin_lock(pos, nombre_clase, campos)
 
     async def modificar_elemento(
-        self, pos: tuple[int, int], element_id: uint64, patch: dict
+        self, pos: tuple[int, int], element_id: int, patch: dict
     ) -> tuple[bool, str]:
         async with self._lock:
             if not self.mundo.contiene(pos, element_id):
@@ -383,11 +360,16 @@ class LogicaMundo:
             if elemento is None:
                 return False, f"Elemento {element_id} no encontrado en el registro."
 
-            elemento.aplicar_patch(patch)
+            try:
+                elemento.aplicar_patch(patch)
+            except ValueError as exc:
+                # Un patch inválido es un error del que llama, no del servidor:
+                # se devuelve como (False, msg) en vez de reventar el RPC.
+                return False, str(exc)
             return True, ""
 
     def _eliminar_elemento_sin_lock(
-        self, pos: tuple[int, int], element_id: uint64
+        self, pos: tuple[int, int], element_id: int
     ) -> tuple[bool, str]:
         """Cuerpo real de eliminar_elemento, factorizado para poder llamarlo
         también desde eliminar_avatar_bot bajo el MISMO lock -- así se evita
@@ -406,7 +388,7 @@ class LogicaMundo:
         return True, ""
 
     async def eliminar_elemento(
-        self, pos: tuple[int, int], element_id: uint64
+        self, pos: tuple[int, int], element_id: int
     ) -> tuple[bool, str]:
         async with self._lock:
             return self._eliminar_elemento_sin_lock(pos, element_id)
@@ -425,12 +407,24 @@ class LogicaMundo:
     async def matar_bot(
         self, bot_id: int, cause: str, tick_id: int
     ) -> tuple[bool, str]:
+        """
+        Termina un bot: elimina su avatar Y termina su script.
+
+        Si el avatar ya no está, NO se corta aquí: se termina igualmente el
+        script. Es el caso normal, no una rareza: cuando un Sector informa de
+        una muerte (dead_bot_ids), actualizar_celdas ya ha aplicado la celda
+        sin el avatar y lo ha olvidado; y en el caso "perdido" de un
+        movimiento externo, Logica ya lo eliminó. Con el return anticipado
+        del original, el script del bot muerto no se terminaba nunca.
+        """
         ok, error = await self.eliminar_avatar_bot(bot_id)
         if not ok:
-            logger.error(
-                "matar_bot: no se pudo eliminar avatar de %s: %s", bot_id, error
+            logger.warning(
+                "matar_bot: avatar de %s no eliminado (%s); se termina "
+                "igualmente su script.",
+                bot_id,
+                error,
             )
-            return False, error
 
         if self._gestor_bots_client is None:
             logger.warning(
@@ -454,6 +448,8 @@ class LogicaMundo:
     # ---- Sonido ----
 
     async def obtener_audio(self, id_sonido: str) -> tuple[bool, str, bytes]:
+        # FUERA DE ALCANCE: self._cache_audio no existe todavía (esto lanza
+        # AttributeError). Decisión tomada: el audio se aborda aparte.
         if not self._cache_audio.tiene(id_sonido):
             return (
                 False,
@@ -577,29 +573,126 @@ class LogicaMundo:
                 for nombre, elem in self._elementos_globales.items()
             }
 
-    # ---- Atmósfera (una sola definición de cada método -- el original
-    # tenía crear_atmosfera/obtener_atmosfera/actualizar_atmosfera
-    # duplicados literalmente dos veces; era código muerto inofensivo
-    # pero confuso, se elimina la copia) ----
+    # ---- Generación del mundo ----
+    #
+    # Flujo: el RPC GenerarMundo llama a generar_mundo(), que lanza la
+    # generación en segundo plano y vuelve al instante; el cliente sondea
+    # EstadoGeneracionMundo (estado_generacion()) hasta COMPLETADA o ERROR.
+    #
+    # Orden: primero la malla de atmósfera, luego el Suelo. Si algo falla se
+    # corta TODO (estado ERROR); no hay reintento ni rollback (ver
+    # generar_mundo).
+
+    async def generar_mundo(self) -> tuple[bool, str]:
+        """Inicia la generación y vuelve. Por ahora SIEMPRE genera (decisión
+        del usuario: no mezclar la política de arranque con la generación),
+        con una sola excepción: si ya hay una en curso se rechaza, porque dos
+        generaciones seguidas bajo el mismo lock duplicarían el mundo.
+
+        AVISO: no limpia el mundo previo. Está pensada para llamarse sobre un
+        mundo VACÍO (arranque limpio); llamarla sobre uno ya generado o a
+        medias sobrescribiría la atmósfera y duplicaría/pisaría los suelos."""
+        if self._estado_generacion == EstadoGeneracion.EN_CURSO:
+            return False, "Ya hay una generación del mundo en curso."
+        # Se marca EN_CURSO ANTES de crear la tarea y sin ningún await de por
+        # medio: dos llamadas simultáneas no pueden pasar ambas la
+        # comprobación de arriba.
+        self._estado_generacion = EstadoGeneracion.EN_CURSO
+        self._generacion_hechas = 0
+        self._generacion_total = 0
+        self._generacion_error = ""
+        self._tarea_generacion = asyncio.create_task(
+            self._generar_mundo_en_segundo_plano(), name="generar_mundo"
+        )
+        return True, ""
+
+    def estado_generacion(self) -> tuple[EstadoGeneracion, float, str]:
+        """(estado, progreso 0.0-1.0, mensaje de error). Síncrono y SIN lock a
+        propósito: el generador mantiene el lock durante toda la generación,
+        así que si esto lo pidiera el sondeo no obtendría respuesta hasta el
+        final, que es justo cuando ya no hace falta."""
+        total = self._generacion_total
+        progreso = self._generacion_hechas / total if total > 0 else 0.0
+        if self._estado_generacion == EstadoGeneracion.COMPLETADA:
+            progreso = 1.0
+        return self._estado_generacion, progreso, self._generacion_error
+
+    async def _generar_mundo_en_segundo_plano(self) -> None:
+        try:
+            # El lock se mantiene TODO el rato: nadie puede leer ni modificar
+            # el mundo a medio generar. A cambio, cualquier otro RPC que
+            # necesite el lock espera a que termine (incluido el tick de
+            # Gestor_Mundo: por eso debe arrancar congelado).
+            async with self._lock:
+                await self._generar_mundo_bajo_lock()
+        except Exception as exc:
+            logger.exception("Generación del mundo fallida; se corta todo.")
+            self._generacion_error = f"{type(exc).__name__}: {exc}"
+            self._estado_generacion = EstadoGeneracion.ERROR
+        else:
+            self._estado_generacion = EstadoGeneracion.COMPLETADA
+            logger.info("Mundo generado (%d celdas creadas).", self._generacion_hechas)
+
+    async def _avanzar_generacion(self) -> None:
+        """Cuenta una celda creada y, cada CELDAS_POR_CESION, cede el control
+        al bucle de eventos (sin soltar el lock)."""
+        self._generacion_hechas += 1
+        if self._generacion_hechas % CELDAS_POR_CESION == 0:
+            await asyncio.sleep(0)
+
+    async def _generar_mundo_bajo_lock(self) -> None:
+        """Debe llamarse con self._lock YA tomado."""
+        # math.ceil: si el mapa no fuera múltiplo de ATMOSFERA_ESCALA, la
+        # última fila/columna de casillas seguiría teniendo celda de atmósfera.
+        columnas_atm = math.ceil(config.GRID_WIDTH / config.ATMOSFERA_ESCALA)
+        filas_atm = math.ceil(config.GRID_HEIGHT / config.ATMOSFERA_ESCALA)
+        casillas = config.GRID_WIDTH * config.GRID_HEIGHT
+        self._generacion_total = columnas_atm * filas_atm + casillas
+        self._generacion_hechas = 0
+
+        # 1) Malla de atmósfera. Viento sin dirección ni fuerza por defecto
+        #    (Vector2(0, 0)); una instancia NUEVA por celda para no compartir
+        #    un objeto mutable entre todas.
+        for ax in range(columnas_atm):
+            for ay in range(filas_atm):
+                self.mundo.crear_atmosfera((ax, ay), Vector2(0, 0), Vector2(0, 0))
+                await self._avanzar_generacion()
+
+        # 2) Suelo. Su casilla es su posición (x, y). Se construye por NOMBRE
+        #    con argumentos con nombre: Suelo_Piedra(id_elemento, casilla) y
+        #    Suelo_Barro(casilla, id_elemento) no comparten orden.
+        for x in range(config.GRID_WIDTH):
+            for y in range(config.GRID_HEIGHT):
+                pos = (x, y)
+                ok, error, _ = self._construir_elemento_sin_lock(
+                    pos, TIPO_SUELO_BASE, {"casilla": pos}
+                )
+                if not ok:
+                    raise RuntimeError(
+                        f"No se pudo crear {TIPO_SUELO_BASE} en {pos}: {error}"
+                    )
+                await self._avanzar_generacion()
+
+    # ---- Atmósfera (una sola definición de cada método) ----
+    #
+    # OJO con el espacio de coordenadas: crear_atmosfera recibe la posición
+    # EN ESPACIO DE ATMÓSFERA, mientras que obtener_atmosfera y
+    # actualizar_atmosfera reciben la del SUELO y la convierten.
 
     async def crear_atmosfera(
         self,
         pos_atmosfera: tuple[int, int],
-        resistencia_viento: float,
         direccion_preferente_viento: Any,
         fuerza_viento: Any,
     ) -> tuple[bool, str]:
         async with self._lock:
             if self.mundo.obtener_atmosfera(pos_atmosfera) is not None:
+                # Sobrescribir descarta las cachés de la celda anterior.
                 logger.warning(
-                    "crear_atmosfera: ya existía una celda en %s -- se sobrescribe.",
-                    pos_atmosfera,
+                    "crear_atmosfera: ya existía %s -- se sobrescribe.", pos_atmosfera
                 )
             self.mundo.crear_atmosfera(
-                pos_atmosfera,
-                resistencia_viento,
-                direccion_preferente_viento,
-                fuerza_viento,
+                pos_atmosfera, direccion_preferente_viento, fuerza_viento
             )
             return True, ""
 
@@ -628,7 +721,11 @@ class LogicaMundo:
                     False,
                     f"No hay celda de atmósfera para {pos_suelo} (bloque {pos_atmosfera}).",
                 )
-            celda.aplicar_patch(patch)
+            try:
+                celda.aplicar_patch(patch)
+            except ValueError as exc:
+                # p.ej. un campo derivado (prohibido en aplicar_patch).
+                return False, str(exc)
             return True, ""
 
     async def obtener_celdas_atmosfera_en_region(
@@ -651,18 +748,102 @@ class LogicaMundo:
             ]
 
     async def actualizar_celdas_atmosfera(self, changed_atmosphere_cells: list) -> None:
-        """Espejo de actualizar_celdas, para atmósfera. A diferencia de
-        actualizar_celdas (que aplica mutaciones parciales sobre
-        terreno), aquí se SOBREESCRIBE directamente cada celda con lo
-        que el Sector computó -- la física de atmósfera corre entera
-        dentro del Sector (ver Sector._avanzar_atmosfera), no hay
-        mutaciones parciales que resolver aquí."""
+        """
+        Aplica el estado simulado que cada Sector calculó (_avanzar_atmosfera)
+        sobre las Celda_Atmosfera YA EXISTENTES en self.mundo.malla_atmosfera.
+        No sustituye el objeto entero: eso borraría las cachés de
+        tasa/inercia/resistencia_viento (que no viajan por proto). Solo se
+        copian los campos que calcula la física del Sector: radiación,
+        temperatura (K), presión (Pa), viento y humedades.
+        """
         async with self._lock:
             for cell in changed_atmosphere_cells:
                 pos = (cell.pos.x, cell.pos.y)
-                self.mundo.malla_atmosfera[pos] = (
-                    self._atmosphere_cell_a_celda_atmosfera(cell)
+                celda = self.mundo.malla_atmosfera.get(pos)
+                if celda is None:
+                    logger.warning(
+                        "actualizar_celdas_atmosfera: no existe Celda_Atmosfera "
+                        "en %s -- se ignora (¿el mundo no se ha generado?).",
+                        pos,
+                    )
+                    continue
+
+                celda.radiacion = cell.radiacion
+                celda.temperatura.valor = cell.temperatura
+                celda.presion.valor = cell.presion
+                celda.viento.intensidad = cell.viento_intensidad
+                celda.viento.direccion = Vector2(
+                    cell.viento_direccion.x, cell.viento_direccion.y
                 )
+                celda.humedad_absoluta.valor = cell.humedad_absoluta
+                celda.humedad_relativa.valor = cell.humedad_relativa
+
+    async def sincronizar_atmosfera_completa(self) -> None:
+        """
+        Recorre TODO el terreno gold y REGISTRA en cada Celda_Atmosfera las
+        cachés de terreno: tasa/inercia de cada Suelo y resistencia_viento de
+        los elementos con Flags.RESISTENCIA_VIENTO_CACHEABLE.
+
+        NO es idempotente: no limpia lo ya registrado, así que una segunda
+        llamada sobre la misma malla lanza ValueError (registrar_suelo y
+        registrar_resistencia_elemento rechazan duplicados, a propósito).
+        Solo vale una vez, sobre una malla recién creada.
+
+        No es incremental: caro por diseño, pensado como coste único.
+        Los cambios DURANTE el juego los cubren los hooks de
+        Sector._resolver_mutaciones, que no tocan esta malla.
+
+        Hoy NADIE llama a este método (la generación no lo usa), a la espera
+        de decidir si hace falta: ver "Cachés" en el diseño abierto.
+        """
+        async with self._lock:
+            for pos, celda in self.mundo.malla_terreno.items():
+                if celda.suelo is not None:
+                    suelo = self.mundo.obtener_elemento(celda.suelo)
+                    if suelo is not None:
+                        self._registrar_suelo_en_atmosfera(pos, suelo)
+
+                for eid in celda.resto:
+                    elemento = self.mundo.obtener_elemento(eid)
+                    if elemento is not None and elemento.tiene_flag(
+                        Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                    ):
+                        self._registrar_resistencia_en_atmosfera(pos, elemento)
+
+        logger.info("Sincronización completa de atmósfera terminada.")
+
+    def _registrar_suelo_en_atmosfera(self, pos: tuple[int, int], suelo) -> None:
+        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos)
+        celda = self.mundo.obtener_atmosfera(pos_atmosfera)
+        if celda is None:
+            logger.warning(
+                "sincronizar_atmosfera_completa: Suelo en %s sin Celda_Atmosfera "
+                "correspondiente (bloque %s) -- omitido.",
+                pos,
+                pos_atmosfera,
+            )
+            return
+        celda.registrar_suelo(
+            pos, suelo.tasa_conversion_radiacion_calor, suelo.inercia_termica
+        )
+
+    def _registrar_resistencia_en_atmosfera(
+        self, pos: tuple[int, int], elemento
+    ) -> None:
+        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos)
+        celda = self.mundo.obtener_atmosfera(pos_atmosfera)
+        if celda is None:
+            logger.warning(
+                "sincronizar_atmosfera_completa: elemento %s (estático-viento) "
+                "en %s sin Celda_Atmosfera correspondiente (bloque %s) -- omitido.",
+                elemento.id_elemento,
+                pos,
+                pos_atmosfera,
+            )
+            return
+        celda.registrar_resistencia_elemento(
+            elemento.id_elemento, elemento.resistencia_viento
+        )
 
     async def obtener_progreso_ciclos(self) -> tuple[float, float, float]:
         """
@@ -670,18 +851,12 @@ class LogicaMundo:
         Gestor_Mundo se lo mande a cada Sector en la Fase 0 (ver
         Sector.set_ciclos_globales).
 
-        BLOQUEADO hasta que se resuelvan dos cosas fuera de este
-        fichero:
-          (a) los 3 bugs señalados en reloj.py -- Reloj.ciclos debe
-              arrancar vacío (hoy contiene la propia clase Ciclo);
-              Mundo.reloj/ciclo_solar/ciclo_lunar deben ser instancias
-              reales (Reloj(), Ciclo_Solar(), Ciclo_Lunar()), no las
-              clases sin instanciar que hay hoy en Mundo.__init__;
+        BLOQUEADO hasta que se resuelvan dos cosas fuera de este fichero:
+          (a) los bugs señalados en reloj.py -- Reloj.ciclos debe arrancar
+              vacío; Mundo.reloj/ciclo_solar/ciclo_lunar deben ser
+              instancias reales, no clases sin instanciar;
           (b) que Mundo.__init__ tenga una instancia real de Estacion
-              (self.estacion = Estacion()) -- hoy no existe ningún
-              atributo de estación en Mundo.
-        Con esos bugs activos, este método revienta al intentar leer
-        `.ciclo` de una CLASE en vez de una instancia.
+              (self.estacion = Estacion()).
         """
         async with self._lock:
             progreso_solar = (
@@ -719,7 +894,7 @@ class LogicaMundo:
     ) -> dict[int, Optional[tuple[int, int]]]:
         """
         Aplica el resultado de un tick de Sector. Devuelve los movimientos
-        RECHAZADOS (G1): {id_elemento: posición a la que se devolvió el
+        RECHAZADOS: {id_elemento: posición a la que se devolvió el
         elemento}. El valor es None si ni siquiera se pudo devolver y el
         elemento se eliminó (caso residual, ver _aplicar_movimiento_externo).
         Quien llame (Gestor_Mundo) debe usarlo para NO migrar esos bots.
@@ -753,23 +928,10 @@ class LogicaMundo:
 
             return rechazados
 
-    async def matar_bot(
-        self, bot_id: int, cause: str, tick_id: int
-    ) -> tuple[bool, str]:
-
-        ok, error = await self.eliminar_avatar_bot(bot_id)
-        if not ok:
-            logger.warning(
-                "matar_bot: avatar de %s ya no existe (%s) -- se termina igualmente "
-                "su script.",
-                bot_id,
-                error,
-            )
-
     def _aplicar_movimiento_externo(self, mov) -> str:
         """Solo dentro de self._lock. Devuelve 'ok', 'devuelto' o 'perdido'.
 
-        G1: si el slot destino es de ocupación única (suelo/bot) y ya está
+        Si el slot destino es de ocupación única (suelo/bot) y ya está
         ocupado, el movimiento se rechaza y el elemento vuelve a su celda de
         origen (que el Sector origen ya vació este mismo tick). Solo si
         también falla eso (origen tomado por otro elemento en el mismo tick,
@@ -823,6 +985,10 @@ class LogicaMundo:
         suelo_resultado = []
         atmosfera = []  # TODO: representar sistema atmosferico
 
+        # TODO(rendimiento): recorre TODA la malla en cada consulta y con el
+        # lock tomado (O(mundo) por llamada). Mundo.celdas_en_region ya
+        # existe y filtra por rectángulo; comprobar que su semántica de
+        # límites coincide (x0 <= x < x1) antes de sustituirlo.
         async with self._lock:
             for (x, y), celda in self.mundo.malla_terreno.items():
                 if not (x0 <= x < x1 and y0 <= y < y1):
@@ -859,7 +1025,7 @@ class LogicaMundo:
 
     async def obtener_elemento(
         self,
-        element_id: uint64,
+        element_id: int,
         tipo_datos: str = "representacion",
         incluir: list[str] | None = None,
     ) -> tuple[bool, str, bytes]:
@@ -907,8 +1073,8 @@ class LogicaMundo:
                     str(eid): elemento.serializar(modo=Modos.guardado)
                     for eid, elemento in self.mundo.elementos.items()
                 },
-                # Se deriva de ids+bots -- ya no existe un dict propio de
-                # posiciones de bot, ver decisión de mantener 2 dicts (A).
+                # Se deriva de ids+bots -- no existe un dict propio de
+                # posiciones de bot.
                 "bot_positions": {
                     bid: list(self.mundo.ids[eid])
                     for bid, eid in self.mundo.bots.items()
@@ -926,18 +1092,22 @@ class LogicaMundo:
                     nombre: elem.to_snapshot()
                     for nombre, elem in self._elementos_globales.items()
                 },
-                # TODO (pendiente, no resuelto en esta ronda): la malla
-                # de atmósfera (self.mundo.malla_atmosfera) no se guarda
-                # aquí todavía -- un save/load de snapshot pierde hoy
-                # todo el estado atmosférico. Necesitaría una entrada
-                # análoga a "gold_cells" pero serializando cada
-                # Celda_Atmosfera (con sus Sistema_Atmosferico) a un
-                # dict plano, y el bioma por separado (referencia
-                # compartida entre celdas -- cuidado con no duplicarlo
-                # ni con perder esa identidad compartida al recargar).
+                # TODO (pendiente): la malla de atmósfera
+                # (self.mundo.malla_atmosfera) no se guarda todavía -- un
+                # save/load pierde hoy todo el estado atmosférico. Haría
+                # falta una entrada análoga a "gold_cells" que serialice cada
+                # Celda_Atmosfera (con sus Sistema_Atmosferico) a un dict
+                # plano. Las cachés de suelo/resistencia NO se guardan: se
+                # reconstruyen desde el terreno. Los snapshots antiguos con
+                # temperatura en °C o presión en hPa ya no valen.
             }
 
-        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        # Escritura atómica: se escribe en un temporal y se renombra. Si el
+        # proceso muere a mitad, queda el snapshot anterior intacto en vez de
+        # un JSON truncado (el .tmp no coincide con el patrón *.json).
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        tmp.replace(path)
         logger.info("Snapshot de Logica_Mundo guardado: %s", path)
         self._purgar_snapshots_antiguos()
 
@@ -946,26 +1116,25 @@ class LogicaMundo:
             self.SNAPSHOT_DIR.glob("logica_mundo_*.json"),
             key=lambda p: p.stem.removeprefix("logica_mundo_"),
         )
-        sobrantes = len(snapshots) - config.SNAPSHOT_MAX
+        # max(0, ...): sin él, con menos snapshots que SNAPSHOT_MAX el valor
+        # es negativo y snapshots[:negativo] BORRABA los más antiguos (con 15
+        # snapshots y SNAPSHOT_MAX=20 se borraban 10).
+        sobrantes = max(0, len(snapshots) - config.SNAPSHOT_MAX)
         for path in snapshots[:sobrantes]:
             path.unlink(missing_ok=True)
             logger.debug("Snapshot antiguo purgado: %s", path)
 
-    async def load_state(self, snapshot_id: str) -> None:
+    async def load_state(self, snapshot_id: str) -> tuple[bool, str]:
         path = self.SNAPSHOT_DIR / f"logica_mundo_{snapshot_id}.json"
         if not path.exists():
-            logger.warning("Snapshot '%s' no encontrado en %s.", snapshot_id, path)
-            return
+            msg = f"Snapshot '{snapshot_id}' no encontrado en {path}."
+            logger.error(msg)
+            return False, msg
 
         data = json.loads(path.read_text())
 
         async with self._lock:
-            # NOTA (pendiente, no crítico): esto asigna un int normal,
-            # rompiendo el invariante "siempre uint64" que se mantiene en
-            # el resto del ciclo de vida. No falla porque uint64 e int se
-            # comparan/hashean igual para el mismo valor, pero conviene
-            # normalizarlo si en algún momento se añade un isinstance().
-            self._id_counter = data.get("id_counter", 0)
+            self._id_counter = int(data.get("id_counter", 0))
 
             self.mundo.elementos = {
                 int(eid): reconstruir_elemento(edata)
@@ -1020,12 +1189,4 @@ class LogicaMundo:
             # atmósfera no se restaura aquí todavía.
 
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
-
-    def _poblar_suelo(self) -> None:
-        # TODO: parche temporal. Falta un generador de suelo en condiciones.
-        logger.info(
-            "Suelo poblado: %d x %d celdas (%d elementos Suelo creados).",
-            config.GRID_WIDTH,
-            config.GRID_HEIGHT,
-            config.GRID_WIDTH * config.GRID_HEIGHT,
-        )
+        return True, ""

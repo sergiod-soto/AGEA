@@ -79,6 +79,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.EliminarAvatarBotRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
+        self.MatarBot = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/MatarBot',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.MatarBotRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
         self.SpawnGlobalEvent = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/SpawnGlobalEvent',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.SpawnGlobalEventRequest.SerializeToString,
@@ -107,7 +112,7 @@ class LogicaMundoServiceStub(object):
         self.ActualizarCeldas = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ActualizarCeldas',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.SerializeToString,
-                response_deserializer=common__pb2.Ack.FromString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasResponse.FromString,
                 _registered_method=True)
         self.ObtenerCeldasAtmosferaEnRegion = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ObtenerCeldasAtmosferaEnRegion',
@@ -123,6 +128,16 @@ class LogicaMundoServiceStub(object):
                 '/logica_mundo.LogicaMundoService/ObtenerProgresoCiclos',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
+                _registered_method=True)
+        self.GenerarMundo = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/GenerarMundo',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.GenerarMundoRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
+        self.EstadoGeneracionMundo = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/EstadoGeneracionMundo',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoResponse.FromString,
                 _registered_method=True)
         self.ConsultarRepresentacion = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
@@ -216,6 +231,14 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MatarBot(self, request, context):
+        """NUEVO -- terminar un bot: elimina su avatar (si sigue en el mundo) y
+        termina su script. Lo llama Gestor_Mundo.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def SpawnGlobalEvent(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -247,13 +270,16 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ActualizarCeldas(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """CAMBIO: antes devolvía common.Ack. La respuesta nueva conserva ok=1 y
+        error=2 (compatible en el cable) y añade la lista de movimientos
+        rechazados.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def ObtenerCeldasAtmosferaEnRegion(self, request, context):
-        """NUEVO -- sistema atmosférico. Mismo trío de responsabilidad que
+        """Sistema atmosférico. Mismo trío de responsabilidad que
         ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
         ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
         todos los Sectores en un tick dado).
@@ -269,6 +295,20 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ObtenerProgresoCiclos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GenerarMundo(self, request, context):
+        """NUEVO -- generación del mundo. GenerarMundo la inicia en segundo plano
+        y vuelve al instante; el cliente sondea EstadoGeneracionMundo.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def EstadoGeneracionMundo(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -359,6 +399,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EliminarAvatarBotRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
+            'MatarBot': grpc.unary_unary_rpc_method_handler(
+                    servicer.MatarBot,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.MatarBotRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
             'SpawnGlobalEvent': grpc.unary_unary_rpc_method_handler(
                     servicer.SpawnGlobalEvent,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.SpawnGlobalEventRequest.FromString,
@@ -387,7 +432,7 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
             'ActualizarCeldas': grpc.unary_unary_rpc_method_handler(
                     servicer.ActualizarCeldas,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.FromString,
-                    response_serializer=common__pb2.Ack.SerializeToString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasResponse.SerializeToString,
             ),
             'ObtenerCeldasAtmosferaEnRegion': grpc.unary_unary_rpc_method_handler(
                     servicer.ObtenerCeldasAtmosferaEnRegion,
@@ -403,6 +448,16 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ObtenerProgresoCiclos,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.SerializeToString,
+            ),
+            'GenerarMundo': grpc.unary_unary_rpc_method_handler(
+                    servicer.GenerarMundo,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.GenerarMundoRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'EstadoGeneracionMundo': grpc.unary_unary_rpc_method_handler(
+                    servicer.EstadoGeneracionMundo,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoResponse.SerializeToString,
             ),
             'ConsultarRepresentacion': grpc.unary_unary_rpc_method_handler(
                     servicer.ConsultarRepresentacion,
@@ -671,6 +726,33 @@ class LogicaMundoService(object):
             _registered_method=True)
 
     @staticmethod
+    def MatarBot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/MatarBot',
+            Comunicacion_dot_logica__mundo__service__pb2.MatarBotRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def SpawnGlobalEvent(request,
             target,
             options=(),
@@ -821,7 +903,7 @@ class LogicaMundoService(object):
             target,
             '/logica_mundo.LogicaMundoService/ActualizarCeldas',
             Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.SerializeToString,
-            common__pb2.Ack.FromString,
+            Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -903,6 +985,60 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/ObtenerProgresoCiclos',
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GenerarMundo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/GenerarMundo',
+            Comunicacion_dot_logica__mundo__service__pb2.GenerarMundoRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EstadoGeneracionMundo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/EstadoGeneracionMundo',
+            Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoResponse.FromString,
             options,
             channel_credentials,
             insecure,

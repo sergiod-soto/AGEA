@@ -6,7 +6,7 @@ detección de elementos bloqueantes, transparencia, y validación de
 payload. Sin ningún test hasta ahora, pese a ser la única acción de
 juego implementada por completo.
 
-Se construyen `Celda` (el dataclass interno de logica_mundo.py) y
+Se construyen `Celda` (el dataclass interno de logica_mundo) y
 elementos falsos con `.rotacion` y `.get_comportamiento(nombre)` —
 igual que espera AccionContext, sin necesitar el resto de LogicaMundo.
 """
@@ -144,7 +144,7 @@ async def test_mirar_recorta_la_distancia_al_maximo_de_vision(monkeypatch):
     aunque el bot pida una distancia mayor — mirar() recorta con
     `min(distancia, MAX_VISION_DISTANCE)`.
     """
-    import Infraestructura.Gestores.Mundo.Logica_Mundo.Acciones.mirar as mirar_mod
+    import Infraestructura.Gestores.Mundo.LogicaMundo.Acciones.mirar as mirar_mod
 
     monkeypatch.setattr(mirar_mod, "MAX_VISION_DISTANCE", 2)
 

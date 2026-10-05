@@ -25,11 +25,12 @@ def _escenario_suelo(serie: Serie_Estados) -> None:
     Malla de NxN Suelos, desde (0,0) hasta (n-1, n-1).
     N se define aquí mismo (n=4); para otro tamaño, cambiar este valor.
     """
-    n = 20
+    x = 10
+    y = 10
 
     async def crear():
-        for i in range(n):
-            for j in range(n):
+        for i in range(x):
+            for j in range(y):
                 await serie.Crear_Suelo(Suelo_Piedra, casilla=(i, j))
 
     serie.add([crear])
@@ -73,8 +74,9 @@ def _escenario_elemento_test_cuadrado(serie: Serie_Estados) -> None:
     10x10 empezando en (0,0):
         (0,0) -> (10,0) -> (10,10) -> (0,10) -> (0,0) -> ...
     """
-    lado = 2
-    esquinas = [(0, 0), (lado, 0), (lado, lado), (0, lado)]
+    x = 10
+    y = 10
+    esquinas = [(0, 0), (x, 0), (x, y), (0, y)]
 
     async def paso(elemento, indice: int):
         siguiente = esquinas[indice % len(esquinas)]
@@ -92,12 +94,13 @@ def _escenario_piedra_triangulo(serie: Serie_Estados) -> None:
 
     _escenario_suelo(serie)
 
-    lado = 20
+    x = 10
+    y = 10
 
-    tramo_1 = [(x, 0) for x in range(0, lado + 1)]  # (0,0) -> (lado,0)
-    tramo_2 = [(lado, y) for y in range(1, lado + 1)]  # (lado,0) -> (lado,lado)
+    tramo_1 = [(x2, 0) for x2 in range(0, x + 1)]  # (0,0) -> (lado,0)
+    tramo_2 = [(x, y2) for y2 in range(1, y + 1)]  # (lado,0) -> (lado,lado)
     tramo_3 = [
-        (lado - d, lado - d) for d in range(1, lado + 1)
+        (x - d, y - int(d / 4)) for d in range(1, x + 1)
     ]  # (lado,lado) -> (0,0) diagonal
     recorrido = tramo_1 + tramo_2 + tramo_3
 

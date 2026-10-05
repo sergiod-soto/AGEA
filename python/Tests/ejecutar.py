@@ -41,7 +41,7 @@ tests: list[str] = [
     # # ── Infraestructura / Remoto ──────────────────────────────
     # #
     # # ── Unitarios
-    # "Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py",
+    "Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_bots.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_mundo.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_campos_para_creacion.py",  

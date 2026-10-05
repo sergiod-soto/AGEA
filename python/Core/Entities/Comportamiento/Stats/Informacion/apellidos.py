@@ -3,7 +3,7 @@
 from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 
 
-class Apellidos(Informacion):
+class Apellidos():
     def __init__(self, apellidos: list,**kwargs):
         super().__init__("apellidos", apellidos,**kwargs)
 

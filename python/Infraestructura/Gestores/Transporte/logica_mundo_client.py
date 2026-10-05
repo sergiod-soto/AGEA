@@ -19,8 +19,10 @@ tenga que conocer el formato de transporte.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import time
 from typing import Optional
 
 import grpc.aio
@@ -138,13 +140,13 @@ class LogicaMundoClient:
     async def modificar_elemento(
         self,
         pos: tuple[int, int],
-        type_id: str,
+        element_id: int,
         patch: bytes,
         timeout: float | None = None,
     ) -> tuple[bool, str]:
         await self._ensure_channel()
         req = pb.ModificarElementoRequest(
-            pos=self._pos_to_pb(pos), type_id=type_id, patch=patch
+            pos=self._pos_to_pb(pos), element_id=element_id, patch=patch
         )
         try:
             resp = await self._stub.ModificarElemento(req, timeout=self._t(timeout))
@@ -207,6 +209,19 @@ class LogicaMundoClient:
             return resp.ok, resp.error
         except grpc.aio.AioRpcError as exc:
             logger.error("EliminarAvatarBot falló: %s", exc)
+            return False, str(exc)
+
+    async def matar_bot(
+        self, bot_id: int, cause: str, tick_id: int, timeout: float | None = None
+    ) -> tuple[bool, str]:
+        # "Blando": el gestor no usa el resultado.
+        await self._ensure_channel()
+        req = pb.MatarBotRequest(bot_id=bot_id, cause=cause, tick_id=tick_id)
+        try:
+            resp = await self._stub.MatarBot(req, timeout=self._t(timeout))
+            return resp.ok, resp.error
+        except grpc.aio.AioRpcError as exc:
+            logger.error("MatarBot falló: %s", exc)
             return False, str(exc)
 
     # ------------------------------------------------------------------
@@ -273,19 +288,55 @@ class LogicaMundoClient:
             return pb.GetElementosGlobalesResponse(ok=False, error=str(exc))
 
     # ------------------------------------------------------------------
+    # Soporte al mundo
+    # ------------------------------------------------------------------
+
+    async def generar_mundo(self, timeout: float | None = None) -> None:
+        await self._ensure_channel()
+        resp = await self._stub.GenerarMundo(
+            pb.GenerarMundoRequest(), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"GenerarMundo: {resp.error}")
+
+    async def esperar_generacion_mundo(
+        self, intervalo: float = 1.0, timeout_total: float | None = None
+    ) -> None:
+        """Sondea EstadoGeneracionMundo hasta COMPLETADA. RuntimeError si ERROR
+        o si se agota timeout_total (None = esperar sin límite)."""
+        await self._ensure_channel()
+        inicio = time.monotonic()
+        while True:
+            resp = await self._stub.EstadoGeneracionMundo(
+                pb.EstadoGeneracionMundoRequest(), timeout=self._t(None)
+            )
+            estado = pb.EstadoGeneracion.Name(resp.estado)
+            if estado == "COMPLETADA":
+                return
+            if estado == "ERROR":
+                raise RuntimeError(f"Generación del mundo fallida: {resp.error}")
+            if estado == "NO_INICIADA":
+                raise RuntimeError(
+                    "La generación no se ha iniciado: llama antes a generar_mundo()."
+                )
+            logger.info("Generando mundo... %.0f %%", resp.progreso * 100)
+            if timeout_total is not None and time.monotonic() - inicio > timeout_total:
+                raise RuntimeError("Tiempo agotado esperando la generación del mundo.")
+            await asyncio.sleep(intervalo)
+
+    # ------------------------------------------------------------------
     # Soporte al ciclo de tick de Gestor_Mundo
     # ------------------------------------------------------------------
 
     async def obtener_celdas_en_region(
         self,
-        min_pos: tuple[int, int],
-        max_pos: tuple[int, int],
-        excluir_min: Optional[tuple[int, int]] = None,
-        excluir_max: Optional[tuple[int, int]] = None,
+        min_pos,
+        max_pos,
+        excluir_min=None,
+        excluir_max=None,
         timeout: float | None = None,
     ) -> list:
         await self._ensure_channel()
-
         tiene_exclusion = excluir_min is not None and excluir_max is not None
         req = pb.ObtenerCeldasEnRegionRequest(
             min=self._pos_to_pb(min_pos),
@@ -295,28 +346,33 @@ class LogicaMundoClient:
         if tiene_exclusion:
             req.excluir_min.CopyFrom(self._pos_to_pb(excluir_min))
             req.excluir_max.CopyFrom(self._pos_to_pb(excluir_max))
-
-        try:
-            resp = await self._stub.ObtenerCeldasEnRegion(req, timeout=self._t(timeout))
-            if not resp.ok:
-                logger.warning("ObtenerCeldasEnRegion respondió error: %s", resp.error)
-                return []
-            return list(resp.cells)
-        except grpc.aio.AioRpcError as exc:
-            logger.error("ObtenerCeldasEnRegion falló: %s", exc)
-            return []
+        # PROPAGA: [] es un resultado válido ("región vacía") y un fallo no
+        # debe confundirse con él. El AioRpcError sube tal cual.
+        resp = await self._stub.ObtenerCeldasEnRegion(req, timeout=self._t(timeout))
+        if not resp.ok:
+            raise RuntimeError(f"ObtenerCeldasEnRegion: {resp.error}")
+        return list(resp.cells)
 
     async def actualizar_celdas(
-        self, changed_cells: list, timeout: float | None = None
-    ) -> bool:
+        self,
+        changed_cells: list,
+        movimientos_externos: list | None = None,
+        timeout: float | None = None,
+    ) -> dict[int, tuple[int, int] | None]:
+        """Devuelve los movimientos rechazados: {id_elemento: pos a la que se
+        devolvió, o None si el elemento se eliminó}. PROPAGA errores."""
         await self._ensure_channel()
-        req = pb.ActualizarCeldasRequest(changed_cells=changed_cells)
-        try:
-            resp = await self._stub.ActualizarCeldas(req, timeout=self._t(timeout))
-            return resp.ok
-        except grpc.aio.AioRpcError as exc:
-            logger.error("ActualizarCeldas falló: %s", exc)
-            return False
+        req = pb.ActualizarCeldasRequest(
+            changed_cells=changed_cells,
+            movimientos_externos=movimientos_externos or [],
+        )
+        resp = await self._stub.ActualizarCeldas(req, timeout=self._t(timeout))
+        if not resp.ok:
+            raise RuntimeError(f"ActualizarCeldas: {resp.error}")
+        return {
+            r.id_elemento: None if r.eliminado else (r.pos_devuelta.x, r.pos_devuelta.y)
+            for r in resp.rechazados
+        }
 
     # ---- Sistema atmosférico (NUEVO) ----
     #
@@ -360,47 +416,26 @@ class LogicaMundoClient:
 
     async def actualizar_celdas_atmosfera(
         self, changed_atmosphere_cells: list, timeout: float | None = None
-    ) -> bool:
+    ) -> None:
         await self._ensure_channel()
         req = pb.ActualizarCeldasAtmosferaRequest(
             changed_atmosphere_cells=changed_atmosphere_cells
         )
-        try:
-            resp = await self._stub.ActualizarCeldasAtmosfera(
-                req, timeout=self._t(timeout)
-            )
-            return resp.ok
-        except grpc.aio.AioRpcError as exc:
-            logger.error("ActualizarCeldasAtmosfera falló: %s", exc)
-            return False
+        resp = await self._stub.ActualizarCeldasAtmosfera(req, timeout=self._t(timeout))
+        if not resp.ok:
+            raise RuntimeError(f"ActualizarCeldasAtmosfera: {resp.error}")
 
     async def obtener_progreso_ciclos(
         self, timeout: float | None = None
     ) -> tuple[float, float, float]:
-        """
-        Progreso (0.0-1.0) de los ciclos solar/lunar/anual. AVISO: a
-        diferencia del resto de métodos "blandos" de este cliente (que
-        devuelven [] o False sin ambigüedad ante un fallo), aquí
-        (0.0, 0.0, 0.0) es un valor con forma válida -- significa
-        "medianoche + equinoccio" para TODOS los sectores si
-        Logica_Mundo no responde durante un tick, en vez de fallar de
-        forma visible. Se deja así por consistencia con el resto del
-        cliente; si se prefiere un fallo más ruidoso aquí (propagar la
-        excepción, o que Gestor_Mundo se salte esa fase del tick),
-        cambiar solo este método.
-        """
+        # PROPAGA: (0, 0, 0) parecía un dato válido (medianoche + equinoccio).
         await self._ensure_channel()
-        try:
-            resp = await self._stub.ObtenerProgresoCiclos(
-                pb.ObtenerProgresoCiclosRequest(), timeout=self._t(timeout)
-            )
-            if not resp.ok:
-                logger.warning("ObtenerProgresoCiclos respondió error: %s", resp.error)
-                return 0.0, 0.0, 0.0
-            return resp.progreso_solar, resp.progreso_lunar, resp.progreso_anual
-        except grpc.aio.AioRpcError as exc:
-            logger.error("ObtenerProgresoCiclos falló: %s", exc)
-            return 0.0, 0.0, 0.0
+        resp = await self._stub.ObtenerProgresoCiclos(
+            pb.ObtenerProgresoCiclosRequest(), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"ObtenerProgresoCiclos: {resp.error}")
+        return resp.progreso_solar, resp.progreso_lunar, resp.progreso_anual
 
     # ------------------------------------------------------------------
     # Representación (Vista_Foco / Unity)
@@ -522,12 +557,10 @@ class LogicaMundoClient:
             logger.error("SaveSnapshot falló: %s", exc)
             return False, str(exc)
 
-    async def load_state(self, snapshot_id: str, timeout: float | None = None) -> bool:
+    async def load_state(self, snapshot_id: str, timeout: float | None = None) -> None:
         await self._ensure_channel()
-        req = pb.LoadStateRequest(snapshot_id=snapshot_id)
-        try:
-            resp = await self._stub.LoadState(req, timeout=self._t(timeout))
-            return resp.ok
-        except grpc.aio.AioRpcError as exc:
-            logger.error("LoadState falló: %s", exc)
-            return False
+        resp = await self._stub.LoadState(
+            pb.LoadStateRequest(snapshot_id=snapshot_id), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"LoadState: {resp.error}")

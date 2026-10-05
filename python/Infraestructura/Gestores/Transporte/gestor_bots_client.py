@@ -13,7 +13,7 @@ Cambio respecto a la versión anterior:
   Se añade notificar_avatar_sin_piloto(): usado cuando el propio HV
   detecta que el script de un bot se ha roto (no compila, excepción no
   controlada, etc.) — notifica a Gestor_Bots para que Logica_Mundo
-  elimine el avatar correspondiente (Flujo B, ver logica_mundo.py y
+  elimine el avatar correspondiente (Flujo B, ver logica_mundo y
   gestor_bots.py.eliminar_avatar_bot). El HV NO llama a kill_bot()
   sobre sí mismo para este caso: gestiona su propio proceso localmente,
   esta llamada es solo para limpiar el estado en el Mundo.

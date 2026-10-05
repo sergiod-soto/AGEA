@@ -13,7 +13,7 @@ import os
 import sys
 import time
 
-from Config.settings import DEFAULT_TICK_RATE, LOGICA_MUNDO_ADDRESS
+from Config.settings import LOGICA_MUNDO_ADDRESS, TICKS_PROCESADOS_SEGUNDO
 from Dev.Escenarios.serie_estados import Serie_Estados
 from Dev.Escenarios.escenarios import cargar_escenario
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
@@ -28,7 +28,9 @@ async def main(nombre_escenario: str) -> None:
 
     # Mismo criterio que GestorMundo.set_tick_rate(): <= 0 significa
     # "sin límite" (se ejecuta tan rápido como pueda).
-    intervalo = (1.0 / DEFAULT_TICK_RATE) if DEFAULT_TICK_RATE > 0 else 0.0
+    intervalo = (
+        (1.0 / TICKS_PROCESADOS_SEGUNDO) if TICKS_PROCESADOS_SEGUNDO > 0 else 0.0
+    )
 
     while not serie.finalizado:
         t0 = time.monotonic()

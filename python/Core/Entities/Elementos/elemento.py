@@ -12,6 +12,40 @@ if TYPE_CHECKING:
 
 
 class Elemento(ABC, Comportamiento):
+
+    class Flags:
+        """
+        Registro de los nombres de flag reconocidos por el sistema.
+        Cada nombre es un atributo de CLASE (no de instancia -- ver
+        tiene_flag) que un tipo hoja (Piedra, Arbol...) puede fijar a
+        True. El propio nombre de la flag es también el nombre del
+        atributo que se busca con getattr, para no mantener dos mapas
+        distintos (nombre de flag <-> nombre de atributo).
+        """
+
+        # Marca elementos cuya resistencia_viento no cambia dentro de
+        # un tick normal (solo por transformación discreta, igual que
+        # Suelo)
+        RESISTENCIA_VIENTO_CACHEABLE = "resistencia_viento_cacheable"
+
+    # Conjunto de flags que esta categoría "contiene" -- es decir, que
+    # tiene sentido preguntar sobre un elemento de esta categoría. Vacío
+    # en la base: Elemento en sí no declara ninguna flag por defecto.
+    FLAGS_DISPONIBLES: frozenset[str] = frozenset()
+
+    @classmethod
+    def tiene_flag(cls, nombre: str) -> bool:
+        """
+        True solo si 'nombre' está en FLAGS_DISPONIBLES de esta clase
+        (o heredado) Y el tipo concreto la fija a True como atributo de
+        clase. Preguntar por una flag que esta categoría no contiene, o
+        que no está activada, devuelve False -- nunca lanza error
+        (decisión: versión b, default False).
+        """
+        if nombre not in cls.FLAGS_DISPONIBLES:
+            return False
+        return bool(getattr(cls, nombre, False))
+
     """
     Clase base de las cosas que son un elemento, ya sea simple, complejo o abstracto.
 

@@ -28,6 +28,11 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     obtener_progreso_ciclos,
 )
 
+from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
+    estado_generacion_mundo,
+    generar_mundo,
+)
+
 FUNCIONES = [
     asignar_id,
     crear_elemento,
@@ -54,4 +59,8 @@ FUNCIONES = [
     obtener_celdas_atmosfera_en_region,
     actualizar_celdas_atmosfera,
     obtener_progreso_ciclos,
+    #
+    # ----- generacion del mundo --------
+    estado_generacion_mundo,
+    generar_mundo,
 ]

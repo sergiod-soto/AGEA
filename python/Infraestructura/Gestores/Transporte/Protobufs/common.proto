@@ -1,3 +1,4 @@
+// Infraestructura/Transporte/Protobufs/common.proto
 syntax = "proto3";
 package common;
 
@@ -8,6 +9,17 @@ package common;
 message Ack {
   bool   ok    = 1;
   string error = 2;
+}
+
+// Un elemento que cruza de un Sector a otro durante un tick. Vive aquí (y no
+// en sector_service.proto) porque lo usan tanto el Sector (GetDelta) como
+// Logica_Mundo (ActualizarCeldas).
+message MovimientoExterno {
+  uint64          id_elemento = 1;
+  string          tipo_slot   = 2;
+  common.Position pos_destino = 3;
+  bytes           elemento    = 4;
+  common.Position pos_origen  = 5;
 }
 
 // ============================================================
@@ -45,25 +57,36 @@ message Cell {
   repeated bytes resto = 4;   // lista de elementos sueltos, puede ser vacía
 }
 
+// Celda de atmósfera. Todas las magnitudes en unidades del SISTEMA
+// INTERNACIONAL (cambio respecto a versiones anteriores: temperatura estaba
+// en °C y presión en unidades arbitrarias, así que los snapshots antiguos
+// ya no son válidos).
 message AtmosphereCell {
   Position pos = 1;
 
-  // Terreno: fijo, no cambia salvo reconfiguración explícita del mapa
-  // (igual naturaleza que "suelo" en Cell, pero aquí no es un slot de
-  // elemento removible, es intrínseco a la celda de atmósfera).
+  // Terreno: no cambia salvo reconfiguración explícita del mapa o cambios
+  // de elementos. Las cachés de Suelo (tasa de conversión, inercia) NO viajan
+  // por aquí: cada Sector las reconstruye desde el terreno en su LoadState.
+  // resistencia_viento sí viaja, porque la usan los Sectores vecinos a
+  // través de la ghost zone.
   double  resistencia_viento          = 2;
   Vector2 direccion_preferente_viento = 3;
   Vector2 fuerza_viento               = 4;
-  bytes   bioma                       = 5;  // Bioma serializado -- mismo formato que los slots de Cell
 
   // Estado simulado: cambia cada tick
-  double  radiacion         = 6;
-  double  temperatura       = 7;
-  double  presion           = 8;
-  double  viento_intensidad = 9;
-  Vector2 viento_direccion  = 10;
-  double  humedad_absoluta  = 11;
-  double  humedad_relativa  = 12;
+  double  radiacion         = 5;    // W/m²
+  double  temperatura       = 6;    // K (kelvin)
+  double  presion           = 7;    // Pa
+  double  viento_intensidad = 8;    // m/s
+  Vector2 viento_direccion  = 9;    // vector unitario
+  double  humedad_absoluta  = 10;   // kg/m³
+  double  humedad_relativa  = 11;   // % (0-100)
+
+  // NUEVO. true si algún elemento bloquea por completo el viento en esta
+  // celda. Quien lea resistencia_viento debe mirar SIEMPRE este campo
+  // primero: con bloqueo total, resistencia_viento solo describe a los
+  // elementos NO bloqueantes.
+  bool bloqueo_total_viento = 12;
 }
 
 // ============================================================

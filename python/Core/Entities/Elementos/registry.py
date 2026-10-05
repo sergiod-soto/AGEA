@@ -8,10 +8,56 @@ Para añadir un elemento nuevo: importarlo aquí y añadirlo a ELEMENTOS.
 
 from typing import TYPE_CHECKING
 
+from Core.Entities.Comportamiento.Stats.Informacion.apellidos import Apellidos
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Atmosfericas.condicion_umbral_humedad import (
+    CondicionUmbralHumedad,
+)
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Fisicas.condicion_temperatura import (
+    CondicionTemperatura,
+)
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Fisicas.condicion_vecino_cercano import (
+    CondicionVecinoCercano,
+)
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Logicas.condicion_and import (
+    CondicionAnd,
+)
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Logicas.condicion_or import (
+    CondicionOr,
+)
+from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Temporales.condicion_tick_objetivo import (
+    CondicionTickObjetivo,
+)
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import (
+    Estacion,
+)
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import (
+    Ciclo_Solar,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Derivado.humedad_relativa import (
+    Humedad_Relativa,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.humedad_absoluta import (
+    Humedad_Absoluta,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.presion import (
+    Presion,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
+    TemperaturaAtmosferica,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.viento import (
+    Viento,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
+    Sistema_Atmosferico,
+)
+from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
+from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
+from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Core.Entities.Mundo.Suelo.suelo_arena import Suelo_Arena
 from Core.Entities.Mundo.Suelo.suelo_barro import Suelo_Barro
 from Core.Entities.Mundo.Suelo.suelo_cesped import Suelo_Cesped
@@ -24,7 +70,7 @@ from Core.Entities.Mundo.Suelo.suelo_tierra import Suelo_Tierra
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 from Core.Entities.Elementos.Abstractos.Informacion.raycast import Raycast
-from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido
+from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido, SonidoBase
 from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.agujero import Agujero
 from Core.Entities.Elementos.Abstractos.Marcadores.Espaciales.marcador_espacial import (
     Marcador_Espacial,
@@ -68,6 +114,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+# TODO: meter al registry las condiciones
+
 ELEMENTOS: dict[str, type] = {
     # A
     "Accion": Accion,
@@ -83,19 +132,30 @@ ELEMENTOS: dict[str, type] = {
     "Carne_Seca": Carne_Seca,
     "Celda": Celda,
     "Ciclo_Lunar": Ciclo_Lunar,
+    "Ciclo_Solar": Ciclo_Solar,
     # "Clima": Clima,
     "Comida": Comida,
     "Condicion": Condicion,
+    "CondicionAnd": CondicionAnd,
+    "CondicionOr": CondicionOr,
+    "CondicionTemperatura": CondicionTemperatura,
+    "CondicionTickObjetivo": CondicionTickObjetivo,
+    "CondicionUmbralHumedad": CondicionUmbralHumedad,
+    "CondicionVecinoCercano": CondicionVecinoCercano,
     # D
     # E
     "Elemento_Abstracto": Elemento_Abstracto,
+    "Elemento_Simple": Elemento_Simple,
     "Elemento_Test": Elemento_Test,
+    "Estacion": Estacion,
     "Etereo": Etereo,
     # F
     "Fruta": Fruta,
     # G
     # H
     "Harina": Harina,
+    "Humedad_Absoluta": Humedad_Absoluta,
+    "Humedad_Relativa": Humedad_Relativa,
     # I
     "Informacion": Informacion,
     # J
@@ -113,6 +173,7 @@ ELEMENTOS: dict[str, type] = {
     # P
     "Piedra": Piedra,
     "Premio": Premio,
+    "Presion": Presion,
     "Puzzle": Puzzle,
     # Q
     # R
@@ -120,8 +181,12 @@ ELEMENTOS: dict[str, type] = {
     "Raycast": Raycast,
     "Receta": Receta,
     "Recipiente": Recipiente,
+    "Reloj": Reloj,
     # S
+    "Sistema_Atmosferico": Sistema_Atmosferico,
     "Sonido": Sonido,
+    "SonidoBase": SonidoBase,
+    "Suelo": Suelo,
     "Suelo_Arena": Suelo_Arena,
     "Suelo_Barro": Suelo_Barro,
     "Suelo_Cesped": Suelo_Cesped,
@@ -132,8 +197,10 @@ ELEMENTOS: dict[str, type] = {
     "Suelo_Piedra": Suelo_Piedra,
     "Suelo_Tierra": Suelo_Tierra,
     # T
+    "TemperaturaAtmosferica": TemperaturaAtmosferica,
     # U
     # V
+    "Viento": Viento,
     # W
     # X
     # Y
@@ -174,6 +241,7 @@ def reconstruir_elemento(data: dict, mundo: "Mundo | None" = None):
     obj.deserializar(data, mundo)
     return obj
 
+
 def construir_elemento(nombre_clase: str, **campos):
     """
     Construye un elemento NUEVO llamando a su __init__ real -- se
@@ -193,6 +261,7 @@ def construir_elemento(nombre_clase: str, **campos):
     if clase is None:
         raise ValueError(f"Clase de elemento desconocida: '{nombre_clase}'")
     return clase(**campos)
+
 
 def _todas_las_subclases(cls: type) -> set[type]:
     directas = set(cls.__subclasses__())

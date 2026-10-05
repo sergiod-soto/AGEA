@@ -87,8 +87,6 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
-    # NUEVO -- sistema atmosférico. Mismo patrón exacto que
-    # ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera.
     async def ObtenerCeldasAtmosferaEnRegion(self, request, context):
         return await self._dispatch["ObtenerCeldasAtmosferaEnRegion"].handle(
             self._logica, request, context
@@ -99,8 +97,6 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
-    # NUEVO -- sistema atmosférico. Progreso de los ciclos globales
-    # (solar/lunar/anual) que Gestor_Mundo reenvía a cada Sector.
     async def ObtenerProgresoCiclos(self, request, context):
         return await self._dispatch["ObtenerProgresoCiclos"].handle(
             self._logica, request, context
@@ -126,6 +122,19 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     async def EliminarAvatarBot(self, request, context):
         return await self._dispatch["EliminarAvatarBot"].handle(
+            self._logica, request, context
+        )
+
+    async def MatarBot(self, request, context):
+        return await self._dispatch["MatarBot"].handle(self._logica, request, context)
+
+    async def GenerarMundo(self, request, context):
+        return await self._dispatch["GenerarMundo"].handle(
+            self._logica, request, context
+        )
+
+    async def EstadoGeneracionMundo(self, request, context):
+        return await self._dispatch["EstadoGeneracionMundo"].handle(
             self._logica, request, context
         )
 

@@ -311,17 +311,15 @@ class Mundo:
     def crear_atmosfera(
         self,
         pos_atmosfera: tuple[int, int],
-        resistencia_viento: float,
         direccion_preferente_viento: Any,
         fuerza_viento: Any,
-        bioma: Any,
     ) -> None:
+        # Sin bioma ni resistencia_viento: la celda deriva ambos de las cachés
+        # que rellenan registrar_suelo / registrar_resistencia_elemento.
         self.malla_atmosfera[pos_atmosfera] = Celda_Atmosfera(
             posicion=pos_atmosfera,
-            resistencia_viento=resistencia_viento,
             direccion_preferente_viento=direccion_preferente_viento,
             fuerza_viento=fuerza_viento,
-            bioma=bioma,
         )
 
     def obtener_atmosfera(

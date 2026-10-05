@@ -1,8 +1,4 @@
-# Infraestructura/Gestores/Mundo/Atmosfera/sistema_atmosferico.py
-#
-# NOTA DE UBICACIÓN: sigue sin haber confirmación de carpeta -- se deja
-# junto al resto de sistemas de mundo, hermano de LogicaMundo y
-# Gestor_Mundo. Mover es trivial si hace falta.
+# Core/Entities/Mundo/Atmosfera/sistema_atmosferico.py
 
 """
 Orquestador del tick atmosférico de UNA celda. VERSIÓN FINAL de esta
@@ -55,9 +51,8 @@ Sector._vecinos_atmosfera, mezclando celdas propias y ghost zone.
 
 IMPORTANTE: avanzar_celda() MUTA la celda que recibe (cada
 Sistema_Atmosferico guarda su propio estado y actualizar() lo modifica
-in-place) -- no devuelve ningún patch. Ver nota pendiente en
-Celda_Atmosfera.aplicar_patch() sobre las implicaciones de esto para
-sincronización por red.
+in-place) -- no devuelve ningún patch. Las cachés de Celda_Atmosfera no
+viajan por proto: se reconstruyen desde el terreno en cada load_state del Sector.
 """
 
 from __future__ import annotations
@@ -67,6 +62,7 @@ from dataclasses import dataclass
 
 from vectors import Vector2
 
+from Config.parametros_simulacion import INCLINACION_AXIAL_GRADOS, RADIACION_MAXIMA
 from Config.settings import ATMOSFERA_ESCALA, GRID_HEIGHT
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 
@@ -88,15 +84,7 @@ class EstadoVecino:
     presion: float
     humedad_absoluta: float
     direccion: Vector2
-
-
-# ---- Radiación ----
-
-RADIACION_MAXIMA: float = 100.0  # valor de partida, sin calibrar
-
-# Inclinación axial real de la Tierra -- ajustable si se quiere un
-# planeta con estaciones más o menos marcadas.
-INCLINACION_AXIAL_GRADOS: float = 23.44
+    bloqueo_total_viento: bool = False
 
 
 def _latitud_radianes(y: int) -> float:
@@ -168,7 +156,12 @@ def avanzar_celda(
 
     celda.radiacion = calcular_radiacion(y_terreno, progreso_solar, progreso_anual)
 
-    celda.temperatura.actualizar(celda.bioma, celda.radiacion, vecinos)
+    celda.temperatura.actualizar(
+        celda.tasa_conversion_radiacion_calor,
+        celda.inercia_termica,
+        celda.radiacion,
+        vecinos,
+    )
     celda.presion.actualizar(celda.temperatura.valor, vecinos)
     celda.viento.actualizar(celda, celda.presion.valor, vecinos)
     celda.humedad_absoluta.actualizar(celda.temperatura.valor, vecinos)

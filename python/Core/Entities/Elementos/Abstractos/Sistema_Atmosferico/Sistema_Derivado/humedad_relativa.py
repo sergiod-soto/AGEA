@@ -2,42 +2,55 @@
 
 import math
 
+from Config.settings import HUMEDAD_RELATIVA
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
+    kelvin_a_celsius,
+)
+
+# Constante específica del vapor de agua, J/(kg·K).
+CONSTANTE_GAS_VAPOR_AGUA: float = 461.5
 
 
-def _capacidad_maxima(temperatura: float) -> float:
+def _capacidad_maxima(temperatura_k: float) -> float:
     """
-    Aproximación de Magnus-Tetens de la presión de vapor de saturación
-    (fórmula meteorológica estándar), usada aquí como FORMA de curva --
-    no como magnitud física exacta, porque no conocemos en qué unidades
-    está humedad_absoluta en este juego. Lo importante que aporta: el
-    aire más caliente admite más humedad antes de "saturarse", y lo hace
-    de forma no lineal (crece cada vez más rápido con la temperatura),
-    igual que en la realidad.
+    Densidad de vapor de agua de SATURACIÓN, en kg/m³ (misma unidad que
+    humedad_absoluta), a la temperatura dada en kelvin.
 
-    Si humedad_absoluta acaba usando otra escala/unidades, este
-    resultado necesitará un factor de escala para casar con ella -- eso
-    no se puede saber hasta que Humedad_Absoluta tenga su modelo real
-    (ver TODO en humedad_absoluta.py).
+    Dos pasos estándar:
+      1) Magnus-Tetens (coeficientes de Sonntag) da la presión de vapor de
+         saturación e_s en Pa. Magnus trabaja en °C, de ahí
+         kelvin_a_celsius(). Válida aprox. entre -45 y 60 °C.
+      2) Ley de los gases ideales para el vapor: rho = e_s / (R_v * T).
+
+    Ejemplo de comprobación: a 20 °C da ~0.0173 kg/m³ (17.3 g/m³), el valor
+    de las tablas. Con esto la humedad relativa ya no depende de ningún
+    factor de escala inventado (resuelve la duda que había sobre unidades).
     """
-    return 6.112 * math.exp((17.62 * temperatura) / (243.12 + temperatura))
+    temperatura_c = kelvin_a_celsius(temperatura_k)
+    presion_saturacion_pa = 611.2 * math.exp(
+        (17.62 * temperatura_c) / (243.12 + temperatura_c)
+    )
+    return presion_saturacion_pa / (CONSTANTE_GAS_VAPOR_AGUA * temperatura_k)
 
 
 class Humedad_Relativa(Sistema_Atmosferico):
     def __init__(self, valor_inicial: float = 0.0, **kwargs):
-        super().__init__(Humedad_Relativa, **kwargs)
-        self.valor: float = valor_inicial  # porcentaje, 0-100
+        super().__init__(Humedad_Relativa, HUMEDAD_RELATIVA, **kwargs)
+        self.valor: float = valor_inicial  # porcentaje, 0-100 (adimensional)
 
     def actualizar(self, humedad_absoluta: float, temperatura: float) -> None:
         """
-        Derivada: no difunde ni mira vecinos (por eso no recibe
-        `vecinos`) -- se calcula solo a partir de humedad_absoluta y
-        temperatura YA actualizadas de esta misma celda, en este mismo
-        tick (de ahí el orden: temperatura -> ... -> humedad_absoluta ->
-        humedad_relativa).
+        Derivada: no difunde ni mira vecinos -- se calcula solo a partir de
+        humedad_absoluta (kg/m³) y temperatura (K) YA actualizadas de esta
+        misma celda, en este mismo tick (de ahí el orden: temperatura ->
+        ... -> humedad_absoluta -> humedad_relativa).
         """
+        if temperatura <= 0:
+            self.valor = 0.0
+            return
         capacidad_maxima = _capacidad_maxima(temperatura)
         if capacidad_maxima <= 0:
             self.valor = 0.0

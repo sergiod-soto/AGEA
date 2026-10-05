@@ -70,7 +70,7 @@ class Agua(Elemento_Simple, comportamientos):
             # Liquido
             disuelto=None,
             # Transformable:
-            dict_transformable=diccionario_transformaciones(self),
+            dict_transformable=diccionario_transformaciones(),
             # Hidratante:
             valor_hidratacion=1.0,  # TODO: definir _valor_hidratacion de Hidratante de agua
             # Combinable:

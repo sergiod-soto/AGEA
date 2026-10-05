@@ -74,5 +74,3 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
 
     async def SetSounds(self, request, context):
         return await self._dispatch["SetSounds"].handle(self._sector, request, context)
-
-

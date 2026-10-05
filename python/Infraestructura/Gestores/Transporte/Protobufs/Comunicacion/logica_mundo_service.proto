@@ -16,20 +16,34 @@ service LogicaMundoService {
   rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
   rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
   rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
+
+  // NUEVO -- terminar un bot: elimina su avatar (si sigue en el mundo) y
+  // termina su script. Lo llama Gestor_Mundo.
+  rpc MatarBot (MatarBotRequest) returns (common.Ack);
+
   rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
   rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
   rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
-  rpc ActualizarCeldas (ActualizarCeldasRequest) returns (common.Ack);
 
-  // NUEVO -- sistema atmosférico. Mismo trío de responsabilidad que
+  // CAMBIO: antes devolvía common.Ack. La respuesta nueva conserva ok=1 y
+  // error=2 (compatible en el cable) y añade la lista de movimientos
+  // rechazados.
+  rpc ActualizarCeldas (ActualizarCeldasRequest) returns (ActualizarCeldasResponse);
+
+  // Sistema atmosférico. Mismo trío de responsabilidad que
   // ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
   // ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
   // todos los Sectores en un tick dado).
   rpc ObtenerCeldasAtmosferaEnRegion (ObtenerCeldasAtmosferaEnRegionRequest) returns (ObtenerCeldasAtmosferaEnRegionResponse);
   rpc ActualizarCeldasAtmosfera (ActualizarCeldasAtmosferaRequest) returns (common.Ack);
   rpc ObtenerProgresoCiclos (ObtenerProgresoCiclosRequest) returns (ObtenerProgresoCiclosResponse);
+
+  // NUEVO -- generación del mundo. GenerarMundo la inicia en segundo plano
+  // y vuelve al instante; el cliente sondea EstadoGeneracionMundo.
+  rpc GenerarMundo (GenerarMundoRequest) returns (common.Ack);
+  rpc EstadoGeneracionMundo (EstadoGeneracionMundoRequest) returns (EstadoGeneracionMundoResponse);
 
   rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
   rpc ObtenerAudio (ObtenerAudioRequest) returns (ObtenerAudioResponse);
@@ -80,6 +94,12 @@ message ResolverAccionRequest {
 
 message EliminarAvatarBotRequest {
   uint64 bot_id = 1;
+}
+
+message MatarBotRequest {
+  uint64 bot_id  = 1;
+  string cause   = 2;   // motivo, solo para el log
+  uint64 tick_id = 3;
 }
 
 message GlobalEvent {
@@ -164,10 +184,30 @@ message ObtenerCeldasEnRegionResponse {
 
 message ActualizarCeldasRequest {
   repeated common.Cell changed_cells = 1;
+  // NUEVO: movimientos entre sectores del tick (antes solo viajaban por
+  // GetDelta hasta el gestor y no llegaban a Logica_Mundo).
+  repeated common.MovimientoExterno movimientos_externos = 2;
+}
+
+// Un movimiento externo que Logica_Mundo NO aceptó (slot de destino ya
+// ocupado). Gestor_Mundo lo usa para no migrar ese bot.
+message RechazoMovimiento {
+  uint64          id_elemento  = 1;
+  // true: no cupo ni en destino ni en origen y el elemento se eliminó
+  // (caso residual); pos_devuelta no tiene sentido.
+  bool            eliminado    = 2;
+  // Posición de origen a la que volvió el elemento (si eliminado = false).
+  common.Position pos_devuelta = 3;
+}
+
+message ActualizarCeldasResponse {
+  bool                       ok         = 1;
+  string                     error      = 2;
+  repeated RechazoMovimiento rechazados = 3;
 }
 
 // ============================================================
-//  Sistema atmosférico (NUEVO)
+//  Sistema atmosférico
 // ============================================================
 
 message ObtenerCeldasAtmosferaEnRegionRequest {
@@ -196,6 +236,32 @@ message ObtenerProgresoCiclosResponse {
   double progreso_solar = 3;
   double progreso_lunar = 4;
   double progreso_anual = 5;
+}
+
+// ============================================================
+//  Generación del mundo (NUEVO)
+// ============================================================
+
+// Los valores numéricos deben coincidir con
+// logica_mundo.EstadoGeneracion (IntEnum). NO_INICIADA = 0 por ser el valor
+// por defecto de un enum proto3.
+enum EstadoGeneracion {
+  NO_INICIADA = 0;
+  EN_CURSO    = 1;
+  COMPLETADA  = 2;
+  ERROR       = 3;
+}
+
+message GenerarMundoRequest {}
+
+message EstadoGeneracionMundoRequest {}
+
+message EstadoGeneracionMundoResponse {
+  bool             ok               = 1;  // false: falló el propio RPC
+  string           error            = 2;  // motivo del fallo del RPC
+  EstadoGeneracion estado           = 3;
+  double           progreso         = 4;  // 0.0 - 1.0
+  string           error_generacion = 5;  // por qué terminó en ERROR (si aplica)
 }
 
 message ConsultarRepresentacionRequest {
@@ -247,6 +313,8 @@ message ComandoConsolaResponse {
   bytes  payload = 3;
 }
 
+// OJO: estos dos mensajes no tienen ningún RPC en el service (LogicaMundo.
+// obtener_elemento existe pero no está expuesto). Se dejan tal cual.
 message ObtenerElementoRequest {
   uint64          element_id = 1;
   string          tipo_datos = 2;  // "representacion" (default) o "serializacion"

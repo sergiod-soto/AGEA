@@ -20,19 +20,16 @@ stores sin tocar este fichero.
 
 Carpeta: Gestores/Mundo/Sector/
 
-Variables de entorno:
+Configuración (Config.settings):
   SECTOR_COL, SECTOR_ROW
   SECTOR_SIZE
-  MAX_VISION_DISTANCE
-  GESTOR_MUNDO_ADDRESS
-  SECTOR_WORKERS
+  ATMOSFERA_ESCALA
   S3_BUCKET, S3_PREFIX          (para snapshots)
 """
 
 import json
 import logging
 import math
-import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
@@ -47,10 +44,16 @@ from Config.settings import (
     SECTOR_ROW,
     SECTOR_SIZE,
 )
+from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
 
+# Rutas confirmadas: Celda_Atmosfera vive en Core/Entities/Mundo/Celda/ y
+# sistema_atmosferico.py en Core/Entities/Mundo/Atmosfera/.
 from Core.Entities.Mundo.Atmosfera import sistema_atmosferico
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
+from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
+    pos_terreno_a_atmosfera,
+)
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -72,6 +75,8 @@ logger = logging.getLogger(__name__)
 
 
 class SectorMode(Enum):
+    # Valores IGUALES a los del enum SectorMode de sector_service.proto:
+    # Gestor_Mundo envía mode.value tal cual.
     INACTIVO = 0
     DORMIDO = 1
     ACTIVO = 2
@@ -84,7 +89,7 @@ class SectorMode(Enum):
 
 @dataclass
 class CeldaSector:
-    """Igual que Celda en logica_mundo.py, pero con objetos Elemento reales
+    """Igual que Celda en logica_mundo, pero con objetos Elemento reales
     en vez de ids — es la copia de trabajo que usa el Sector durante el
     tick, no el estado gold (ese vive solo en Logica_Mundo)."""
 
@@ -212,9 +217,8 @@ class CeldaAtmosferaStore:
     def set(self, x: int, y: int, celda: Celda_Atmosfera) -> None:
         """No hay equivalente a get_or_create(): a diferencia de una
         CeldaSector (que puede empezar vacía y rellenarse), una
-        Celda_Atmosfera siempre llega completa (con su bioma,
-        resistencia_viento...) desde quien la construya -- no tiene
-        sentido inventar una "a medias"."""
+        Celda_Atmosfera siempre llega completa desde quien la construya --
+        no tiene sentido inventar una "a medias"."""
         self._celdas[(x, y)] = celda
 
     def items(self):
@@ -222,45 +226,33 @@ class CeldaAtmosferaStore:
 
     def from_proto_cell(self, cell) -> None:
         """
-        Reconstruye una Celda_Atmosfera completa (terreno + estado
-        simulado) a partir de un AtmosphereCell proto, y la indexa por
-        posición.
+        Reconstruye una Celda_Atmosfera a partir de un AtmosphereCell
+        proto, y la indexa por posición.
 
-        A diferencia de CeldaSectorStore._deserializar_slot (que confía
-        en que el __init__ del elemento deje el estado correcto), aquí
-        se reconstruye "a mano": Celda_Atmosfera.__init__ crea sus
-        Sistema_Atmosferico con valores iniciales por defecto (20.0,
-        1000.0...) -- después de construirla hay que sobreescribir cada
-        .valor con lo que realmente venía en el proto, o se perdería el
-        estado real de la celda en cada LoadState.
+        Se reconstruye "a mano": Celda_Atmosfera.__init__ crea sus
+        Sistema_Atmosferico con los valores iniciales por defecto de cada
+        clase (K, Pa...) -- después de construirla hay que sobreescribir
+        cada .valor con lo que realmente venía en el proto, o se perdería
+        el estado real de la celda en cada LoadState.
+
+        Las cachés (tasa/inercia de Suelo, resistencia y bloqueo de
+        viento) NO se restauran del proto: se reconstruyen desde el
+        terreno en Sector._sincronizar_atmosfera_desde_terreno.
         """
         pos = (cell.pos.x, cell.pos.y)
 
-        bioma = None
-        if cell.bioma:
-            bioma = reconstruir_elemento(json.loads(cell.bioma.decode()))
-        else:
-            logger.warning(
-                "CeldaAtmosferaStore.from_proto_cell: celda en %s sin "
-                "bioma -- esto no debería pasar (bioma es obligatorio "
-                "en Celda_Atmosfera.__init__).",
-                pos,
-            )
-
         celda = Celda_Atmosfera(
             posicion=pos,
-            resistencia_viento=cell.resistencia_viento,
             direccion_preferente_viento=Vector2(
                 cell.direccion_preferente_viento.x,
                 cell.direccion_preferente_viento.y,
             ),
             fuerza_viento=Vector2(cell.fuerza_viento.x, cell.fuerza_viento.y),
-            bioma=bioma,
         )
 
         celda.radiacion = cell.radiacion
-        celda.temperatura.valor = cell.temperatura
-        celda.presion.valor = cell.presion
+        celda.temperatura.valor = cell.temperatura  # K
+        celda.presion.valor = cell.presion  # Pa
         celda.viento.intensidad = cell.viento_intensidad
         celda.viento.direccion = Vector2(
             cell.viento_direccion.x, cell.viento_direccion.y
@@ -272,22 +264,14 @@ class CeldaAtmosferaStore:
 
     def to_proto_cells(self) -> list:
         """Serializa todas las celdas propias a AtmosphereCell proto,
-        volcando tanto terreno como estado simulado actual.
-
-        NOTA / asunción: asume bioma.serializar() sin argumentos, igual
-        que CeldaSectorStore._serializar_slot. Si Bioma necesita un
-        `modo=` explícito, ajustar solo esa línea."""
+        volcando terreno y estado simulado actual (SI: K, Pa, m/s...)."""
         result = []
         for (x, y), celda in self._celdas.items():
-            bioma_bytes = (
-                json.dumps(celda.bioma.serializar()).encode()
-                if celda.bioma is not None
-                else b""
-            )
             result.append(
                 common_pb.AtmosphereCell(
                     pos=common_pb.Position(x=x, y=y),
                     resistencia_viento=celda.resistencia_viento,
+                    bloqueo_total_viento=celda.bloqueo_total_viento,
                     direccion_preferente_viento=common_pb.Vector2(
                         x=celda.direccion_preferente_viento.x,
                         y=celda.direccion_preferente_viento.y,
@@ -295,7 +279,6 @@ class CeldaAtmosferaStore:
                     fuerza_viento=common_pb.Vector2(
                         x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
                     ),
-                    bioma=bioma_bytes,
                     radiacion=celda.radiacion,
                     temperatura=celda.temperatura.valor,
                     presion=celda.presion.valor,
@@ -317,6 +300,9 @@ class CeldaAtmosferaStore:
 
 @dataclass
 class ElementoNuevo:
+    # Sin uso en este fichero (¿residuo del diseño anterior, en el que
+    # Logica_Mundo resolvía las mutaciones?). Se deja por si lo importa otro
+    # módulo; borrar si no.
     marcador_local: str  # p. ej. "s3_2_nuevo_0" o simplemente "nuevo_0"
     pos: tuple[int, int]
     type_id: str  # "suelo" | "bot" | "resto"
@@ -366,10 +352,9 @@ class TickDelta:
 class Sector:
 
     def __init__(self):
-        # Siempre leer del entorno vivo para que los tests puedan
-        # sobreescribir las variables antes de crear la instancia.
-        # Fallback a los valores por defecto hardcodeados, no a las
-        # constantes de módulo (que se fijan en el primer import).
+        # La región del sector sale de Config.settings (valores fijados al
+        # importar el módulo, no del entorno "vivo"). Para tests, parchear
+        # Config.settings antes de importar este módulo.
         self._col = SECTOR_COL
         self._row = SECTOR_ROW
         self._size = SECTOR_SIZE
@@ -388,7 +373,8 @@ class Sector:
         self._atmosfera = CeldaAtmosferaStore()
 
         # Ghost zone de terreno: celdas de sectores vecinos dentro de
-        # MAX_VISION_DISTANCE.
+        # MAX_VISION_DISTANCE. OJO: son Cell proto (con bytes), no
+        # CeldaSector -- ver nota en TickContext.get_celda.
         self._ghost: dict[tuple[int, int], Any] = {}
 
         # Ghost zone de ATMÓSFERA: celdas de atmósfera de sectores
@@ -417,17 +403,16 @@ class Sector:
         # Bots presentes en este sector: bot_id → BotSnapshot proto
         self._bots: dict[int, Any] = {}
 
-        # Índice inverso: id_elemento (uint64, el avatar en el mundo) →
-        # bot_id (uint64, el script). Son ids independientes — este
-        # índice es la única forma de ir de uno a otro sin adivinar por
-        # posición. Se mantiene en add_migrating_bot / _detectar_migraciones
-        # / _resolver_mutaciones.
+        # Índice inverso: id_elemento (el avatar en el mundo) → bot_id (el
+        # script). Son ids independientes — este índice es la única forma de
+        # ir de uno a otro sin adivinar por posición. Se mantiene en
+        # load_state / add_migrating_bot / _detectar_migraciones /
+        # _resolver_mutaciones.
         self._elemento_a_bot: dict[int, int] = {}
 
     # ─────────────────────────────────────────
-    #  Propiedades de región (FIX principal)
-    #  Derivadas de _col, _row, _size en lugar
-    #  de las constantes globales de módulo.
+    #  Propiedades de región
+    #  Derivadas de _col, _row, _size.
     # ─────────────────────────────────────────
 
     @property
@@ -512,32 +497,6 @@ class Sector:
         x, y = pos
         return self._x0 <= x < self._x1 and self._y0 <= y < self._y1
 
-    def _registrar_movimiento_externo(
-        self, delta: TickDelta, mutacion: MoverElemento, elemento: Any, slot: str
-    ) -> None:
-        """Declara un movimiento hacia una celda ajena. Se serializa el
-        elemento porque su estado pudo cambiar durante este tick y
-        Logica_Mundo debe quedarse con la versión actualizada."""
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
-            MovimientoExterno,
-        )
-
-        x, y = mutacion.pos_destino
-        delta.movimientos_externos.append(
-            MovimientoExterno(
-                id_elemento=mutacion.id_elemento,
-                tipo_slot=slot,
-                pos_destino=common_pb.Position(x=x, y=y),
-                elemento=CeldaSectorStore._serializar_slot(elemento),
-            )
-        )
-
-    def _en_region_propia(self, pos: tuple[int, int]) -> bool:
-        """True si pos (espacio de terreno) cae en la región de este Sector.
-        Un Sector solo puede escribir celdas de su región."""
-        x, y = pos
-        return self._x0 <= x < self._x1 and self._y0 <= y < self._y1
-
     @staticmethod
     def _asignar_slot(celda: CeldaSector, slot: str, elemento: Any) -> bool:
         """Coloca 'elemento' en el slot de 'celda'. False, sin cambiar nada,
@@ -560,15 +519,15 @@ class Sector:
     ) -> None:
         """Declara un movimiento hacia una celda ajena. Se serializa el
         elemento porque su estado pudo cambiar durante este tick, y
-        Logica_Mundo debe quedarse con la versión actualizada."""
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
-            MovimientoExterno,
-        )
-
+        Logica_Mundo debe quedarse con la versión actualizada. Incluye
+        pos_origen para que Logica pueda devolver el elemento ahí si el
+        destino está ocupado."""
         dx, dy = mutacion.pos_destino
         ox, oy = mutacion.pos_origen
+        # MovimientoExterno vive ahora en common.proto (antes en
+        # sector_service.proto).
         delta.movimientos_externos.append(
-            MovimientoExterno(
+            common_pb.MovimientoExterno(
                 id_elemento=mutacion.id_elemento,
                 tipo_slot=slot,
                 pos_destino=common_pb.Position(x=dx, y=dy),
@@ -597,7 +556,8 @@ class Sector:
 
         AVISO DE RUPTURA: esta firma cambió respecto a la versión
         anterior (cells, bots) -- quien llame a esto (el servicer gRPC
-        de LoadState) debe construir/pasar también celdas_atmosfera.
+        de LoadState) debe construir/pasar también celdas_atmosfera
+        (request.atmosphere_cells).
         """
         self._celdas = CeldaSectorStore()
         for cell in cells:
@@ -607,17 +567,57 @@ class Sector:
         for cell_atm in celdas_atmosfera:
             self._atmosfera.from_proto_cell(cell_atm)
 
+        # Las celdas de atmósfera recién deserializadas no traen cachés:
+        # se reconstruyen desde el terreno.
+        self._sincronizar_atmosfera_desde_terreno()
+
         self._bots = {bot.bot_id: bot for bot in bots}
+        self._elemento_a_bot = {bot.id_elemento: bot.bot_id for bot in bots}
         logger.info(
             "Sector (%d,%d): estado cargado — %d celdas, %d celdas de "
             "atmósfera, %d bots",
             self._col,
             self._row,
-            len(list(self._celdas.items())),
-            len(list(self._atmosfera.items())),
+            len(self._celdas),
+            len(self._atmosfera),
             len(self._bots),
         )
-        self._elemento_a_bot = {bot.id_elemento: bot.bot_id for bot in bots}
+
+    def _sincronizar_atmosfera_desde_terreno(self) -> None:
+        """
+        Recorre self._celdas (terreno propio, ya cargado) y registra en
+        cada Celda_Atmosfera propia la tasa/inercia de su Suelo y la
+        resistencia_viento de sus elementos estáticos. Necesario tras
+        cada load_state, porque las Celda_Atmosfera recién deserializadas
+        del proto no traen estas cachés (ver docstring de load_state).
+
+        Solo cubre la región propia del sector -- no toca ghost zones
+        (self._ghost/self._ghost_atmosfera son de solo lectura y no
+        deben tener cachés propias).
+        """
+        for (x, y), celda in self._celdas.items():
+            pos = (x, y)
+            # pos_terreno_a_atmosfera devuelve una POSICIÓN (tupla), no la
+            # celda: hay que buscarla en el store. (Antes se usaba la tupla
+            # como si fuera la celda y reventaba con AttributeError.)
+            celda_atmosfera = self._atmosfera.get(
+                *pos_terreno_a_atmosfera(x, y, ATMOSFERA_ESCALA)
+            )
+            if celda_atmosfera is None:
+                continue
+
+            if celda.suelo is not None:
+                celda_atmosfera.registrar_suelo(
+                    pos,
+                    celda.suelo.tasa_conversion_radiacion_calor,
+                    celda.suelo.inercia_termica,
+                )
+
+            for elemento in celda.resto:
+                if elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+                    celda_atmosfera.registrar_resistencia_elemento(
+                        elemento.id_elemento, elemento.resistencia_viento
+                    )
 
     def get_state(self):
         """
@@ -654,7 +654,7 @@ class Sector:
         """Recibe y almacena la ghost zone de ATMÓSFERA (adyacencia-8,
         celdas de solo lectura del tick anterior) para este tick.
         Separada de self._ghost (terreno): son conceptos distintos que
-        solo comparten el nombre por analogía -- ver sector.proto,
+        solo comparten el nombre por analogía -- ver sector_service.proto,
         SetAtmosphereGhostZone."""
         self._ghost_atmosfera = {}
         for cell in ghost_cells:
@@ -784,6 +784,7 @@ class Sector:
             atmosfera=self._atmosfera,
             ghost_atmosfera=self._ghost_atmosfera,
             escala_atmosfera=ATMOSFERA_ESCALA,
+            tick_id=tick_id,
         )
 
         self._procesar_sonidos(ctx)
@@ -796,11 +797,14 @@ class Sector:
             for elemento in (celda.suelo, celda.bot, *celda.resto):
                 if elemento is None:
                     continue
-                # TODO: firma exacta a definir junto a Core/Mundo.
-                elemento.tick((x, y), ctx)
+                # TODO: firma exacta a definir junto a Core/Mundo. HOY NINGÚN
+                # ELEMENTO EJECUTA tick(): no hay transformaciones (barro ->
+                # tierra...) hasta que se active. Suelo_Piedra.tick ya está
+                # declarado como tick(self, pos, ctx).
+                # elemento.tick((x, y), ctx)
 
         delta.mutaciones = ctx.obtener_mutaciones()
-        self._resolver_mutaciones(delta.mutaciones, delta)
+        self._resolver_mutaciones(delta.mutaciones, delta, ctx)
         delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
 
         self._avanzar_atmosfera(tick_id)
@@ -819,8 +823,8 @@ class Sector:
         leen SIEMPRE del tick anterior (modelo acordado)."""
         posiciones_propias = self._posiciones_atmosfera_propias()
 
-        # FIX S1: se congelan ANTES de mutar nada los únicos valores que leen
-        # los vecinos. Son floats (inmutables), así que la copia es real.
+        # Se congelan ANTES de mutar nada los únicos valores que leen los
+        # vecinos. Son floats (inmutables), así que la copia es real.
         # Guardar las celdas en un dict NO congelaba nada: avanzar_celda las
         # muta in-place y el dict apuntaba a los mismos objetos, con lo que
         # el resultado dependía del orden del bucle.
@@ -848,10 +852,16 @@ class Sector:
         pos: tuple[int, int],
         estados_previos: dict[tuple[int, int], tuple[float, float, float]],
     ) -> list[sistema_atmosferico.EstadoVecino]:
-        """EstadoVecino (adyacencia-8) de `pos`, del tick anterior. Primero
-        estados_previos (vecino propio, congelado); si no, la ghost zone
-        (vecino de otro Sector, ya del tick anterior). Se omite si no está
-        en ninguna (borde del mundo, o ghost zone aún sin llegar)."""
+        """
+        Lista de EstadoVecino (adyacencia-8) de la celda en 'pos', con los
+        valores del TICK ANTERIOR: los vecinos propios salen de
+        'estados_previos' (congelados) y los de otro Sector, de la ghost
+        zone. Los vecinos que no existen en ninguna de las dos (borde del
+        mundo) se omiten: el borde es adiabático.
+
+        (Estaba definido DENTRO de _avanzar_atmosfera, tras el bucle, así
+        que self._vecinos_atmosfera no existía.)
+        """
         x, y = pos
         vecinos: list[sistema_atmosferico.EstadoVecino] = []
 
@@ -864,6 +874,15 @@ class Sector:
                 estado = estados_previos.get(vecino_pos)
                 if estado is not None:
                     temperatura, presion, humedad_absoluta = estado
+                    # Vecino propio: bloqueo_total_viento no lo muta
+                    # avanzar_celda, así que se lee en vivo del store propio
+                    # -- no hace falta congelarlo como el resto.
+                    celda_vecina = self._atmosfera.get(*vecino_pos)
+                    bloqueo_total_viento = (
+                        celda_vecina.bloqueo_total_viento
+                        if celda_vecina is not None
+                        else False
+                    )
                 else:
                     vecino_proto = self._ghost_atmosfera.get(vecino_pos)
                     if vecino_proto is None:
@@ -871,6 +890,12 @@ class Sector:
                     temperatura = vecino_proto.temperatura
                     presion = vecino_proto.presion
                     humedad_absoluta = vecino_proto.humedad_absoluta
+                    # Vecino de GHOST ZONE (otro Sector): su bloqueo viaja en
+                    # el proto (AtmosphereCell.bloqueo_total_viento). Ojo: lo
+                    # rellena Logica_Mundo desde SU Celda_Atmosfera, cuyas
+                    # cachés hoy nadie mantiene (pendiente de la fase de
+                    # cachés) -- hasta entonces valdrá siempre False.
+                    bloqueo_total_viento = vecino_proto.bloqueo_total_viento
 
                 distancia = math.hypot(dx, dy)
                 vecinos.append(
@@ -879,17 +904,14 @@ class Sector:
                         presion=presion,
                         humedad_absoluta=humedad_absoluta,
                         direccion=Vector2(dx / distancia, dy / distancia),
+                        bloqueo_total_viento=bloqueo_total_viento,
                     )
                 )
         return vecinos
 
     def _resolver_mutaciones(
-        self, mutaciones: list[Mutacion], delta: TickDelta
+        self, mutaciones: list[Mutacion], delta: TickDelta, ctx: TickContext
     ) -> None:
-        """Aplica cada mutación sobre self._celdas (CeldaSectorStore),
-        mantiene sincronizado self._bots (índice posición-only usado por
-        _detectar_migraciones) y rellena delta.changed_cells /
-        delta.dead_bot_ids."""
         posiciones_cambiadas: set[tuple[int, int]] = set()
 
         for mutacion in mutaciones:
@@ -897,9 +919,20 @@ class Sector:
                 celda = self._celdas.get_or_create(*mutacion.pos)
                 if self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
                     posiciones_cambiadas.add(mutacion.pos)
+
+                    if mutacion.tipo_slot == "suelo":
+                        self._sincronizar_atmosfera_de_suelo(ctx, mutacion)
+
+                    # Alta de resistencia_viento para cualquier elemento
+                    # estático (típicamente en 'resto', pero no se filtra por
+                    # slot: tiene_flag() ya es False para los que no la
+                    # activan). El nombre de la flag es RESISTENCIA_VIENTO_CACHEABLE (antes
+                    # aquí había RESISTENCIA_VIENTO_CACHEABLE, que no existe).
+                    if mutacion.elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+                        self._registrar_resistencia_viento(
+                            ctx, mutacion.pos, mutacion.elemento
+                        )
                 else:
-                    # Slot único ocupado: la creación se descarta (no hay un "origen"
-                    # al que devolver un elemento que aún no existía).
                     logger.warning(
                         "Sector (%d,%d): creación descartada en %s, slot '%s' ocupado.",
                         self._col,
@@ -907,40 +940,33 @@ class Sector:
                         mutacion.pos,
                         mutacion.tipo_slot,
                     )
-                # NOTA / LIMITACIÓN CONOCIDA: si tipo_slot == "bot", el
-                # elemento todavía no tiene id real (solo marcador_local,
-                # ver mutaciones.CrearElemento) — no se puede indexar en
-                # self._bots hasta que Logica_Mundo le asigne uno. Hoy no
-                # existe ningún mecanismo para que Sector se entere de ese
-                # id asignado. Pendiente de diseñar (¿una RPC de vuelta
-                # tipo ConfirmarIdAsignado?) antes de que "crear un bot"
-                # funcione de punta a punta.
 
             elif isinstance(mutacion, EliminarElemento):
                 elemento, slot = self._quitar_de_celda(
                     mutacion.pos, mutacion.id_elemento
                 )
                 posiciones_cambiadas.add(mutacion.pos)
-                if slot == "bot" and elemento is not None:
-                    bot_id = (
-                        mutacion.bot_id
-                        if mutacion.bot_id is not None
-                        else self._elemento_a_bot.get(mutacion.id_elemento)
+
+                # Baja de resistencia_viento si el elemento eliminado era
+                # estático para el viento. El Suelo NO se da de baja de la
+                # caché al eliminarse: un Suelo nunca se elimina, solo se
+                # sustituye (lo cubre el CrearElemento que le sigue).
+                if elemento is not None and elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                ):
+                    self._eliminar_resistencia_viento(
+                        ctx, mutacion.pos, mutacion.id_elemento
                     )
-                    if bot_id is None:
-                        logger.warning(
-                            "Sector (%d,%d): avatar %s eliminado pero sin "
-                            "bot_id asociado (ni en la mutación ni en "
-                            "_elemento_a_bot) — no se reportará en "
-                            "dead_bot_ids.",
-                            self._col,
-                            self._row,
-                            mutacion.id_elemento,
-                        )
-                    else:
-                        delta.dead_bot_ids.append(bot_id)
+
+                # RECONSTRUIDO (en el fichero pegado estaba "... resto sin
+                # cambios ..." con un pass): un avatar eliminado debe
+                # constar como bot muerto para que Gestor_Mundo ordene
+                # terminar su script, y dejar de estar en _bots.
+                if slot == "bot" and elemento is not None:
+                    bot_id = self._elemento_a_bot.pop(mutacion.id_elemento, None)
+                    if bot_id is not None:
                         self._bots.pop(bot_id, None)
-                        self._elemento_a_bot.pop(mutacion.id_elemento, None)
+                        delta.dead_bot_ids.append(bot_id)
 
             elif isinstance(mutacion, MoverElemento):
                 elemento, slot = self._quitar_de_celda(
@@ -950,14 +976,31 @@ class Sector:
                 if elemento is None:
                     continue
 
-                movido = True  # False si el destino propio estaba ocupado (G1)
+                # Baja en la celda de atmósfera de ORIGEN. Se hace
+                # incondicionalmente en cuanto se saca de la celda de
+                # terreno -- si el movimiento se rechaza más abajo (G1)
+                # y el elemento vuelve a pos_origen, se vuelve a dar de
+                # alta ahí.
+                es_estatico_viento = elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE)
+                if es_estatico_viento:
+                    self._eliminar_resistencia_viento(
+                        ctx, mutacion.pos_origen, mutacion.id_elemento
+                    )
+
+                movido = True
                 if self._en_region_propia(mutacion.pos_destino):
                     celda_destino = self._celdas.get_or_create(*mutacion.pos_destino)
                     if self._asignar_slot(celda_destino, slot, elemento):
                         posiciones_cambiadas.add(mutacion.pos_destino)
+                        # Alta en la celda de atmósfera de DESTINO.
+                        if es_estatico_viento:
+                            self._registrar_resistencia_viento(
+                                ctx, mutacion.pos_destino, elemento
+                            )
                     else:
-                        # G1 dentro del Sector: el origen se acaba de vaciar arriba,
-                        # así que devolverlo siempre cabe.
+                        # G1: el movimiento se rechaza, el elemento vuelve
+                        # a pos_origen -- hay que re-registrar ahí, porque
+                        # arriba ya lo dimos de baja incondicionalmente.
                         logger.warning(
                             "Sector (%d,%d): movimiento de %s rechazado, slot '%s' de %s "
                             "ocupado; vuelve a %s.",
@@ -974,38 +1017,111 @@ class Sector:
                             elemento,
                         )
                         movido = False
+                        if es_estatico_viento:
+                            self._registrar_resistencia_viento(
+                                ctx, mutacion.pos_origen, elemento
+                            )
                 else:
-                    # F1: nunca se crea la celda ajena en nuestro store (sustituiría
-                    # la celda real del vecino, perdiendo su suelo).
+                    # F1: movimiento a otro Sector -- el elemento sale de
+                    # nuestra atmósfera (ya dado de baja arriba) y no se
+                    # registra en ningún sitio aquí: la celda de destino
+                    # pertenece a otro Sector, que se encargará del alta.
                     self._registrar_movimiento_externo(delta, mutacion, elemento, slot)
 
-                # Solo si el elemento se movió de verdad: _detectar_migraciones
-                # necesita la pos nueva para reportar al bot que salió.
+                # RECONSTRUIDO (en el fichero pegado estaba "... resto sin
+                # cambios ..." con un pass): la posición del BotSnapshot
+                # debe seguir al avatar, porque _detectar_migraciones decide
+                # si el bot salió de la región mirando bot.pos.
                 if slot == "bot" and movido:
-                    bot_id = (
-                        mutacion.bot_id
-                        if mutacion.bot_id is not None
-                        else self._elemento_a_bot.get(mutacion.id_elemento)
-                    )
-                    bot_snapshot = (
-                        self._bots.get(bot_id) if bot_id is not None else None
-                    )
-                    if (
-                        bot_snapshot is None
-                    ):  # S3: antes era KeyError o fallo silencioso
-                        logger.warning(
-                            "Sector (%d,%d): avatar %s movido pero sin bot asociado en "
-                            "_bots -- su pos no se actualiza.",
-                            self._col,
-                            self._row,
-                            mutacion.id_elemento,
-                        )
-                    else:
-                        bot_snapshot.pos.x, bot_snapshot.pos.y = mutacion.pos_destino
+                    bot_id = self._elemento_a_bot.get(mutacion.id_elemento)
+                    bot = self._bots.get(bot_id) if bot_id is not None else None
+                    if bot is not None:
+                        bot.pos.x, bot.pos.y = mutacion.pos_destino
 
         delta.changed_cells = [
             self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas
         ]
+
+    def _sincronizar_atmosfera_de_suelo(
+        self, ctx: TickContext, mutacion: CrearElemento
+    ) -> None:
+        """
+        Refleja en la Celda_Atmosfera la tasa/inercia de un Suelo recién
+        creado. Un Suelo solo se sustituye (nunca se elimina), así que lo
+        normal es que la posición ya esté registrada: se actualiza y, si no
+        lo estaba (KeyError), se da de alta.
+
+        PROVISIONAL: este método no existía (los hooks de CrearElemento lo
+        llamaban y reventaban con AttributeError). Es el mínimo coherente
+        con las decisiones cerradas; la regla definitiva de las cachés
+        (dónde vive, upsert...) queda para la fase de cachés.
+        """
+        x, y = mutacion.pos
+        celda_atmosfera = ctx.get_atmosfera(x, y)
+        if celda_atmosfera is None:
+            logger.warning(
+                "Sector (%d,%d): Suelo en %s sin Celda_Atmosfera "
+                "correspondiente -- no se registra su tasa/inercia.",
+                self._col,
+                self._row,
+                mutacion.pos,
+            )
+            return
+        suelo = mutacion.elemento
+        try:
+            celda_atmosfera.actualizar_suelo(
+                mutacion.pos,
+                suelo.tasa_conversion_radiacion_calor,
+                suelo.inercia_termica,
+            )
+        except KeyError:
+            celda_atmosfera.registrar_suelo(
+                mutacion.pos,
+                suelo.tasa_conversion_radiacion_calor,
+                suelo.inercia_termica,
+            )
+
+    def _registrar_resistencia_viento(
+        self, ctx: TickContext, pos: tuple[int, int], elemento: Any
+    ) -> None:
+        """Da de alta la contribución de 'elemento' a resistencia_viento
+        en la Celda_Atmosfera que cubre 'pos'. No falla si la celda no
+        existe (borde del mundo / bloque aún sin crear) -- solo avisa."""
+        x, y = pos
+        celda_atmosfera = ctx.get_atmosfera(x, y)
+        if celda_atmosfera is None:
+            logger.warning(
+                "Sector (%d,%d): elemento %s (estático-viento) en %s sin "
+                "Celda_Atmosfera correspondiente -- no se registra su "
+                "resistencia_viento.",
+                self._col,
+                self._row,
+                elemento.id_elemento,
+                pos,
+            )
+            return
+        celda_atmosfera.registrar_resistencia_elemento(
+            elemento.id_elemento, elemento.resistencia_viento
+        )
+
+    def _eliminar_resistencia_viento(
+        self, ctx: TickContext, pos: tuple[int, int], id_elemento: int
+    ) -> None:
+        """Da de baja la contribución de id_elemento a resistencia_viento
+        en la Celda_Atmosfera que cubre 'pos'."""
+        x, y = pos
+        celda_atmosfera = ctx.get_atmosfera(x, y)
+        if celda_atmosfera is None:
+            logger.warning(
+                "Sector (%d,%d): baja de resistencia_viento de %s en %s "
+                "sin Celda_Atmosfera correspondiente -- ignorada.",
+                self._col,
+                self._row,
+                id_elemento,
+                pos,
+            )
+            return
+        celda_atmosfera.eliminar_resistencia_elemento(id_elemento)
 
     def _quitar_de_celda(
         self, pos: tuple[int, int], id_elemento: int
@@ -1042,11 +1158,7 @@ class Sector:
         from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
             MigratingBot,
         )
-        from Infraestructura.Gestores.Transporte.Proto_Generated.common_pb2 import (
-            Position,
-        )
 
-        # FIX: usar propiedades de instancia en lugar de constantes globales
         x0, y0, x1, y1 = self._x0, self._y0, self._x1, self._y1
 
         bots_fuera = []
@@ -1056,7 +1168,7 @@ class Sector:
                 delta.outgoing_bots.append(
                     MigratingBot(
                         bot=bot,
-                        target_pos=Position(x=x, y=y),
+                        target_pos=common_pb.Position(x=x, y=y),
                     )
                 )
                 bots_fuera.append(bot_id)

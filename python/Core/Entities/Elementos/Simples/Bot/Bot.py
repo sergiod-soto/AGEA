@@ -125,52 +125,29 @@ class Bot(Elemento_Simple, comportamientos):
         rotacion: float,
         capa: int = 2,
     ):
-        #
-        # Complejos
-        armadura = Armadura(stats_script["armadura"])
-        grasa = Grasa(stats_script["grasa"])
-        longevidad = Longevidad(stats_script["longevidad"])
-        movilidad = Movilidad(stats_script["movilidad"])
-        percepcion = Percepcion(stats_script["percepcion"])
-        #
-        # Simples
-        ataque = Ataque(valor=0)
-        defensa = Defensa(valor=0)
-        deteccion = Deteccion(valor=0)
-        edad = Edad(valor=0, edad_adulta=0)
-        energia = Energia(valor=0)
-        regulacion_temperatura = Regulacion_Temperatura(valor=0)
-        sigilo = Sigilo(valor=0)
-        temperatura = Temperatura(valor=0)
-        velocidad = Velocidad(valor=0)
-        vida = Vida(valor=0)
-        #
-        # Informacion
-        id_bot = ID(id_bot)
-        #
-        #
         stats = [
+            #
             # Complejos
-            armadura,
-            grasa,
-            longevidad,
-            movilidad,
-            percepcion,
+            Armadura(stats_script["armadura"]),
+            Grasa(stats_script["grasa"]),
+            Longevidad(stats_script["longevidad"]),
+            Movilidad(stats_script["movilidad"]),
+            Percepcion(stats_script["percepcion"]),
             #
             # Simples
-            ataque,
-            defensa,
-            deteccion,
-            edad,
-            energia,
-            regulacion_temperatura,
-            sigilo,
-            temperatura,
-            velocidad,
-            vida,
+            Ataque(valor=0),
+            Defensa(valor=0),
+            Deteccion(valor=0),
+            Edad(valor=0, edad_adulta=0),
+            Energia(valor=0),
+            Regulacion_Temperatura(valor=0),
+            Sigilo(valor=0),
+            Temperatura(valor=0),
+            Velocidad(valor=0),
+            Vida(valor=0),
             #
             # Informacion
-            id_bot,
+            ID(id_bot),
         ]
 
         super().__init__(

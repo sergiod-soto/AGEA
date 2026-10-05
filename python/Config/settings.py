@@ -16,16 +16,36 @@ FRESH: bool = os.getenv("FRESH", "false").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 
+# ── Mundo ─────────────────────────────────────────────────────────────────────
+MAX_VISION_DISTANCE = int(
+    os.getenv("MAX_VISION_DISTANCE", 50)
+)  # la distancia de vision es la maxima distancia de interaccion
+GRID_WIDTH = int(os.getenv("GRID_WIDTH", 100))
+GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 100))
+SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
+ATMOSFERA_ESCALA: int = int(
+    os.getenv("ATMOSFERA_ESCALA", 10)
+)  # tamaño relativo del grid atmosferico respecto al grid del suelo
+SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
+MAX_SOUND_DISTANCE = int(os.getenv("MAX_SOUND_DISTANCE", 50))
+
 # ── IDs especiales ────────────────────────────────────────────────────────
 ID_CICLO_SOLAR: int = int(os.getenv("ID_CICLO_SOLAR", "1"))
 ID_CICLO_LUNAR: int = int(os.getenv("ID_CICLO_LUNAR", "2"))
 ID_RELOJ: int = int(os.getenv("ID_RELOJ", "3"))
 ID_ESTACION: int = int(os.getenv("ID_ESTACION", "4"))
+ID_ATMOSFERA: int = int(os.getenv("ID_ATMOSFERA", "5"))
+ID_TEMPERATURA_ATMOSFERICA: int = int(os.getenv("ID_TEMPERATURA_ATMOSFERICA", "6"))
+ID_PRESION: int = int(os.getenv("ID_PRESION", "7"))
+ID_VIENTO: int = int(os.getenv("ID_VIENTO", "8"))
+ID_HUMEDAD_ABSOLUTA: int = int(os.getenv("ID_HUMEDAD_ABSOLUTA", "9"))
+HUMEDAD_RELATIVA: int = int(os.getenv("HUMEDAD_RELATIVA", "10"))
 
-
-# ── Conexión con Unity ────────────────────────────────────────────────────────
+# ── Unity ────────────────────────────────────────────────────────
 UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")
 UNITY_PORT: int = int(os.getenv("UNITY_PORT", "5069" if DEBUG else "5001"))
+UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
+
 
 # ── Conexión con comunicaciones_remoto_server ────────────────────────────────────────────────────────
 COMUNICACIONES_REMOTO_HOST = os.getenv("COMUNICACIONES_REMOTO_HOST", "[::]")
@@ -49,37 +69,19 @@ HYPERVISOR_PROXY_PORT = int(os.getenv("HYPERVISOR_PROXY_PORT", 50400))
 HYPERVISOR_CAPACITY = int(os.getenv("HYPERVISOR_CAPACITY", 32))
 HYPERVISOR_COUNT = int(os.getenv("HYPERVISOR_COUNT", 1))
 HYPERVISOR_PROXY_BASE_PORT = int(os.getenv("HYPERVISOR_PROXY_BASE_PORT", 50400))
-
-# ── Mundo ─────────────────────────────────────────────────────────────────────
-MAX_VISION_DISTANCE = int(
-    os.getenv("MAX_VISION_DISTANCE", 50)
-)  # la distancia de vision es la maxima distancia de interaccion
-GRID_WIDTH = int(os.getenv("GRID_WIDTH", 100))
-GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 100))
-SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
-ATMOSFERA_ESCALA: int = int(
-    os.getenv("ATMOSFERA_ESCALA", 2)
-)  # tamaño relativo del grid atmosferico respecto al grid del suelo
-
-
-SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
-MAX_SOUND_DISTANCE = int(os.getenv("MAX_SOUND_DISTANCE", 50))
-TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
-TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
-UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
-SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
-DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
-SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
-GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
 DEFAULT_HV_BUDGET = int(os.getenv("DEFAULT_HV_BUDGET", 100))
 
+
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
-DEFAULT_TICK_RATE: int = int(os.getenv("DEFAULT_TICK_RATE", 2))  # 0 = sin límite
 GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
 SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 50100))
 FALLOS_CONSECUTIVOS_SECTOR_CAIDO = int(os.getenv("FALLOS_CONSECUTIVOS_SECTOR_CAIDO", 3))
 GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 4))
 SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
+TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
+TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
+GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
+
 
 # ── Logica Mundo ──────────────────────────────────────────────────────────────
 LOGICA_MUNDO_HOST = os.getenv("LOGICA_MUNDO_HOST", "[::]")
@@ -97,10 +99,14 @@ SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
 COMUNICACIONES_REMOTO_ADDRESS = os.getenv("COMUNICACIONES_REMOTO_ADDRESS")
 
 # ── Loop principal ────────────────────────────────────────────────────────────
-MS_POR_FRAME: int = int(os.getenv("MS_POR_FRAME", "32"))
+TICKS_PROCESADOS_SEGUNDO: int = int(os.getenv("TICKS_PROCESADOS_SEGUNDO", "2"))
 
 # ── Ficheros ──────────────────────────────────────────────────────────────────
 NOMBRE_FICHERO_URLS: str = os.getenv("NOMBRE_FICHERO_URLS", "Urls.csv")
+SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "/data/snapshots"))
+SNAPSHOT_INTERVAL_TICKS = int(os.getenv("SNAPSHOT_INTERVAL_TICKS", 100))
+DEEP_SAVE_INTERVAL_TICKS = int(os.getenv("DEEP_SAVE_INTERVAL_TICKS", 500))
+
 
 # ── Directorio raíz de logs ────────────────────────────────────────────────
 LOG_DIR: str = os.getenv("LOG_DIR", "Logs/")

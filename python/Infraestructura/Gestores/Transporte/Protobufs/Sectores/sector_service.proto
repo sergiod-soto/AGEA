@@ -197,14 +197,6 @@ message MigratingBot {
   common.Position    target_pos = 2;
 }
 
-message MovimientoExterno {
-  uint64          id_elemento = 1;
-  string          tipo_slot   = 2;
-  common.Position pos_destino = 3;
-  bytes           elemento    = 4;
-  common.Position pos_origen  = 5;
-}
-
 message GetDeltaRequest {
   uint64 tick_id = 1;
 }
@@ -219,8 +211,9 @@ message GetDeltaResponse {
   repeated uint64            dead_bot_ids   = 6;
   repeated common.SoundEvent emitted_sounds = 7;
   // NUEVO -- ver TickDelta.changed_atmosphere_cells (comentado hoy en
-  // sector.py a la espera de este mensaje; descomentar al regenerar).
-  repeated common.AtmosphereCell changed_atmosphere_cells = 8;
+  // sector a la espera de este mensaje; descomentar al regenerar).
+  repeated common.AtmosphereCell    changed_atmosphere_cells = 8;
+  repeated common.MovimientoExterno movimientos_externos     = 9;
 }
 
 // ============================================================

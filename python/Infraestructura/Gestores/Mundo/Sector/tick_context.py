@@ -28,6 +28,7 @@ Por qué escritura diferida y no directa:
 
 from typing import Any, Optional
 
+from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import pos_terreno_a_atmosfera
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -49,6 +50,7 @@ class TickContext:
         atmosfera=None,  # CeldaAtmosferaStore propio del Sector
         ghost_atmosfera: dict = None,
         escala_atmosfera: int = 1,
+        tick_id: int = 0,
     ):
         self._celdas = celdas_inicio_tick
         self._ghost = ghost
@@ -56,6 +58,7 @@ class TickContext:
         self._atmosfera = atmosfera
         self._ghost_atmosfera = ghost_atmosfera or {}
         self._escala_atmosfera = escala_atmosfera
+        self.tick_id = tick_id
         self._mutaciones: list[Mutacion] = []
         self._contador_nuevos = 0
 
@@ -96,10 +99,37 @@ class TickContext:
         revisarlo: o se unifica el tipo devuelto, o se documenta que
         get_atmosfera solo sirve para "mi propia celda".
         """
-        pos_atmosfera = (x // self._escala_atmosfera, y // self._escala_atmosfera)
+        pos_atmosfera = pos_terreno_a_atmosfera(x, y, self._escala_atmosfera)
         if self._atmosfera is None:
             return None
         return self._atmosfera.get(*pos_atmosfera)
+
+    def celdas_en_radio(self, x: int, y: int, radio: int) -> list:
+        """
+        Devuelve las celdas de terreno alrededor de (x, y) usando distancia
+        Chebyshev: max(|dx|, |dy|) <= radio. Esto genera un CUADRADO de
+        lado (2*radio + 1) centrado en (x, y), no un círculo -- se eligió
+        así por ser más barato (sin raíces cuadradas) y porque el radio
+        real de uso (CondicionVecinoCercano, etc.) es "pocas casillas": la
+        diferencia frente a un círculo no importa en la práctica.
+
+        Reutiliza get_celda, así que respeta las mismas reglas de lectura
+        que el resto del contexto: incluye tanto la región propia como la
+        ghost zone del sector, y usa el estado de inicio de tick.
+
+        Se filtran las posiciones vacías (get_celda devuelve None): el
+        resultado solo contiene celdas que existen.
+        """
+        if radio < 0:
+            raise ValueError("radio no puede ser negativo")
+
+        resultado = []
+        for dx in range(-radio, radio + 1):
+            for dy in range(-radio, radio + 1):
+                celda = self.get_celda(x + dx, y + dy)
+                if celda is not None:
+                    resultado.append(celda)
+        return resultado
 
     def en_region_propia(self, x: int, y: int) -> bool:
         return self._x0 <= x < self._x1 and self._y0 <= y < self._y1

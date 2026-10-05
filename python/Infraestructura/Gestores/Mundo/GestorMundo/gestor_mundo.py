@@ -13,12 +13,10 @@ from pathlib import Path
 from typing import Optional
 
 import grpc
-from numpy import uint64
 
 from Config.settings import (
     ATMOSFERA_ESCALA,
     DEEP_SAVE_INTERVAL_TICKS,
-    DEFAULT_TICK_RATE,
     FALLOS_CONSECUTIVOS_SECTOR_CAIDO,
     GESTOR_BOTS_ADDRESS,
     GRID_HEIGHT,
@@ -33,7 +31,7 @@ from Config.settings import (
     SNAPSHOT_MAX,
     SOUND_MAP_CELL_SIZE,
     TICK_TIMEOUT_MS,
-    TICKS_ANTES_DE_DORMIR,
+    TICKS_PROCESADOS_SEGUNDO,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as sector_grpc,
@@ -84,7 +82,7 @@ class GestorMundo:
 
         self._logica_client = logica_client
 
-        self._tick_id: uint64 = uint64(0)
+        self._tick_id: int = 0
         self._snapshot_id: str = ""
 
         self._state: SystemState = SystemState.RUNNING
@@ -92,8 +90,8 @@ class GestorMundo:
         self._step_event: asyncio.Event = asyncio.Event()
         self._pause_event: asyncio.Event = asyncio.Event()
         self._pause_event.set()
-        self._tick_rate: int = DEFAULT_TICK_RATE
-        self._tick_interval: float = self._calcular_intervalo(DEFAULT_TICK_RATE)
+        self._tick_rate: int = TICKS_PROCESADOS_SEGUNDO
+        self._tick_interval: float = self._calcular_intervalo(self._tick_rate)
 
         self._bots_channel: Optional[grpc.aio.Channel] = None
         self._bots_stub = None
@@ -134,6 +132,14 @@ class GestorMundo:
         )
 
     async def _init_fresh(self) -> None:
+        # logger.info("Inicio limpio. Creando %d×%d sectores.", self.COLS, self.ROWS)
+        # for col in range(self.COLS):
+        #     for row in range(self.ROWS):
+        #         address = self._sector_address(col, row)
+        #         info = SectorInfo(col=col, row=row, address=address)
+        #         self._sectores[(col, row)] = info
+        #         await self._connect_sector(info)
+        #         await self._set_sector_mode(info, SectorMode.INACTIVO)
         logger.info("Inicio limpio. Creando %d×%d sectores.", self.COLS, self.ROWS)
         for col in range(self.COLS):
             for row in range(self.ROWS):
@@ -141,7 +147,8 @@ class GestorMundo:
                 info = SectorInfo(col=col, row=row, address=address)
                 self._sectores[(col, row)] = info
                 await self._connect_sector(info)
-                await self._set_sector_mode(info, SectorMode.INACTIVO)
+                await self._load_sector_state(info)
+                await self._set_sector_mode(info, SectorMode.ACTIVO)
 
     async def _restore_from_snapshot(self) -> None:
         snapshot_path = self._latest_snapshot_path()
@@ -158,20 +165,22 @@ class GestorMundo:
         self._tick_id = data["tick_id"]
         self._snapshot_id = data["snapshot_id"]
 
-        modos_guardados: dict[tuple[int, int], SectorMode] = {}
+        self._tick_id = data["tick_id"]
+        self._snapshot_id = data["snapshot_id"]
+
         for s in data["sectores"]:
             col, row = s["col"], s["row"]
             info = SectorInfo(col=col, row=row, address=s["address"])
-            modos_guardados[(col, row)] = SectorMode(s["mode"])
             self._sectores[(col, row)] = info
             await self._connect_sector(info)
 
         await self._logica_client.load_state(self._snapshot_id)
+        # Carga el estado en cada sector ANTES de activarlo (mismo orden
+        # que _init_fresh).
         await self._distribute_gold_to_sectors()
 
-        # Con el estado ya cargado en cada sector, se restaura su modo.
-        for clave, modo in modos_guardados.items():
-            await self._set_sector_mode(self._sectores[clave], modo)
+        for info in self._sectores.values():
+            await self._set_sector_mode(info, SectorMode.ACTIVO)
 
     async def _activar_sector(self, info: SectorInfo) -> None:
 
@@ -243,7 +252,12 @@ class GestorMundo:
                 )
             )
 
-        await asyncio.gather(*tareas, return_exceptions=True)
+        resultados = await asyncio.gather(*tareas, return_exceptions=True)
+        # return_exceptions=True evita que un fallo cancele el resto de tareas,
+        # pero deja las excepciones como valores: hay que mirarlas a mano o se pierden.
+        for r in resultados:
+            if isinstance(r, Exception):
+                logger.error("Fallo en _fase_0: %r", r)
 
     async def _enviar_ghost_zone(self, sector: SectorInfo) -> None:
         ghost_cells = await self._calcular_ghost_zone(sector)
@@ -442,12 +456,31 @@ class GestorMundo:
 
             await self._actualizar_modos_sector()
 
-            cambios_globales = await self._logica_client.avanzar_elementos_globales(
-                self._tick_id
-            )
+            # cambios_globales = await self._logica_client.avanzar_elementos_globales(
+            #     self._tick_id
+            # )
             # TODO: distribuir cambios_globales a sectores que lo necesiten
 
         await self._reset_budgets()
+
+    async def recargar_mundo_tras_generacion(self) -> None:
+        """
+        Fuerza a todos los Sectores a recargar su terreno y atmósfera
+        desde el estado gold de LogicaMundo. Pensado para llamarse UNA
+        VEZ, justo después de que el generador de mundo termine de crear
+        todos los elementos (vía LogicaMundoClient.crear_elemento()).
+
+        Por qué hace falta: los Sectores arrancan ANTES de que exista el
+        mundo generado (con su malla vacía o la de un snapshot previo).
+        Cada crear_elemento() del generador sí actualiza el estado gold
+        de LogicaMundo (incluidas las cachés de Celda_Atmosfera, vía sus
+        propios hooks), pero NO empuja ese cambio a la copia local de
+        cada Sector -- eso solo ocurre cuando el Sector recibe un
+        LoadState. Reutiliza _distribute_gold_to_sectors, el mismo
+        mecanismo que ya usa _restore_from_snapshot.
+        """
+        logger.info("Recargando estado de todos los sectores tras generación de mundo.")
+        await self._distribute_gold_to_sectors()
 
     async def _get_delta_sector(self, sector: SectorInfo):
         req = sector_pb.GetDeltaRequest(tick_id=self._tick_id)
@@ -477,7 +510,7 @@ class GestorMundo:
                     # Caso residual: no cupo ni en destino ni en origen y
                     # Logica eliminó el avatar -> hay que terminar el script.
                     await self._logica_client.matar_bot(
-                        mbot.bot.bot_id, "colisión sin sitio", int(self._tick_id)
+                        mbot.bot.bot_id, "colisión sin sitio", self._tick_id
                     )
                     continue
 
@@ -565,15 +598,29 @@ class GestorMundo:
                     self._pending_sounds.setdefault(key, []).append(sound)
 
     async def _actualizar_modos_sector(self) -> None:
-        for info in self._sectores.values():
-            if info.mode == SectorMode.ACTIVO:
-                info.ticks_sin_actividad += 1
-                if info.ticks_sin_actividad >= TICKS_ANTES_DE_DORMIR:
-                    await self._set_sector_mode(info, SectorMode.DORMIDO)
-                else:
-                    for vecino in self._vecinos(info):
-                        if vecino.mode == SectorMode.INACTIVO:
-                            await self._set_sector_mode(vecino, SectorMode.DORMIDO)
+        """
+        DESHABILITADO a propósito: mientras no se retome la hibernación,
+        ningún sector se duerme por inactividad. SectorMode, set_mode y
+        _modos_previos_freeze se conservan para reactivarlo. La lógica
+        original (ticks_sin_actividad >= TICKS_ANTES_DE_DORMIR -> DORMIDO,
+        vecinos INACTIVO -> DORMIDO) está en el historial de git.
+        """
+
+    """
+    Codigo encargado de dormir a los sectores.
+    Al todos tener suelo y atmosfera que procesar, ha
+    sido aparcado.
+    Potencialmente se le puede dar otro uso en el futuro.
+    """
+    # for info in self._sectores.values():
+    #     if info.mode == SectorMode.ACTIVO:
+    #         info.ticks_sin_actividad += 1
+    #         if info.ticks_sin_actividad >= TICKS_ANTES_DE_DORMIR:
+    #             await self._set_sector_mode(info, SectorMode.DORMIDO)
+    #         else:
+    #             for vecino in self._vecinos(info):
+    #                 if vecino.mode == SectorMode.INACTIVO:
+    #                     await self._set_sector_mode(vecino, SectorMode.DORMIDO)
 
     async def _set_sector_mode(self, info: SectorInfo, mode: SectorMode) -> None:
         if info.mode == mode:
@@ -656,7 +703,11 @@ class GestorMundo:
         logger.info("RESUME (tick %d)", self._tick_id)
         self._state = SystemState.RESUMING
 
-        await self._distribute_gold_to_sectors()
+        try:
+            await self._distribute_gold_to_sectors()
+        except Exception:
+            self._state = SystemState.PAUSED  # permite reintentar resume()
+            raise
 
         for clave, modo in self._modos_previos_freeze.items():
             await self._set_sector_mode(self._sectores[clave], modo)
@@ -741,7 +792,7 @@ class GestorMundo:
             path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
             async with self._consolidacion_lock:
                 data = {
-                    "tick_id": int(self._tick_id),  # FIX: uint64 -> int
+                    "tick_id": self._tick_id,
                     "snapshot_id": snapshot_id,
                     "fecha": datetime.datetime.now().isoformat(),
                     "sectores": [

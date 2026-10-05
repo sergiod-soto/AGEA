@@ -42,7 +42,15 @@ from Infraestructura.Gestores.Log.local_logging import setup_local_logging
 from Infraestructura.Gestores.Log.buffered_log_handler import setup_buffered_logging
 from Infraestructura.Gestores.Log.log_pull_servicer import LogPullServicerAsync
 from Utils.Sistema.sistema import registrar_signals
-from Config.settings import GESTOR_BOTS_ADDRESS, LOG_LEVEL, LOGICA_MUNDO_HOST, LOGICA_MUNDO_PORT, MODO, LOG_DIR, FRESH
+from Config.settings import (
+    GESTOR_BOTS_ADDRESS,
+    LOG_LEVEL,
+    LOGICA_MUNDO_HOST,
+    LOGICA_MUNDO_PORT,
+    MODO,
+    LOG_DIR,
+    FRESH,
+)
 
 logger = logging.getLogger("logica_mundo_server")
 
@@ -73,7 +81,7 @@ async def serve() -> None:
     # poblar_suelo=FRESH: ver docstring del módulo — solo se puebla el
     # suelo aquí si es un arranque en frío; si se va a restaurar un
     # snapshot, ese snapshot ya trae el suelo consigo.
-    logica = LogicaMundo(gestor_bots_client=gestor_bots_client, poblar_suelo=FRESH)
+    logica = LogicaMundo(gestor_bots_client=gestor_bots_client)
     servicer = LogicaMundoServicer(logica)
 
     server = grpc.aio.server(
