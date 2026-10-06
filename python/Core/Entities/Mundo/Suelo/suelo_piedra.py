@@ -11,7 +11,7 @@ class Suelo_Piedra(Suelo, Rocoso):
             casilla=casilla,
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=75,
-            inercia_termica=4e5,
+            inercia_termica=1.4e6,
         )
 
-    def tick(self, pos, ctx): ...
+    def tick(self, ctx): ...

@@ -67,12 +67,7 @@ COEFICIENTE_DIFUSION_TERMICA: float = (
     CONDUCTANCIA_LATERAL_EFECTIVA / TAMANHO_CELDA_ATMOSFERICA**2
 )
 
-# Inercia térmica del AIRE de la celda, J/(m²·K). El aire es la propia celda
-# atmosférica (no el suelo), así que su inercia se declara aquí y la suma
-# Celda_Atmosfera a la media de inercias de sus Suelo. 1e6 equivale a unos
-# 830 m de columna de aire (rho*cp ~ 1200 J/(m³·K)): la capa que responde al
-# ciclo diario. SIN CALIBRAR.
-INERCIA_TERMICA_AIRE: float = 1.0e6
+
 
 
 def celsius_a_kelvin(celsius: float) -> float:

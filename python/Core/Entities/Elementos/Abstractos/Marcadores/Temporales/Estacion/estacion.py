@@ -23,12 +23,11 @@ class Estacion(Marcador_Temporal):
     IMPORTANTE: esta clasificación es GLOBAL y usa una convención de
     hemisferio fija en todo el mapa -- NO la usa la radiación real de
     cada celda de atmósfera (esa se calcula por latitud+declinación en
-    Infraestructura/Gestores/Mundo/Atmosfera/sistema_atmosferico.py,
-    que sí es correcta por hemisferio). Esto es solo una etiqueta para
-    otros sistemas (vegetación, eventos...) que necesiten saber "en qué
-    estación estamos" de forma simple. Si alguno de esos sistemas
-    resulta necesitar la versión correcta por hemisferio, esto habrá
-    que revisarlo entonces.
+    sistema_atmosferico.py, que sí es correcta por hemisferio). 
+    Esto es solo una etiqueta para otros sistemas (vegetación, eventos...) 
+    que necesiten saber "en qué estación estamos" de forma simple. 
+    Si alguno de esos sistemas resulta necesitar la versión 
+    correcta por hemisferio, esto habrá que revisarlo entonces.
 
     Requiere que los 3 bugs señalados en reloj.py estén corregidos
     (Reloj.ciclos debe arrancar vacío, Mundo.reloj debe ser una

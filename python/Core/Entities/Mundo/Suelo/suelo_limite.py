@@ -7,6 +7,8 @@ class Suelo_Limite(Suelo):
     '''
     Suelo especial. Es el suelo que se usa como muro impenetrable
     para evitar que nada se salga del mapa.
+    
+    Dudando si mantenerlo como elemento o cambiarlo a comportamiento
     '''
     def __init__(self, id_elemento, casilla):
         super().__init__(

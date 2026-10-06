@@ -35,7 +35,7 @@ def _convertir_a_cesped(suelo, ctx) -> None:
             casilla=suelo.casilla,
             id_elemento=None,
             tasa_conversion_radiacion_calor=80,
-            inercia_termica=400,
+            inercia_termica=1.3e6,
         ),
     )
 

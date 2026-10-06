@@ -74,7 +74,7 @@ def _secar_barro(suelo, ctx) -> None:
             casilla=suelo.casilla,
             id_elemento=None,  # lo asigna Logica_Mundo al resolver la mutación
             tasa_conversion_radiacion_calor=80,
-            inercia_termica=500,
+            inercia_termica=1.5e6,
         ),
     )
 

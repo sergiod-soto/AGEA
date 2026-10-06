@@ -456,9 +456,9 @@ class GestorMundo:
 
             await self._actualizar_modos_sector()
 
-            cambios_globales = await self._logica_client.avanzar_elementos_globales(
-                self._tick_id
-            )
+            # cambios_globales = await self._logica_client.avanzar_elementos_globales(
+            #     self._tick_id
+            # )
             await self._logica_client.avanzar_tick(self._tick_id)
             # TODO: distribuir cambios_globales a sectores que lo necesiten
 

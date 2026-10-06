@@ -11,5 +11,5 @@ class Suelo_Hielo(Suelo, Helado):
             casilla=casilla,
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=35,
-            inercia_termica=4e5,
+            inercia_termica=1.4e6,
         )

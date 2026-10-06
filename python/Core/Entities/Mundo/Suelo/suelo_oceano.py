@@ -11,5 +11,5 @@ class Suelo_Oceano(Suelo, Oceanico):
             casilla=casilla,
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=92,
-            inercia_termica=2.1e7,
+            inercia_termica=2.2e7,
         )

@@ -1,4 +1,4 @@
-# Core/Entities/Mundo/Celda/celda_atmosfera.py
+# Core/Entities/Mundo/Atmosfera/celda_atmosfera.py
 
 from vectors import Vector2
 
@@ -117,11 +117,13 @@ class Celda_Atmosfera:
     ) -> None:
         """
         Alta de un Suelo. ValueError si esa posición ya tiene uno: un Suelo
-        nunca se elimina, solo se sustituye (actualizar_suelo). `inercia` es la
-        del suelo SOLO, en J/(m²·K), SIN el aire (lo suma _recalcular_medias).
-        La validación
-        de rangos (tasa en [0, 100], inercia > 0) vive en Suelo.__init__ y,
-        como red de seguridad, en Temperatura.actualizar.
+        nunca se elimina, solo se sustituye (actualizar_suelo). `inercia` es
+        la masa térmica TOTAL que aporta esa casilla a la celda, en
+        J/(m²·K). El Suelo hace dos cosas: convierte radiación en calor
+        (tasa) y actúa de batería (inercia), frenando tanto el calentamiento
+        diurno como el enfriamiento nocturno. La validación de rangos (tasa
+        en [0, 100], inercia > 0) vive en Suelo.__init__ y, como red de
+        seguridad, en Temperatura.actualizar.
         """
         if posicion_suelo in self._tasas_conversion_por_suelo:
             raise ValueError(
@@ -156,21 +158,19 @@ class Celda_Atmosfera:
     def _recalcular_medias(self) -> None:
         n = len(self._tasas_conversion_por_suelo)
         if n == 0:
-            # Sin Suelos: medias en 0.0 y sumas a cero exacto (evita arrastrar
-            # el error de redondeo de las sumas incrementales).
+            # Sin Suelos: todo a cero exacto (evita arrastrar el error de
+            # redondeo de las sumas incrementales). Temperatura lo rechaza
+            # con ValueError: mejor fallar que simular sin masa térmica.
             self._suma_tasas = 0.0
             self._suma_inercias = 0.0
             self.tasa_conversion_radiacion_calor = 0.0
             self.inercia_termica = 0.0
             return
         self.tasa_conversion_radiacion_calor = self._suma_tasas / n
-        # Inercia de la CELDA completa = aire (propio de la celda, constante)
-        # + media de la inercia de los Suelo (que aportan solo la suya). Las
-        # capacidades caloríficas por m² se suman, y la del suelo de la celda
-        # es la media de sus casillas. Sin Suelos se queda en 0.0 (rama de
-        # arriba) a propósito: Temperatura falla en voz alta en vez de
-        # simular una celda que solo tiene aire.
-        self.inercia_termica = INERCIA_TERMICA_AIRE + self._suma_inercias / n
+        # Las masas térmicas por m² de la celda son las de sus casillas, así
+        # que la inercia de la celda es la media. No hay término de aire
+        # aparte: el Suelo es la única batería de calor del modelo.
+        self.inercia_termica = self._suma_inercias / n
 
     # ------------------------------------------------------------------
     # Resistencia al viento

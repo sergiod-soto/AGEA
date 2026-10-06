@@ -11,5 +11,5 @@ class Suelo_Grava(Suelo, Gravoso):
             casilla=casilla,
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=75,
-            inercia_termica=3e5,
+            inercia_termica=1.3e6,
         )
