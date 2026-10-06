@@ -765,12 +765,25 @@ class Sector:
     def compute_tick(self, tick_id: int) -> TickDelta:
         """Ejecuta tick() de cada elemento propio del sector (solo si el
         sector está ACTIVO), avanza la atmósfera propia, y devuelve el
-        TickDelta resultante para Logica_Mundo."""
+        TickDelta resultante para Logica_Mundo.
+
+        Versión con trazas de depuración: el objetivo es que cada punto
+        donde el delta puede quedar vacío o perderse deje rastro en el log.
+        """
 
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
 
+        # DEBUG 1: un sector no ACTIVO devuelve un delta vacío SIN error.
+        # Es otra causa posible de "no se mueve y no hay excepción".
         if self._mode != SectorMode.ACTIVO:
+            logger.debug(
+                "Sector (%d,%d) tick %d: modo %s (no ACTIVO) -> delta vacío.",
+                self._col,
+                self._row,
+                tick_id,
+                self._mode.name,
+            )
             self._last_delta = delta
             return delta
 
@@ -789,31 +802,90 @@ class Sector:
 
         self._procesar_sonidos(ctx)
 
-        # Se recorre una instantánea de las posiciones (list(...)) porque
-        # ctx.get_celda ya garantiza lecturas de inicio-de-tick — no hace
-        # falta congelar nada más: ningún tick() de este bucle ve el efecto
-        # de otro tick() del mismo bucle, por diseño de TickContext.
+        # Contador de elementos cuyo tick() se ejecutó de verdad. Si vale 0
+        # con celdas cargadas, el bucle no está haciendo nada.
+        n_ticks = 0
         for (x, y), celda in list(self._celdas.items()):
             for elemento in (celda.suelo, celda.bot, *celda.resto):
                 if elemento is None:
                     continue
-                # TODO: firma exacta a definir junto a Core/Mundo. HOY NINGÚN
-                # ELEMENTO EJECUTA tick(): no hay transformaciones (barro ->
-                # tierra...) hasta que se active. Suelo_Piedra.tick ya está
-                # declarado como tick(self, pos, ctx).
-                # elemento.tick((x, y), ctx)
+                try:
+                    # Esta es la línea que estaba COMENTADA en la versión
+                    # actual (y activa en la vieja).
+                    elemento.tick(ctx)
+                except Exception:
+                    # Se registra QUÉ elemento falló y se relanza: el
+                    # comportamiento no cambia (el tick sigue abortando),
+                    # pero ya no falla sin decir quién.
+                    logger.exception(
+                        "Sector (%d,%d) tick %d: tick() de %s (id=%s) en (%d,%d) falló.",
+                        self._col,
+                        self._row,
+                        tick_id,
+                        type(elemento).__name__,
+                        elemento.id_elemento,
+                        x,
+                        y,
+                    )
+                    raise
+                n_ticks += 1
 
         delta.mutaciones = ctx.obtener_mutaciones()
-        self._resolver_mutaciones(delta.mutaciones, delta, ctx)
-        delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
 
-        self._avanzar_atmosfera(tick_id)
-        delta.changed_atmosphere_cells = self._atmosfera.to_proto_cells()
+        # DEBUG 2: cuántas mutaciones pidieron los elementos y de qué tipo.
+        # Si n_ticks > 0 pero mutaciones = {} la piedra no está pidiendo
+        # moverse; si hay MoverElemento, el problema está más adelante.
+        por_tipo: dict[str, int] = {}
+        for m in delta.mutaciones:
+            nombre = type(m).__name__
+            por_tipo[nombre] = por_tipo.get(nombre, 0) + 1
+        logger.debug(
+            "Sector (%d,%d) tick %d: %d elementos ejecutaron tick(), " "mutaciones=%s",
+            self._col,
+            self._row,
+            tick_id,
+            n_ticks,
+            por_tipo,
+        )
 
-        # Detectar bots que, tras el tick, quedaron fuera de la región
-        # propia del sector — deben viajar a Logica_Mundo para
-        # reasignarse al sector correcto.
-        self._detectar_migraciones(delta)
+        # Todo lo que va entre aquí y `_last_delta = delta` puede perder el
+        # delta si lanza excepción (el Sector ya habría aplicado los cambios
+        # en su copia, pero LogicaMundo no los vería nunca). Se registra y
+        # se relanza para que no pase en silencio.
+        try:
+            self._resolver_mutaciones(delta.mutaciones, delta, ctx)
+            delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
+
+            self._avanzar_atmosfera(tick_id)
+            delta.changed_atmosphere_cells = self._atmosfera.to_proto_cells()
+
+            self._detectar_migraciones(delta)
+        except Exception:
+            logger.exception(
+                "Sector (%d,%d) tick %d: excepción tras aplicar mutaciones; "
+                "el delta se PIERDE (el Sector ya modificó su copia).",
+                self._col,
+                self._row,
+                tick_id,
+            )
+            raise
+
+        # DEBUG 3: resumen de lo que viajará en GetDelta. Compáralo con lo
+        # que reciba LogicaMundo.actualizar_celdas: si aquí hay changed_cells
+        # y allí no, el fallo está en el transporte o en LogicaMundo.
+        logger.debug(
+            "Sector (%d,%d) tick %d: delta listo -> changed_cells=%d, "
+            "movimientos_externos=%d, dead_bot_ids=%d, outgoing_bots=%d, "
+            "changed_atmosphere_cells=%d",
+            self._col,
+            self._row,
+            tick_id,
+            len(delta.changed_cells),
+            len(delta.movimientos_externos),
+            len(delta.dead_bot_ids),
+            len(delta.outgoing_bots),
+            len(delta.changed_atmosphere_cells),
+        )
 
         self._last_delta = delta
         return delta
@@ -928,7 +1000,9 @@ class Sector:
                     # slot: tiene_flag() ya es False para los que no la
                     # activan). El nombre de la flag es RESISTENCIA_VIENTO_CACHEABLE (antes
                     # aquí había RESISTENCIA_VIENTO_CACHEABLE, que no existe).
-                    if mutacion.elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+                    if mutacion.elemento.tiene_flag(
+                        Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                    ):
                         self._registrar_resistencia_viento(
                             ctx, mutacion.pos, mutacion.elemento
                         )
@@ -981,7 +1055,9 @@ class Sector:
                 # terreno -- si el movimiento se rechaza más abajo (G1)
                 # y el elemento vuelve a pos_origen, se vuelve a dar de
                 # alta ahí.
-                es_estatico_viento = elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE)
+                es_estatico_viento = elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                )
                 if es_estatico_viento:
                     self._eliminar_resistencia_viento(
                         ctx, mutacion.pos_origen, mutacion.id_elemento

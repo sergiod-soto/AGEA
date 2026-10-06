@@ -18,6 +18,7 @@ async def _handler(comunicaciones: ComunicacionesLocal, ticks_per_second: int) -
 
 
 ACCION = AccionConsola(
+    num=9,
     nombre="tick_rate",
     descripcion="Fija la cadencia de ticks por segundo (0 = sin límite).",
     campos=[

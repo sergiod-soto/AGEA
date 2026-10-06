@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Consola/Acciones/leer_salida_unity.py
+# Infraestructura/Gestores/Consola/Acciones/salida_unity.py
 """
 leer_salida_unity.py — Acción de consola "leer_salida_unity": muestra
 la ActualizacionFoco que se le mandaría a Unity para el próximo tick.
@@ -78,7 +78,8 @@ async def _handler(comunicaciones: ComunicacionesLocal) -> str:
 
 
 ACCION = AccionConsola(
-    nombre="leer_salida_unity",
+    num = 4,
+    nombre="salida_unity",
     descripcion=(
         "Avanza un tick (requiere modo_paso activo) y muestra lo que "
         "se le enviaría a Unity en ese tick."

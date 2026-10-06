@@ -42,6 +42,7 @@ async def _handler(
 
 
 ACCION = AccionConsola(
+    num = 6,
     nombre="id",
     descripcion="Muestra los datos de un elemento, buscado por su id.",
     campos=[

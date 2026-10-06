@@ -2,7 +2,7 @@
 
 import math
 
-from Config.settings import HUMEDAD_RELATIVA
+from Config.settings import ID_HUMEDAD_RELATIVA
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )
@@ -38,7 +38,7 @@ def _capacidad_maxima(temperatura_k: float) -> float:
 
 class Humedad_Relativa(Sistema_Atmosferico):
     def __init__(self, valor_inicial: float = 0.0, **kwargs):
-        super().__init__(Humedad_Relativa, HUMEDAD_RELATIVA, **kwargs)
+        super().__init__(Humedad_Relativa, ID_HUMEDAD_RELATIVA, **kwargs)
         self.valor: float = valor_inicial  # porcentaje, 0-100 (adimensional)
 
     def actualizar(self, humedad_absoluta: float, temperatura: float) -> None:

@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Material/erosionable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Material.material import Material
@@ -43,9 +45,8 @@ class Erosionable(Material):
     def _campos_internos(cls):
         return {"durabilidad_actual_erosion"}
 
-    def tick(self) -> None:
+    def tick_erosion(self, ctx) -> None:
         # TODO: comporbar que funciona correctamente y no machaca ningun otro tick()
-        super().tick()
         for condiciones, cantidad in self.condiciones_erosion:
             if all(c.evaluar() for c in condiciones):
                 self.erosionar(cantidad)

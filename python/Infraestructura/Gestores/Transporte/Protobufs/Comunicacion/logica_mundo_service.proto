@@ -26,10 +26,6 @@ service LogicaMundoService {
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
   rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
-
-  // CAMBIO: antes devolvía common.Ack. La respuesta nueva conserva ok=1 y
-  // error=2 (compatible en el cable) y añade la lista de movimientos
-  // rechazados.
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (ActualizarCeldasResponse);
 
   // Sistema atmosférico. Mismo trío de responsabilidad que
@@ -52,6 +48,8 @@ service LogicaMundoService {
   rpc AvanzarElementosGlobales (AvanzarElementosGlobalesRequest) returns (AvanzarElementosGlobalesResponse);
   rpc ConstruirElemento (ConstruirElementoRequest) returns (ConstruirElementoResponse);
   rpc EjecutarComandoConsola (ComandoConsolaRequest) returns (ComandoConsolaResponse);
+
+  rpc AvanzarTick(AvanzarTickRequest) returns (common.Ack);
 }
 
 message LogicaMundoHeartbeatResponse {
@@ -325,4 +323,10 @@ message ObtenerElementoResponse {
   bool   ok    = 1;
   string error = 2;
   bytes  datos = 3;  // JSON del dict devuelto por representacion()/serializar()
+}
+
+message AvanzarTickRequest {
+  // Mismo tipo que el tick_id de StartTickRequest, para no mezclar
+  // signo/anchura entre RPCs.
+  uint64 tick_id = 1;
 }

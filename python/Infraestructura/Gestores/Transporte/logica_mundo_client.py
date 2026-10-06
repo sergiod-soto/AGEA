@@ -374,6 +374,24 @@ class LogicaMundoClient:
             for r in resp.rechazados
         }
 
+    async def avanzar_tick(self, tick_id: int, timeout: float | None = None) -> None:
+        """Pide a Logica_Mundo que avance el tiempo del mundo un tick (tick
+        actual + reloj, y con él los ciclos solar/lunar/anual). Ver
+        LogicaMundo.avanzar_tick y Funciones/avanzar_tick.py.
+
+        PROPAGA errores (red o ok=False), igual que obtener_progreso_ciclos
+        y actualizar_celdas: aquí no existe un valor neutro que devolver. Si
+        el avance falla y se traga el error, el tiempo del mundo se queda
+        parado SIN avisar, y con él vista_foco (que solo envía cuando
+        tick_actual cambia). Es justo lo que hacía el cliente de
+        avanzar_elementos_globales al devolver {} ante cualquier fallo."""
+        await self._ensure_channel()
+        resp = await self._stub.AvanzarTick(
+            pb.AvanzarTickRequest(tick_id=tick_id), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"AvanzarTick: {resp.error}")
+
     # ---- Sistema atmosférico (NUEVO) ----
     #
     # Mismo trío que obtener_celdas_en_region/actualizar_celdas, en

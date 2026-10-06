@@ -1008,7 +1008,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e834b35f4549dc4089b03653bb97253, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Core.Logica.Foco.GrpcConnectionManager
-  direccionServidor: http://localhost:50500
+  direccionServidor: http://localhost:60500
 --- !u!1 &210058649
 GameObject:
   m_ObjectHideFlags: 0

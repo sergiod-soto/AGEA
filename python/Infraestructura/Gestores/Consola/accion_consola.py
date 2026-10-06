@@ -24,6 +24,7 @@ HandlerAccion = Callable[..., Awaitable[str]]
 
 @dataclass
 class AccionConsola:
+    num: int
     nombre: str
     descripcion: str
     handler: HandlerAccion

@@ -11,6 +11,7 @@ async def _handler(comunicaciones: ComunicacionesLocal) -> str:
 
 
 ACCION = AccionConsola(
+    num = 7,
     nombre="pausar",
     descripcion="Congela todo el sistema (sectores + bots).",
     handler=_handler,

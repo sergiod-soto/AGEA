@@ -8,6 +8,10 @@ módulo de Funciones/, resuelto por nombre en self._dispatch.
 
 Shutdown añadido: faltaba en el servicer, aunque el RPC ya estaba
 declarado en logica_mundo_service.proto (confirmado).
+
+AvanzarTick añadido: el RPC existía en el proto y en el registry, pero
+el servicer no tenía el método, así que gRPC usaba el del servicer base
+(NotImplementedError / UNIMPLEMENTED).
 """
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
@@ -21,6 +25,9 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     def __init__(self, logica: LogicaMundo) -> None:
         self._logica = logica
+        # Índice NAME -> módulo. Cada método de abajo busca aquí su
+        # implementación; si un módulo no está en FUNCIONES (registry.py),
+        # el método falla con KeyError al llamarse.
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
 
     async def Shutdown(self, request, context):
@@ -104,6 +111,13 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     async def ConsultarRepresentacion(self, request, context):
         return await self._dispatch["ConsultarRepresentacion"].handle(
+            self._logica, request, context
+        )
+
+    async def AvanzarTick(self, request, context):
+        # Avanza el tiempo del mundo (tick actual + reloj). Independiente
+        # de los elementos globales: ver Funciones/avanzar_tick.py.
+        return await self._dispatch["AvanzarTick"].handle(
             self._logica, request, context
         )
 

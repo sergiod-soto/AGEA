@@ -39,7 +39,7 @@ ID_TEMPERATURA_ATMOSFERICA: int = int(os.getenv("ID_TEMPERATURA_ATMOSFERICA", "6
 ID_PRESION: int = int(os.getenv("ID_PRESION", "7"))
 ID_VIENTO: int = int(os.getenv("ID_VIENTO", "8"))
 ID_HUMEDAD_ABSOLUTA: int = int(os.getenv("ID_HUMEDAD_ABSOLUTA", "9"))
-HUMEDAD_RELATIVA: int = int(os.getenv("HUMEDAD_RELATIVA", "10"))
+ID_HUMEDAD_RELATIVA: int = int(os.getenv("HUMEDAD_RELATIVA", "10"))
 
 # ── Unity ────────────────────────────────────────────────────────
 UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")
@@ -49,9 +49,9 @@ UNITY_FRAME_EVERY_N_TICKS = int(os.getenv("UNITY_FRAME_EVERY_N_TICKS", 1))
 
 # ── Conexión con comunicaciones_remoto_server ────────────────────────────────────────────────────────
 COMUNICACIONES_REMOTO_HOST = os.getenv("COMUNICACIONES_REMOTO_HOST", "[::]")
-COMUNICACIONES_REMOTO_PORT: int = int(os.getenv("COMUNICACIONES_REMOTO_PORT", 50500))
-LOGICA_MUNDO_ADDRESS = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:50250")
-GESTOR_MUNDO_ADDRESS = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:50200")
+COMUNICACIONES_REMOTO_PORT: int = int(os.getenv("COMUNICACIONES_REMOTO_PORT", 60500))
+LOGICA_MUNDO_ADDRESS = os.getenv("LOGICA_MUNDO_ADDRESS", "localhost:60250")
+GESTOR_MUNDO_ADDRESS = os.getenv("GESTOR_MUNDO_ADDRESS", "localhost:60200")
 GESTOR_BOTS_ADDRESS = os.getenv("GESTOR_BOTS_ADDRESS", "localhost:50051")
 LOG_LEVEL_REMOTE_SERVER = os.getenv("LOG_LEVEL_REMOTE_SERVER", "INFO")
 
@@ -74,24 +74,24 @@ DEFAULT_HV_BUDGET = int(os.getenv("DEFAULT_HV_BUDGET", 100))
 
 # ── Gestor Mundo ──────────────────────────────────────────────────────────────
 GESTOR_MUNDO_HOST = os.getenv("GESTOR_MUNDO_HOST", "[::]")
-SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 50100))
+SECTOR_BASE_PORT = int(os.getenv("SECTOR_BASE_PORT", 60100))
 FALLOS_CONSECUTIVOS_SECTOR_CAIDO = int(os.getenv("FALLOS_CONSECUTIVOS_SECTOR_CAIDO", 3))
 GESTOR_MUNDO_WORKERS = int(os.getenv("GESTOR_MUNDO_WORKERS", 4))
 SNAPSHOT_MAX = int(os.getenv("SNAPSHOT_MAX", "20"))
 TICK_TIMEOUT_MS = int(os.getenv("TICK_TIMEOUT_MS", 500))
 TICKS_ANTES_DE_DORMIR = int(os.getenv("TICKS_ANTES_DE_DORMIR", 10))
-GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 50200))
+GESTOR_MUNDO_PORT = int(os.getenv("GESTOR_MUNDO_PORT", 60200))
 
 
 # ── Logica Mundo ──────────────────────────────────────────────────────────────
 LOGICA_MUNDO_HOST = os.getenv("LOGICA_MUNDO_HOST", "[::]")
-LOGICA_MUNDO_PORT = int(os.getenv("LOGICA_MUNDO_PORT", 50250))
+LOGICA_MUNDO_PORT = int(os.getenv("LOGICA_MUNDO_PORT", 60250))
 
 # ── Sector Server ──────────────────────────────────────────────────────────────
 SECTOR_COL = int(os.getenv("SECTOR_COL", 0))
 SECTOR_ROW = int(os.getenv("SECTOR_ROW", 0))
 SECTOR_HOST = os.getenv("SECTOR_HOST", "localhost")
-SECTOR_PORT = int(os.getenv("SECTOR_PORT", 50100))
+SECTOR_PORT = int(os.getenv("SECTOR_PORT", 60100))
 SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
 
 
@@ -99,7 +99,7 @@ SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
 COMUNICACIONES_REMOTO_ADDRESS = os.getenv("COMUNICACIONES_REMOTO_ADDRESS")
 
 # ── Loop principal ────────────────────────────────────────────────────────────
-TICKS_PROCESADOS_SEGUNDO: int = int(os.getenv("TICKS_PROCESADOS_SEGUNDO", "2"))
+TICKS_PROCESADOS_SEGUNDO: int = os.getenv("TICKS_PROCESADOS_SEGUNDO", 1)
 
 # ── Ficheros ──────────────────────────────────────────────────────────────────
 NOMBRE_FICHERO_URLS: str = os.getenv("NOMBRE_FICHERO_URLS", "Urls.csv")

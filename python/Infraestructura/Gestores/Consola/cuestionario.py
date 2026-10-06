@@ -19,6 +19,7 @@ from typing import Any, Callable
 @dataclass
 class CampoCuestionario:
     """
+    numero            : alternativa a nombre.
     nombre            : clave con la que este valor llega al handler (**kwargs).
     prompt            : texto mostrado al usuario.
     tipo              : función de casteo sobre el texto introducido (ej. int,
@@ -28,7 +29,6 @@ class CampoCuestionario:
                         en vez de forzar a escribir algo.
     valor_por_defecto : usado solo cuando opcional=True y el usuario no escribe nada.
     """
-
     nombre: str
     prompt: str
     tipo: Callable[[str], Any] = str

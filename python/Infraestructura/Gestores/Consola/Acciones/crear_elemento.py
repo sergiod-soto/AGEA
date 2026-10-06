@@ -64,6 +64,7 @@ async def _handler(comunicaciones: ComunicacionesLocal, nombre_clase: str) -> st
 
 
 ACCION = AccionConsola(
+    num = 2,
     nombre="crear_elemento",
     descripcion="Crea un elemento nuevo.",
     campos=[

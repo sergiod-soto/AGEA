@@ -174,6 +174,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaResponse.FromString,
                 _registered_method=True)
+        self.AvanzarTick = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/AvanzarTick',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
 
 
 class LogicaMundoServiceServicer(object):
@@ -270,10 +275,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ActualizarCeldas(self, request, context):
-        """CAMBIO: antes devolvía common.Ack. La respuesta nueva conserva ok=1 y
-        error=2 (compatible en el cable) y añade la lista de movimientos
-        rechazados.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -351,6 +353,12 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def EjecutarComandoConsola(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AvanzarTick(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -493,6 +501,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.EjecutarComandoConsola,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaResponse.SerializeToString,
+            ),
+            'AvanzarTick': grpc.unary_unary_rpc_method_handler(
+                    servicer.AvanzarTick,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -1228,6 +1241,33 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/EjecutarComandoConsola',
             Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaRequest.SerializeToString,
             Comunicacion_dot_logica__mundo__service__pb2.ComandoConsolaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AvanzarTick(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/AvanzarTick',
+            Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.SerializeToString,
+            common__pb2.Ack.FromString,
             options,
             channel_credentials,
             insecure,

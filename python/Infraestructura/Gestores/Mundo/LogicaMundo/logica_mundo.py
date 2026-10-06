@@ -553,14 +553,39 @@ class LogicaMundo:
 
     # ---- Elementos globales ----
 
+    # async def avanzar_elementos_globales(self, tick_id: int) -> dict:
+    #     cambios: dict = {}
+    #     async with self._lock:
+    #         self._tick_actual = tick_id
+    #         self.mundo.reloj.next_tick()
+    #         for elem in self._elementos_globales.values():
+    #             cambios.update(elem.tick(tick_id))
+    #     return cambios
+
     async def avanzar_elementos_globales(self, tick_id: int) -> dict:
+        """Ejecuta tick() de cada elemento global y devuelve sus cambios.
+        YA NO avanza el tick ni el reloj (eso es avanzar_tick). Con
+        _elementos_globales vacío devuelve {} sin hacer nada, así que
+        llamarlo es inofensivo; si prefieres saltarlo del todo, basta con
+        no llamarlo desde Gestor_Mundo."""
         cambios: dict = {}
         async with self._lock:
-            self._tick_actual = tick_id
-            self.mundo.reloj.next_tick()
             for elem in self._elementos_globales.values():
                 cambios.update(elem.tick(tick_id))
         return cambios
+
+    async def avanzar_tick(self, tick_id: int) -> None:
+        """Avanza el tiempo del mundo un tick: fija el tick actual y hace
+        avanzar el reloj (y con él los ciclos solar/lunar/anual, que son los
+        que luego lee obtener_progreso_ciclos).
+
+        Está separado de los elementos globales a propósito: el avance del
+        tiempo no depende de que existan elementos globales. Es lo que
+        vigila vista_foco (vía tick_actual) para saber que hubo tick nuevo,
+        así que debe llamarse una vez por tick, aunque no haya ninguno."""
+        async with self._lock:
+            self._tick_actual = tick_id
+            self.mundo.reloj.next_tick()
 
     async def get_tick_actual(self) -> int:
         async with self._lock:

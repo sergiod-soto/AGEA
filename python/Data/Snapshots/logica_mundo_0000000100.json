@@ -1,6 +1,6 @@
 {
   "snapshot_id": "0000000100",
-  "fecha": "2026-10-04T17:43:34.918535",
+  "fecha": "2026-10-06T14:39:39.951587",
   "id_counter": 201,
   "gold_cells": {
     "0,0": {
@@ -201,9 +201,7 @@
     "3,9": {
       "suelo": 140,
       "bot": null,
-      "resto": [
-        201
-      ]
+      "resto": []
     },
     "4,0": {
       "suelo": 141,
@@ -504,6 +502,13 @@
       "suelo": 200,
       "bot": null,
       "resto": []
+    },
+    "10,7": {
+      "suelo": null,
+      "bot": null,
+      "resto": [
+        201
+      ]
     }
   },
   "elements": {
@@ -2114,8 +2119,8 @@
       "excluyente_en_celda": false,
       "tamanho": 1,
       "casilla": [
-        3,
-        9
+        10,
+        7
       ],
       "rotacion": 0,
       "resistencia_viento": 0.0,
@@ -2124,39 +2129,39 @@
           "agarrado_por": null
         },
         "Color": {
-          "transparente": 0,
           "rgb_base": [
             120,
             120,
             120
           ],
-          "rgb_actual": [
-            0.0,
-            0.0,
-            0.0
-          ],
+          "transparente": 0,
           "modificador": [
             0.47058823529411764,
             0.47058823529411764,
             0.47058823529411764
+          ],
+          "rgb_actual": [
+            0.0,
+            0.0,
+            0.0
           ]
         },
         "Destruible": {
-          "durabilidad_actual_destruible": null,
-          "durabilidad_max_destruible": null
+          "durabilidad_max_destruible": null,
+          "durabilidad_actual_destruible": null
         },
         "Empujable": {
-          "empujable": true,
-          "coste_empujar": 1.0
+          "coste_empujar": 1.0,
+          "empujable": true
         },
         "Enterrable": {
           "_des_enterrable": true,
           "_enterrado": false
         },
         "Erosionable": {
-          "condiciones_erosion": null,
           "durabilidad_max_erosion": 1,
-          "durabilidad_actual_erosion": 1
+          "durabilidad_actual_erosion": 1,
+          "condiciones_erosion": null
         },
         "Golpeable": {
           "golpeable": true
@@ -8180,9 +8185,9 @@
         "Tangible": {},
         "Material": {},
         "Termico": {
+          "temperatura_propia": 20.0,
           "tasa_transferencia_temperatura": 0.1,
-          "radio_termico": 0,
-          "temperatura_propia": 20.0
+          "radio_termico": 0
         },
         "Energetico": {},
         "Volumen": {

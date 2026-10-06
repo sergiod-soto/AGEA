@@ -11,6 +11,7 @@ async def _handler(comunicaciones: ComunicacionesLocal) -> str:
 
 
 ACCION = AccionConsola(
+    num = 8,
     nombre="reanudar",
     descripcion="Reanuda el sistema tras un pausar.",
     handler=_handler,

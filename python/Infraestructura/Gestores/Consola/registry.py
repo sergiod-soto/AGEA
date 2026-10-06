@@ -11,10 +11,10 @@ from Infraestructura.Gestores.Consola.Acciones import (
     reanudar,
     modo_paso,
     avanzar_tick,
+    salida_unity,
     tick_rate,
     crear_elemento,
     datos,
-    leer_salida_unity,
     obtener_elemento,
 )
 
@@ -26,7 +26,7 @@ _MODULOS = (
     tick_rate,
     crear_elemento,
     datos,
-    leer_salida_unity,
+    salida_unity,
     obtener_elemento,
 )
 

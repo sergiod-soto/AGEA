@@ -144,6 +144,7 @@ async def _handler(comunicaciones: ComunicacionesLocal, tipo_dato: str) -> str:
 
 
 ACCION = AccionConsola(
+    num = 3,
     nombre="datos",
     descripcion="Consulta información del mundo (zona, bots, ...).",
     campos=[

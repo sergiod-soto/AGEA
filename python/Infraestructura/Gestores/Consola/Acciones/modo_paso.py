@@ -13,6 +13,7 @@ async def _handler(comunicaciones: ComunicacionesLocal, activar: bool) -> str:
 
 
 ACCION = AccionConsola(
+    num = 5,
     nombre="modo_paso",
     descripcion="Activa o desactiva el modo tick a tick.",
     campos=[
