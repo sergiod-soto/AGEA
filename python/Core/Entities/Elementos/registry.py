@@ -89,7 +89,7 @@ from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Arbol.arbol import Arbol
-from Core.Entities.Elementos.Simples.Bot.Bot import Bot
+from Core.Entities.Elementos.Simples.Bot.bot import Bot
 from Core.Entities.Elementos.Simples.Cadaver.cadaver import Cadaver
 from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
 from Core.Entities.Mundo.Suelo.celda import Celda

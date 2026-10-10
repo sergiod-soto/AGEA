@@ -15,7 +15,7 @@ class Elemento_Simple(Elemento):
 
     FLAGS_DISPONIBLES = frozenset(
         {
-            Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE,  #
+            Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE,
         }
     )
 
@@ -41,6 +41,10 @@ class Elemento_Simple(Elemento):
         self.rotacion = rotacion
         self.resistencia_viento = resistencia_viento
 
+    # --- Hooks por campo (se mantienen): conversión de formato ---
+    # serializar_X: valor interno -> valor serializable.
+    # deserializar_X: lo inverso (también lo usa Elemento.aplicar_patch).
+
     def serializar_tamanho(self):
         return self.tamanho
 
@@ -54,17 +58,41 @@ class Elemento_Simple(Elemento):
     def serializar_rotacion(self):
         return self.rotacion % 360
 
-    def serializar_resistenca_viento(self):
+    # (typo corregido: antes "serializar_resistenca_viento")
+    def serializar_resistencia_viento(self):
         return self.resistencia_viento
 
-    def serializar_elemento_simple(self) -> dict:
-        serializacion = self.serializar_elemento()
-        s_simple = {
-            "tipo_elemento": "elemento_simple",
-            "tamanho": self.serializar_tamanho(),
-            "casilla": self.serializar_casilla(),
-            "rotacion": self.serializar_rotacion(),
-            "resistencia_viento": self.serializar_resistenca_viento(),
-        }
-        serializacion.update(s_simple)
-        return serializacion
+    # --- Cadena serializar / representar / deserializar ---
+
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos.update(
+            {
+                "tamanho": self.serializar_tamanho(),
+                "casilla": self.serializar_casilla(),
+                "rotacion": self.serializar_rotacion(),
+                "resistencia_viento": self.serializar_resistencia_viento(),
+            }
+        )
+        return datos
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["elemento"].update(
+                {
+                    "tipo_elemento": "elemento_simple",
+                    "tamanho": self.serializar_tamanho(),
+                    "casilla": self.serializar_casilla(),
+                    "rotacion": self.serializar_rotacion(),
+                    "resistencia_viento": self.serializar_resistencia_viento(),
+                }
+            )
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        self.tamanho = data["tamanho"]
+        self.deserializar_casilla(data["casilla"])
+        self.rotacion = data["rotacion"]
+        self.resistencia_viento = data["resistencia_viento"]

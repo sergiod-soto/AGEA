@@ -5,7 +5,6 @@ import pytest
 from Core.Entities.Comportamiento.Stats.stat import Stat
 from Core.Entities.Comportamiento.Stats.stat_derivado import Stat_Derivado
 from Core.Entities.Comportamiento.Stats.tiene_stats import Tiene_Stats
-from Core.Entities.entity import Modos
 
 
 # NOTA: la anotacion de tipo usaba "Stat_Complejo", una clase que no
@@ -85,13 +84,11 @@ class TestTieneStatsRecalcularDerivados:
 
 
 class TestTieneStatsSerializacion:
-    def test_serialize_stats_expone_estado_actual(self):
+    def test_serializar_stats_expone_estado_actual(self):
         e = Elemento_De_Prueba(stats=[Stat("vida", 100), Stat("energia", 50)])
-        assert e.serialize_stats() == {"vida": 100, "energia": 50}
+        assert e.serializar_stats() == {"vida": 100, "energia": 50}
 
     def test_serializar_generico_incluye_stats_via_hook(self):
-        # Comportamiento.serializar() debe usar el hook serialize_stats,
-        # no el parametro crudo 'stats' que se paso a __init__
         e = Elemento_De_Prueba(stats=[Stat("vida", 100)])
-        resultado = e.serializar(modo=Modos.transporte)
+        resultado = e.serializar()
         assert resultado["stats"] == {"vida": 100}

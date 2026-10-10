@@ -45,7 +45,6 @@ from Infraestructura.Gestores.Comunicacion.Local.comunicaciones_local import (
 # incluye más detalle, ej. un elemento sonoro expone solo el id del
 # sonido en "representacion" pero el array de intensidades/frecuencias
 # en "profundidad"). No es un parámetro que la consola deba preguntar.
-MODO_CONSOLA = "representacion"
 
 
 def parse_lista_comportamientos(texto: str) -> list[str]:
@@ -57,7 +56,7 @@ async def _datos_zona(comunicaciones: ComunicacionesLocal) -> str:
     """
     'zona' -> pide las dos esquinas y los comportamientos a incluir,
     cada uno como campo propio de cuestionario, y consulta esa región
-    vía LogicaMundoService.ConsultarRepresentacion (modo="representacion").
+    vía LogicaMundoService.
     """
     campos = [
         CampoCuestionario(
@@ -84,7 +83,6 @@ async def _datos_zona(comunicaciones: ComunicacionesLocal) -> str:
         min_pos=valores["min_pos"],
         max_pos=valores["max_pos"],
         incluir=valores["incluir"],
-        modo=MODO_CONSOLA,
     )
     if not resp.ok:
         return f"Error consultando zona: {resp.error}"
@@ -144,7 +142,7 @@ async def _handler(comunicaciones: ComunicacionesLocal, tipo_dato: str) -> str:
 
 
 ACCION = AccionConsola(
-    num = 3,
+    num=3,
     nombre="datos",
     descripcion="Consulta información del mundo (zona, bots, ...).",
     campos=[

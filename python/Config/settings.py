@@ -34,7 +34,7 @@ ID_CICLO_SOLAR: int = int(os.getenv("ID_CICLO_SOLAR", "1"))
 ID_CICLO_LUNAR: int = int(os.getenv("ID_CICLO_LUNAR", "2"))
 ID_RELOJ: int = int(os.getenv("ID_RELOJ", "3"))
 ID_ESTACION: int = int(os.getenv("ID_ESTACION", "4"))
-ID_ATMOSFERA: int = int(os.getenv("ID_ATMOSFERA", "5"))
+ID_ATMOSFERA: int = int(os.getenv("ID_ATMOSFERA", "5")) # sin uso #################################
 ID_TEMPERATURA_ATMOSFERICA: int = int(os.getenv("ID_TEMPERATURA_ATMOSFERICA", "6"))
 ID_PRESION: int = int(os.getenv("ID_PRESION", "7"))
 ID_VIENTO: int = int(os.getenv("ID_VIENTO", "8"))
@@ -99,7 +99,7 @@ SECTOR_WORKERS = int(os.getenv("SECTOR_WORKERS", 4))
 COMUNICACIONES_REMOTO_ADDRESS = os.getenv("COMUNICACIONES_REMOTO_ADDRESS")
 
 # ── Loop principal ────────────────────────────────────────────────────────────
-TICKS_PROCESADOS_SEGUNDO: int = os.getenv("TICKS_PROCESADOS_SEGUNDO", 1)
+TICKS_PROCESADOS_SEGUNDO: int = int(os.getenv("TICKS_PROCESADOS_SEGUNDO", 1))
 
 # ── Ficheros ──────────────────────────────────────────────────────────────────
 NOMBRE_FICHERO_URLS: str = os.getenv("NOMBRE_FICHERO_URLS", "Urls.csv")

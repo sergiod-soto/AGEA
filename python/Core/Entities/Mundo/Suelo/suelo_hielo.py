@@ -1,6 +1,6 @@
 # Core/Entities/Mundo/Suelo/suelo_hielo.py
 
-from Core.Entities.Comportamiento.Terreno.terreno_hielo import Helado
+from Core.Entities.Comportamiento.Terreno.helado import Helado
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
 

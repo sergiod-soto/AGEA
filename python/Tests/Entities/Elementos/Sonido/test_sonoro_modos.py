@@ -9,7 +9,6 @@ referencias (lo que ve Unity cada tick).
 import pytest
 from Core.Entities.Comportamiento.Informativo.sonoro import Sonoro
 from Core.Entities.Elementos.Abstractos.Informacion.sonido import Sonido, SonidoBase
-from Core.Entities.entity import Modos
 from Services.Elemento.cache_audio import CacheAudio
 
 
@@ -29,7 +28,7 @@ def _sonoro_de_ejemplo():
 class TestModoRepresentacion:
     def test_solo_referencias_sin_vector_ni_pcm(self):
         s = _sonoro_de_ejemplo()
-        data = s.serializar(modo=Modos.transporte)
+        data = s.serializar()
         for lista in data["sonidos"].values():
             for entrada in lista:
                 assert set(entrada.keys()) == {"id", "duracion", "vol"}
@@ -38,7 +37,7 @@ class TestModoRepresentacion:
         import json
 
         s = _sonoro_de_ejemplo()
-        json.dumps(s.serializar(modo=Modos.transporte))  # no debe lanzar
+        json.dumps(s.serializar())  # no debe lanzar
 
 
 class TestModosCompletoFidelidad:
@@ -60,11 +59,11 @@ class TestModosCompletoFidelidad:
 
     def test_guardado_y_transporte_dan_el_mismo_resultado_hoy(self):
         # Documenta la decisión explícita: hoy son idénticos porque caen
-        # los dos al mismo hook genérico serialize_sonidos(). Si algún
+        # los dos al mismo hook genérico serializar_sonidos(). Si algún
         # día divergen, este test debe romperse a propósito -- señal de
         # que hay que revisar si el cambio fue intencional.
         s = _sonoro_de_ejemplo()
-        assert s.serializar(modo=Modos.guardado) == s.serializar(modo=Modos.transporte)
+        assert s.serializar() == s.serializar()
 
 
 class TestModoEsObligatorio:
@@ -80,10 +79,10 @@ class TestDeserializarSonidos:
 
     def test_reconstruye_objetos_sonido_reales(self):
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo=Modos.transporte)
+        data = original.serializar()
 
         reconstruido = Sonoro(sonidos={})
-        reconstruido.deserialize_sonidos(data["sonidos"])
+        reconstruido.deserializar_sonidos(data["sonidos"])
 
         for lista in reconstruido.sonidos.values():
             for s in lista:
@@ -91,9 +90,9 @@ class TestDeserializarSonidos:
 
     def test_conserva_los_mismos_ids(self):
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo=Modos.transporte)
+        data = original.serializar()
         reconstruido = Sonoro(sonidos={})
-        reconstruido.deserialize_sonidos(data["sonidos"])
+        reconstruido.deserializar_sonidos(data["sonidos"])
 
         ids_originales = {s.id_sonido for l in original.sonidos.values() for s in l}
         ids_reconstruidos = {
@@ -106,9 +105,9 @@ class TestDeserializarSonidos:
         # deben poder liberarse igual que uno recién creado (necesario
         # para _liberar_sonidos_de en LogicaMundo).
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo=Modos.transporte)
+        data = original.serializar()
         reconstruido = Sonoro(sonidos={})
-        reconstruido.deserialize_sonidos(data["sonidos"])
+        reconstruido.deserializar_sonidos(data["sonidos"])
 
         cache = CacheAudio()
         Sonido.configurar_cache(cache)
@@ -118,7 +117,7 @@ class TestDeserializarSonidos:
 
     def test_deserializar_no_toca_el_cacheaudio(self):
         """
-        Punto crítico: deserialize_sonidos NO debe autoregistrar en el
+        Punto crítico: deserializar_sonidos NO debe autoregistrar en el
         cache. Si lo hiciera, cada resincronización de celdas
         (actualizar_celdas, llamado en cada ciclo de tick) incrementaría
         el contador de referencias sin una liberación correspondiente, y
@@ -128,9 +127,9 @@ class TestDeserializarSonidos:
         Sonido.configurar_cache(cache)
 
         original = _sonoro_de_ejemplo()
-        data = original.serializar(modo=Modos.transporte)
+        data = original.serializar()
 
         reconstruido = Sonoro(sonidos={})
-        reconstruido.deserialize_sonidos(data["sonidos"])
+        reconstruido.deserializar_sonidos(data["sonidos"])
 
         assert len(cache._audios) == 0

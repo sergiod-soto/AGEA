@@ -47,8 +47,6 @@ from Config.settings import (
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
 
-# Rutas confirmadas: Celda_Atmosfera vive en Core/Entities/Mundo/Celda/ y
-# sistema_atmosferico.py en Core/Entities/Mundo/Atmosfera/.
 from Core.Entities.Mundo.Atmosfera import sistema_atmosferico
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
@@ -988,6 +986,21 @@ class Sector:
 
         for mutacion in mutaciones:
             if isinstance(mutacion, CrearElemento):
+                # PENDIENTE (decisión aplazada): ids de elementos nacidos en tick().
+                # Sin id real, Logica_Mundo rechazaría la celda (ValueError) y eso
+                # es fatal. Hasta resolverlo se descarta con error en el log.
+                # Asumo que un elemento sin id llega con None o 0 (los ids reales
+                # empiezan en 100); si usa otro valor, dímelo.
+                if not mutacion.elemento.id_elemento:
+                    logger.error(
+                        "Sector (%d,%d): creación en %s descartada, el elemento "
+                        "(%s) no tiene id (ids de tick() sin resolver).",
+                        self._col,
+                        self._row,
+                        mutacion.pos,
+                        type(mutacion.elemento).__name__,
+                    )
+                    continue
                 celda = self._celdas.get_or_create(*mutacion.pos)
                 if self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
                     posiciones_cambiadas.add(mutacion.pos)

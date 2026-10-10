@@ -41,7 +41,5 @@ async def handle(logica, request, context):
     return pb.ConstruirElementoResponse(
         ok=ok,
         error=error,
-        # uint64 del proto no acepta None ni numpy.uint64 directamente
-        # en todos los bindings -- se normaliza a int plano.
         id_elemento=int(id_elemento) if id_elemento is not None else 0,
     )

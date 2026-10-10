@@ -80,16 +80,16 @@ from Core.Entities.Comportamiento.Temporal.estacional import Estacional
 from Core.Entities.Comportamiento.Temporal.latente import Latente
 from Core.Entities.Comportamiento.Temporal.perecedero import Perecedero
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
-from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Arenoso
-from Core.Entities.Comportamiento.Terreno.terreno_cesped import Hervoso
-from Core.Entities.Comportamiento.Terreno.terreno_charco import Encharcado
-from Core.Entities.Comportamiento.Terreno.terreno_hielo import Helado
-from Core.Entities.Comportamiento.Terreno.terreno_barro import Embarrado
-from Core.Entities.Comportamiento.Terreno.terreno_tierra import Terroso
+from Core.Entities.Comportamiento.Terreno.arenoso import Arenoso
+from Core.Entities.Comportamiento.Terreno.herboso import Hervoso
+from Core.Entities.Comportamiento.Terreno.encharcado import Encharcado
+from Core.Entities.Comportamiento.Terreno.helado import Helado
+from Core.Entities.Comportamiento.Terreno.embarrado import Embarrado
+from Core.Entities.Comportamiento.Terreno.terroso import Terroso
 
 
-from Core.Entities.Comportamiento.Terreno.terreno_grava import Gravoso
-from Core.Entities.Comportamiento.Terreno.terreno_rocoso import Rocoso
+from Core.Entities.Comportamiento.Terreno.gravoso import Gravoso
+from Core.Entities.Comportamiento.Terreno.rocoso import Rocoso
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 

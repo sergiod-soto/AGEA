@@ -1,6 +1,6 @@
 # Core/Entities/Mundo/Suelo/suelo_grava.py
 
-from Core.Entities.Comportamiento.Terreno.terreno_grava import Gravoso
+from Core.Entities.Comportamiento.Terreno.gravoso import Gravoso
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
 

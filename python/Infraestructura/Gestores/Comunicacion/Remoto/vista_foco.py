@@ -44,7 +44,6 @@ class _FocoParams:
     min_pos: tuple[int, int]
     max_pos: tuple[int, int]
     incluir: list[str]
-    modo: str
 
 
 class FocoBroadcaster:
@@ -66,7 +65,6 @@ class FocoBroadcaster:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-        modo: str,
     ) -> None:
         """
         Llamado desde ComunicacionesRemoto.actualizar_foco() cuando el
@@ -75,7 +73,7 @@ class FocoBroadcaster:
         inmediato (el disparo sigue siendo únicamente "hubo tick
         nuevo", según lo decidido).
         """
-        self._foco = _FocoParams(min_pos, max_pos, incluir, modo)
+        self._foco = _FocoParams(min_pos, max_pos, incluir)
 
     async def suscribirse(self) -> AsyncIterator["pb.ActualizacionFoco"]:
         """
@@ -148,7 +146,7 @@ class FocoBroadcaster:
 
                 representacion = (
                     await self._clientes.logica_mundo.consultar_representacion(
-                        foco.min_pos, foco.max_pos, foco.incluir, foco.modo
+                        foco.min_pos, foco.max_pos, foco.incluir
                     )
                 )
                 actualizacion = pb.ActualizacionFoco(

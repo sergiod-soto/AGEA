@@ -1,6 +1,6 @@
 # Core/Entities/Mundo/Suelo/suelo_oceano.py
 
-from Core.Entities.Comportamiento.Terreno.terreno_oceano import Oceanico
+from Core.Entities.Comportamiento.Terreno.oceanico import Oceanico
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
 

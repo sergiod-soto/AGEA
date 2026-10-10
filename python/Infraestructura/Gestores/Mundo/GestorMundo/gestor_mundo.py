@@ -51,6 +51,20 @@ from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as co
 logger = logging.getLogger(__name__)
 
 
+class ErrorFatal(RuntimeError):
+    """Tras esto el proceso DEBE apagarse: seguir dejaría la simulación
+    divergiendo en silencio. Nadie la captura salvo para escalarla."""
+
+
+class ErrorCargaSector(ErrorFatal):
+    """Un sector no pudo cargar su estado (gRPC, LoadState ok=False...)."""
+
+
+class ErrorSincronizacion(ErrorFatal):
+    """Logica_Mundo no pudo aplicar el delta de un tick. Los Sectores ya
+    aplicaron esos cambios en su copia y Logica (el gold) no."""
+
+
 class SystemState(Enum):
     RUNNING = auto()
     PAUSING = auto()
@@ -370,6 +384,13 @@ class GestorMundo:
                     resultado,
                 )
                 sector.fallos_consecutivos += 1
+            elif not resultado.ok:
+                logger.error(
+                    "StartTick falló en (%d,%d): compute_tick lanzó excepción.",
+                    sector.col,
+                    sector.row,
+                )
+                sector.fallos_consecutivos += 1
             elif resultado.timed_out:
                 logger.warning(
                     "Sector (%d,%d) no terminó a tiempo (tick %d)",
@@ -436,14 +457,28 @@ class GestorMundo:
 
             rechazados: dict[int, Optional[tuple[int, int]]] = {}
             if celdas_cambiadas or movimientos_externos:
-                rechazados = await self._logica_client.actualizar_celdas(
-                    celdas_cambiadas, movimientos_externos
-                )
+                try:
+                    rechazados = await self._logica_client.actualizar_celdas(
+                        celdas_cambiadas, movimientos_externos
+                    )
+                except Exception as e:
+                    raise ErrorSincronizacion(
+                        f"actualizar_celdas falló en el tick {self._tick_id}: {e!r}"
+                    ) from e
 
             if celdas_atmosfera_cambiadas:
-                await self._logica_client.actualizar_celdas_atmosfera(
-                    celdas_atmosfera_cambiadas
-                )
+                # NO fatal: cada tick reenvía el estado completo. Pero tampoco
+                # debe abortar el resto de la fase: sin este try, un fallo aquí
+                # saltaría _resolver_migraciones y los bots que ya salieron de
+                # su sector (_detectar_migraciones los borró) se perderían.
+                try:
+                    await self._logica_client.actualizar_celdas_atmosfera(
+                        celdas_atmosfera_cambiadas
+                    )
+                except Exception:
+                    logger.exception(
+                        "Tick %d: no se pudo actualizar la atmósfera.", self._tick_id
+                    )
 
             for bot_id in bots_muertos:
                 await self._logica_client.matar_bot(
@@ -459,8 +494,9 @@ class GestorMundo:
             # cambios_globales = await self._logica_client.avanzar_elementos_globales(
             #     self._tick_id
             # )
-            await self._logica_client.avanzar_tick(self._tick_id)
             # TODO: distribuir cambios_globales a sectores que lo necesiten
+
+            await self._logica_client.avanzar_tick(self._tick_id)
 
         await self._reset_budgets()
 
@@ -880,7 +916,14 @@ class GestorMundo:
 
         req = sector_pb.LoadStateRequest(cells=cells, atmosphere_cells=atmosphere_cells)
         try:
-            resp = await info.stub.LoadState(req)
+            bots = await self._logica_client.obtener_bots_en_region(
+                min_pos=(x0, y0), max_pos=(x1, y1)
+            )
+            resp = await info.stub.LoadState(
+                sector_pb.LoadStateRequest(
+                    cells=cells, atmosphere_cells=atmosphere_cells, bots=bots
+                )
+            )
             if not resp.ok:
                 logger.warning(
                     "LoadState falló en (%d,%d): %s", info.col, info.row, resp.error

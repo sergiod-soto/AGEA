@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Informativo/color.py
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Exceptions.Bot.comportamientos_exceptions import Transparencia_Incorrecta
 
@@ -98,6 +100,38 @@ class Color(Comportamiento):
 
         return rgb
 
+    # --- Cadena serializar / representar / deserializar ---
+
+    def serializar(self) -> dict:
+        # Fidelidad completa: incluye el estado interno (modificador,
+        # rgb_actual), que no son parámetros del __init__.
+        datos = super().serializar()
+        datos["comportamientos"][__class__.__name__] = {
+            "rgb_base": self.rgb_base,
+            "transparente": self.transparente,
+            "modificador": self.modificador,
+            "rgb_actual": self.rgb_actual,
+        }
+        return datos
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        """Informacion pasada a Unity: solo lo necesario para dibujar."""
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["comportamientos"][__class__.__name__] = {
+                "rgb_base": self.rgb_base,
+                "transparente": self.transparente,
+            }
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        s = data["comportamientos"][__class__.__name__]
+        self.rgb_base = s["rgb_base"]
+        self.transparente = s["transparente"]
+        self.modificador = s["modificador"]
+        self.rgb_actual = s["rgb_actual"]
+
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
         return [
@@ -125,15 +159,3 @@ Métodos:
 \tRetorna el RGB de la luz total reflejada
 \tnormalizada a 255 para representacion, no uso.
         """
-
-    def representar_color(self) -> list[str]:
-        """
-        Informacion pasada a Unity para representar el Elemento
-        """
-        representacion = {
-            "color": {
-                "rgb_base": self.rgb_base,
-                "transparente": self.transparente,
-            }
-        }
-        return representacion

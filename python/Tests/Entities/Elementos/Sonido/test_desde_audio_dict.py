@@ -4,7 +4,7 @@
 """
 Tests de Sonido.desde_audio_dict -- reconstrucción de un Sonido real a
 partir del payload de serializar_audio(), usado por
-Sonoro.deserialize_sonidos al reconstruir un elemento en modo
+Sonoro.deserializar_sonidos al reconstruir un elemento en modo
 "guardado"/"transporte".
 """
 

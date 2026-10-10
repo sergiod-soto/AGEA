@@ -28,31 +28,43 @@ class Sonoro(Informativo):
         registrarlos en el CacheAudio sin que Sonoro conozca su existencia."""
         return [s for lista in self.sonidos.values() for s in lista]
 
-    def serialize_sonidos(self) -> dict:
-        """Hook genérico: fidelidad completa. Cubre 'guardado' y 'transporte'
-        por fallback (ver Comportamiento.serializar) mientras ambos necesiten
-        lo mismo. El día que uno de los dos necesite algo distinto, se le
-        añade su propio serialize_sonidos_guardado() o
-        serialize_sonidos_transporte() sin tocar este ni la firma de nada."""
-        return {
-            categoria: [s.serializar_audio() for s in lista]
-            for categoria, lista in self.sonidos.items()
-        }
+    # --- Cadena serializar / representar / deserializar ---
 
-    def serialize_sonidos_representacion(self) -> dict:
-        """Modo 'representacion' (Unity, cada tick): solo referencias -- el
-        audio completo se pide aparte bajo demanda vía CacheAudio."""
-        return {
-            categoria: [s.serializar_referencia() for s in lista]
-            for categoria, lista in self.sonidos.items()
+    def serializar(self) -> dict:
+        """Snapshot: audio COMPLETO de cada sonido (fidelidad total).
+        (Antes se llamaba serializar_sonoros y nunca se invocaba: el hook
+        de campo buscado era serializar_sonidos.)"""
+        datos = super().serializar()
+        datos["comportamientos"][__class__.__name__] = {
+            "sonidos": {
+                categoria: [s.serializar_audio() for s in lista]
+                for categoria, lista in self.sonidos.items()
+            }
         }
+        return datos
 
-    def deserialize_sonidos(self, valor: dict) -> None:
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        """Unity (cada tick): solo REFERENCIAS (id_sonido). El audio
+        completo se pide aparte bajo demanda (ObtenerAudio / CacheAudio)."""
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["comportamientos"][__class__.__name__] = {
+                "sonidos": {
+                    categoria: [s.id_sonido for s in lista]
+                    for categoria, lista in self.sonidos.items()
+                }
+            }
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        self.deserializar_sonidos(data["comportamientos"][__class__.__name__]["sonidos"])
+
+    def deserializar_sonidos(self, valor: dict) -> None:
         """
-        Contraparte de serialize_sonidos(): reconstruye Sonido reales a
-        partir del dict de audio completo, para que todos_los_sonidos() siga
-        devolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
-        reconstruir un elemento (ver piedra.py, bug detectado). NO llama a
+        Reconstruye Sonido reales a partir del dict de audio completo,
+        para que todos_los_sonidos() siga devolviendo objetos con
+        .id_sonido/.liberar_de_biblioteca()/etc. NO llama a
         guardar_en_biblioteca() aquí.
         """
         self.sonidos = {
@@ -62,9 +74,8 @@ class Sonoro(Informativo):
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
-        return [
-            "peso",
-        ]
+        # Demasiado complejo para crearlo por consola.
+        return []
 
     @classmethod
     def ayuda_creacion(cls) -> str:
@@ -79,30 +90,17 @@ Métodos:
 \t--------------------------------------
 \tLista de todos los sonidos que puede emitir.
 
-\tserialize_sonidos(self) -> dict
+\tserializar(self) -> dict
 \t--------------------------------------
-\tRecarga energía.
+\tSnapshot: audio completo de cada sonido.
 
-\tserialize_sonidos_representacion(self) -> dict
+\trepresentar(self, incluir=None) -> dict
 \t--------------------------------------
-\tModo 'representacion' (Unity, cada tick): solo referencias -- el
-\taudio completo se pide aparte bajo demanda vía CacheAudio.
+\tUnity (cada tick): solo referencias (id_sonido) -- el audio
+\tcompleto se pide aparte bajo demanda vía CacheAudio.
 
-\tdeserialize_sonidos(self, valor: dict) -> None
+\tdeserializar_sonidos(self, valor: dict) -> None
 \t--------------------------------------
-\tContraparte de serialize_sonidos(): reconstruye Sonido reales a
-\tpartir del dict de audio completo, para que todos_los_sonidos() siga
-\tdevolviendo objetos con .id_sonido/.liberar_de_biblioteca()/etc. tras
-\treconstruir un elemento (ver piedra.py, bug detectado). NO llama a 
-\tguardar_en_biblioteca() aquí.
+\tReconstruye Sonido reales a partir del dict de audio completo.
+\tNO llama a guardar_en_biblioteca() aquí.
         """
-
-    def representar_sonoro(self) -> list[str]:
-        """
-        Informacion pasada a Unity para representar el Elemento
-        """
-
-        representacion = {
-            "sonoro": self.serialize_sonidos_representacion(),
-        }
-        return representacion

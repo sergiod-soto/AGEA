@@ -17,8 +17,8 @@ import inspect
 from functools import partial
 
 from Core.Entities.Elementos.elemento import Elemento
-from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Core.Entities.entity import Modos
+from Core.Entities.Elementos.Simples.Bot.bot import Bot
+from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
 
 
@@ -96,7 +96,7 @@ class Serie_Estados:
 
     # region GENERAL
     async def Mover_Elemento_Logica(
-        self, elemento, pos_destino: tuple[int, int], type_id: str = "resto"
+        self, elemento: Elemento, pos_destino: tuple[int, int]
     ):
         """
         "Mueve" un elemento ya creado en Logica_Mundo a pos_destino.
@@ -119,11 +119,16 @@ class Serie_Estados:
             raise RuntimeError(
                 f"Mover_Elemento_Logica: eliminar_elemento falló en {pos_origen}: {error}"
             )
+        type_id = "resto"
+        if type(elemento) == type(Suelo):
+            type_id = "suelo"
+        if elemento.tipo == Bot:
+            type_id = "bot"
 
         elemento.casilla = pos_destino
-        elemento_bytes = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
+        elemento_bytes = json.dumps(elemento.serializar()).encode()
         ok, error = await self._logica.crear_elemento(
-            pos_destino, type_id, elemento_bytes
+            type_id=type_id, pos=pos_destino, element=elemento_bytes
         )
         if not ok:
             raise RuntimeError(
@@ -159,7 +164,10 @@ class Serie_Estados:
         id_elemento = await self._logica.asignar_id()
         elemento = clase(id_elemento=id_elemento, casilla=casilla, **kwargs)
 
-        elemento_bytes = json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
+        print("AAAAAA")
+        print(elemento.serializar())
+        print("BBBB")
+        elemento_bytes = json.dumps(elemento.serializar()).encode()
         ok, error = await self._logica.crear_elemento(casilla, type_id, elemento_bytes)
         if not ok:
             raise RuntimeError(

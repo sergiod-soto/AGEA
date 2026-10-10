@@ -94,7 +94,7 @@ class ComunicacionesRemotoServicer(pb_grpc.ComunicacionRemotaServiceServicer):
         max_pos = (request.max.x, request.max.y)
 
         self._logica.actualizar_foco(
-            min_pos, max_pos, list(request.incluir), request.modo
+            min_pos, max_pos, list(request.incluir)
         )
         return common_pb2.Ack(ok=True)
 

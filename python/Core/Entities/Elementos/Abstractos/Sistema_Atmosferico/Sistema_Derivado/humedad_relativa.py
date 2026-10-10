@@ -13,6 +13,11 @@ from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.tem
 # Constante específica del vapor de agua, J/(kg·K).
 CONSTANTE_GAS_VAPOR_AGUA: float = 461.5
 
+# Rango de validez de Magnus-Tetens (Sonntag), en °C. Fuera de él la fórmula
+# deja de ser fiable y, cerca de -243 °C, el denominador se anula.
+_MAGNUS_MIN_C: float = -45.0
+_MAGNUS_MAX_C: float = 60.0
+
 
 def _capacidad_maxima(temperatura_k: float) -> float:
     """
@@ -25,11 +30,10 @@ def _capacidad_maxima(temperatura_k: float) -> float:
          kelvin_a_celsius(). Válida aprox. entre -45 y 60 °C.
       2) Ley de los gases ideales para el vapor: rho = e_s / (R_v * T).
 
-    Ejemplo de comprobación: a 20 °C da ~0.0173 kg/m³ (17.3 g/m³), el valor
-    de las tablas. Con esto la humedad relativa ya no depende de ningún
-    factor de escala inventado (resuelve la duda que había sobre unidades).
     """
-    temperatura_c = kelvin_a_celsius(temperatura_k)
+    temperatura_c = max(
+        _MAGNUS_MIN_C, min(_MAGNUS_MAX_C, kelvin_a_celsius(temperatura_k))
+    )
     presion_saturacion_pa = 611.2 * math.exp(
         (17.62 * temperatura_c) / (243.12 + temperatura_c)
     )

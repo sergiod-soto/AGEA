@@ -1,4 +1,5 @@
 # Infraestructura/Gestores/Transporte/logica_mundo_client.py
+
 """
 logica_mundo_client.py — Cliente async gRPC hacia LogicaMundo.
 
@@ -328,6 +329,20 @@ class LogicaMundoClient:
     # Soporte al ciclo de tick de Gestor_Mundo
     # ------------------------------------------------------------------
 
+    async def obtener_bots_en_region(
+        self, min_pos, max_pos, timeout: float | None = None
+    ) -> list:
+        await self._ensure_channel()
+        resp = await self._stub.ObtenerBotsEnRegion(
+            pb.ObtenerBotsEnRegionRequest(
+                min=self._pos_to_pb(min_pos), max=self._pos_to_pb(max_pos)
+            ),
+            timeout=self._t(timeout),
+        )
+        if not resp.ok:
+            raise RuntimeError(f"ObtenerBotsEnRegion: {resp.error}")
+        return list(resp.bots)
+
     async def obtener_celdas_en_region(
         self,
         min_pos,
@@ -464,7 +479,6 @@ class LogicaMundoClient:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-        modo: str,
         timeout: float | None = None,
     ) -> bytes:
         await self._ensure_channel()
@@ -472,7 +486,6 @@ class LogicaMundoClient:
             min=self._pos_to_pb(min_pos),
             max=self._pos_to_pb(max_pos),
             incluir=incluir,
-            modo=modo,
         )
         try:
             resp = await self._stub.ConsultarRepresentacion(

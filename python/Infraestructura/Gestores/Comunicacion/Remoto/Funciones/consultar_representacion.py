@@ -14,8 +14,7 @@ async def handle(clientes, payload: bytes) -> bytes:
     datos = await clientes.logica_mundo.consultar_representacion(
         min_pos=(req.min.x, req.min.y),
         max_pos=(req.max.x, req.max.y),
-        incluir=list(req.incluir),
-        modo=req.modo,
+        incluir=list(req.incluir) or None,  # [] del proto -> None = "todo"
     )
     resp = pb.ConsultarRepresentacionResponse(ok=True, error="", datos=datos)
     return resp.SerializeToString()

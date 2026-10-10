@@ -4,7 +4,6 @@ from Core.Entities.Comportamiento.Material.registro_transformaciones import (
     REGISTRO_TRANSFORMACIONES,
 )
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
-from Core.Entities.entity import Modos
 
 
 class Transformable(Material):
@@ -24,6 +23,21 @@ class Transformable(Material):
     def __init__(self, dict_transformable: dict[Condicion, str], **kwargs):
         super().__init__(**kwargs)
         self.dict_transformable = dict_transformable
+
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos["comportamientos"][__class__.__name__] = {"transformable": {}}
+        return datos
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        """Informacion pasada a Unity para representar el Elemento."""
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["comportamientos"][__class__.__name__] = {"transformable": {}}
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
 
     def get_condiciones(self) -> list[Condicion]:
         return list(self.dict_transformable.keys())
@@ -47,25 +61,16 @@ class Transformable(Material):
                 funcion(self, ctx)
                 return
 
-    def serialize_dict_transformable(self) -> list[dict]:
-        """
-        Se serializa siempre con modo=Modos.guardado, independientemente
-        del modo real de esta llamada -- una Condicion necesita
-        fidelidad completa para ser reconstruible pase lo que pase
-        (mismo razonamiento que 'transporte' == 'guardado' en
-        Comportamiento.serializar): no tiene sentido una versión
-        "ligera" de una condición, a diferencia de otros campos que sí
-        se aligeran para 'representacion'.
-        """
+    def serializar_dict_transformable(self) -> list[dict]:
         return [
             {
                 "transformacion": nombre,
-                "condicion": condicion.serializar(modo=Modos.guardado),
+                "condicion": condicion.serializar(),
             }
             for nombre, condicion, in self.dict_transformable.items()
         ]
 
-    def deserialize_dict_transformable(self, valor: list[dict]) -> None:
+    def deserializar_dict_transformable(self, valor: list[dict]) -> None:
         # Import diferido: evita ciclo Transformable -> registry -> ... -> Transformable
         from Core.Entities.Elementos.registry import reconstruir_elemento
 

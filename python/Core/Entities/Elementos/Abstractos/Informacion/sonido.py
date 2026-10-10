@@ -21,7 +21,7 @@ Reproducción:
     Unity  → sonido.pcm y sonido.SAMPLE_RATE
               AudioClip.SetData(float[], int) acepta float32 directamente
 
-Serializacion (ver Comportamiento.serializar() / Sonoro.serialize_sonidos()):
+Serializacion (ver Comportamiento.serializar() / Sonoro.serializar_sonidos()):
     Cada Sonido es potencialmente pesado (vector de 256 floats + pcm de
     miles de muestras). Enviarlo entero en cada tick es caro y, ademas,
     redundante: el sonido de un elemento no cambia una vez construido
@@ -266,7 +266,7 @@ class Sonido(Elemento_Abstracto):
         """
         Reconstruye un Sonido a partir del dict de serializar_audio()
         (id/duracion/vol/vector/pcm como listas) -- usado al deserializar un
-        elemento en modo "guardado"/"transporte" (ver Sonoro.deserialize_sonidos).
+        elemento en modo "guardado"/"transporte" (ver Sonoro.deserializar_sonidos).
         """
         vector = np.array(data["vector"], dtype=np.float32)
         pcm = np.array(data["pcm"], dtype=np.float32)
@@ -378,15 +378,11 @@ class Sonido(Elemento_Abstracto):
             "pcm": self.pcm.tolist(),
         }
 
-    # ------------------------------------------------------------------
-    # Representación
-    # ------------------------------------------------------------------
+    def serializar(self):
+        return self.serializar_audio()
 
-    def __repr__(self) -> str:
-        return (
-            f"Sonido(dur={self.duracion:.3f}s, vol={self.vol:.3f}, "
-            f"vector={self.vector.shape}, pcm={self.pcm.shape})"
-        )
+    def representar(self):
+        return self.serializar_referencia()
 
     # ------------------------------------------------------------------
     # Memoria en biblioteca

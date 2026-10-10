@@ -26,6 +26,7 @@ service LogicaMundoService {
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
   rpc GetElementosGlobales (GetElementosGlobalesRequest) returns (GetElementosGlobalesResponse);
   rpc ObtenerCeldasEnRegion (ObtenerCeldasEnRegionRequest) returns (ObtenerCeldasEnRegionResponse);
+  rpc ObtenerBotsEnRegion (ObtenerBotsEnRegionRequest) returns (ObtenerBotsEnRegionResponse);
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (ActualizarCeldasResponse);
 
   // Sistema atmosférico. Mismo trío de responsabilidad que
@@ -36,8 +37,7 @@ service LogicaMundoService {
   rpc ActualizarCeldasAtmosfera (ActualizarCeldasAtmosferaRequest) returns (common.Ack);
   rpc ObtenerProgresoCiclos (ObtenerProgresoCiclosRequest) returns (ObtenerProgresoCiclosResponse);
 
-  // NUEVO -- generación del mundo. GenerarMundo la inicia en segundo plano
-  // y vuelve al instante; el cliente sondea EstadoGeneracionMundo.
+  // Generacion del mundo
   rpc GenerarMundo (GenerarMundoRequest) returns (common.Ack);
   rpc EstadoGeneracionMundo (EstadoGeneracionMundoRequest) returns (EstadoGeneracionMundoResponse);
 
@@ -98,6 +98,17 @@ message MatarBotRequest {
   uint64 bot_id  = 1;
   string cause   = 2;   // motivo, solo para el log
   uint64 tick_id = 3;
+}
+
+message ObtenerBotsEnRegionRequest {
+  common.Position min = 1;
+  common.Position max = 2;
+}
+
+message ObtenerBotsEnRegionResponse {
+  bool                        ok    = 1;
+  string                      error = 2;
+  repeated common.BotSnapshot bots  = 3;
 }
 
 message GlobalEvent {
@@ -190,10 +201,10 @@ message ActualizarCeldasRequest {
 // Un movimiento externo que Logica_Mundo NO aceptó (slot de destino ya
 // ocupado). Gestor_Mundo lo usa para no migrar ese bot.
 message RechazoMovimiento {
-  uint64          id_elemento  = 1;
+  uint64 id_elemento = 1;
   // true: no cupo ni en destino ni en origen y el elemento se eliminó
   // (caso residual); pos_devuelta no tiene sentido.
-  bool            eliminado    = 2;
+  bool eliminado = 2;
   // Posición de origen a la que volvió el elemento (si eliminado = false).
   common.Position pos_devuelta = 3;
 }

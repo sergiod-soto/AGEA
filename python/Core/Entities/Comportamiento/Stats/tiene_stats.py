@@ -44,12 +44,12 @@ class Tiene_Stats(Comportamiento):
     def listar_stats(self) -> dict:
         return dict(self._stats)
 
-    def serialize_stats(self) -> dict:
+    def serializar_stats(self) -> dict:
         """Hook de Comportamiento.serializar(): expone el ESTADO actual
         de cada stat, no la lista de instancias iniciales recibida."""
         return {nombre: stat.valor for nombre, stat in self._stats.items()}
 
-    def deserialize_stats(self, value: dict) -> None:
+    def deserializar_stats(self, value: dict) -> None:
         """
         FIX: hook simétrico de serialize_stats(), que antes no existía.
 

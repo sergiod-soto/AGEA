@@ -1,4 +1,4 @@
-# Gestores/Mundo/Sector/sector_servicer.py
+# Infraestructura/Gestores/Mundo/Sector/sector_servicer.py
 import asyncio
 import logging
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
@@ -18,7 +18,6 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
         # Las operaciones de FASE 0 pueden llegar en paralelo
         self._fase0_lock = asyncio.Lock()
 
-    # ----- añadido: faltaba en el servicer, RPC declarado en el .proto -----
     async def Shutdown(self, request, context):
         return await self._dispatch["Shutdown"].handle(self._sector, request, context)
 
@@ -39,16 +38,12 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
                 self._sector, request, context
             )
 
-    # NUEVO -- sistema atmosférico. Mismo lock que SetGhostZone: es
-    # otra llamada de Fase 0 y puede llegar en paralelo con las demás.
     async def SetAtmosphereGhostZone(self, request, context):
         async with self._fase0_lock:
             return await self._dispatch["SetAtmosphereGhostZone"].handle(
                 self._sector, request, context
             )
 
-    # NUEVO -- sistema atmosférico. También Fase 0, mismo lock por el
-    # mismo motivo (puede llegar solapada con SetGhostZone/SetSounds).
     async def SetGlobalCycles(self, request, context):
         async with self._fase0_lock:
             return await self._dispatch["SetGlobalCycles"].handle(

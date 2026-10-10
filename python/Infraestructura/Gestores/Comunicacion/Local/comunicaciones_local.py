@@ -110,13 +110,11 @@ class ComunicacionesLocal:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-        modo: str,
     ) -> "logica_pb.ConsultarRepresentacionResponse":
         req = logica_pb.ConsultarRepresentacionRequest(
             min=common_pb.Position(x=min_pos[0], y=min_pos[1]),
             max=common_pb.Position(x=max_pos[0], y=max_pos[1]),
             incluir=incluir,
-            modo=modo,
         )
         payload = await self._ejecutar(
             bridge_pb.LOGICA_MUNDO, "ConsultarRepresentacion", req
@@ -406,7 +404,6 @@ class ComunicacionesLocal:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-        modo: str,
     ) -> tuple[bool, str]:
         """
         Llamado por el master para fijar qué región/filtro debe verse.
@@ -418,7 +415,6 @@ class ComunicacionesLocal:
             min=common_pb.Position(x=min_pos[0], y=min_pos[1]),
             max=common_pb.Position(x=max_pos[0], y=max_pos[1]),
             incluir=incluir,
-            modo=modo,
         )
         try:
             resp = await self._stub.ActualizarFoco(req, timeout=self._timeout)

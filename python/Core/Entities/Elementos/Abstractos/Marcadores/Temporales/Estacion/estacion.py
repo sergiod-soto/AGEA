@@ -1,7 +1,5 @@
 # Core/Entities/Elementos/Abstractos/Marcadores/Temporales/Estacion/estacion.py
 
-from numpy import uint64
-
 from Config.settings import ID_ESTACION
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.marcador_temporal import (
     Marcador_Temporal,
@@ -23,10 +21,10 @@ class Estacion(Marcador_Temporal):
     IMPORTANTE: esta clasificación es GLOBAL y usa una convención de
     hemisferio fija en todo el mapa -- NO la usa la radiación real de
     cada celda de atmósfera (esa se calcula por latitud+declinación en
-    sistema_atmosferico.py, que sí es correcta por hemisferio). 
-    Esto es solo una etiqueta para otros sistemas (vegetación, eventos...) 
-    que necesiten saber "en qué estación estamos" de forma simple. 
-    Si alguno de esos sistemas resulta necesitar la versión 
+    sistema_atmosferico.py, que sí es correcta por hemisferio).
+    Esto es solo una etiqueta para otros sistemas (vegetación, eventos...)
+    que necesiten saber "en qué estación estamos" de forma simple.
+    Si alguno de esos sistemas resulta necesitar la versión
     correcta por hemisferio, esto habrá que revisarlo entonces.
 
     Requiere que los 3 bugs señalados en reloj.py estén corregidos

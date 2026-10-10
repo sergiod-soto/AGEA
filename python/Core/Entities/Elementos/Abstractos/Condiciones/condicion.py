@@ -35,14 +35,12 @@ class Condicion(Elemento_Abstracto):
 
     def __init__(
         self,
-        modo: "Condicion.Modo" = None,
         evento: str = None,
         nombre: str = None,
         id_elemento=None,
         **kwargs,
     ):
         super().__init__(tipo=type(self), id_elemento=id_elemento, **kwargs)
-        self.modo = modo or Condicion.Modo.LOCAL
         self.activa: bool = False
         self.nombre = nombre
 

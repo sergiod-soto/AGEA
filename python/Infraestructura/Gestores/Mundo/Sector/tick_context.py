@@ -5,30 +5,31 @@ de un Sector.
 
 Dos responsabilidades, deliberadamente separadas:
 
-  1. LECTURA — get_celda()/en_region_propia(). Siempre devuelven el estado
-     con el que empezó el tick (instantánea recibida en el delta de entrada
-     + ghost zone de los vecinos), nunca el resultado de una mutación ya
-     pedida por otro elemento en este mismo tick. Es una decisión de diseño
-     explícita: prioriza determinismo y simplicidad (el resultado de un
-     tick no depende del orden en que se computan los elementos dentro del
-     sector) por encima de permitir "ver" cambios a medias dentro del tick.
+    1. LECTURA — get_celda()/en_region_propia(). Siempre devuelven el estado
+        con el que empezó el tick (instantánea recibida en el delta de entrada
+        + ghost zone de los vecinos), nunca el resultado de una mutación ya
+        pedida por otro elemento en este mismo tick. Es una decisión de diseño
+        explícita: prioriza determinismo y simplicidad (el resultado de un
+        tick no depende del orden en que se computan los elementos dentro del
+        sector) por encima de permitir "ver" cambios a medias dentro del tick.
 
-  2. ESCRITURA — guardar_elemento()/eliminar_elemento()/mover_elemento().
-     No aplican nada: acumulan la petición en una lista. Sector, al
-     terminar de ejecutar tick() de todos sus elementos, usa
-     obtener_mutaciones() para construir el TickDelta que manda a
-     Logica_Mundo — quien es el único que aplica los cambios de verdad
-     sobre el estado real del mundo (_gold_cells / _elements).
+    2. ESCRITURA — guardar_elemento()/eliminar_elemento()/mover_elemento().
+        No aplican nada: acumulan la petición en una lista. Sector, al
+        terminar de ejecutar tick() de todos sus elementos, usa
+        obtener_mutaciones() y las resuelve él mismo sobre su copia de
+        trabajo (Sector._resolver_mutaciones). Los cambios resultantes viajan
+        a Logica_Mundo como changed_cells.
 
-Por qué escritura diferida y no directa:
-  Sector no tiene el estado real del mundo, solo una copia de trabajo para
-  este tick (sin persistencia propia). Escribir "directamente" no tendría
-  dónde persistir el cambio más allá del propio tick.
+
+Por qué escritura diferida: si tick() aplicase los cambios al momento, el
+resultado dependería del orden en que se computan los elementos.
 """
 
 from typing import Any, Optional
 
-from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import pos_terreno_a_atmosfera
+from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
+    pos_terreno_a_atmosfera,
+)
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
@@ -48,7 +49,7 @@ class TickContext:
         x1: int,
         y1: int,
         atmosfera=None,  # CeldaAtmosferaStore propio del Sector
-        ghost_atmosfera: dict = None,
+        ghost_atmosfera: Optional[dict] = None,
         escala_atmosfera: int = 1,
         tick_id: int = 0,
     ):
@@ -83,7 +84,8 @@ class TickContext:
         Devuelve la celda VIVA (no una copia): en compute_tick, tick() de
         los elementos corre ANTES de _avanzar_atmosfera, así que esto ya
         es consistente con leer "estado de inicio de tick" sin necesidad
-        de congelar nada. No mutar lo que devuelve este método.
+        de congelar nada. Solo para LECTURA desde tick() de los elementos. 
+        Las cachés de la celda las mantiene únicamente Sector.
 
         None si la posición no está en la malla propia del Sector.
 
@@ -102,7 +104,9 @@ class TickContext:
         pos_atmosfera = pos_terreno_a_atmosfera(x, y, self._escala_atmosfera)
         if self._atmosfera is None:
             return None
-        return self._atmosfera.get(*pos_atmosfera)
+        return self._atmosfera.get(
+            *pos_terreno_a_atmosfera(x, y, self._escala_atmosfera)
+        )
 
     def celdas_en_radio(self, x: int, y: int, radio: int) -> list:
         """

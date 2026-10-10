@@ -1,51 +1,15 @@
-# Core/Entities/Elemento/elemento.py
+# Core/Entities/Elementos/elemento.py
 
 from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
-from numpy import uint64
-from Core.Entities.Comportamiento.comportamiento import Comportamiento, NO_SERIALIZAR
-from Core.Entities.entity import Modos
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 if TYPE_CHECKING:
     from Core.Entities.Mundo.mundo import Mundo
 
 
 class Elemento(ABC, Comportamiento):
-
-    class Flags:
-        """
-        Registro de los nombres de flag reconocidos por el sistema.
-        Cada nombre es un atributo de CLASE (no de instancia -- ver
-        tiene_flag) que un tipo hoja (Piedra, Arbol...) puede fijar a
-        True. El propio nombre de la flag es también el nombre del
-        atributo que se busca con getattr, para no mantener dos mapas
-        distintos (nombre de flag <-> nombre de atributo).
-        """
-
-        # Marca elementos cuya resistencia_viento no cambia dentro de
-        # un tick normal (solo por transformación discreta, igual que
-        # Suelo)
-        RESISTENCIA_VIENTO_CACHEABLE = "resistencia_viento_cacheable"
-
-    # Conjunto de flags que esta categoría "contiene" -- es decir, que
-    # tiene sentido preguntar sobre un elemento de esta categoría. Vacío
-    # en la base: Elemento en sí no declara ninguna flag por defecto.
-    FLAGS_DISPONIBLES: frozenset[str] = frozenset()
-
-    @classmethod
-    def tiene_flag(cls, nombre: str) -> bool:
-        """
-        True solo si 'nombre' está en FLAGS_DISPONIBLES de esta clase
-        (o heredado) Y el tipo concreto la fija a True como atributo de
-        clase. Preguntar por una flag que esta categoría no contiene, o
-        que no está activada, devuelve False -- nunca lanza error
-        (decisión: versión b, default False).
-        """
-        if nombre not in cls.FLAGS_DISPONIBLES:
-            return False
-        return bool(getattr(cls, nombre, False))
-
     """
     Clase base de las cosas que son un elemento, ya sea simple, complejo o abstracto.
 
@@ -53,11 +17,36 @@ class Elemento(ABC, Comportamiento):
     pueden interactuar entre ellos en funcion de su presencia en las proximidades
     """
 
+    class Flags:
+        """
+        Registro de los nombres de flag reconocidos por el sistema.
+        Cada nombre es un atributo de CLASE que un tipo hoja puede fijar
+        a True; el propio nombre es el atributo que se busca con getattr.
+        """
+
+        # Marca elementos cuya resistencia_viento no cambia dentro de
+        # un tick normal (solo por transformación discreta, igual que Suelo)
+        RESISTENCIA_VIENTO_CACHEABLE = "resistencia_viento_cacheable"
+
+    # Flags que esta categoría "contiene". Vacío en la base.
+    FLAGS_DISPONIBLES: frozenset[str] = frozenset()
+
+    @classmethod
+    def tiene_flag(cls, nombre: str) -> bool:
+        """
+        True solo si 'nombre' está en FLAGS_DISPONIBLES (o heredado) Y el
+        tipo concreto la fija a True. Preguntar por una flag no contenida
+        devuelve False, nunca lanza error.
+        """
+        if nombre not in cls.FLAGS_DISPONIBLES:
+            return False
+        return bool(getattr(cls, nombre, False))
+
     def __init__(
         self,
         tipo: type,
         capa: int,
-        id_elemento: uint64,
+        id_elemento: int,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -79,125 +68,77 @@ class Elemento(ABC, Comportamiento):
             and "__init__" in c.__dict__
         ]
 
-    def _atributos_de_comportamientos(self) -> set[str]:
-        """
-        Unión de los nombres de atributo que "pertenecen" a cada
-        comportamiento presente en este elemento — de su __init__ propio
-        o de _campos_internos (ver Comportamiento._campos_serializables).
-        """
-        return {
-            nombre
-            for c in self._get_comportamientos()
-            for nombre in c._campos_serializables()
-        }
-
     @classmethod
     def _es_comportamiento_real(cls) -> bool:
         return False
 
-    # --- Campos especiales de Elemento (ver README de serialización) ---
-    # 'tipo' es la propia clase Python de self: no es JSON-serializable y
-    # además es redundante con type(self)/'__clase__'. Se excluye aquí y se
-    # restaura en deserializar() a partir de la clase real reconstruida.
-    def serialize_tipo(self):
-        return NO_SERIALIZAR
+    # ------------------------------------------------------------------
+    #  serializar / representar / deserializar
+    # ------------------------------------------------------------------
+    # Elemento va ANTES que los comportamientos en el MRO, así que su
+    # super() recorre primero toda la cadena de comportamientos y vuelve
+    # aquí con "comportamientos" ya relleno; Elemento solo añade lo suyo.
+    #
+    # NO se serializan 'tipo' (es type(self), redundante con '__clase__')
+    # ni 'mundo' (arrastraría el grafo entero): se restauran en
+    # deserializar().
 
-    # 'mundo' es la referencia (opcional) al Mundo donde vive el elemento.
-    # Serializar el elemento NUNCA debe arrastrar el grafo completo del
-    # mundo con él, así que se excluye igual que 'tipo'. Se restaura a
-    # None en deserializar(): quien reinserte el elemento en un mundo es
-    # responsable de volver a asignarlo.
-    def serialize_mundo(self):
-        return NO_SERIALIZAR
-
-    def _serializar_cadena_elemento(self, *, modo: Modos) -> dict:
-
-        atributos_comportamientos = self._atributos_de_comportamientos()
-        resultado = {}
-        for k, v in vars(self).items():
-            if k.startswith("_") or k in atributos_comportamientos:
-                continue
-            especifico = getattr(self, f"serialize_{k}_{modo.value}", None)
-            generico = getattr(self, f"serialize_{k}", None)
-            serializador = especifico or generico
-            valor = serializador() if serializador else v
-            if valor is NO_SERIALIZAR:
-                continue
-            resultado[k] = valor
-        return resultado
-
-    def serialize_id_elemento(self):
+    def serializar_id_elemento(self):
         return int(self.id_elemento)
 
-    def serializar(self, cls: type | None = None, *, modo: Modos) -> dict:
-        """
-        Serialización PLANA para snapshot/transporte (save_snapshot,
-        _id_a_slot_bytes, crear_elemento...). Es la que necesita
-        '__clase__' en el nivel superior: reconstruir_elemento() lo lee
-        de ahí para saber qué clase instanciar -- si falta, revienta con
-        "Clase de elemento desconocida" (ver sesión anterior).
+    def serializar(self) -> dict:
+        datos = super().serializar()
 
-        cls : None cuando se serializa el ELEMENTO ENTERO. Si se pasa
-              una clase de comportamiento, viene de
-              Comportamiento.get_comportamiento() -- delega en
-              Comportamiento.serializar para devolver solo los campos de
-              ESE comportamiento, no el elemento completo.
-
-        modo: "guardado" | "transporte" | "representacion" -- ver
-              docstring de serializar_cadena_elemento(). NOTA: pese a
-              aceptar "representacion" como valor de modo, este método
-              NO es el que usa Unity -- Unity pasa por representacion(),
-              que construye "elemento" a mano con un formato ANIDADO
-              distinto (ver más abajo). Si algún día se llama
-              serializar(modo="representacion") por error en vez de
-              representacion(), el resultado sería plano, no el
-              esquema anidado que espera Unity.
-        """
-        if cls is not None:
-            return Comportamiento.serializar(self, cls, modo=modo)
-
-        return {
-            "__clase__": type(self).__name__,
-            **self._serializar_cadena_elemento(modo=modo),
-            "comportamientos": {
-                c.__name__: c.serializar(self, c, modo=modo)
-                for c in self._get_comportamientos()
-            },
-        }
-
-    def serializar_elemento(self, cls: type | None = None) -> dict:
-
-        return {
-            "__clase__": type(self).__name__,
-            "entidad": "elemento",
-            "capa": self.capa,
-            "id_elemento": self.serialize_id_elemento(),
-        }
-
-    def deserializar(self, data: dict, mundo: Mundo | None):
-        # Deserializa atributos propios del elemento
-        atributos_comportamientos = self._atributos_de_comportamientos()
-
-        for k, v in data.items():
-            if k in ("__clase__", "comportamientos") or k in atributos_comportamientos:
+        # GUARDA: reconstruir_elemento() QUITA los comportamientos cuya
+        # sección no aparece en el snapshot (y quitar una categoría
+        # arrastraría a sus hijos). Por eso toda clase real debe tener
+        # sección:
+        #  - sin datos propios (categorías: Fisico, Informativo...) -> {}
+        #  - con datos y sin sección -> NotImplementedError, mejor que
+        #    perder datos en silencio.
+        secciones = datos["comportamientos"]
+        for c in self._get_comportamientos():
+            if c.__name__ in secciones:
                 continue
-            deserializador = getattr(self, f"deserialize_{k}", None)
-            if deserializador:
-                deserializador(v)
-            else:
-                setattr(self, k, v)
+            if c._campos_serializables():
+                raise NotImplementedError(
+                    f"{c.__name__} tiene datos ({sorted(c._campos_serializables())}) "
+                    "pero no implementa serializar()."
+                )
+            secciones[c.__name__] = {}
 
-        # Restaura los campos excluidos de la serialización (ver
-        # serialize_tipo/serialize_mundo más arriba). No vienen en 'data':
-        # hay que reponerlos explícitamente o el objeto reconstruido se
-        # quedaría sin estos atributos (AttributeError al primer uso).
+        return {
+            "__clase__": type(self).__name__,  # lo lee reconstruir_elemento()
+            "id_elemento": self.serializar_id_elemento(),
+            "capa": self.capa,
+            **datos,
+        }
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["elemento"].update(
+                {
+                    "__clase__": type(self).__name__,
+                    "entidad": "elemento",
+                    "capa": self.capa,
+                    "id_elemento": self.serializar_id_elemento(),
+                }
+            )
+        return datos
+
+    def deserializar(self, data: dict, mundo: Mundo | None = None) -> None:
+        super().deserializar(data, mundo)
+        self.capa = data["capa"]
+        self.id_elemento = data["id_elemento"]
+        # Campos excluidos de la serialización: se reponen aquí o el objeto
+        # reconstruido no los tendría (AttributeError al primer uso).
         self.tipo = type(self)
         self.mundo = mundo
-
-        # Delega a cada comportamiento su deserialización
-        for c in self._get_comportamientos():
-            if c.__name__ in data["comportamientos"]:
-                c.deserializar(self, data["comportamientos"][c.__name__])
+        # 'excluyente_en_celda' no se serializa: se repone con el valor que
+        # le da Elemento.__init__. Si algún tipo concreto lo pone a True en
+        # su __init__, deberá volver a ponerlo en su propio deserializar().
+        self.excluyente_en_celda = False
 
     def eliminar(self):
 
@@ -214,27 +155,14 @@ class Elemento(ABC, Comportamiento):
     @classmethod
     def obtener_requisitos(cls) -> tuple[dict[str, type], set[str]]:
         """
-        Retorna:
-            (
-                {
-                    "nombre_atributo": tipo,
-                    ...
-                },
-                {
-                    "metodo1",
-                    "metodo2",
-                    ...
-                }
-            )
+        Retorna ({"nombre_atributo": tipo, ...}, {"metodo1", ...}),
+        recorriendo el MRO de la base a la derivada para que las hijas
+        puedan sobrescribir requisitos.
         """
-
         requiere = set()
         abstractos = set()
 
-        # Desde la clase más base hasta la más derivada.
-        # Así las clases hijas pueden sobrescribir requisitos.
         for base in reversed(cls.__mro__):
-
             requiere.update(getattr(base, "REQUIERE", set()))
             abstractos.update(getattr(base, "ABSTRACTOS", set()))
 
@@ -243,20 +171,9 @@ class Elemento(ABC, Comportamiento):
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
         """
-        Nombres de los atributos que hacen falta para construir esta
-        clase desde fuera (ej. consola de administración): son los
-        parámetros del __init__ SIN valor por defecto y que además son
-        representables como texto simple (int, float, str, tuplas de
-        primitivos...). No incluye 'id_elemento' (lo asigna el propio
-        sistema vía asignar_id(), nunca lo pide el usuario) ni 'mundo'
-        ni 'tipo' (los gestiona Elemento internamente).
-
-        Cada tipo concreto que quiera ser creable desde consola DEBE
-        sobrescribir este método. Se deja sin implementar a propósito
-        (en vez de devolver [] por defecto) para que crear un elemento
-        de un tipo que no lo declara falle con un error explícito en
-        vez de, por ejemplo, abrir un cuestionario vacío o crear el
-        objeto a medias.
+        Atributos necesarios para construir esta clase desde fuera
+        (consola). Cada tipo concreto creable DEBE sobrescribirlo; se
+        deja sin implementar a propósito para que falle alto.
         """
         raise NotImplementedError(
             f"{cls.__name__} no implementa campos_para_creacion(); no se puede "
@@ -265,16 +182,12 @@ class Elemento(ABC, Comportamiento):
 
     def aplicar_patch(self, patch: dict) -> None:
         """
-        Aplica un patch PARCIAL (solo los campos que cambian, a diferencia
-        de deserializar() que espera el elemento completo con 'comportamientos'
-        y reasigna 'mundo'). Usa el mismo mecanismo de hooks deserialize_X
-        que ya existe para no perder conversiones de formato -- ver
-        Elemento_Simple.deserializar_casilla, que convierte {"x":,"y":} a
-        tupla: un setattr directo dejaría 'casilla' como dict, rompiendo
-        cualquier código que luego haga x, y = elemento.casilla.
+        Aplica un patch PARCIAL usando los hooks deserializar_<campo>
+        (p.ej. deserializar_casilla convierte {"x","y"} a tupla; un
+        setattr directo dejaría 'casilla' como dict).
         """
         for atributo, valor in patch.items():
-            deserializador = getattr(self, f"deserialize_{atributo}", None)
+            deserializador = getattr(self, f"deserializar_{atributo}", None)
             if deserializador:
                 deserializador(valor)
             else:
@@ -283,11 +196,8 @@ class Elemento(ABC, Comportamiento):
     @classmethod
     def _comportamiento_de_campo(cls, nombre: str):
         """
-        Busca qué Comportamiento del MRO de esta clase declara 'nombre'
-        entre sus _campos_serializables() -- así la consola sabe a quién
-        preguntarle la ayuda de un campo concreto de
-        campos_para_creacion() sin que Piedra tenga que decírselo ella
-        misma (ver Consola/consola.py::_mostrar_ayuda).
+        Qué Comportamiento del MRO declara 'nombre' entre sus
+        _campos_serializables() (lo usa la consola para la ayuda).
         """
         for c in cls.__mro__:
             if (
@@ -305,11 +215,4 @@ class Elemento(ABC, Comportamiento):
         raise NotImplementedError(
             f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
             "de ayuda definido para este tipo de elemento todavía."
-        )
-
-    def representacion(self, incluir: list[str]) -> dict:
-
-        raise NotImplementedError(
-            f"{type(self).__name__} no implementa representacion(); "
-            "cada tipo concreto debe definir explícitamente qué manda a Unity."
         )

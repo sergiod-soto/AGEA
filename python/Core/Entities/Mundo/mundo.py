@@ -1,4 +1,4 @@
-# Core/Mundo/mundo.py
+# Core/Entities/Mundo/mundo.py
 """
 Este Mundo es El Mundo.
 Es el mapa que es dividido en chunks.
@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from numpy import uint64
 
 import Config.settings as config
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import (
@@ -50,7 +49,7 @@ class Mundo:
         self.bus_eventos = BusEventos()
 
         # id_elemento -> objeto real. Antes Logica_Mundo._elements.
-        self.elementos: dict[uint64, Any] = {}
+        self.elementos: dict[int, Any] = {}
 
         # posición -> Celda (ids de suelo/bot/resto en esa posición).
         # Antes Logica_Mundo._gold_cells.
@@ -63,7 +62,7 @@ class Mundo:
         # id_elemento -> posición. Único índice de posición por id --
         # sustituye a Logica_Mundo._bot_positions (que solo indexaba
         # bots, y por su stat "id" externo, no por id_elemento).
-        self.ids: dict[uint64, tuple[int, int]] = {}
+        self.ids: dict[int, tuple[int, int]] = {}
 
         # bot_id (stat "id" del Bot, externo -- lo usan los scripts y la
         # API de matar/eliminar avatar) -> id_elemento (interno, la clave
@@ -73,7 +72,7 @@ class Mundo:
         # y no hay forma de unificar eso sin cambiar esas dos APIs.
         # Deliberadamente pequeña (solo bots), no un segundo mapa de
         # posiciones.
-        self.bots: dict[int, uint64] = {}
+        self.bots: dict[int, int] = {}
 
         # Cuántas celdas de suelo (por lado) cubre una celda de
         # atmósfera. Con escala 2, una Celda_Atmosfera engloba un bloque
@@ -94,7 +93,7 @@ class Mundo:
 
     def crear_elemento(
         self,
-        eid: uint64,
+        eid: int,
         pos: tuple[int, int],
         tipo_slot: str,
         elemento: Any,
@@ -110,7 +109,7 @@ class Mundo:
         if bot_id is not None:
             self.bots[bot_id] = eid
 
-    def eliminar_elemento(self, eid: uint64, bot_id: Optional[int] = None) -> bool:
+    def eliminar_elemento(self, eid: int, bot_id: Optional[int] = None) -> bool:
         """Quita 'eid' de la malla, del registro de objetos y del índice
         de posición. 'bot_id' se pasa si se conoce, para limpiar también
         la tabla bot_id -> id_elemento. False si 'eid' no estaba."""
@@ -129,7 +128,7 @@ class Mundo:
             self.bots.pop(bot_id, None)
         return True
 
-    def mover_elemento(self, eid: uint64, pos_destino: tuple[int, int]) -> bool:
+    def mover_elemento(self, eid: int, pos_destino: tuple[int, int]) -> bool:
         """Mueve 'eid' a 'pos_destino', conservando su slot. No hace
         falta tocar 'bots': esa tabla apunta a id_elemento, no a
         posición, así que sigue siendo válida tras el movimiento."""
@@ -153,7 +152,7 @@ class Mundo:
         return True
 
     def colocar_elemento(
-        self, eid: uint64, pos: tuple[int, int], tipo_slot: str
+        self, eid: int, pos: tuple[int, int], tipo_slot: str
     ) -> bool:
         """
         Coloca 'eid' en 'pos' FUSIONÁNDOLO con lo que ya haya (nunca
@@ -179,23 +178,23 @@ class Mundo:
 
     # ---- Consultas ----
 
-    def obtener_elemento(self, eid: uint64) -> Optional[Any]:
+    def obtener_elemento(self, eid: int) -> Optional[Any]:
         return self.elementos.get(eid)
 
-    def obtener_posicion(self, eid: uint64) -> Optional[tuple[int, int]]:
+    def obtener_posicion(self, eid: int) -> Optional[tuple[int, int]]:
         return self.ids.get(eid)
 
     def obtener_celda(self, pos: tuple[int, int]) -> Optional[Celda]:
         return self.malla_terreno.get(pos)
 
-    def contiene(self, pos: tuple[int, int], eid: uint64) -> bool:
+    def contiene(self, pos: tuple[int, int], eid: int) -> bool:
         celda = self.malla_terreno.get(pos)
         return celda is not None and celda.contiene(eid)
 
-    def id_elemento_de_bot(self, bot_id: int) -> Optional[uint64]:
+    def id_elemento_de_bot(self, bot_id: int) -> Optional[int]:
         return self.bots.get(bot_id)
 
-    def registrar_elemento_reconstruido(self, eid: uint64, elemento: Any) -> None:
+    def registrar_elemento_reconstruido(self, eid: int, elemento: Any) -> None:
         """Guarda un elemento ya deserializado sin tocar malla ni
         posición -- lo usa Logica_Mundo._slot_bytes_a_id, que solo
         necesita tener el objeto disponible por id, todavía sin saber en
@@ -255,7 +254,7 @@ class Mundo:
             resultado.append(((x, y), celda))
         return resultado
 
-    def actualizar_celda(self, pos: tuple[int, int], celda: Celda) -> set[uint64]:
+    def actualizar_celda(self, pos: tuple[int, int], celda: Celda) -> set[int]:
         """
         Reemplaza la celda completa en 'pos' (sincronización con otro
         proceso/sector). Sincroniza 'ids' para los elementos de la celda
@@ -291,7 +290,7 @@ class Mundo:
 
         return salientes
 
-    def olvidar_elemento(self, eid: uint64, bot_id: Optional[int] = None) -> None:
+    def olvidar_elemento(self, eid: int, bot_id: Optional[int] = None) -> None:
         """Borra el objeto y su entrada en 'bots' SIN tocar malla ni 'ids'
         (ya sincronizados por actualizar_celda). Para elementos eliminados
         por un Sector, cuya baja llega como "la celda ya no lo contiene"."""

@@ -10,7 +10,6 @@ import os
 import time
 from typing import Optional
 
-from numpy import uint64
 
 from Config.settings import UMBRAL_HV_CAIDO_SEGUNDOS
 from Infraestructura.Gestores.tipos_comunes import (
@@ -43,7 +42,7 @@ class Gestor_Bots:
         self._lock = asyncio.Lock()
         self._hypervisors: dict[str, HypervisorInfo] = {}
         self._hypervisor_clients: dict[str, object] = {}
-        self._bots: dict[uint64, BotStats] = {}
+        self._bots: dict[int, BotStats] = {}
         self._bot_counter: int = 0
         self.logica_client = logica_client
 

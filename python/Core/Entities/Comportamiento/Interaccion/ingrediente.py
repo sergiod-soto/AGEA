@@ -23,6 +23,21 @@ class Ingrediente(Interaccion):
         super().__init__(**kwargs)
         self.recetas_de: list[Receta] = recetas_de
 
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos["comportamientos"][__class__.__name__] = {"ingrediente": {}}
+        return datos
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        """Informacion pasada a Unity para representar el Elemento."""
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["comportamientos"][__class__.__name__] = {"ingrediente": {}}
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+
     def incluir_en_receta(self, receta: Receta) -> None:
         if receta.nombre in self.recetas_de:
             return

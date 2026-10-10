@@ -23,6 +23,21 @@ class Crafteable(Interaccion):
         for ingrediente in self.receta.ingredientes:
             ingrediente.incluir_en_receta(self.receta)
 
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos["comportamientos"][__class__.__name__] = {"crafteable": {}}
+        return datos
+
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        """Informacion pasada a Unity para representar el Elemento."""
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["comportamientos"][__class__.__name__] = {"crafteable": {}}
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
         return [

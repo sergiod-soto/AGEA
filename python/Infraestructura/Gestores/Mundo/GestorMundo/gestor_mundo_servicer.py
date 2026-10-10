@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo_servicer.py
+# Infraestructura/Gestores/Mundo/GestorMundo/gestor_mundo_servicer.py
 
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (

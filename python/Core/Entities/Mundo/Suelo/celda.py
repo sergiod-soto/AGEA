@@ -7,7 +7,7 @@ Tres slots, igual que usaba Logica_Mundo:
 - bot:   como mucho un elemento (id) de tipo bot.
 - resto: cualquier cantidad de elementos (ids) de cualquier otro tipo.
 
-Todo se guarda por id (uint64), nunca por objeto: el objeto real vive en
+Todo se guarda por id (int), nunca por objeto: el objeto real vive en
 Mundo.elementos. Es intencional -- una única fuente de verdad para el
 estado del elemento, y hace trivial serializar la celda (solo ids).
 """
@@ -17,16 +17,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from numpy import uint64
 
 
 @dataclass
 class Celda:
-    suelo: Optional[uint64] = None
-    bot: Optional[uint64] = None
-    resto: list[uint64] = field(default_factory=list)
+    suelo: int = None
+    bot: Optional[int] = None
+    resto: list[int] = field(default_factory=list)
 
-    def put_elemento(self, eid: uint64, tipo_slot: str) -> None:
+    def put_elemento(self, eid: int, tipo_slot: str) -> None:
         """
         Coloca 'eid' en el slot indicado ('suelo', 'bot', o cualquier otro
         valor -> 'resto'). Sobrescribe sin comprobar ocupación previa.
@@ -38,7 +37,7 @@ class Celda:
         else:
             self.resto.append(eid)
 
-    def tipo_slot_de(self, eid: uint64) -> Optional[str]:
+    def tipo_slot_de(self, eid: int) -> Optional[str]:
         """En qué slot está 'eid' ('suelo'/'bot'/'resto'), o None si no
         está en esta celda."""
         if self.suelo == eid:
@@ -49,7 +48,7 @@ class Celda:
             return "resto"
         return None
 
-    def remove_elemento(self, eid: uint64) -> bool:
+    def remove_elemento(self, eid: int) -> bool:
         """Quita 'eid' de la celda, sea cual sea su slot. False si no
         estaba en ninguno."""
         tipo = self.tipo_slot_de(eid)
@@ -63,7 +62,7 @@ class Celda:
             return False
         return True
 
-    def contiene(self, eid: uint64) -> bool:
+    def contiene(self, eid: int) -> bool:
         return self.tipo_slot_de(eid) is not None
 
     def vacia(self) -> bool:

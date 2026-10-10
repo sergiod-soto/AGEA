@@ -68,7 +68,6 @@ class ComunicacionesRemoto:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-        modo: str,
     ) -> None:
         """
         Llamado por el servicer al recibir el RPC ActualizarFoco
@@ -77,7 +76,7 @@ class ComunicacionesRemoto:
         filtro usará el vigilante en el próximo tick, no bloquea ni
         llama a Logica_Mundo.
         """
-        self._foco.actualizar_foco(min_pos, max_pos, incluir, modo)
+        self._foco.actualizar_foco(min_pos, max_pos, incluir)
 
     def suscribirse_foco(self) -> AsyncIterator["pb.ActualizacionFoco"]:
         return self._foco.suscribirse()

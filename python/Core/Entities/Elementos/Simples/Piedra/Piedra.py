@@ -1,8 +1,5 @@
 # Core/Entities/Elementos/Simples/Piedra/piedra.py
 
-
-from numpy import uint64
-
 from Core.Entities.Comportamiento.Energetico.termico import Termico
 from Core.Entities.Comportamiento.Fisico.empujable import Empujable
 from Core.Entities.Comportamiento.Fisico.enterrable import Enterrable
@@ -55,9 +52,13 @@ comportamientos = Comportamiento.declarar_comportamientos(
 
 class Piedra(Elemento_Simple, comportamientos):
 
+    # serializar / representar / deserializar: NO se definen aquí. Piedra no
+    # tiene datos propios; la cadena super() cubre Elemento, Elemento_Simple
+    # y cada comportamiento de arriba (cada uno escribe su sección).
+
     def __init__(
         self,
-        id_elemento: uint64,
+        id_elemento: int,
         tamanho: int,
         casilla: tuple[int, int],
         capa: int,
@@ -198,7 +199,6 @@ class Piedra(Elemento_Simple, comportamientos):
             "\tcapa: int\n"
             "\tpeso: float\n"
             "\tcoste_empujar: float\n"
-            "\tcoste_empujar: float\n"
             "\tvolumen: float\n"
             "\trgb_base: tuple[int, int, int]\n"
             "\ttemperatura_propia: float\n"
@@ -207,21 +207,3 @@ class Piedra(Elemento_Simple, comportamientos):
             "\tdurabilidad_max_destruible: float = None\n"
             "\tdurabilidad_max_erosion=1 (a cambiar)\n"
         )
-
-    def representacion(self, modo, incluir: list[str] = None) -> dict:
-        if incluir == None:
-
-            serializacion = {
-                "elemento": self.serializar_elemento_simple(),
-                "comportamientos": {},
-            }
-
-            volumen = Volumen.representar_volumen(self)
-            sonoro = Sonoro.representar_sonoro(self)
-            color = Color.representar_color(self)
-
-            serializacion["comportamientos"].update(volumen)
-            serializacion["comportamientos"].update(sonoro)
-            serializacion["comportamientos"].update(color)
-
-            return serializacion

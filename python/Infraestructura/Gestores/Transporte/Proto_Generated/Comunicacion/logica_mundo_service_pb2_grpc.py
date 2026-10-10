@@ -109,6 +109,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionResponse.FromString,
                 _registered_method=True)
+        self.ObtenerBotsEnRegion = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ObtenerBotsEnRegion',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionResponse.FromString,
+                _registered_method=True)
         self.ActualizarCeldas = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ActualizarCeldas',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ActualizarCeldasRequest.SerializeToString,
@@ -274,6 +279,12 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ObtenerBotsEnRegion(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ActualizarCeldas(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -303,8 +314,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GenerarMundo(self, request, context):
-        """NUEVO -- generación del mundo. GenerarMundo la inicia en segundo plano
-        y vuelve al instante; el cliente sondea EstadoGeneracionMundo.
+        """Generacion del mundo
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -436,6 +446,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ObtenerCeldasEnRegion,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionResponse.SerializeToString,
+            ),
+            'ObtenerBotsEnRegion': grpc.unary_unary_rpc_method_handler(
+                    servicer.ObtenerBotsEnRegion,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionResponse.SerializeToString,
             ),
             'ActualizarCeldas': grpc.unary_unary_rpc_method_handler(
                     servicer.ActualizarCeldas,
@@ -890,6 +905,33 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/ObtenerCeldasEnRegion',
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionRequest.SerializeToString,
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerCeldasEnRegionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ObtenerBotsEnRegion(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/ObtenerBotsEnRegion',
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.ObtenerBotsEnRegionResponse.FromString,
             options,
             channel_credentials,
             insecure,

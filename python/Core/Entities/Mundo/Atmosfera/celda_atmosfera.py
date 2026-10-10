@@ -3,7 +3,6 @@
 from vectors import Vector2
 
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
-    INERCIA_TERMICA_AIRE,
     TemperaturaAtmosferica,
 )
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.presion import (
@@ -236,7 +235,11 @@ class Celda_Atmosfera:
 
     def _recalcular_resistencia_viento(self) -> None:
         self.bloqueo_total_viento = self._contador_bloqueo_total > 0
-        self.resistencia_viento = 1.0 - self._producto_paso_libre
+        # _producto_paso_libre se mantiene por multiplicación/división
+        # incremental y arrastra error de redondeo (puede quedar en
+        # 1.0000000001). Sin recorte, la resistencia saldría ligeramente
+        # negativa y el viento se amplificaría (1 - r > 1). Se recorta a [0, 1].
+        self.resistencia_viento = max(0.0, min(1.0, 1.0 - self._producto_paso_libre))
 
     # ------------------------------------------------------------------
     # Patch genérico

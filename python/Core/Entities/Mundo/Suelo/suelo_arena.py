@@ -1,6 +1,6 @@
 # Core/Entities/Mundo/Suelo/suelo_arena.py
 
-from Core.Entities.Comportamiento.Terreno.terreno_arenoso import Arenoso
+from Core.Entities.Comportamiento.Terreno.arenoso import Arenoso
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
 

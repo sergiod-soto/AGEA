@@ -105,8 +105,6 @@ async def test_crear_y_eliminar_elemento_roundtrip_via_grpc(cliente_logica_mundo
 async def test_resolver_accion_desconocida_via_grpc(cliente_logica_mundo):
     client, _ = cliente_logica_mundo
 
-    # FIX: bot_id es uint64 en el proto (ResolverAccionRequest.bot_id) —
-    # antes se pasaba un string de ejemplo ("bot_1").
     resultado = await client.resolver_accion(
         bot_id=1, action_type="no_existe", payload=b""
     )

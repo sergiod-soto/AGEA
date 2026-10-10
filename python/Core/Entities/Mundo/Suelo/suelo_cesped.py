@@ -1,6 +1,6 @@
 # Core/Entities/Mundo/Suelo/suelo_cesped.py
 
-from Core.Entities.Comportamiento.Terreno.terreno_cesped import Hervoso
+from Core.Entities.Comportamiento.Terreno.herboso import Hervoso
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
 

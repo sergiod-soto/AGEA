@@ -15,6 +15,5 @@ async def handle(logica, request, context):
         min_pos=(request.min.x, request.min.y),
         max_pos=(request.max.x, request.max.y),
         incluir=list(request.incluir),
-        modo=request.modo,
     )
     return pb.ConsultarRepresentacionResponse(ok=True, error="", datos=datos)

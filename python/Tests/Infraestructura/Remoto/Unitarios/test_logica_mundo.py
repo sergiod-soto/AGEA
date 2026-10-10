@@ -170,7 +170,6 @@ async def test_eliminar_elemento_desconocido_falla(logica: LogicaMundo):
 
 @pytest.mark.unit
 async def test_asignar_id_devuelve_int_y_crece(logica: LogicaMundo):
-    # Con numpy.uint64 + NumPy 1.x el contador acababa siendo float64.
     primero = await logica.asignar_id()
     segundo = await logica.asignar_id()
     assert isinstance(primero, int)

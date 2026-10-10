@@ -175,3 +175,8 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             return pb.ComandoConsolaResponse(ok=True, error="", payload=payload)
         except Exception as e:
             return pb.ComandoConsolaResponse(ok=False, error=str(e), payload=b"")
+
+    async def ObtenerBotsEnRegion(self, request, context):
+        return await self._dispatch["ObtenerBotsEnRegion"].handle(
+            self._logica, request, context
+        )

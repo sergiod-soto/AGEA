@@ -25,7 +25,6 @@ from Core.Entities.Elementos.registry import (
     construir_elemento as construir_desde_registro,
     reconstruir_elemento,
 )
-from Core.Entities.entity import Modos
 
 from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
     GestorBotsClientAsync,
@@ -95,8 +94,6 @@ class LogicaMundo:
         # sonido, eventos globales, ciclo de vida de bots y generación.
         self.mundo: Mundo = mundo or Mundo()
 
-        # int de Python, NO numpy.uint64: con NumPy 1.x, uint64 + int da
-        # float64 y los ids dejarían de ser enteros.
         self._id_counter: int = 100
 
         self._active_events: dict[str, GlobalEvent] = {}
@@ -156,7 +153,7 @@ class LogicaMundo:
         if elemento is None:
             logger.warning("_id_a_slot_bytes: elemento %s no encontrado.", eid)
             return b""
-        return json.dumps(elemento.serializar(modo=Modos.transporte)).encode()
+        return json.dumps(elemento.serializar()).encode()
 
     def _cell_a_celda(self, cell) -> Celda:
         return Celda(
@@ -316,7 +313,7 @@ class LogicaMundo:
 
         self._registrar_sonidos_de(elemento)
 
-        tipo_slot = elemento.tipo_slot()
+        tipo_slot = tipo_slot(elemento)
         bot_id = None
         if tipo_slot == "bot":
             bot_id = self._bot_id_de(elemento)
@@ -899,6 +896,23 @@ class LogicaMundo:
 
     # ---- Región / representación ----
 
+    async def obtener_bots_en_region(
+        self, min_pos: tuple[int, int], max_pos: tuple[int, int]
+    ) -> list[tuple[int, int, tuple[int, int]]]:
+        """[(bot_id, id_elemento, pos)] de los bots cuyo avatar cae en
+        [min_pos, max_pos). Logica es el gold de bots y posiciones
+        (mundo.bots + mundo.ids); el gestor lo usa para que Sector.load_state
+        reponga _bots y _elemento_a_bot tras cada LoadState."""
+        x0, y0 = min_pos
+        x1, y1 = max_pos
+        async with self._lock:
+            resultado = []
+            for bot_id, eid in self.mundo.bots.items():
+                pos = self.mundo.obtener_posicion(eid)
+                if pos is not None and x0 <= pos[0] < x1 and y0 <= pos[1] < y1:
+                    resultado.append((bot_id, eid, pos))
+            return resultado
+
     async def obtener_celdas_en_region(
         self,
         min_pos: tuple[int, int],
@@ -999,10 +1013,19 @@ class LogicaMundo:
         self,
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
-        incluir: list[str],
-        modo: str,
+        incluir: list[str] | None,
         tipos: list[str] | None = None,
     ) -> bytes:
+        """
+        Representación (lo que ve Unity) de todo lo que hay en el
+        rectángulo [min_pos, max_pos).
+
+        `incluir`: None = todo; [] = nada; si no, nombres de clase (de
+        Elemento o de comportamientos) a incluir. OJO: desde el proto un
+        campo 'repeated' sin enviar llega como [], así que el handler debe
+        convertirlo (list(request.incluir) or None) antes de llamar aquí.
+        El suelo ignora `incluir` a propósito (ver Suelo.representar).
+        """
         x0, y0 = min_pos
         x1, y1 = max_pos
 
@@ -1024,24 +1047,33 @@ class LogicaMundo:
                     if suelo_elemento is not None and (
                         tipos is None or type(suelo_elemento).__name__ in tipos
                     ):
-                        campos = suelo_elemento.representacion(modo, incluir)
+                        campos = self._representar(suelo_elemento, incluir)
                         if campos.get("elemento") or campos.get("comportamientos"):
-                            suelo_resultado.append({**campos})
+                            suelo_resultado.append(campos)
 
+                # celda.bot puede ser None: obtener_elemento(None) devuelve
+                # None y el 'continue' de abajo lo descarta.
                 for eid in (celda.bot, *celda.resto):
                     elemento: Elemento = self.mundo.obtener_elemento(eid)
                     if elemento is None:
                         continue
                     if tipos is not None and type(elemento).__name__ not in tipos:
                         continue
-                    campos = elemento.representacion(incluir)
+                    campos = self._representar(elemento, incluir)
+                    print(
+                        "DEBUG",
+                        type(elemento).__name__,
+                        "incluir=",
+                        incluir,
+                        "campos=",
+                        campos,
+                    )  # <-- AQUÍ
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
-                    elementos.append({**campos})
+                    elementos.append(campos)
 
             return json.dumps(
                 {
-                    "modo": modo,
                     "elementos": elementos,
                     "suelo": suelo_resultado,
                     "atmosfera": atmosfera,
@@ -1060,11 +1092,12 @@ class LogicaMundo:
                 return False, f"Elemento {element_id} no encontrado.", b""
 
             if tipo_datos == "serializacion":
-                datos = elemento.serializar(modo=Modos.guardado)
+                # Siempre completo: serializar() no recibe `incluir`.
+                datos = elemento.serializar()
             elif tipo_datos == "representacion":
-                datos = elemento.representacion(
-                    modo=Modos.transporte, incluir=incluir or []
-                )
+                # Antes: incluir or [] (None -> "nada"). Ahora se pasa tal
+                # cual: None = todo.
+                datos = self._representar(elemento, incluir)
             else:
                 return (
                     False,
@@ -1095,7 +1128,7 @@ class LogicaMundo:
                     for (x, y), celda in self.mundo.malla_terreno.items()
                 },
                 "elements": {
-                    str(eid): elemento.serializar(modo=Modos.guardado)
+                    str(eid): elemento.serializar()
                     for eid, elemento in self.mundo.elementos.items()
                 },
                 # Se deriva de ids+bots -- no existe un dict propio de
@@ -1215,3 +1248,17 @@ class LogicaMundo:
 
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
         return True, ""
+
+    @staticmethod
+    def _representar(elemento, incluir: list[str] | None) -> dict:
+        """Llama a elemento.representar() y falla alto si algún eslabón de
+        la cadena super() la cortó (devuelve None en vez del dict). Sin
+        esto el error sale lejos, como un AttributeError sobre NoneType, y
+        no dice qué clase es la culpable."""
+        campos = elemento.representar(incluir)
+        if campos is None:
+            raise TypeError(
+                f"{type(elemento).__name__}.representar() devolvió None: "
+                "¿alguna clase de su cadena no llama a super().representar()?"
+            )
+        return campos

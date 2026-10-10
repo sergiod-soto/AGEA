@@ -12,6 +12,11 @@ comportamientos = Comportamiento.declarar_comportamientos(
 
 
 class Elemento_Test(Elemento_Simple, comportamientos):
+    """
+    Elemento de prueba. No define serializar/representar propios: la
+    cadena super() de Elemento, Elemento_Simple, Peso y
+    Comportamiento_Test ya lo cubre todo.
+    """
 
     def __init__(
         self,
@@ -34,30 +39,8 @@ class Elemento_Test(Elemento_Simple, comportamientos):
             **kwargs
         )
 
-    def representacion(self, modo: str, incluir: list[str] = None) -> dict:
-        serializacion_simple = self.serializar_elemento_simple(modo=modo)
-
-        campos = {}
-        campos["elemento"] = {
-            "tamanho": self.serializar_tamanho(),
-            "casilla": self.serializar_casilla(),
-            "rotacion": self.serializar_rotacion(),
-        }
-        campos["elemento"].update(serializacion_simple)
-
-        campos["comportamientos"] = {
-            cls.__name__: self.serializar(cls, modo=modo)
-            for cls in self._get_comportamientos()
-            if cls.__name__ in incluir
-        }
-
-        return campos
-
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
-        # Todos los parámetros obligatorios de __init__, en el mismo
-        # orden que aparecen ahí (facilita comparar visualmente si
-        # cambia la firma del constructor).
         return [
-            Peso.campos_para_creacion(),
+            *Peso.campos_para_creacion(),
         ]

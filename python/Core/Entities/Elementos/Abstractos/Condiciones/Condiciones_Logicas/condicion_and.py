@@ -1,6 +1,5 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/condicion_and.py
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
-from Core.Entities.entity import Modos
 
 
 class CondicionAnd(Condicion):
@@ -13,10 +12,13 @@ class CondicionAnd(Condicion):
         super().__init__(**kwargs)
         self.condiciones = condiciones
 
-    def serialize_condiciones(self) -> list[dict]:
-        return [c.serializar(modo=Modos.guardado) for c in self.condiciones]
+    def serializar(self) -> list[dict]:
+        return [c.serializar() for c in self.condiciones]
 
-    def deserialize_condiciones(self, valor: list[dict]) -> None:
+    def representar(self):
+        return self.serializar()
+
+    def deserializar(self, valor: list[dict]) -> None:
         from Core.Entities.Elementos.registry import reconstruir_elemento
 
         self.condiciones = [reconstruir_elemento(d, self.mundo) for d in valor]

@@ -103,8 +103,13 @@ class Viento(Sistema_Atmosferico):
         vy += dy_redireccion
 
         factor_libre = (
-            0.0 if celda.bloqueo_total_viento else 1.0 - celda.resistencia_viento
+            0.0
+            if celda.bloqueo_total_viento
+            else (1.0 - celda.resistencia_viento) ** SEGUNDOS_SIMULADOS_TICK
         )
+
+      
+            
         vx *= factor_libre
         vy *= factor_libre
 
