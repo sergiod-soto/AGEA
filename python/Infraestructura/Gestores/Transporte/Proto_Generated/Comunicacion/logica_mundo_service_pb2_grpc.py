@@ -144,10 +144,10 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoResponse.FromString,
                 _registered_method=True)
-        self.ConsultarRepresentacion = channel.unary_unary(
-                '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
-                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.SerializeToString,
-                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.FromString,
+        self.ConsultarRepresentar = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/ConsultarRepresentar',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarResponse.FromString,
                 _registered_method=True)
         self.ObtenerAudio = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/ObtenerAudio',
@@ -326,7 +326,7 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ConsultarRepresentacion(self, request, context):
+    def ConsultarRepresentar(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -482,10 +482,10 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.EstadoGeneracionMundoResponse.SerializeToString,
             ),
-            'ConsultarRepresentacion': grpc.unary_unary_rpc_method_handler(
-                    servicer.ConsultarRepresentacion,
-                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.FromString,
-                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.SerializeToString,
+            'ConsultarRepresentar': grpc.unary_unary_rpc_method_handler(
+                    servicer.ConsultarRepresentar,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarResponse.SerializeToString,
             ),
             'ObtenerAudio': grpc.unary_unary_rpc_method_handler(
                     servicer.ObtenerAudio,
@@ -1105,7 +1105,7 @@ class LogicaMundoService(object):
             _registered_method=True)
 
     @staticmethod
-    def ConsultarRepresentacion(request,
+    def ConsultarRepresentar(request,
             target,
             options=(),
             channel_credentials=None,
@@ -1118,9 +1118,9 @@ class LogicaMundoService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/logica_mundo.LogicaMundoService/ConsultarRepresentacion',
-            Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionRequest.SerializeToString,
-            Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentacionResponse.FromString,
+            '/logica_mundo.LogicaMundoService/ConsultarRepresentar',
+            Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.ConsultarRepresentarResponse.FromString,
             options,
             channel_credentials,
             insecure,

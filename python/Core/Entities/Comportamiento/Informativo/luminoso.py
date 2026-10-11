@@ -73,14 +73,3 @@ Atributos:
 Métodos:
 \t-
         """
-
-    def representar_luminoso(self) -> list[str]:
-        """
-        Informacion pasada a Unity para representar el Elemento
-        """
-        representacion = {
-            "distancia": self.distancia,
-            "area": self.area,
-            "direccion": self.direccion,
-        }
-        return representacion

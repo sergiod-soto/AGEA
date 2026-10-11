@@ -64,7 +64,7 @@ async def _handler(comunicaciones: ComunicacionesLocal) -> str:
                     return (
                         f"Tick {actualizacion.tick_actual} — "
                         f"lo que se enviaría a Unity:\n"
-                        f"representacion={actualizacion.representacion!r}\n"
+                        f"representacion={actualizacion.representar!r}\n"
                         f"elementos_globales={list(actualizacion.elementos_globales)}"
                     )
     except TimeoutError:

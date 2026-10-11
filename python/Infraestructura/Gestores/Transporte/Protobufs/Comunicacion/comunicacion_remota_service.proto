@@ -37,7 +37,7 @@ message EjecutarResponse {
 message FocoRequest {
   common.Position min     = 1;
   common.Position max     = 2;
-  repeated string incluir = 3;  // mismo filtro que ya acepta ConsultarRepresentacion
+  repeated string incluir = 3;  // mismo filtro que ya acepta ConsultarRepresentar
   string          modo    = 4;  // idem
 }
 
@@ -54,7 +54,7 @@ message ActualizacionFoco {
   reserved 3;
   reserved "celdas";
 
-  bytes                                      representacion     = 4;  // datos ya serializados de ConsultarRepresentacion
+  bytes                                      representacion     = 4;  // datos ya serializados de ConsultarRepresentar
   repeated logica_mundo.ElementoGlobalState  elementos_globales = 5;
   int64                                      tick_actual        = 6;
 }

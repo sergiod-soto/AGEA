@@ -40,10 +40,10 @@ from Infraestructura.Gestores.Comunicacion.Local.comunicaciones_local import (
 )
 
 # Las consultas de datos son siempre para MOSTRAR algo por consola,
-# nunca para guardar estado -- por eso van fijas en modo "representacion"
+# nunca para guardar estado -- por eso van fijas en modo "representar"
 # (frente a "profundidad", que usan los guardados/snapshots y que
 # incluye más detalle, ej. un elemento sonoro expone solo el id del
-# sonido en "representacion" pero el array de intensidades/frecuencias
+# sonido en "representar" pero el array de intensidades/frecuencias
 # en "profundidad"). No es un parámetro que la consola deba preguntar.
 
 
@@ -79,7 +79,7 @@ async def _datos_zona(comunicaciones: ComunicacionesLocal) -> str:
     ]
     valores = await ejecutar_cuestionario(campos)
 
-    resp = await comunicaciones.consultar_representacion(
+    resp = await comunicaciones.consultar_representar(
         min_pos=valores["min_pos"],
         max_pos=valores["max_pos"],
         incluir=valores["incluir"],

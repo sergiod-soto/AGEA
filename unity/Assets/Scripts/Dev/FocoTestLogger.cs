@@ -47,9 +47,9 @@ public class FocoTestLogger : MonoBehaviour
         // elementos en el log -- no tocamos el Tilemap desde aquí.
         //
         int numElementos = 0;
-        if (!actualizacion.Representacion.IsEmpty)
+        if (!actualizacion.Representar.IsEmpty)
         {
-            var json = JObject.Parse(Encoding.UTF8.GetString(actualizacion.Representacion.ToByteArray()));
+            var json = JObject.Parse(Encoding.UTF8.GetString(actualizacion.Representar.ToByteArray()));
             numElementos = (json["elementos"] as JArray)?.Count ?? 0;
             Debug.Log($"[FocoTestLogger] #{_mensajesRecibidos} tick={actualizacion.TickActual} " +
                       $"elementos={numElementos} globales={actualizacion.ElementosGlobales.Count} " +

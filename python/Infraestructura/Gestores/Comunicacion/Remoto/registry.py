@@ -7,7 +7,7 @@ handle(clientes, payload: bytes) -> bytes.
 
 from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
     broadcast_budgets,
-    consultar_representacion,
+    consultar_representar,
     crear_elemento,
     despawn_global_event,
     eliminar_elemento,
@@ -32,7 +32,7 @@ from Infraestructura.Gestores.Comunicacion.Remoto.Funciones import (
 
 FUNCIONES = [
     # Logica_Mundo
-    consultar_representacion,
+    consultar_representar,
     obtener_audio,
     spawn_global_event,
     despawn_global_event,

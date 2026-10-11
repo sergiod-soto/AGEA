@@ -14,7 +14,7 @@ async def handle(logica: LogicaMundo, payload: bytes) -> bytes:
 
     ok, error, datos = await logica.obtener_elemento(
         element_id=req.element_id,
-        tipo_datos=req.tipo_datos or "representacion",
+        tipo_datos=req.tipo_datos or "representar",
         incluir=list(req.incluir),
     )
     return pb.ObtenerElementoResponse(

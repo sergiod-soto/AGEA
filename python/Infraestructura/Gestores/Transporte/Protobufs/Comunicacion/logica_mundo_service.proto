@@ -41,7 +41,7 @@ service LogicaMundoService {
   rpc GenerarMundo (GenerarMundoRequest) returns (common.Ack);
   rpc EstadoGeneracionMundo (EstadoGeneracionMundoRequest) returns (EstadoGeneracionMundoResponse);
 
-  rpc ConsultarRepresentacion (ConsultarRepresentacionRequest) returns (ConsultarRepresentacionResponse);
+  rpc ConsultarRepresentar (ConsultarRepresentarRequest) returns (ConsultarRepresentarResponse);
   rpc ObtenerAudio (ObtenerAudioRequest) returns (ObtenerAudioResponse);
   rpc SaveSnapshot (SaveSnapshotRequest) returns (SaveSnapshotResponse);
   rpc LoadState    (LoadStateRequest)    returns (common.Ack);
@@ -273,14 +273,14 @@ message EstadoGeneracionMundoResponse {
   string           error_generacion = 5;  // por qué terminó en ERROR (si aplica)
 }
 
-message ConsultarRepresentacionRequest {
+message ConsultarRepresentarRequest {
   common.Position min     = 1;
   common.Position max     = 2;
   repeated string incluir = 3;
   string          modo    = 4;
 }
 
-message ConsultarRepresentacionResponse {
+message ConsultarRepresentarResponse {
   bool   ok    = 1;
   string error = 2;
   bytes  datos = 3;

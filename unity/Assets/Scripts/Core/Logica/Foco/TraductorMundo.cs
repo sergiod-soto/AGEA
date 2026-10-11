@@ -13,7 +13,7 @@ namespace Assets.Scripts.Core.Logica.Foco
     /// <summary>
     /// Única fuente visual: pinta el suelo en el Tilemap y los
     /// elementos como GameObjects instanciados, a partir de
-    /// ActualizacionFoco.representacion.
+    /// ActualizacionFoco.Representar.
     ///
     /// Los elementos no pueden ir en el Tilemap porque varios pueden
     /// solaparse en la misma casilla (distinta 'capa'), y un Tilemap
@@ -52,10 +52,10 @@ namespace Assets.Scripts.Core.Logica.Foco
 
         private void Pintar(ActualizacionFoco actualizacion)
         {
-            if (!actualizacion.Ok || actualizacion.Representacion.IsEmpty) return;
+            if (!actualizacion.Ok || actualizacion.Representar.IsEmpty) return;
 
-            string json = Encoding.UTF8.GetString(actualizacion.Representacion.ToByteArray());
-            var payload = JsonConvert.DeserializeObject<RepresentacionPayload>(json);
+            string json = Encoding.UTF8.GetString(actualizacion.Representar.ToByteArray());
+            var payload = JsonConvert.DeserializeObject<RepresentarPayload>(json);
             if (payload == null) return;
 
             PintarSuelo(payload.Suelo);

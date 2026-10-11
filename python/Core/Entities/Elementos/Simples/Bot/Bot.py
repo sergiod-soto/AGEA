@@ -184,21 +184,4 @@ class Bot(Elemento_Simple, comportamientos):
     def serializar_adn(self):
         return self.adn
 
-    def serializar(self):
-        return {
-            "id_elemento": self.id_elemento,
-            "id_bot": self.get_stat("id"),
-            "tamanho": self.serializar_tamanho(),
-            "casilla": self.serializar_casilla(),
-            "rotacion": self.serializar_rotacion(),
-            "adn": self.serializar_adn(),
-            "stats": self.serializar_stats(),
-        }
 
-    def serializar_position(self):
-        return {
-            "id_elemento": self.id_elemento,
-            "tamanho": self.serializar_tamanho(),
-            "casilla": self.serializar_casilla(),
-            "rotacion": self.serializar_rotacion(),
-        }

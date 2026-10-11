@@ -95,6 +95,8 @@ from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 import logging
 
+from Core.Entities.Comportamiento.comportamiento_test import Comportamiento_Test
+
 logger = logging.getLogger(__name__)
 
 COMPORTAMIENTOS: dict[str, type] = {
@@ -113,6 +115,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Combustible": Combustible,
     "Comestible": Comestible,
     "Comportamiento": Comportamiento,
+    "Comportamiento_Test": Comportamiento_Test,
     "Consumible": Consumible,
     "Contenedor": Contenedor,
     "Crafteable": Crafteable,

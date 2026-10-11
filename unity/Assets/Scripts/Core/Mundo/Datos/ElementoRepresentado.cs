@@ -6,10 +6,10 @@ using Newtonsoft.Json.Linq;
 namespace Assets.Scripts.Core.Mundo.Datos
 {
     /// <summary>
-    /// Forma completa del JSON dentro de ActualizacionFoco.representacion:
+    /// Forma completa del JSON dentro de ActualizacionFoco.Representar:
     /// { "modo": ..., "suelo": [...], "elementos": [ { "elemento": {...}, "comportamientos": {...} }, ... ] }
     /// </summary>
-    public class RepresentacionPayload
+    public class RepresentarPayload
     {
         [JsonProperty("modo")] public string Modo;
         [JsonProperty("suelo")] public List<SueloConComportamientos> Suelo;

@@ -94,9 +94,9 @@ namespace LogicaMundo {
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::LogicaMundo.ActualizarCeldasRequest> __Marshaller_logica_mundo_ActualizarCeldasRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ActualizarCeldasRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::LogicaMundo.ConsultarRepresentacionRequest> __Marshaller_logica_mundo_ConsultarRepresentacionRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ConsultarRepresentacionRequest.Parser));
+    static readonly grpc::Marshaller<global::LogicaMundo.ConsultarRepresentarRequest> __Marshaller_logica_mundo_ConsultarRepresentarRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ConsultarRepresentarRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::LogicaMundo.ConsultarRepresentacionResponse> __Marshaller_logica_mundo_ConsultarRepresentacionResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ConsultarRepresentacionResponse.Parser));
+    static readonly grpc::Marshaller<global::LogicaMundo.ConsultarRepresentarResponse> __Marshaller_logica_mundo_ConsultarRepresentarResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ConsultarRepresentarResponse.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::LogicaMundo.ObtenerAudioRequest> __Marshaller_logica_mundo_ObtenerAudioRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::LogicaMundo.ObtenerAudioRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
@@ -225,12 +225,12 @@ namespace LogicaMundo {
         __Marshaller_common_Ack);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Method<global::LogicaMundo.ConsultarRepresentacionRequest, global::LogicaMundo.ConsultarRepresentacionResponse> __Method_ConsultarRepresentacion = new grpc::Method<global::LogicaMundo.ConsultarRepresentacionRequest, global::LogicaMundo.ConsultarRepresentacionResponse>(
+    static readonly grpc::Method<global::LogicaMundo.ConsultarRepresentarRequest, global::LogicaMundo.ConsultarRepresentarResponse> __Method_ConsultarRepresentar = new grpc::Method<global::LogicaMundo.ConsultarRepresentarRequest, global::LogicaMundo.ConsultarRepresentarResponse>(
         grpc::MethodType.Unary,
         __ServiceName,
-        "ConsultarRepresentacion",
-        __Marshaller_logica_mundo_ConsultarRepresentacionRequest,
-        __Marshaller_logica_mundo_ConsultarRepresentacionResponse);
+        "ConsultarRepresentar",
+        __Marshaller_logica_mundo_ConsultarRepresentarRequest,
+        __Marshaller_logica_mundo_ConsultarRepresentarResponse);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::LogicaMundo.ObtenerAudioRequest, global::LogicaMundo.ObtenerAudioResponse> __Method_ObtenerAudio = new grpc::Method<global::LogicaMundo.ObtenerAudioRequest, global::LogicaMundo.ObtenerAudioResponse>(
@@ -359,7 +359,7 @@ namespace LogicaMundo {
       }
 
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::LogicaMundo.ConsultarRepresentacionResponse> ConsultarRepresentacion(global::LogicaMundo.ConsultarRepresentacionRequest request, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task<global::LogicaMundo.ConsultarRepresentarResponse> ConsultarRepresentar(global::LogicaMundo.ConsultarRepresentarRequest request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -698,24 +698,24 @@ namespace LogicaMundo {
         return CallInvoker.AsyncUnaryCall(__Method_ActualizarCeldas, null, options, request);
       }
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::LogicaMundo.ConsultarRepresentacionResponse ConsultarRepresentacion(global::LogicaMundo.ConsultarRepresentacionRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual global::LogicaMundo.ConsultarRepresentarResponse ConsultarRepresentar(global::LogicaMundo.ConsultarRepresentarRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return ConsultarRepresentacion(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return ConsultarRepresentar(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::LogicaMundo.ConsultarRepresentacionResponse ConsultarRepresentacion(global::LogicaMundo.ConsultarRepresentacionRequest request, grpc::CallOptions options)
+      public virtual global::LogicaMundo.ConsultarRepresentarResponse ConsultarRepresentar(global::LogicaMundo.ConsultarRepresentarRequest request, grpc::CallOptions options)
       {
-        return CallInvoker.BlockingUnaryCall(__Method_ConsultarRepresentacion, null, options, request);
+        return CallInvoker.BlockingUnaryCall(__Method_ConsultarRepresentar, null, options, request);
       }
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::LogicaMundo.ConsultarRepresentacionResponse> ConsultarRepresentacionAsync(global::LogicaMundo.ConsultarRepresentacionRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncUnaryCall<global::LogicaMundo.ConsultarRepresentarResponse> ConsultarRepresentarAsync(global::LogicaMundo.ConsultarRepresentarRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return ConsultarRepresentacionAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return ConsultarRepresentarAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::LogicaMundo.ConsultarRepresentacionResponse> ConsultarRepresentacionAsync(global::LogicaMundo.ConsultarRepresentacionRequest request, grpc::CallOptions options)
+      public virtual grpc::AsyncUnaryCall<global::LogicaMundo.ConsultarRepresentarResponse> ConsultarRepresentarAsync(global::LogicaMundo.ConsultarRepresentarRequest request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_ConsultarRepresentacion, null, options, request);
+        return CallInvoker.AsyncUnaryCall(__Method_ConsultarRepresentar, null, options, request);
       }
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
       public virtual global::LogicaMundo.ObtenerAudioResponse ObtenerAudio(global::LogicaMundo.ObtenerAudioRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
@@ -825,7 +825,7 @@ namespace LogicaMundo {
           .AddMethod(__Method_GetElementosGlobales, serviceImpl.GetElementosGlobales)
           .AddMethod(__Method_ObtenerCeldasEnRegion, serviceImpl.ObtenerCeldasEnRegion)
           .AddMethod(__Method_ActualizarCeldas, serviceImpl.ActualizarCeldas)
-          .AddMethod(__Method_ConsultarRepresentacion, serviceImpl.ConsultarRepresentacion)
+          .AddMethod(__Method_ConsultarRepresentar, serviceImpl.ConsultarRepresentar)
           .AddMethod(__Method_ObtenerAudio, serviceImpl.ObtenerAudio)
           .AddMethod(__Method_SaveSnapshot, serviceImpl.SaveSnapshot)
           .AddMethod(__Method_LoadState, serviceImpl.LoadState)
@@ -853,7 +853,7 @@ namespace LogicaMundo {
       serviceBinder.AddMethod(__Method_GetElementosGlobales, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.GetElementosGlobalesRequest, global::LogicaMundo.GetElementosGlobalesResponse>(serviceImpl.GetElementosGlobales));
       serviceBinder.AddMethod(__Method_ObtenerCeldasEnRegion, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.ObtenerCeldasEnRegionRequest, global::LogicaMundo.ObtenerCeldasEnRegionResponse>(serviceImpl.ObtenerCeldasEnRegion));
       serviceBinder.AddMethod(__Method_ActualizarCeldas, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.ActualizarCeldasRequest, global::Common.Ack>(serviceImpl.ActualizarCeldas));
-      serviceBinder.AddMethod(__Method_ConsultarRepresentacion, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.ConsultarRepresentacionRequest, global::LogicaMundo.ConsultarRepresentacionResponse>(serviceImpl.ConsultarRepresentacion));
+      serviceBinder.AddMethod(__Method_ConsultarRepresentar, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.ConsultarRepresentarRequest, global::LogicaMundo.ConsultarRepresentarResponse>(serviceImpl.ConsultarRepresentar));
       serviceBinder.AddMethod(__Method_ObtenerAudio, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.ObtenerAudioRequest, global::LogicaMundo.ObtenerAudioResponse>(serviceImpl.ObtenerAudio));
       serviceBinder.AddMethod(__Method_SaveSnapshot, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.SaveSnapshotRequest, global::LogicaMundo.SaveSnapshotResponse>(serviceImpl.SaveSnapshot));
       serviceBinder.AddMethod(__Method_LoadState, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::LogicaMundo.LoadStateRequest, global::Common.Ack>(serviceImpl.LoadState));

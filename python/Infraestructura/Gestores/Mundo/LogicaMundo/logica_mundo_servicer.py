@@ -109,8 +109,8 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
-    async def ConsultarRepresentacion(self, request, context):
-        return await self._dispatch["ConsultarRepresentacion"].handle(
+    async def ConsultarRepresentar(self, request, context):
+        return await self._dispatch["ConsultarRepresentar"].handle(
             self._logica, request, context
         )
 

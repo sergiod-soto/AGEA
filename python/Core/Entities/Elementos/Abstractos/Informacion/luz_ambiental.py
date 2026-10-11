@@ -41,6 +41,6 @@ class Luz_Ambiental(Informacion):
         else:
             luzLuna = self.get_intensidad_luna() * sin(math.pi * tLuna) ** self._factor
 
-        return _clamp(
-            (luzSolar + luzLuna) * factorNubes(posicion[0], posicion[1]), 1, 100
-        )
+        # return _clamp(
+        #     (luzSolar + luzLuna) * factorNubes(posicion[0], posicion[1]), 1, 100
+        # )

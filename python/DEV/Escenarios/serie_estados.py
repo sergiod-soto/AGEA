@@ -164,9 +164,7 @@ class Serie_Estados:
         id_elemento = await self._logica.asignar_id()
         elemento = clase(id_elemento=id_elemento, casilla=casilla, **kwargs)
 
-        print("AAAAAA")
-        print(elemento.serializar())
-        print("BBBB")
+
         elemento_bytes = json.dumps(elemento.serializar()).encode()
         ok, error = await self._logica.crear_elemento(casilla, type_id, elemento_bytes)
         if not ok:

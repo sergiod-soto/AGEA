@@ -1009,7 +1009,7 @@ class LogicaMundo:
             self.mundo.olvidar_elemento(eid, bot_id=self._bot_id_de(elemento))
         return "perdido"
 
-    async def consultar_representacion(
+    async def consultar_representar(
         self,
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
@@ -1060,14 +1060,7 @@ class LogicaMundo:
                     if tipos is not None and type(elemento).__name__ not in tipos:
                         continue
                     campos = self._representar(elemento, incluir)
-                    print(
-                        "DEBUG",
-                        type(elemento).__name__,
-                        "incluir=",
-                        incluir,
-                        "campos=",
-                        campos,
-                    )  # <-- AQUÍ
+
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
                     elementos.append(campos)
@@ -1083,7 +1076,7 @@ class LogicaMundo:
     async def obtener_elemento(
         self,
         element_id: int,
-        tipo_datos: str = "representacion",
+        tipo_datos: str = "representar",
         incluir: list[str] | None = None,
     ) -> tuple[bool, str, bytes]:
         async with self._lock:
@@ -1091,10 +1084,10 @@ class LogicaMundo:
             if elemento is None:
                 return False, f"Elemento {element_id} no encontrado.", b""
 
-            if tipo_datos == "serializacion":
+            if tipo_datos == "serializar":
                 # Siempre completo: serializar() no recibe `incluir`.
                 datos = elemento.serializar()
-            elif tipo_datos == "representacion":
+            elif tipo_datos == "representar":
                 # Antes: incluir or [] (None -> "nada"). Ahora se pasa tal
                 # cual: None = todo.
                 datos = self._representar(elemento, incluir)
@@ -1102,7 +1095,7 @@ class LogicaMundo:
                 return (
                     False,
                     f"tipo_datos desconocido: '{tipo_datos}' "
-                    "(usa 'representacion' o 'serializacion').",
+                    "(usa 'representar' o 'serializar').",
                     b"",
                 )
 

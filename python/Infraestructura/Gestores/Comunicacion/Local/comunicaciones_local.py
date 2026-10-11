@@ -105,21 +105,21 @@ class ComunicacionesLocal:
     # Logica_Mundo — datos/estado del mundo
     # ------------------------------------------------------------------
 
-    async def consultar_representacion(
+    async def consultar_representar(
         self,
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
-    ) -> "logica_pb.ConsultarRepresentacionResponse":
-        req = logica_pb.ConsultarRepresentacionRequest(
+    ) -> "logica_pb.ConsultarRepresentarResponse":
+        req = logica_pb.ConsultarRepresentarRequest(
             min=common_pb.Position(x=min_pos[0], y=min_pos[1]),
             max=common_pb.Position(x=max_pos[0], y=max_pos[1]),
             incluir=incluir,
         )
         payload = await self._ejecutar(
-            bridge_pb.LOGICA_MUNDO, "ConsultarRepresentacion", req
+            bridge_pb.LOGICA_MUNDO, "ConsultarRepresentar", req
         )
-        resp = logica_pb.ConsultarRepresentacionResponse()
+        resp = logica_pb.ConsultarRepresentarResponse()
         resp.ParseFromString(payload)
         return resp
 
@@ -272,11 +272,11 @@ class ComunicacionesLocal:
     async def obtener_elemento(
         self,
         element_id: int,
-        tipo_datos: str = "representacion",
+        tipo_datos: str = "representar",
         incluir: list[str] | None = None,
     ) -> tuple[bool, str, bytes]:
         """
-        tipo_datos: "representacion" (lo que se manda a Unity) o
+        tipo_datos: "representar" (lo que se manda a Unity) o
         "serializacion" (info completa, como en un snapshot).
         Devuelve (ok, error, datos_json_bytes) — ok=False también si el
         id no existe, no solo si falla la red.

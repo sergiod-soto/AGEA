@@ -145,7 +145,7 @@ class FocoBroadcaster:
                 foco = self._foco
 
                 representacion = (
-                    await self._clientes.logica_mundo.consultar_representacion(
+                    await self._clientes.logica_mundo.consultar_representar(
                         foco.min_pos, foco.max_pos, foco.incluir
                     )
                 )

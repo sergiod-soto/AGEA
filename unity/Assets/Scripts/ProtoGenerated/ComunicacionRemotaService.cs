@@ -54,7 +54,7 @@ namespace ComunicacionRemota {
             new pbr::GeneratedClrTypeInfo(typeof(global::ComunicacionRemota.EjecutarResponse), global::ComunicacionRemota.EjecutarResponse.Parser, new[]{ "Ok", "Error", "Payload" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ComunicacionRemota.FocoRequest), global::ComunicacionRemota.FocoRequest.Parser, new[]{ "Min", "Max", "Incluir", "Modo" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::ComunicacionRemota.SuscribirseFocoRequest), global::ComunicacionRemota.SuscribirseFocoRequest.Parser, null, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::ComunicacionRemota.ActualizacionFoco), global::ComunicacionRemota.ActualizacionFoco.Parser, new[]{ "Ok", "Error", "Representacion", "ElementosGlobales", "TickActual" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::ComunicacionRemota.ActualizacionFoco), global::ComunicacionRemota.ActualizacionFoco.Parser, new[]{ "Ok", "Error", "Representar", "ElementosGlobales", "TickActual" }, null, null, null, null)
           }));
     }
     #endregion
@@ -692,7 +692,7 @@ namespace ComunicacionRemota {
         = pb::FieldCodec.ForString(26);
     private readonly pbc::RepeatedField<string> incluir_ = new pbc::RepeatedField<string>();
     /// <summary>
-    /// mismo filtro que ya acepta ConsultarRepresentacion
+    /// mismo filtro que ya acepta ConsultarRepresentar
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1138,7 +1138,7 @@ namespace ComunicacionRemota {
     public ActualizacionFoco(ActualizacionFoco other) : this() {
       ok_ = other.ok_;
       error_ = other.error_;
-      representacion_ = other.representacion_;
+      Representar_ = other.Representar_;
       elementosGlobales_ = other.elementosGlobales_.Clone();
       tickActual_ = other.tickActual_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
@@ -1174,18 +1174,18 @@ namespace ComunicacionRemota {
       }
     }
 
-    /// <summary>Field number for the "representacion" field.</summary>
-    public const int RepresentacionFieldNumber = 4;
-    private pb::ByteString representacion_ = pb::ByteString.Empty;
+    /// <summary>Field number for the "Representar" field.</summary>
+    public const int RepresentarFieldNumber = 4;
+    private pb::ByteString Representar_ = pb::ByteString.Empty;
     /// <summary>
-    /// datos ya serializados de ConsultarRepresentacion
+    /// datos ya serializados de ConsultarRepresentar
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public pb::ByteString Representacion {
-      get { return representacion_; }
+    public pb::ByteString Representar {
+      get { return Representar_; }
       set {
-        representacion_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        Representar_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
@@ -1229,7 +1229,7 @@ namespace ComunicacionRemota {
       }
       if (Ok != other.Ok) return false;
       if (Error != other.Error) return false;
-      if (Representacion != other.Representacion) return false;
+      if (Representar != other.Representar) return false;
       if(!elementosGlobales_.Equals(other.elementosGlobales_)) return false;
       if (TickActual != other.TickActual) return false;
       return Equals(_unknownFields, other._unknownFields);
@@ -1241,7 +1241,7 @@ namespace ComunicacionRemota {
       int hash = 1;
       if (Ok != false) hash ^= Ok.GetHashCode();
       if (Error.Length != 0) hash ^= Error.GetHashCode();
-      if (Representacion.Length != 0) hash ^= Representacion.GetHashCode();
+      if (Representar.Length != 0) hash ^= Representar.GetHashCode();
       hash ^= elementosGlobales_.GetHashCode();
       if (TickActual != 0L) hash ^= TickActual.GetHashCode();
       if (_unknownFields != null) {
@@ -1270,9 +1270,9 @@ namespace ComunicacionRemota {
         output.WriteRawTag(18);
         output.WriteString(Error);
       }
-      if (Representacion.Length != 0) {
+      if (Representar.Length != 0) {
         output.WriteRawTag(34);
-        output.WriteBytes(Representacion);
+        output.WriteBytes(Representar);
       }
       elementosGlobales_.WriteTo(output, _repeated_elementosGlobales_codec);
       if (TickActual != 0L) {
@@ -1297,9 +1297,9 @@ namespace ComunicacionRemota {
         output.WriteRawTag(18);
         output.WriteString(Error);
       }
-      if (Representacion.Length != 0) {
+      if (Representar.Length != 0) {
         output.WriteRawTag(34);
-        output.WriteBytes(Representacion);
+        output.WriteBytes(Representar);
       }
       elementosGlobales_.WriteTo(ref output, _repeated_elementosGlobales_codec);
       if (TickActual != 0L) {
@@ -1322,8 +1322,8 @@ namespace ComunicacionRemota {
       if (Error.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(Error);
       }
-      if (Representacion.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Representacion);
+      if (Representar.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Representar);
       }
       size += elementosGlobales_.CalculateSize(_repeated_elementosGlobales_codec);
       if (TickActual != 0L) {
@@ -1347,8 +1347,8 @@ namespace ComunicacionRemota {
       if (other.Error.Length != 0) {
         Error = other.Error;
       }
-      if (other.Representacion.Length != 0) {
-        Representacion = other.Representacion;
+      if (other.Representar.Length != 0) {
+        Representar = other.Representar;
       }
       elementosGlobales_.Add(other.elementosGlobales_);
       if (other.TickActual != 0L) {
@@ -1382,7 +1382,7 @@ namespace ComunicacionRemota {
             break;
           }
           case 34: {
-            Representacion = input.ReadBytes();
+            Representar = input.ReadBytes();
             break;
           }
           case 42: {
@@ -1421,7 +1421,7 @@ namespace ComunicacionRemota {
             break;
           }
           case 34: {
-            Representacion = input.ReadBytes();
+            Representar = input.ReadBytes();
             break;
           }
           case 42: {

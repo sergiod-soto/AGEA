@@ -25,7 +25,7 @@ namespace Assets.Scripts.Core.Logica.Foco
         [Tooltip("Cada cuánto se manda ActualizarFoco, en segundos.")]
         [SerializeField] private float intervaloSegundos = 0.5f;
 
-        [Tooltip("Comportamientos a incluir en la representación (mismo filtro que ConsultarRepresentacion).")]
+        [Tooltip("Comportamientos a incluir en la representación (mismo filtro que ConsultarRepresentar).")]
         [SerializeField] private string[] incluir = Array.Empty<string>();
 
         [SerializeField] private string modo = "unity_debug";

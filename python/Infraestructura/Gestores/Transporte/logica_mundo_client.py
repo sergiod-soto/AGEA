@@ -8,7 +8,7 @@ Usado por:
                       atmósfera, progreso de ciclos globales, elementos
                       globales, snapshots (ver gestor_mundo.py)
   - Gestor_Bots    → resolver_accion (reenvío de acciones de bots)
-  - Comunicacion_Remoto (local) → consultar_representacion, eventos
+  - Comunicacion_Remoto (local) → consultar_representar, eventos
                       globales, alta/edición/baja de elementos
   - Comunicaciones_Remoto → heartbeat() (ver comunicaciones_remoto_servicer.py)
 
@@ -474,7 +474,7 @@ class LogicaMundoClient:
     # Representación (Vista_Foco / Unity)
     # ------------------------------------------------------------------
 
-    async def consultar_representacion(
+    async def consultar_representar(
         self,
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
@@ -482,23 +482,23 @@ class LogicaMundoClient:
         timeout: float | None = None,
     ) -> bytes:
         await self._ensure_channel()
-        req = pb.ConsultarRepresentacionRequest(
+        req = pb.ConsultarRepresentarRequest(
             min=self._pos_to_pb(min_pos),
             max=self._pos_to_pb(max_pos),
             incluir=incluir,
         )
         try:
-            resp = await self._stub.ConsultarRepresentacion(
+            resp = await self._stub.ConsultarRepresentar(
                 req, timeout=self._t(timeout)
             )
             if not resp.ok:
                 logger.warning(
-                    "ConsultarRepresentacion respondió error: %s", resp.error
+                    "ConsultarRepresentar respondió error: %s", resp.error
                 )
                 return b""
             return resp.datos
         except grpc.aio.AioRpcError as exc:
-            logger.error("ConsultarRepresentacion falló: %s", exc)
+            logger.error("ConsultarRepresentar falló: %s", exc)
             return b""
 
     async def obtener_audio(
@@ -507,7 +507,7 @@ class LogicaMundoClient:
         """
         Devuelve el payload completo (id/duracion/vol/vector/pcm) de un
         id_sonido, o None si no existe o la llamada falla -- mismo patrón
-        "blando" que consultar_representacion/obtener_celdas_en_region: un
+        "blando" que consultar_representar/obtener_celdas_en_region: un
         fallo aquí no debe tirar a quien lo llama.
         """
         await self._ensure_channel()
@@ -549,7 +549,7 @@ class LogicaMundoClient:
         En caso de error (red o resp.ok=False) devuelve {} en vez de
         propagar la excepción, igual que el resto de métodos "blandos"
         de este cliente (obtener_celdas_en_region, consultar_
-        representacion) — un fallo aquí no debe tirar el tick completo
+        representar) — un fallo aquí no debe tirar el tick completo
         de Gestor_Mundo, que ya sigue adelante con el resto de fases
         aunque esta llamada falle.
         """
