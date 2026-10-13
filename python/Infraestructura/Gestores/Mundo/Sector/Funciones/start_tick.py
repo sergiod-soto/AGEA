@@ -1,6 +1,9 @@
-# Gestores/Mundo/Sector/funciones/start_tick.py
+# Infraestructura/Gestores/Mundo/Sector/Funciones/start_tick.py
+
 import asyncio
-from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import sector_service_pb2 as pb
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
+    sector_service_pb2 as pb,
+)
 from Infraestructura.Gestores.Mundo.Sector.sector import Sector
 import logging
 
@@ -25,6 +28,6 @@ async def handle(sector: Sector, request, context) -> pb.StartTickResponse:
             request.timeout_ms,
         )
         return pb.StartTickResponse(ok=True, timed_out=True)
-    except Exception as e:
+    except Exception:
         logger.exception("Error en StartTick")
         return pb.StartTickResponse(ok=False, timed_out=False)

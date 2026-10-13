@@ -23,7 +23,7 @@ class Latente(Temporal):
         "condiciones: list[Condicion]",
         "accion_latente: Accion",
     }
-    ABSTRACTOS = {"def tick(self) -> None"}
+    ABSTRACTOS = {"def tick_comportamiento(self) -> None"}
 
     def __init__(self, condiciones: list[Condicion], accion_latente: Accion, **kwargs):
         super().__init__(**kwargs)
@@ -51,7 +51,7 @@ class Latente(Temporal):
         return {"activado_latente"}
 
     @abstractmethod
-    def tick(self) -> None: ...
+    def tick_comportamiento(self) -> None: ...
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

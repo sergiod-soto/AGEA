@@ -50,11 +50,15 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
                 self._sector, request, context
             )
 
-    async def AddMigratingBot(self, request, context):
-        async with self._fase0_lock:
-            return await self._dispatch["AddMigratingBot"].handle(
-                self._sector, request, context
-            )
+    async def RecibirElemento(self, request, context):
+        return await self._dispatch["RecibirElemento"].handle(
+            self._sector, request, context
+        )
+
+    async def ConfirmarSalida(self, request, context):
+        return await self._dispatch["ConfirmarSalida"].handle(
+            self._sector, request, context
+        )
 
     async def StartTick(self, request, context):
         return await self._dispatch["StartTick"].handle(self._sector, request, context)

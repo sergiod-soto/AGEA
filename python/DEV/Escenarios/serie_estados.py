@@ -128,7 +128,7 @@ class Serie_Estados:
         elemento.casilla = pos_destino
         elemento_bytes = json.dumps(elemento.serializar()).encode()
         ok, error = await self._logica.crear_elemento(
-            type_id=type_id, pos=pos_destino, element=elemento_bytes
+            pos=pos_destino, element=elemento_bytes
         )
         if not ok:
             raise RuntimeError(
@@ -166,7 +166,7 @@ class Serie_Estados:
 
 
         elemento_bytes = json.dumps(elemento.serializar()).encode()
-        ok, error = await self._logica.crear_elemento(casilla, type_id, elemento_bytes)
+        ok, error = await self._logica.crear_elemento(casilla, elemento_bytes)
         if not ok:
             raise RuntimeError(
                 f"Crear_Elemento: crear_elemento falló para {clase.__name__} "

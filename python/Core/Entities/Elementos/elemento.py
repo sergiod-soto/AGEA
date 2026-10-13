@@ -3,10 +3,15 @@
 from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING
+import weakref
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 if TYPE_CHECKING:
     from Core.Entities.Mundo.mundo import Mundo
+
+_CAMPOS_PROHIBIDOS_PATCH = frozenset(
+    {"id_elemento", "mundo", "tipo", "capa", "casilla"}
+)
 
 
 class Elemento(ABC, Comportamiento):
@@ -30,6 +35,10 @@ class Elemento(ABC, Comportamiento):
 
     # Flags que esta categoría "contiene". Vacío en la base.
     FLAGS_DISPONIBLES: frozenset[str] = frozenset()
+
+    _TICKS_COMPORTAMIENTO: "weakref.WeakKeyDictionary[type, tuple]" = (
+        weakref.WeakKeyDictionary()
+    )
 
     @classmethod
     def tiene_flag(cls, nombre: str) -> bool:
@@ -140,18 +149,6 @@ class Elemento(ABC, Comportamiento):
         # su __init__, deberá volver a ponerlo en su propio deserializar().
         self.excluyente_en_celda = False
 
-    def eliminar(self):
-
-        mundo = self.mundo
-        if mundo is None:
-            raise TypeError("No se ha inicializado Mundo")
-
-        for k in list(vars(self).keys()):
-            if not k.startswith("_"):
-                setattr(self, k, None)
-
-        mundo.eliminar_elemento(self)
-
     @classmethod
     def obtener_requisitos(cls) -> tuple[dict[str, type], set[str]]:
         """
@@ -181,11 +178,18 @@ class Elemento(ABC, Comportamiento):
         )
 
     def aplicar_patch(self, patch: dict) -> None:
-        """
-        Aplica un patch PARCIAL usando los hooks deserializar_<campo>
-        (p.ej. deserializar_casilla convierte {"x","y"} a tupla; un
-        setattr directo dejaría 'casilla' como dict).
-        """
+        prohibidos = _CAMPOS_PROHIBIDOS_PATCH & patch.keys()
+        if prohibidos:
+            raise ValueError(f"Campos no modificables por patch: {sorted(prohibidos)}")
+
+        # Validar TODO antes de aplicar nada (un patch no queda a medias).
+        for atributo in patch:
+            if not hasattr(self, f"deserializar_{atributo}") and not hasattr(
+                self, atributo
+            ):
+                raise AttributeError(
+                    f"{type(self).__name__} no tiene el campo '{atributo}'"
+                )
         for atributo, valor in patch.items():
             deserializador = getattr(self, f"deserializar_{atributo}", None)
             if deserializador:
@@ -216,3 +220,41 @@ class Elemento(ABC, Comportamiento):
             f"{cls.__name__} no implementa ayuda_creacion(); no hay texto "
             "de ayuda definido para este tipo de elemento todavía."
         )
+
+    @classmethod
+    def _ticks_comportamiento(cls) -> tuple:
+        """tick_comportamiento propios de cada comportamiento real del MRO, en
+        orden de MRO (= orden de declarar_comportamientos). Se calcula una vez
+        por clase: recorrer el MRO en cada tick triplicaba el coste."""
+        ticks = Elemento._TICKS_COMPORTAMIENTO.get(cls)
+        if ticks is None:
+            ticks = tuple(
+                c.__dict__["tick_comportamiento"]
+                for c in cls.__mro__
+                if issubclass(c, Comportamiento)
+                and c._es_comportamiento_real()
+                and "tick_comportamiento" in c.__dict__
+            )
+            Elemento._TICKS_COMPORTAMIENTO[cls] = ticks
+        return ticks
+
+    def tick_elemento(self, ctx) -> None:
+        """
+        Lógica propia del tipo en cada tick. Cada tipo concreto DEBE
+        sobrescribirlo (aunque sea con `pass`): se deja sin implementar a
+        propósito para que un tipo sin tick falle alto.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} no implementa tick_elemento(ctx); aunque no "
+            "haga nada, debe declararlo explícitamente."
+        )
+
+    def tick(self, ctx) -> None:
+        """
+        Tick completo del elemento. NO se sobrescribe: primero la lógica del
+        propio elemento (tick_elemento) y después la de cada comportamiento
+        (tick_comportamiento).
+        """
+        self.tick_elemento(ctx)
+        for tick_comportamiento in self._ticks_comportamiento():
+            tick_comportamiento(self, ctx)

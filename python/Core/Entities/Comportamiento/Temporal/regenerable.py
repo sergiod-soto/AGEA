@@ -18,7 +18,7 @@ class Regenerable(Temporal):
     """
 
     REQUIERE = {"tasas_regeneracion: list[tuple[Stat, float]]"}
-    ABSTRACTOS = {"def tick(self):"}
+    ABSTRACTOS = {"def tick_comportamiento(self):"}
 
     def __init__(self, tasas_regeneracion: list[tuple[Stat, float]], **kwargs):
         super().__init__(**kwargs)
@@ -40,7 +40,7 @@ class Regenerable(Temporal):
         super().deserializar(data, mundo)
 
     @abstractmethod
-    def tick(self): ...
+    def tick_comportamiento(self): ...
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

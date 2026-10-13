@@ -1,6 +1,6 @@
 # Core/Entities/Elementos/registry.py
 """
-registry_elementos.py — Mapa nombre de clase → clase, para reconstruir
+registry.py — Mapa nombre de clase → clase, para reconstruir
 elementos serializados (ver Elemento.serializar/deserializar).
 
 Para añadir un elemento nuevo: importarlo aquí y añadirlo a ELEMENTOS.
@@ -92,7 +92,6 @@ from Core.Entities.Elementos.Simples.Arbol.arbol import Arbol
 from Core.Entities.Elementos.Simples.Bot.bot import Bot
 from Core.Entities.Elementos.Simples.Cadaver.cadaver import Cadaver
 from Core.Entities.Elementos.Simples.Piedra.piedra import Piedra
-from Core.Entities.Mundo.Suelo.celda import Celda
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne import Carne
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_fresca import Carne_Fresca
 from Core.Entities.Elementos.Simples.Comida.Carnes.carne_seca import Carne_Seca
@@ -130,7 +129,6 @@ ELEMENTOS: dict[str, type] = {
     "Carne": Carne,
     "Carne_Fresca": Carne_Fresca,
     "Carne_Seca": Carne_Seca,
-    "Celda": Celda,
     "Ciclo_Lunar": Ciclo_Lunar,
     "Ciclo_Solar": Ciclo_Solar,
     # "Clima": Clima,

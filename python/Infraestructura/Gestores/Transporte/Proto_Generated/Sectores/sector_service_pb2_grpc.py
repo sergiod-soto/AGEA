@@ -107,6 +107,16 @@ class SectorServiceStub(object):
                 request_serializer=Sectores_dot_sector__service__pb2.GetElementAttributesRequest.SerializeToString,
                 response_deserializer=Sectores_dot_sector__service__pb2.GetElementAttributesResponse.FromString,
                 _registered_method=True)
+        self.RecibirElemento = channel.unary_unary(
+                '/sector.SectorService/RecibirElemento',
+                request_serializer=Sectores_dot_sector__service__pb2.RecibirElementoRequest.SerializeToString,
+                response_deserializer=Sectores_dot_sector__service__pb2.RecibirElementoResponse.FromString,
+                _registered_method=True)
+        self.ConfirmarSalida = channel.unary_unary(
+                '/sector.SectorService/ConfirmarSalida',
+                request_serializer=Sectores_dot_sector__service__pb2.ConfirmarSalidaRequest.SerializeToString,
+                response_deserializer=Sectores_dot_sector__service__pb2.ConfirmarSalidaResponse.FromString,
+                _registered_method=True)
 
 
 class SectorServiceServicer(object):
@@ -215,6 +225,18 @@ class SectorServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RecibirElemento(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ConfirmarSalida(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SectorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -282,6 +304,16 @@ def add_SectorServiceServicer_to_server(servicer, server):
                     servicer.GetElementAttributes,
                     request_deserializer=Sectores_dot_sector__service__pb2.GetElementAttributesRequest.FromString,
                     response_serializer=Sectores_dot_sector__service__pb2.GetElementAttributesResponse.SerializeToString,
+            ),
+            'RecibirElemento': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecibirElemento,
+                    request_deserializer=Sectores_dot_sector__service__pb2.RecibirElementoRequest.FromString,
+                    response_serializer=Sectores_dot_sector__service__pb2.RecibirElementoResponse.SerializeToString,
+            ),
+            'ConfirmarSalida': grpc.unary_unary_rpc_method_handler(
+                    servicer.ConfirmarSalida,
+                    request_deserializer=Sectores_dot_sector__service__pb2.ConfirmarSalidaRequest.FromString,
+                    response_serializer=Sectores_dot_sector__service__pb2.ConfirmarSalidaResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -642,6 +674,60 @@ class SectorService(object):
             '/sector.SectorService/GetElementAttributes',
             Sectores_dot_sector__service__pb2.GetElementAttributesRequest.SerializeToString,
             Sectores_dot_sector__service__pb2.GetElementAttributesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RecibirElemento(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sector.SectorService/RecibirElemento',
+            Sectores_dot_sector__service__pb2.RecibirElementoRequest.SerializeToString,
+            Sectores_dot_sector__service__pb2.RecibirElementoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ConfirmarSalida(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sector.SectorService/ConfirmarSalida',
+            Sectores_dot_sector__service__pb2.ConfirmarSalidaRequest.SerializeToString,
+            Sectores_dot_sector__service__pb2.ConfirmarSalidaResponse.FromString,
             options,
             channel_credentials,
             insecure,

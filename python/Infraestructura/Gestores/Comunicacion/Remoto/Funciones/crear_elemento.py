@@ -14,7 +14,6 @@ async def handle(clientes, payload: bytes) -> bytes:
 
     ok, error = await clientes.logica_mundo.crear_elemento(
         pos=(req.pos.x, req.pos.y),
-        type_id=req.type_id,
         element=req.element,
     )
     resp = common_pb2.Ack(ok=ok, error=error)

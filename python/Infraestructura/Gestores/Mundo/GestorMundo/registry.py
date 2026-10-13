@@ -1,7 +1,7 @@
 # Infraestructura/Gestores/Mundo/Gestor_Mundo/registry.py
 """
 Recortado tras el refactor a Logica_Mundo: solo quedan las operaciones
-de mecánica de tick que gestor_mundo.py sigue implementando. El resto
+de mecánica de tick que gestor_mundo sigue implementando. El resto
 (eventos globales, alta/edición/baja de elementos, ForwardAction) se
 resuelve ahora contra LogicaMundoService — ver Logica_Mundo/registry.py.
 """

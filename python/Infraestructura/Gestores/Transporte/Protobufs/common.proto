@@ -11,15 +11,15 @@ message Ack {
   string error = 2;
 }
 
-// Un elemento que cruza de un Sector a otro durante un tick. Vive aquí (y no
-// en sector_service.proto) porque lo usan tanto el Sector (GetDelta) como
-// Logica_Mundo (ActualizarCeldas).
-message MovimientoExterno {
+// common.proto: elemento que quiere pasar a un Sector vecino. Lo genera el
+// Sector origen (GetDelta) y el Gestor se lo entrega al destino.
+message MovimientoSaliente {
   uint64          id_elemento = 1;
   string          tipo_slot   = 2;
-  common.Position pos_destino = 3;
-  bytes           elemento    = 4;
-  common.Position pos_origen  = 5;
+  common.Position pos_origen  = 3;
+  common.Position pos_destino = 4;
+  bytes           elemento    = 5;   // estado final del elemento al acabar el tick
+  BotSnapshot     bot         = 6;   // solo si es un bot
 }
 
 // ============================================================

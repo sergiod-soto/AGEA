@@ -19,7 +19,7 @@ class Caduco(Temporal):
     """
 
     REQUIERE = {"duracion_max_caduco: int", ""}
-    ABSTRACTOS = {"def tick(self) -> None", "def desaparecer(self) -> None"}
+    ABSTRACTOS = {"def tick_comportamiento(self) -> None", "def desaparecer(self) -> None"}
 
     def __init__(
         self, duracion_max_caduco: int, duracion_restante_caduco: int = None, **kwargs
@@ -44,7 +44,7 @@ class Caduco(Temporal):
         super().deserializar(data, mundo)
 
     @abstractmethod
-    def tick(self) -> None: ...
+    def tick_comportamiento(self) -> None: ...
 
     @abstractmethod
     def desaparecer(self) -> None: ...

@@ -31,7 +31,6 @@ import json
 import logging
 import math
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Optional
 
 from vectors import Vector2
@@ -58,6 +57,7 @@ from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     MoverElemento,
     Mutacion,
 )
+from Infraestructura.Gestores.Mundo.Sector.sector_mode import SectorMode
 from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
 
 from Infraestructura.Gestores.Transporte.Proto_Generated import (
@@ -70,14 +70,6 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 #  Modo de sector
 # ─────────────────────────────────────────────
-
-
-class SectorMode(Enum):
-    # Valores IGUALES a los del enum SectorMode de sector_service.proto:
-    # Gestor_Mundo envía mode.value tal cual.
-    INACTIVO = 0
-    DORMIDO = 1
-    ACTIVO = 2
 
 
 # ─────────────────────────────────────────────
@@ -297,17 +289,6 @@ class CeldaAtmosferaStore:
 
 
 @dataclass
-class ElementoNuevo:
-    # Sin uso en este fichero (¿residuo del diseño anterior, en el que
-    # Logica_Mundo resolvía las mutaciones?). Se deja por si lo importa otro
-    # módulo; borrar si no.
-    marcador_local: str  # p. ej. "s3_2_nuevo_0" o simplemente "nuevo_0"
-    pos: tuple[int, int]
-    type_id: str  # "suelo" | "bot" | "resto"
-    payload: bytes  # el elemento serializado, sin id todavía
-
-
-@dataclass
 class TickDelta:
     """Resultado de la computación de un tick en un Sector."""
 
@@ -318,7 +299,6 @@ class TickDelta:
     # mismo — ver Sector._resolver_mutaciones — para poder paralelizar
     # el tick del mundo sector-por-sector).
     mutaciones: list[Mutacion] = field(default_factory=list)
-    movimientos_externos: list = field(default_factory=list)
 
     # Celdas ya resueltas — esto es lo que de verdad viaja a
     # Logica_Mundo en GetDeltaResponse.changed_cells.
@@ -329,10 +309,7 @@ class TickDelta:
     # usarlo para ordenar la terminación del script correspondiente
     # (ver Logica_Mundo.matar_bot).
     dead_bot_ids: list[int] = field(default_factory=list)
-
     emitted_sounds: list = field(default_factory=list)
-
-    outgoing_bots: list = field(default_factory=list)
 
     # Celdas de atmósfera propias, YA avanzadas este tick -- se manda
     # el estado completo de todas las propias en vez de intentar
@@ -340,6 +317,8 @@ class TickDelta:
     # todas cambian algo cada tick, así que filtrar no ahorraría nada
     # y sí añadiría código).
     changed_atmosphere_cells: list = field(default_factory=list)
+
+    movimientos_salientes: list = field(default_factory=list)
 
 
 # ─────────────────────────────────────────────
@@ -512,27 +491,90 @@ class Sector:
             celda.resto.append(elemento)
         return True
 
-    def _registrar_movimiento_externo(
-        self, delta: TickDelta, mutacion: MoverElemento, elemento: Any, slot: str
-    ) -> None:
-        """Declara un movimiento hacia una celda ajena. Se serializa el
-        elemento porque su estado pudo cambiar durante este tick, y
-        Logica_Mundo debe quedarse con la versión actualizada. Incluye
-        pos_origen para que Logica pueda devolver el elemento ahí si el
-        destino está ocupado."""
-        dx, dy = mutacion.pos_destino
+    @staticmethod
+    def _fijar_casilla(elemento, pos: tuple[int, int]) -> None:
+        """El Sector es el ÚNICO que escribe `casilla`: solo él sabe si un
+        movimiento se produjo, se rechazó (vuelve al origen) o aterrizó en
+        otro sector. Los elementos no deben tocarla en su tick()."""
+        if hasattr(elemento, "casilla"):
+            elemento.casilla = pos
+
+    def _registrar_movimiento_saliente(self, delta, mutacion, elemento, slot) -> None:
+        """Declara un movimiento a una celda de otro Sector. Se serializa el
+        elemento aquí (su estado pudo cambiar este tick). No se toca la celda
+        de origen ni la posición del bot: eso solo ocurre en confirmar_salida."""
         ox, oy = mutacion.pos_origen
-        # MovimientoExterno vive ahora en common.proto (antes en
-        # sector_service.proto).
-        delta.movimientos_externos.append(
-            common_pb.MovimientoExterno(
-                id_elemento=mutacion.id_elemento,
-                tipo_slot=slot,
-                pos_destino=common_pb.Position(x=dx, y=dy),
-                elemento=CeldaSectorStore._serializar_slot(elemento),
-                pos_origen=common_pb.Position(x=ox, y=oy),
-            )
+        dx, dy = mutacion.pos_destino
+        mov = common_pb.MovimientoSaliente(
+            id_elemento=mutacion.id_elemento,
+            tipo_slot=slot,
+            pos_origen=common_pb.Position(x=ox, y=oy),
+            pos_destino=common_pb.Position(x=dx, y=dy),
+            elemento=CeldaSectorStore._serializar_slot(elemento),
         )
+        if slot == "bot":
+            bot = self._bots.get(self._elemento_a_bot.get(mutacion.id_elemento))
+            if bot is not None:
+                mov.bot.CopyFrom(bot)
+        delta.movimientos_salientes.append(mov)
+
+    def recibir_elemento(self, mov) -> tuple[bool, str, Optional[Any]]:
+        """
+        Destino de un movimiento entre sectores: aloja el elemento si cabe.
+        Devuelve (aceptado, motivo, celda_resultante). Todo o nada: se valida
+        antes de tocar nada y el slot es el último paso que puede rechazar.
+        """
+        pos = (mov.pos_destino.x, mov.pos_destino.y)
+        if not self._en_region_propia(pos):
+            return False, f"{pos} cae fuera de la región de este sector", None
+        elemento = CeldaSectorStore._deserializar_slot(mov.elemento)
+        if elemento is None:
+            raise ValueError("MovimientoSaliente sin elemento serializado.")
+
+        celda = self._celdas.get_or_create(*pos)
+        if not self._asignar_slot(celda, mov.tipo_slot, elemento):
+            return False, f"slot '{mov.tipo_slot}' de {pos} ocupado", None
+
+        self._fijar_casilla(elemento, pos)
+        if elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+            self._registrar_resistencia_viento(pos, elemento)
+        if mov.HasField("bot"):
+            bot = common_pb.BotSnapshot()
+            bot.CopyFrom(mov.bot)
+            bot.pos.x, bot.pos.y = pos
+            self._bots[bot.bot_id] = bot
+            self._elemento_a_bot[bot.id_elemento] = bot.bot_id
+        return True, "", self._celdas.serializar_celda(*pos)
+
+    def confirmar_salida(self, id_elemento: int, pos_origen: tuple[int, int]):
+        """Origen de un movimiento ya aceptado: elimina el elemento de su celda
+        y devuelve la celda resultante. ValueError si no está (divergencia)."""
+        elemento, slot = self._quitar_de_celda(pos_origen, id_elemento)
+        if elemento is None:
+            raise ValueError(
+                f"confirmar_salida: elemento {id_elemento} no está en {pos_origen}."
+            )
+        if elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+            self._eliminar_resistencia_viento(pos_origen, id_elemento)
+        if slot == "bot":
+            bot_id = self._elemento_a_bot.pop(id_elemento, None)
+            if bot_id is not None:
+                self._bots.pop(bot_id, None)
+        return self._celdas.serializar_celda(*pos_origen)
+
+    def _localizar_en_celda(self, pos, id_elemento):
+        """Como _quitar_de_celda, pero sin quitar: (elemento, slot) o (None, None)."""
+        celda = self._celdas.get(*pos)
+        if celda is None:
+            return None, None
+        if celda.suelo is not None and celda.suelo.id_elemento == id_elemento:
+            return celda.suelo, "suelo"
+        if celda.bot is not None and celda.bot.id_elemento == id_elemento:
+            return celda.bot, "bot"
+        for e in celda.resto:
+            if e.id_elemento == id_elemento:
+                return e, "resto"
+        return None, None
 
     # ─────────────────────────────────────────
     #  Ciclo de vida
@@ -629,6 +671,185 @@ class Sector:
         celdas_atmosfera = self._atmosfera.to_proto_cells()
         bots = list(self._bots.values())
         return cells, celdas_atmosfera, bots
+
+    # ─────────────────────────────────────────
+    #  Cachés de atmósfera (sin ctx: no dependen del contexto del tick)
+    # ─────────────────────────────────────────
+
+    def _celda_atmosfera_de(self, pos: tuple[int, int]) -> Optional[Celda_Atmosfera]:
+        """Celda_Atmosfera propia que cubre la posición de TERRENO 'pos'."""
+        return self._atmosfera.get(
+            *pos_terreno_a_atmosfera(pos[0], pos[1], ATMOSFERA_ESCALA)
+        )
+
+    def _sincronizar_atmosfera_de_suelo(self, pos, suelo) -> None:
+        """Un Suelo solo se sustituye: se actualiza y, si no estaba (KeyError), se da de alta."""
+        celda_atm = self._celda_atmosfera_de(pos)
+        if celda_atm is None:
+            logger.warning(
+                "Sector (%d,%d): Suelo en %s sin Celda_Atmosfera.",
+                self._col,
+                self._row,
+                pos,
+            )
+            return
+        try:
+            celda_atm.actualizar_suelo(
+                pos, suelo.tasa_conversion_radiacion_calor, suelo.inercia_termica
+            )
+        except KeyError:
+            celda_atm.registrar_suelo(
+                pos, suelo.tasa_conversion_radiacion_calor, suelo.inercia_termica
+            )
+
+    def _registrar_resistencia_viento(self, pos, elemento) -> None:
+        celda_atm = self._celda_atmosfera_de(pos)
+        if celda_atm is None:
+            logger.warning(
+                "Sector (%d,%d): %s en %s sin Celda_Atmosfera.",
+                self._col,
+                self._row,
+                elemento.id_elemento,
+                pos,
+            )
+            return
+        celda_atm.registrar_resistencia_elemento(
+            elemento.id_elemento, elemento.resistencia_viento
+        )
+
+    def _eliminar_resistencia_viento(self, pos, id_elemento) -> None:
+        celda_atm = self._celda_atmosfera_de(pos)
+        if celda_atm is None:
+            logger.warning(
+                "Sector (%d,%d): baja de %s en %s sin Celda_Atmosfera.",
+                self._col,
+                self._row,
+                id_elemento,
+                pos,
+            )
+            return
+        celda_atm.eliminar_resistencia_elemento(id_elemento)
+
+    def _resolver_mutaciones(
+        self, mutaciones: list[Mutacion], delta: TickDelta
+    ) -> None:
+        posiciones_cambiadas: set[tuple[int, int]] = set()
+
+        for mutacion in mutaciones:
+            if isinstance(mutacion, CrearElemento):
+                # PENDIENTE (ids de elementos nacidos en tick(), aplazado): sin
+                # id real, Logica rechazaría la celda y sería fatal.
+                if not mutacion.elemento.id_elemento:
+                    logger.error(
+                        "Sector (%d,%d): creación en %s descartada, el elemento (%s) no tiene id.",
+                        self._col,
+                        self._row,
+                        mutacion.pos,
+                        type(mutacion.elemento).__name__,
+                    )
+                    continue
+                celda = self._celdas.get_or_create(*mutacion.pos)
+                if not self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
+                    logger.warning(
+                        "Sector (%d,%d): creación descartada en %s, slot '%s' ocupado.",
+                        self._col,
+                        self._row,
+                        mutacion.pos,
+                        mutacion.tipo_slot,
+                    )
+                    continue
+                posiciones_cambiadas.add(mutacion.pos)
+                self._fijar_casilla(mutacion.elemento, mutacion.pos)
+                if mutacion.tipo_slot == "suelo":
+                    self._sincronizar_atmosfera_de_suelo(
+                        mutacion.pos, mutacion.elemento
+                    )
+                if mutacion.elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                ):
+                    self._registrar_resistencia_viento(mutacion.pos, mutacion.elemento)
+
+            elif isinstance(mutacion, EliminarElemento):
+                elemento, slot = self._quitar_de_celda(
+                    mutacion.pos, mutacion.id_elemento
+                )
+                posiciones_cambiadas.add(mutacion.pos)
+                # El Suelo no se da de baja de la caché: nunca se elimina, solo
+                # se sustituye (lo cubre el CrearElemento que le sigue).
+                if elemento is not None and elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                ):
+                    self._eliminar_resistencia_viento(
+                        mutacion.pos, mutacion.id_elemento
+                    )
+                # Un avatar eliminado consta como bot muerto: el Gestor ordena
+                # terminar su script.
+                if slot == "bot" and elemento is not None:
+                    bot_id = self._elemento_a_bot.pop(mutacion.id_elemento, None)
+                    if bot_id is not None:
+                        self._bots.pop(bot_id, None)
+                        delta.dead_bot_ids.append(bot_id)
+
+            elif isinstance(mutacion, MoverElemento):
+                if not self._en_region_propia(mutacion.pos_destino):
+                    # Cruza a otro Sector: NO se toca el elemento aquí. Se
+                    # declara y el Gestor resuelve (RecibirElemento/ConfirmarSalida).
+                    elemento, slot = self._localizar_en_celda(
+                        mutacion.pos_origen, mutacion.id_elemento
+                    )
+                    if elemento is not None:
+                        self._registrar_movimiento_saliente(
+                            delta, mutacion, elemento, slot
+                        )
+                    continue
+
+                # Movimiento dentro de la región propia.
+                elemento, slot = self._quitar_de_celda(
+                    mutacion.pos_origen, mutacion.id_elemento
+                )
+                posiciones_cambiadas.add(mutacion.pos_origen)
+                if elemento is None:
+                    continue
+                cacheable = elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                )
+                if cacheable:
+                    self._eliminar_resistencia_viento(
+                        mutacion.pos_origen, mutacion.id_elemento
+                    )
+
+                celda_destino = self._celdas.get_or_create(*mutacion.pos_destino)
+                if self._asignar_slot(celda_destino, slot, elemento):
+                    posiciones_cambiadas.add(mutacion.pos_destino)
+                    posicion_final = mutacion.pos_destino
+                else:
+                    logger.warning(
+                        "Sector (%d,%d): movimiento de %s rechazado, slot '%s' de %s ocupado; vuelve a %s.",
+                        self._col,
+                        self._row,
+                        mutacion.id_elemento,
+                        slot,
+                        mutacion.pos_destino,
+                        mutacion.pos_origen,
+                    )
+                    self._asignar_slot(
+                        self._celdas.get_or_create(*mutacion.pos_origen), slot, elemento
+                    )
+                    posicion_final = mutacion.pos_origen
+
+                self._fijar_casilla(elemento, posicion_final)
+
+                if cacheable:
+                    self._registrar_resistencia_viento(posicion_final, elemento)
+                # La posición del BotSnapshot sigue al avatar.
+                if slot == "bot":
+                    bot = self._bots.get(self._elemento_a_bot.get(mutacion.id_elemento))
+                    if bot is not None:
+                        bot.pos.x, bot.pos.y = posicion_final
+
+        delta.changed_cells = [
+            self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas
+        ]
 
     # ─────────────────────────────────────────
     #  FASE 0 — Preparación del tick
@@ -761,19 +982,15 @@ class Sector:
     # ─────────────────────────────────────────
 
     def compute_tick(self, tick_id: int) -> TickDelta:
-        """Ejecuta tick() de cada elemento propio del sector (solo si el
-        sector está ACTIVO), avanza la atmósfera propia, y devuelve el
-        TickDelta resultante para Logica_Mundo.
-
-        Versión con trazas de depuración: el objetivo es que cada punto
-        donde el delta puede quedar vacío o perderse deje rastro en el log.
         """
-
+        Ejecuta tick() de cada elemento propio (solo si el sector está ACTIVO),
+        resuelve las mutaciones que pidieron, avanza la atmósfera propia y deja
+        el TickDelta listo para GetDelta.
+        """
         self._current_tick_id = tick_id
         delta = TickDelta(tick_id=tick_id)
 
-
-        if self._mode != SectorMode.ACTIVO:         
+        if self._mode != SectorMode.ACTIVO:
             self._last_delta = delta
             return delta
 
@@ -792,21 +1009,17 @@ class Sector:
 
         self._procesar_sonidos(ctx)
 
-        # Contador de elementos cuyo tick() se ejecutó de verdad. Si vale 0
-        # con celdas cargadas, el bucle no está haciendo nada.
-        n_ticks = 0
+        # Los elementos solo ACUMULAN mutaciones en ctx (escritura diferida): el
+        # resultado no depende del orden de este bucle.
         for (x, y), celda in list(self._celdas.items()):
             for elemento in (celda.suelo, celda.bot, *celda.resto):
                 if elemento is None:
                     continue
                 try:
-                    # Esta es la línea que estaba COMENTADA en la versión
-                    # actual (y activa en la vieja).
                     elemento.tick(ctx)
                 except Exception:
-                    # Se registra QUÉ elemento falló y se relanza: el
-                    # comportamiento no cambia (el tick sigue abortando),
-                    # pero ya no falla sin decir quién.
+                    # Se registra QUÉ elemento falló y se relanza: el tick aborta
+                    # (StartTick ok=False -> ErrorSincronizacion en el Gestor).
                     logger.exception(
                         "Sector (%d,%d) tick %d: tick() de %s (id=%s) en (%d,%d) falló.",
                         self._col,
@@ -818,29 +1031,16 @@ class Sector:
                         y,
                     )
                     raise
-                n_ticks += 1
 
         delta.mutaciones = ctx.obtener_mutaciones()
 
-     
-        por_tipo: dict[str, int] = {}
-        for m in delta.mutaciones:
-            nombre = type(m).__name__
-            por_tipo[nombre] = por_tipo.get(nombre, 0) + 1
-
-
-        # Todo lo que va entre aquí y `_last_delta = delta` puede perder el
-        # delta si lanza excepción (el Sector ya habría aplicado los cambios
-        # en su copia, pero LogicaMundo no los vería nunca). Se registra y
-        # se relanza para que no pase en silencio.
+        # Desde aquí el Sector ya modifica su copia: si algo lanza, el delta se
+        # pierde y Logica no vería esos cambios. Se registra y se relanza.
         try:
-            self._resolver_mutaciones(delta.mutaciones, delta, ctx)
+            self._resolver_mutaciones(delta.mutaciones, delta)
             delta.emitted_sounds = []  # TODO: junto con _procesar_sonidos
-
             self._avanzar_atmosfera(tick_id)
             delta.changed_atmosphere_cells = self._atmosfera.to_proto_cells()
-
-            self._detectar_migraciones(delta)
         except Exception:
             logger.exception(
                 "Sector (%d,%d) tick %d: excepción tras aplicar mutaciones; "
@@ -850,8 +1050,6 @@ class Sector:
                 tick_id,
             )
             raise
-
-
 
         self._last_delta = delta
         return delta
@@ -946,158 +1144,6 @@ class Sector:
                     )
                 )
         return vecinos
-
-    def _resolver_mutaciones(
-        self, mutaciones: list[Mutacion], delta: TickDelta, ctx: TickContext
-    ) -> None:
-        posiciones_cambiadas: set[tuple[int, int]] = set()
-
-        for mutacion in mutaciones:
-            if isinstance(mutacion, CrearElemento):
-                # PENDIENTE (decisión aplazada): ids de elementos nacidos en tick().
-                # Sin id real, Logica_Mundo rechazaría la celda (ValueError) y eso
-                # es fatal. Hasta resolverlo se descarta con error en el log.
-                # Asumo que un elemento sin id llega con None o 0 (los ids reales
-                # empiezan en 100); si usa otro valor, dímelo.
-                if not mutacion.elemento.id_elemento:
-                    logger.error(
-                        "Sector (%d,%d): creación en %s descartada, el elemento "
-                        "(%s) no tiene id (ids de tick() sin resolver).",
-                        self._col,
-                        self._row,
-                        mutacion.pos,
-                        type(mutacion.elemento).__name__,
-                    )
-                    continue
-                celda = self._celdas.get_or_create(*mutacion.pos)
-                if self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
-                    posiciones_cambiadas.add(mutacion.pos)
-
-                    if mutacion.tipo_slot == "suelo":
-                        self._sincronizar_atmosfera_de_suelo(ctx, mutacion)
-
-                    # Alta de resistencia_viento para cualquier elemento
-                    # estático (típicamente en 'resto', pero no se filtra por
-                    # slot: tiene_flag() ya es False para los que no la
-                    # activan). El nombre de la flag es RESISTENCIA_VIENTO_CACHEABLE (antes
-                    # aquí había RESISTENCIA_VIENTO_CACHEABLE, que no existe).
-                    if mutacion.elemento.tiene_flag(
-                        Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
-                    ):
-                        self._registrar_resistencia_viento(
-                            ctx, mutacion.pos, mutacion.elemento
-                        )
-                else:
-                    logger.warning(
-                        "Sector (%d,%d): creación descartada en %s, slot '%s' ocupado.",
-                        self._col,
-                        self._row,
-                        mutacion.pos,
-                        mutacion.tipo_slot,
-                    )
-
-            elif isinstance(mutacion, EliminarElemento):
-                elemento, slot = self._quitar_de_celda(
-                    mutacion.pos, mutacion.id_elemento
-                )
-                posiciones_cambiadas.add(mutacion.pos)
-
-                # Baja de resistencia_viento si el elemento eliminado era
-                # estático para el viento. El Suelo NO se da de baja de la
-                # caché al eliminarse: un Suelo nunca se elimina, solo se
-                # sustituye (lo cubre el CrearElemento que le sigue).
-                if elemento is not None and elemento.tiene_flag(
-                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
-                ):
-                    self._eliminar_resistencia_viento(
-                        ctx, mutacion.pos, mutacion.id_elemento
-                    )
-
-                # RECONSTRUIDO (en el fichero pegado estaba "... resto sin
-                # cambios ..." con un pass): un avatar eliminado debe
-                # constar como bot muerto para que Gestor_Mundo ordene
-                # terminar su script, y dejar de estar en _bots.
-                if slot == "bot" and elemento is not None:
-                    bot_id = self._elemento_a_bot.pop(mutacion.id_elemento, None)
-                    if bot_id is not None:
-                        self._bots.pop(bot_id, None)
-                        delta.dead_bot_ids.append(bot_id)
-
-            elif isinstance(mutacion, MoverElemento):
-                elemento, slot = self._quitar_de_celda(
-                    mutacion.pos_origen, mutacion.id_elemento
-                )
-                posiciones_cambiadas.add(mutacion.pos_origen)
-                if elemento is None:
-                    continue
-
-                # Baja en la celda de atmósfera de ORIGEN. Se hace
-                # incondicionalmente en cuanto se saca de la celda de
-                # terreno -- si el movimiento se rechaza más abajo (G1)
-                # y el elemento vuelve a pos_origen, se vuelve a dar de
-                # alta ahí.
-                es_estatico_viento = elemento.tiene_flag(
-                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
-                )
-                if es_estatico_viento:
-                    self._eliminar_resistencia_viento(
-                        ctx, mutacion.pos_origen, mutacion.id_elemento
-                    )
-
-                movido = True
-                if self._en_region_propia(mutacion.pos_destino):
-                    celda_destino = self._celdas.get_or_create(*mutacion.pos_destino)
-                    if self._asignar_slot(celda_destino, slot, elemento):
-                        posiciones_cambiadas.add(mutacion.pos_destino)
-                        # Alta en la celda de atmósfera de DESTINO.
-                        if es_estatico_viento:
-                            self._registrar_resistencia_viento(
-                                ctx, mutacion.pos_destino, elemento
-                            )
-                    else:
-                        # G1: el movimiento se rechaza, el elemento vuelve
-                        # a pos_origen -- hay que re-registrar ahí, porque
-                        # arriba ya lo dimos de baja incondicionalmente.
-                        logger.warning(
-                            "Sector (%d,%d): movimiento de %s rechazado, slot '%s' de %s "
-                            "ocupado; vuelve a %s.",
-                            self._col,
-                            self._row,
-                            mutacion.id_elemento,
-                            slot,
-                            mutacion.pos_destino,
-                            mutacion.pos_origen,
-                        )
-                        self._asignar_slot(
-                            self._celdas.get_or_create(*mutacion.pos_origen),
-                            slot,
-                            elemento,
-                        )
-                        movido = False
-                        if es_estatico_viento:
-                            self._registrar_resistencia_viento(
-                                ctx, mutacion.pos_origen, elemento
-                            )
-                else:
-                    # F1: movimiento a otro Sector -- el elemento sale de
-                    # nuestra atmósfera (ya dado de baja arriba) y no se
-                    # registra en ningún sitio aquí: la celda de destino
-                    # pertenece a otro Sector, que se encargará del alta.
-                    self._registrar_movimiento_externo(delta, mutacion, elemento, slot)
-
-                # RECONSTRUIDO (en el fichero pegado estaba "... resto sin
-                # cambios ..." con un pass): la posición del BotSnapshot
-                # debe seguir al avatar, porque _detectar_migraciones decide
-                # si el bot salió de la región mirando bot.pos.
-                if slot == "bot" and movido:
-                    bot_id = self._elemento_a_bot.get(mutacion.id_elemento)
-                    bot = self._bots.get(bot_id) if bot_id is not None else None
-                    if bot is not None:
-                        bot.pos.x, bot.pos.y = mutacion.pos_destino
-
-        delta.changed_cells = [
-            self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas
-        ]
 
     def _sincronizar_atmosfera_de_suelo(
         self, ctx: TickContext, mutacion: CrearElemento

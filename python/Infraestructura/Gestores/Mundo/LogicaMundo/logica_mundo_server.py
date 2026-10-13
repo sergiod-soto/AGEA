@@ -1,29 +1,18 @@
 # Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo_server.py
 """
-logica_mundo_server.py
-
-poblar_suelo=FRESH (NUEVO): LogicaMundo no sabe nada de FRESH/snapshots
-—recibe el flag explícito de quien lo instancia, que es este fichero.
-Si es un arranque en frío (FRESH=true), se puebla el suelo aquí mismo
-al construir LogicaMundo. Si no (se espera restaurar desde un
-snapshot), no se puebla: quien orqueste el resume es responsable de
-llamar al RPC LoadState después de que este proceso arranque — ese
-snapshot ya trae su propio suelo guardado, así que poblarlo aquí sería
-trabajo tirado (se sobreescribiría igualmente al cargar el snapshot).
-Este fichero no contiene ninguna llamada a load_state() — si la
-restauración no llega a ocurrir por lo que sea, el mundo se quedaría
-sin ningún Suelo; es el mismo riesgo que ya existía para cualquier
-otro elemento antes de este cambio, no algo nuevo que introduzca esto.
+Arranca el servidor gRPC de LogicaMundo. Al arrancar NO puebla el mundo:
+- Arranque limpio: el cliente (Gestor/consola) llama al RPC GenerarMundo y
+  sondea EstadoGeneracionMundo hasta COMPLETADA.
+- Arranque desde snapshot: se llama al RPC LoadState.
+Este proceso solo se queda escuchando hasta recibir una señal de apagado.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import sys
 from pathlib import Path
-
 import grpc
 
 sys.path.insert(0, str(Path(__file__).parents[4]))
@@ -49,7 +38,6 @@ from Config.settings import (
     LOGICA_MUNDO_PORT,
     MODO,
     LOG_DIR,
-    FRESH,
 )
 
 logger = logging.getLogger("logica_mundo_server")
@@ -78,9 +66,6 @@ async def serve() -> None:
 
     gestor_bots_client = GestorBotsClientAsync(gestor_bots_address)
 
-    # poblar_suelo=FRESH: ver docstring del módulo — solo se puebla el
-    # suelo aquí si es un arranque en frío; si se va a restaurar un
-    # snapshot, ese snapshot ya trae el suelo consigo.
     logica = LogicaMundo(gestor_bots_client=gestor_bots_client)
     servicer = LogicaMundoServicer(logica)
 
@@ -116,8 +101,10 @@ async def serve() -> None:
     registrar_signals(loop, _shutdown)
 
     await stop_event.wait()
-    await gestor_bots_client.close()
-    await server.stop(grace=5)
+    logger.info("Apagando Logica_Mundo...")
+    await logica.apagar()  # cancela la generación del mundo si está en curso
+    await server.stop(grace=5)  # deja terminar los RPC en vuelo (p. ej. MatarBot)
+    await gestor_bots_client.close()  # DESPUÉS de stop: esos RPC aún lo usan
     logger.info("Logica_Mundo apagado.")
 
 

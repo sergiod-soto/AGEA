@@ -26,7 +26,7 @@ class Perecedero(Temporal):
         "tiempo_actual_perecedero: float = None",
     }
     ABSTRACTOS = {
-        "def tick(self) -> None",
+        "def tick_comportamiento(self) -> None",
         "def desaparecer(self) -> None",
     }
 
@@ -60,7 +60,7 @@ class Perecedero(Temporal):
         super().deserializar(data, mundo)
 
     @abstractmethod
-    def tick(self) -> None: ...
+    def tick_comportamiento(self) -> None: ...
 
     @abstractmethod
     def desaparecer(self) -> None: ...

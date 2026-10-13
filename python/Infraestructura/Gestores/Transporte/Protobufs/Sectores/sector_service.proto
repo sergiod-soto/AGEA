@@ -49,6 +49,9 @@ service SectorService {
 
   // ----- Consulta de atributos (debug/dev) -----
   rpc GetElementAttributes (GetElementAttributesRequest) returns (GetElementAttributesResponse);
+
+  rpc RecibirElemento (RecibirElementoRequest) returns (RecibirElementoResponse);
+  rpc ConfirmarSalida (ConfirmarSalidaRequest) returns (ConfirmarSalidaResponse);
 }
 
 // ============================================================
@@ -207,13 +210,45 @@ message GetDeltaResponse {
   uint64 tick_id = 3;
 
   repeated common.Cell       changed_cells  = 4;
-  repeated MigratingBot      outgoing_bots  = 5;
   repeated uint64            dead_bot_ids   = 6;
   repeated common.SoundEvent emitted_sounds = 7;
-  // NUEVO -- ver TickDelta.changed_atmosphere_cells (comentado hoy en
-  // sector a la espera de este mensaje; descomentar al regenerar).
-  repeated common.AtmosphereCell    changed_atmosphere_cells = 8;
-  repeated common.MovimientoExterno movimientos_externos     = 9;
+
+  // Estado completo de las celdas de atmósfera propias, ya avanzadas este tick.
+  repeated common.AtmosphereCell changed_atmosphere_cells = 8;
+
+  // Elementos que quieren pasar a otro Sector. NO han salido de su celda: el
+  // Gestor los resuelve con RecibirElemento (destino) y ConfirmarSalida (origen).
+  repeated common.MovimientoSaliente movimientos_salientes = 10;
+
+  // Eliminados: 5 (outgoing_bots, sustituido por RecibirElemento) y 9
+  // (movimientos_externos, sustituido por movimientos_salientes).
+  reserved 5, 9;
+  reserved "outgoing_bots", "movimientos_externos";
+}
+
+message RecibirElementoRequest {
+  uint64                    tick_id    = 1;
+  common.MovimientoSaliente movimiento = 2;
+}
+
+message RecibirElementoResponse {
+  bool        ok             = 1;   // false: fallo real del RPC
+  string      error          = 2;
+  bool        aceptado       = 3;   // false: rechazo normal (no es un error)
+  string      motivo_rechazo = 4;
+  common.Cell celda_destino  = 5;   // celda resultante, solo si aceptado
+}
+
+message ConfirmarSalidaRequest {
+  uint64          tick_id     = 1;
+  uint64          id_elemento = 2;
+  common.Position pos_origen  = 3;
+}
+
+message ConfirmarSalidaResponse {
+  bool        ok           = 1;
+  string      error        = 2;
+  common.Cell celda_origen = 3;     // celda de origen ya sin el elemento
 }
 
 // ============================================================

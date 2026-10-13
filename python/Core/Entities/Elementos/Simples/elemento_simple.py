@@ -5,12 +5,15 @@ from Core.Entities.Elementos.elemento import Elemento
 
 class Elemento_Simple(Elemento):
     """
-    - tipo,
-    - tamanho: int,
-    - casilla: tuple[int, int],
-    - capa: int,
-    - rotacion: float = 0,
-    - resistencia_viento: float = 0.0,
+    Elemento que ocupa una casilla del mundo.
+
+    Parametros:
+    - tipo, id_elemento, capa: se pasan al Elemento base
+    - tamanho: float
+    - casilla: tuple[int, int]
+    - rotacion: float = 0 (grados; se normaliza a [0, 360) al serializar)
+    - resistencia_viento: float = 0.0, en [0, 1]
+      (0 = no frena el viento, 1 = lo bloquea del todo)
     """
 
     FLAGS_DISPONIBLES = frozenset(
@@ -39,9 +42,22 @@ class Elemento_Simple(Elemento):
         self.tamanho = tamanho
         self.casilla = casilla
         self.rotacion = rotacion
-        self.resistencia_viento = resistencia_viento
+        self.resistencia_viento = self._validar_resistencia_viento(resistencia_viento)
 
-    # --- Hooks por campo (se mantienen): conversión de formato ---
+    @staticmethod
+    def _validar_resistencia_viento(valor: float) -> float:
+        """
+        Fuera de [0, 1] el modelo multiplicativo del viento daría pasos
+        libres negativos o >1 y fallaría lejos del origen del error. Se
+        comprueba aquí (el `not` también rechaza NaN).
+        """
+        if not 0.0 <= valor <= 1.0:
+            raise ValueError(
+                f"resistencia_viento debe estar en [0, 1]; recibido {valor!r}"
+            )
+        return valor
+
+    # --- Hooks por campo: conversión de formato ---
     # serializar_X: valor interno -> valor serializable.
     # deserializar_X: lo inverso (también lo usa Elemento.aplicar_patch).
 
@@ -54,13 +70,16 @@ class Elemento_Simple(Elemento):
     def deserializar_casilla(self, value):
         self.casilla = (value["x"], value["y"])
 
-    # 'rotacion' se normaliza a [0, 360) al serializar.
     def serializar_rotacion(self):
         return self.rotacion % 360
 
-    # (typo corregido: antes "serializar_resistenca_viento")
     def serializar_resistencia_viento(self):
         return self.resistencia_viento
+
+    def deserializar_resistencia_viento(self, value) -> None:
+        # Hook con validación: un patch de consola (modificar_elemento)
+        # pasa por aquí en vez de un setattr que se saltaría el rango.
+        self.resistencia_viento = self._validar_resistencia_viento(value)
 
     # --- Cadena serializar / representar / deserializar ---
 
@@ -95,4 +114,4 @@ class Elemento_Simple(Elemento):
         self.tamanho = data["tamanho"]
         self.deserializar_casilla(data["casilla"])
         self.rotacion = data["rotacion"]
-        self.resistencia_viento = data["resistencia_viento"]
+        self.deserializar_resistencia_viento(data["resistencia_viento"])

@@ -14,10 +14,13 @@ class Suelo_Piedra(Suelo, Rocoso):
             inercia_termica=1.4e6,
         )
 
-    # def representar(self, incluir: list[str] | None = None) -> dict:
-    #     datos = super().representar(incluir)
-    #     if self._incluido(incluir, __class__):
-    #         datos["elemento"]["textura"] = "piedra"
-    #     return datos
+    def representar(self, incluir: list[str] | None = None) -> dict:
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["elemento"][
+                "tasa_conversion_radiacion_calor"
+            ] = self.tasa_conversion_radiacion_calor
+            datos["elemento"]["inercia_termica"] = self.inercia_termica
+        return datos
 
-    def tick(self, ctx): ...
+    def tick_elemento(self, ctx): ...

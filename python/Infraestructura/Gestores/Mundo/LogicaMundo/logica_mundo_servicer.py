@@ -29,6 +29,7 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         # implementación; si un módulo no está en FUNCIONES (registry.py),
         # el método falla con KeyError al llamarse.
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
+        
 
     async def Shutdown(self, request, context):
         return await self._dispatch["Shutdown"].handle(self._logica, request, context)

@@ -160,11 +160,10 @@ class ComunicacionesLocal:
         return resp
 
     async def crear_elemento(
-        self, pos: tuple[int, int], type_id: str, element: bytes
+        self, pos: tuple[int, int], element: bytes
     ) -> tuple[bool, str]:
         req = logica_pb.CrearElementoRequest(
             pos=common_pb.Position(x=pos[0], y=pos[1]),
-            type_id=type_id,
             element=element,
         )
         raw = await self._ejecutar(bridge_pb.LOGICA_MUNDO, "CrearElemento", req)

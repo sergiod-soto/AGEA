@@ -84,7 +84,7 @@ class TickContext:
         Devuelve la celda VIVA (no una copia): en compute_tick, tick() de
         los elementos corre ANTES de _avanzar_atmosfera, así que esto ya
         es consistente con leer "estado de inicio de tick" sin necesidad
-        de congelar nada. Solo para LECTURA desde tick() de los elementos. 
+        de congelar nada. Solo para LECTURA desde tick() de los elementos.
         Las cachés de la celda las mantiene únicamente Sector.
 
         None si la posición no está en la malla propia del Sector.
@@ -101,7 +101,6 @@ class TickContext:
         revisarlo: o se unifica el tipo devuelto, o se documenta que
         get_atmosfera solo sirve para "mi propia celda".
         """
-        pos_atmosfera = pos_terreno_a_atmosfera(x, y, self._escala_atmosfera)
         if self._atmosfera is None:
             return None
         return self._atmosfera.get(

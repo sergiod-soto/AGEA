@@ -15,6 +15,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     get_elementos_globales,
     heartbeat,
     load_state,
+    matar_bot,
     modificar_elemento,
     obtener_audio,
     obtener_bots_en_region,
@@ -58,6 +59,7 @@ FUNCIONES = [
     heartbeat,
     get_elementos_globales,
     shutdown,
+    matar_bot,
     #
     # ----- sistema atmosférico --------
     obtener_celdas_atmosfera_en_region,

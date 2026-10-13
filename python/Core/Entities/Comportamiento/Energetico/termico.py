@@ -60,7 +60,7 @@ class Termico(Energetico):
             "radio_termico",
         }
 
-    def tick(self, elementos: list[(float, float)]) -> float:
+    def tick_comportamiento(self, elementos: list[(float, float)]) -> float:
         # TODO: comprobar que tick no machaque a super().tick()
         """
         calculo del intercambio de temperaturas con el resto de elementos.

@@ -1,4 +1,4 @@
-# Core/Entitites/Elementos/Simples/Bot/bot.py
+# Core/Entities/Elementos/Simples/Bot/bot.py
 
 # el elemento bot se encuentra en etapa muy temprana e incompleta
 
@@ -119,7 +119,6 @@ class Bot(Elemento_Simple, comportamientos):
         self,
         id_elemento,
         stats_script: dict[str, int],
-        id_bot,
         tamanho: int,
         casilla,
         rotacion: float,
@@ -147,7 +146,7 @@ class Bot(Elemento_Simple, comportamientos):
             Vida(valor=0),
             #
             # Informacion
-            ID(id_bot),
+            ID(stats_script["id"]),  # ID de bot, no id_elemento
         ]
 
         super().__init__(
@@ -175,13 +174,7 @@ class Bot(Elemento_Simple, comportamientos):
             stats=stats,
         )
 
-    def set_casilla(self, new_casilla: Tuple[int, int]):
-        self.casilla = new_casilla
-
     def set_rotacion(self, rotacion):
         self.rotacion = rotacion
 
-    def serializar_adn(self):
-        return self.adn
-
-
+    def tick_elemento(self, ctx): ...

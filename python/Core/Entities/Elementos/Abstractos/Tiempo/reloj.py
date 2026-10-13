@@ -65,6 +65,11 @@ class Reloj(Marcador_Temporal):
             self.tick_actual = start
             self._contador = 0
 
+            if end <= 0:
+                raise ValueError(f"Ciclo: 'end' debe ser > 0 (recibido {end}).")
+            if paso < 1:
+                raise ValueError(f"Ciclo: 'paso' debe ser >= 1 (recibido {paso}).")
+
         def next_tick(self) -> None:
             self._contador += 1
 
@@ -76,6 +81,11 @@ class Reloj(Marcador_Temporal):
 
             if self.tick_actual >= self._end:
                 self.tick_actual = 0
+
+        @property
+        def progreso(self) -> float:
+            """Fracción del ciclo recorrida, en [0, 1)."""
+            return self.tick_actual / self._end
 
     def __init__(self, **kwargs):
         super().__init__(Reloj, id_elemento=ID_RELOJ, **kwargs)

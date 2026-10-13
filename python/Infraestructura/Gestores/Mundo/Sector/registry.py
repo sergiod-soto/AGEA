@@ -1,10 +1,10 @@
-# Gestores/Mundo/Sector/registry.py
+# Infraestructura/Gestores/Mundo/Sector/registry.py
+
 from Infraestructura.Gestores.Mundo.Sector.Funciones import (
     shutdown,
     start_tick,
 )
 from Infraestructura.Gestores.Mundo.Sector.Funciones import (
-    add_migrating_bot,
     get_delta,
     get_state,
     load_state,
@@ -12,6 +12,8 @@ from Infraestructura.Gestores.Mundo.Sector.Funciones import (
     set_ghost_zone,
     set_sector_mode,
     set_sounds,
+    recibir_elemento,
+    confirmar_salida,
 )
 from Infraestructura.Gestores.Mundo.Sector.Funciones import (
     set_atmosphere_ghost_zone,
@@ -23,14 +25,13 @@ FUNCIONES = [
     load_state,
     get_state,
     set_ghost_zone,
-    add_migrating_bot,
     start_tick,
     get_delta,
     save_snapshot,
     shutdown,
-    #
-    # ----- funciones añadidas --------
     set_sounds,
+    recibir_elemento,
+    confirmar_salida,
     #
     # ----- sistema atmosférico --------
     set_atmosphere_ghost_zone,

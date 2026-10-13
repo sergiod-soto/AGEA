@@ -42,6 +42,7 @@ from Core.Entities.Comportamiento.Salud.hidratante import Hidratante
 from Core.Entities.Comportamiento.Salud.medicinal import Medicinal
 from Core.Entities.Comportamiento.Salud.nutritivo import Nutritivo
 from Core.Entities.Comportamiento.Salud.salud import Salud
+from Core.Entities.Comportamiento.Stats.tiene_stats import Tiene_Stats
 from Core.Entities.Comportamiento.Temporal.regenerable import Regenerable
 from Core.Entities.Comportamiento.Salud.toxico import Toxico
 from Core.Entities.Comportamiento.Social.intercambiable import Intercambiable
@@ -202,6 +203,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Termico": Termico,
     "Terreno": Terreno,
     "Terroso": Terroso,
+    "Tiene_Stats": Tiene_Stats,
     "Toxico": Toxico,
     "Transformable": Transformable,
     # U

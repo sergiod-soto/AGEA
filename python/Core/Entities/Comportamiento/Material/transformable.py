@@ -42,7 +42,7 @@ class Transformable(Material):
     def get_condiciones(self) -> list[Condicion]:
         return list(self.dict_transformable.keys())
 
-    def tick(self, pos: tuple[int, int], ctx) -> None:
+    def tick_comportamiento(self, pos: tuple[int, int], ctx) -> None:
         """Una transformación por tick -- si en algún caso real hiciera
         falta encadenar varias en el mismo tick, esto habría que
         revisarlo entonces. Se itera sobre una copia (list(...)) porque

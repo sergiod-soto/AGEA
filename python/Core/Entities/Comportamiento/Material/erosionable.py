@@ -60,7 +60,7 @@ class Erosionable(Material):
     def _campos_internos(cls):
         return {"durabilidad_actual_erosion"}
 
-    def tick_erosion(self, ctx) -> None:
+    def tick_comportamiento(self, ctx) -> None:
         # TODO: comporbar que funciona correctamente y no machaca ningun otro tick()
         for condiciones, cantidad in self.condiciones_erosion:
             if all(c.evaluar() for c in condiciones):

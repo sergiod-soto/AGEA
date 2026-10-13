@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo_server.py
+# Infraestructura/Gestores/Mundo/GestorMundo/gestor_mundo_server.py
 """
 gestor_mundo_server.py
 
@@ -28,9 +28,20 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Otros import (
     log_pull_service_pb2_grpc,
 )
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
-from Config.settings import FRESH, GESTOR_MUNDO_HOST, GESTOR_MUNDO_PORT, LOG_LEVEL, LOGICA_MUNDO_ADDRESS, MODO, LOG_DIR
+from Config.settings import (
+    FRESH,
+    GESTOR_MUNDO_HOST,
+    GESTOR_MUNDO_PORT,
+    LOG_LEVEL,
+    LOGICA_MUNDO_ADDRESS,
+    MODO,
+    LOG_DIR,
+)
 from Utils.Sistema.sistema import registrar_signals
-from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import GestorMundo
+from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import (
+    ErrorFatal,
+    GestorMundo,
+)
 from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo_servicer import (
     GestorMundoServicer,
 )
@@ -48,24 +59,21 @@ logger = logging.getLogger(__name__)
 _COMPONENT_ID = "mundo"
 
 
-async def serve(fresh: bool, log_level: int) -> None:
-    # Logging: única fuente de verdad para el logger raíz (sin
-    # logging.basicConfig() en paralelo — ver mismo razonamiento en
-    # sector_server.py / gestor_bots_server.py / hypervisor_server.py).
+async def serve(fresh: bool, log_level: int) -> int:
+    """
+    Arranca el GestorMundo y lo mantiene vivo. Devuelve el código de salida del
+    proceso: 0 = apagado ordenado (señal), 1 = error fatal o bucle de ticks
+    muerto. No hay reintento: un fallo de sincronización deja los Sectores y
+    Logica divergiendo, así que el proceso debe morir.
+    """
+    # Logging: única fuente de verdad para el logger raíz.
     if MODO == "local":
         setup_local_logging(component=_COMPONENT_ID, log_dir=LOG_DIR, level=log_level)
     else:
         log_handler = setup_buffered_logging(component=_COMPONENT_ID, level=log_level)
 
-    # Cliente hacia Logica_Mundo — GestorMundo lo necesita para TODA su
-    # lógica de estado desde el refactor (obtener_celdas_en_region,
-    # actualizar_celdas, avanzar_elementos_globales, save_snapshot,
-    # load_state — ver gestor_mundo.py). Mismo patrón que
-    # gestor_bots_server.py/comunicaciones_remoto_server.py: dirección
-    # vía env var, conexión perezosa (el propio cliente no abre canal
-    # hasta la primera llamada).
+    # Cliente hacia Logica_Mundo: conexión perezosa, dirección por env var.
     logica_client = LogicaMundoClient(LOGICA_MUNDO_ADDRESS)
-
     gestor = GestorMundo(logica_client=logica_client)
     servicer = GestorMundoServicer(gestor)
 
@@ -78,8 +86,7 @@ async def serve(fresh: bool, log_level: int) -> None:
     pb_grpc.add_GestorMundoServiceServicer_to_server(servicer, server)
 
     if MODO != "local":
-        # Mismo servidor y puerto que GestorMundoService — no se abre
-        # ningún puerto adicional para logs.
+        # Mismo servidor y puerto: no se abre ningún puerto adicional para logs.
         log_pull_service_pb2_grpc.add_LogPullServiceServicer_to_server(
             LogPullServicerAsync(log_handler), server
         )
@@ -89,43 +96,55 @@ async def serve(fresh: bool, log_level: int) -> None:
     await server.start()
     logger.info("GestorMundo gRPC escuchando en %s", address)
 
-    await gestor.start(fresh=fresh)
-
-    loop = asyncio.get_running_loop()
-    stop_event = asyncio.Event()
-
-    def _shutdown(sig):
-        logger.info("Señal %s recibida — apagando...", sig.name)
-        loop.call_soon_threadsafe(stop_event.set)
-
-    registrar_signals(loop, _shutdown)
-
-    tick_task = asyncio.create_task(_run_tick_loop(gestor), name="tick_loop")
-
-    await stop_event.wait()
-
-    logger.info("Deteniendo bucle de ticks...")
-    tick_task.cancel()
+    codigo_salida = 0
+    tareas: list[asyncio.Task] = []
     try:
-        await tick_task
-    except asyncio.CancelledError:
-        pass
+        await gestor.start(fresh=fresh)
 
-    logger.info("Apagando servidor gRPC...")
-    await server.stop(grace=5)
-    await logica_client.close()
-    logger.info("GestorMundo detenido.")
+        loop = asyncio.get_running_loop()
+        stop_event = asyncio.Event()
 
+        def _shutdown(sig):
+            logger.info("Señal %s recibida — apagando...", sig.name)
+            loop.call_soon_threadsafe(stop_event.set)
 
-async def _run_tick_loop(gestor: GestorMundo) -> None:
-    while True:
-        try:
-            await gestor.run_loop()
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            logger.exception("Error en bucle de ticks — reintentando en 1s")
-            await asyncio.sleep(1)
+        registrar_signals(loop, _shutdown)
+
+        # run_loop se lanza SIN envoltorio de reintento: cualquier excepción
+        # (incluida ErrorFatal) mata la tarea y, con ella, el proceso.
+        tick_task = asyncio.create_task(gestor.run_loop(), name="tick_loop")
+        stop_task = asyncio.create_task(stop_event.wait(), name="stop_wait")
+        fatal_task = asyncio.create_task(gestor.fatal_event.wait(), name="fatal_wait")
+        tareas = [tick_task, stop_task, fatal_task]
+
+        # Lo primero que ocurra: señal de apagado, fatal escalado (resume(),
+        # tareas de fondo) o muerte del bucle de ticks.
+        await asyncio.wait(tareas, return_when=asyncio.FIRST_COMPLETED)
+
+        if not stop_task.done():
+            codigo_salida = 1
+            if tick_task.done() and not tick_task.cancelled():
+                exc = tick_task.exception()
+                logger.critical("El bucle de ticks murió: %r", exc, exc_info=exc)
+            else:
+                logger.critical("Error fatal escalado: %r", gestor.error_fatal)
+    except ErrorFatal:
+        # Fatal durante el arranque (p. ej. ErrorCargaSector en start()).
+        logger.critical("Arranque abortado por error fatal.", exc_info=True)
+        codigo_salida = 1
+    finally:
+        logger.info("Deteniendo bucle de ticks...")
+        for t in tareas:
+            t.cancel()
+        await asyncio.gather(*tareas, return_exceptions=True)
+
+        logger.info("Apagando servidor gRPC...")
+        await server.stop(grace=5)
+        await gestor.close()  # canales a sectores y a Gestor_Bots
+        await logica_client.close()
+
+    logger.info("GestorMundo detenido (código %d).", codigo_salida)
+    return codigo_salida
 
 
 def main() -> None:
@@ -138,15 +157,11 @@ def main() -> None:
     args = parser.parse_args()
     log_level = getattr(logging, args.log_level)
 
-    # Sin logging.basicConfig() aquí: serve() configura el logger raíz vía
-    # setup_local_logging/setup_buffered_logging. Tenerlos duplicados hacía
-    # que basicConfig() añadiera un StreamHandler antes de tiempo, y el
-    # guard "if not root.handlers" de esas funciones quedaba siempre en
-    # falso — el fichero de log nunca llegaba a añadirse (bug ya cazado).
     try:
-        asyncio.run(serve(fresh=FRESH, log_level=log_level))
+        codigo = asyncio.run(serve(fresh=FRESH, log_level=log_level))
     except KeyboardInterrupt:
-        pass
+        codigo = 0
+    sys.exit(codigo)
 
 
 if __name__ == "__main__":

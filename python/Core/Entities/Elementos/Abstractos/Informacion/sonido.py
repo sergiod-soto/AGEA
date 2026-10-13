@@ -351,38 +351,34 @@ class Sonido(Elemento_Abstracto):
     # Serializacion
     # ------------------------------------------------------------------
 
-    def serializar_referencia(self) -> dict:
+    def serializar(self) -> dict:
         """
-        Lo que va en cada tick / cada llamada a Comportamiento.serializar():
-        solo el id de contenido y metadatos minimos. NO incluye vector ni
-        pcm -- eso se pide aparte, una sola vez, via serializar_audio().
+        Snapshots: TODA la información del sonido. La cadena super()
+        (Elemento) aporta __clase__, id_elemento, capa y comportamientos;
+        encima se añade el audio (id, duracion, vol, vector, pcm).
+        Es pesado (el pcm son miles de muestras): no usarlo en cada tick.
         """
-        return {
-            "id": self.id_sonido,
-            "duracion": self.duracion,
-            "vol": self.vol,
-        }
+        datos = super().serializar()
+        datos.update(
+            {
+                "id": self.id_sonido,
+                "duracion": self.duracion,
+                "vol": self.vol,
+                "vector": self.vector.tolist(),
+                "pcm": self.pcm.tolist(),
+            }
+        )
+        return datos
 
-    def serializar_audio(self) -> dict:
+    def representar(self, incluir: list[str] | None = None) -> dict:
         """
-        Payload completo de audio (vector/pcm convertidos a listas planas,
-        JSON-serializable). Se llama bajo demanda desde el cache externo
-        (p.ej. logica_mundo) cuando un id_sonido no esta todavia
-        registrado -- no en cada tick.
+        Lo que ve el exterior por defecto: solo el id del sonido (más la
+        cabecera común de Elemento). El audio se pide aparte (ObtenerAudio).
         """
-        return {
-            "id": self.id_sonido,
-            "duracion": self.duracion,
-            "vol": self.vol,
-            "vector": self.vector.tolist(),
-            "pcm": self.pcm.tolist(),
-        }
-
-    def serializar(self):
-        return self.serializar_audio()
-
-    def representar(self):
-        return self.serializar_referencia()
+        datos = super().representar(incluir)
+        if self._incluido(incluir, __class__):
+            datos["elemento"]["id_sonido"] = self.id_sonido
+        return datos
 
     # ------------------------------------------------------------------
     # Memoria en biblioteca

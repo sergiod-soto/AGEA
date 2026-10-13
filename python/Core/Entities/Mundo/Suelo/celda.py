@@ -18,10 +18,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-
 @dataclass
 class Celda:
-    suelo: int = None
+    Optional[int] = None
     bot: Optional[int] = None
     resto: list[int] = field(default_factory=list)
 

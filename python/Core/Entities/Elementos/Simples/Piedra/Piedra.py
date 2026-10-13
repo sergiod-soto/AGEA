@@ -24,13 +24,6 @@ from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Elementos.elemento import Elemento
 from Exceptions.Bot.comportamientos_exceptions import Peso_Zero
 
-#
-# las piedras son elementos que pueden ser movidas a cambio de energia, no
-# decaen a lo largo del tiempo.
-#
-#
-
-
 comportamientos = Comportamiento.declarar_comportamientos(
     Agarrable,
     Color,
@@ -169,7 +162,7 @@ class Piedra(Elemento_Simple, comportamientos):
     def restaurar(self, danho: float): ...
     def _destruir(self, danho: float): ...
 
-    def tick(self, ctx): ...
+    def tick_elemento(self, ctx): ...
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

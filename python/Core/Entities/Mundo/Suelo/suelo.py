@@ -4,6 +4,16 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 
 
 class Suelo(Elemento_Abstracto):
+    """
+    Base de cada casilla. En la física solo hace dos cosas: convierte la
+    radiación en calor y fija la inercia térmica de la CELDA completa
+    (la temperatura es única por celda, aire+suelo; el suelo es la única
+    "batería" de calor).
+
+    - tasa_conversion_radiacion_calor: en [0, 100].
+    - inercia_termica: J/(m²·K), debe ser > 0. Cada valor INCLUYE ~1e6 de
+      la capa de aire de la celda: los Suelo_* concretos deben documentarlo.
+    """
 
     def __init__(
         self,
@@ -14,6 +24,9 @@ class Suelo(Elemento_Abstracto):
         inercia_termica,
         **kwargs,
     ):
+        # Se valida antes de construir: con valores inválidos el error
+        # saltaría en el primer tick de atmósfera, lejos de su origen.
+        self._validar(tasa_conversion_radiacion_calor, inercia_termica)
         super().__init__(
             tipo=tipo,
             id_elemento=id_elemento,
@@ -23,13 +36,20 @@ class Suelo(Elemento_Abstracto):
         self.tasa_conversion_radiacion_calor = tasa_conversion_radiacion_calor
         self.inercia_termica = inercia_termica
 
-    # --- Hooks por campo (se mantienen): conversión de formato ---
+    @staticmethod
+    def _validar(tasa, inercia) -> None:
+        # `not (...)` en vez de `<`/`>` para rechazar también NaN.
+        if not 0 <= tasa <= 100:
+            raise ValueError(
+                f"tasa_conversion_radiacion_calor debe estar en [0, 100]; recibido {tasa!r}"
+            )
+        if not inercia > 0:
+            raise ValueError(f"inercia_termica debe ser > 0; recibido {inercia!r}")
+
+    # --- Hooks por campo: conversión de formato ---
 
     def serializar_casilla(self) -> dict:
-        """
-        Formato {"x":, "y":}: es el que Unity espera para 'casilla' en
-        cualquier tipo de elemento (mismo formato que Elemento_Simple).
-        """
+        """Formato {"x":, "y":}: el que Unity espera para 'casilla'."""
         x, y = self.casilla
         return {"x": x, "y": y}
 
@@ -51,10 +71,8 @@ class Suelo(Elemento_Abstracto):
 
     def representar(self, incluir: list[str] | None = None) -> dict:
         """
-        El suelo es la base visual imprescindible, no un dato opcional:
-        IGNORA `incluir` y manda siempre todo (decisión explícita que ya
-        tenía representar_suelo). Se consigue pasando None ("todo") a la
-        cadena super(), así los comportamientos tampoco se filtran.
+        El suelo es la base visual imprescindible: IGNORA `incluir` y manda
+        siempre todo (pasando None a la cadena super()).
         """
         datos = super().representar(None)
         datos["elemento"]["casilla"] = self.serializar_casilla()
@@ -62,6 +80,7 @@ class Suelo(Elemento_Abstracto):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        self._validar(data["tasa_conversion_radiacion_calor"], data["inercia_termica"])
         self.deserializar_casilla(data["casilla"])
         self.tasa_conversion_radiacion_calor = data["tasa_conversion_radiacion_calor"]
         self.inercia_termica = data["inercia_termica"]

@@ -10,5 +10,5 @@ NAME = "CrearElemento"
 
 async def handle(logica, request, context):
     pos = (request.pos.x, request.pos.y)
-    ok, error = await logica.crear_elemento(pos, request.type_id, request.element)
+    ok, error = await logica.crear_elemento(pos, request.element)
     return common_pb.Ack(ok=ok, error=error)

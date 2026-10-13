@@ -59,7 +59,7 @@ message LogicaMundoHeartbeatResponse {
 
 message AsignarIdRequest {}
 
-// FIX: el campo se llamaba "id"; logica_mundo_client.py siempre leyó
+// FIX: el campo se llamaba "id"; logica_mundo_client siempre leyó
 // "resp.id_elemento" (el nombre usado en el resto del sistema para
 // identificar un elemento del mundo), así que aquí se renombra el
 // campo del proto en vez de tocar el cliente.
@@ -69,8 +69,7 @@ message AsignarIdResponse {
 
 message CrearElementoRequest {
   common.Position pos     = 1;
-  string          type_id = 2;
-  bytes           element = 3;
+  bytes           element = 2;
 }
 
 message ModificarElementoRequest {
@@ -193,9 +192,6 @@ message ObtenerCeldasEnRegionResponse {
 
 message ActualizarCeldasRequest {
   repeated common.Cell changed_cells = 1;
-  // NUEVO: movimientos entre sectores del tick (antes solo viajaban por
-  // GetDelta hasta el gestor y no llegaban a Logica_Mundo).
-  repeated common.MovimientoExterno movimientos_externos = 2;
 }
 
 // Un movimiento externo que Logica_Mundo NO aceptó (slot de destino ya
@@ -212,7 +208,6 @@ message RechazoMovimiento {
 message ActualizarCeldasResponse {
   bool                       ok         = 1;
   string                     error      = 2;
-  repeated RechazoMovimiento rechazados = 3;
 }
 
 // ============================================================
@@ -277,7 +272,6 @@ message ConsultarRepresentarRequest {
   common.Position min     = 1;
   common.Position max     = 2;
   repeated string incluir = 3;
-  string          modo    = 4;
 }
 
 message ConsultarRepresentarResponse {

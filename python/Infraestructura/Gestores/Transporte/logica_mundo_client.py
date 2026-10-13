@@ -6,7 +6,7 @@ logica_mundo_client.py — Cliente async gRPC hacia LogicaMundo.
 Usado por:
   - Gestor_Mundo   → celdas de región, actualizar celdas, celdas de
                       atmósfera, progreso de ciclos globales, elementos
-                      globales, snapshots (ver gestor_mundo.py)
+                      globales, snapshots (ver gestor_mundo)
   - Gestor_Bots    → resolver_accion (reenvío de acciones de bots)
   - Comunicacion_Remoto (local) → consultar_representar, eventos
                       globales, alta/edición/baja de elementos
@@ -123,14 +123,11 @@ class LogicaMundoClient:
     async def crear_elemento(
         self,
         pos: tuple[int, int],
-        type_id: str,
         element: bytes,
         timeout: float | None = None,
     ) -> tuple[bool, str]:
         await self._ensure_channel()
-        req = pb.CrearElementoRequest(
-            pos=self._pos_to_pb(pos), type_id=type_id, element=element
-        )
+        req = pb.CrearElementoRequest(pos=self._pos_to_pb(pos), element=element)
         try:
             resp = await self._stub.CrearElemento(req, timeout=self._t(timeout))
             return resp.ok, resp.error
@@ -311,11 +308,17 @@ class LogicaMundoClient:
             resp = await self._stub.EstadoGeneracionMundo(
                 pb.EstadoGeneracionMundoRequest(), timeout=self._t(None)
             )
+
+            if not resp.ok:
+                raise RuntimeError(f"EstadoGeneracionMundo: {resp.error}")
+
             estado = pb.EstadoGeneracion.Name(resp.estado)
             if estado == "COMPLETADA":
                 return
             if estado == "ERROR":
-                raise RuntimeError(f"Generación del mundo fallida: {resp.error}")
+                raise RuntimeError(
+                    f"Generación del mundo fallida: {resp.error_generacion}"
+                )
             if estado == "NO_INICIADA":
                 raise RuntimeError(
                     "La generación no se ha iniciado: llama antes a generar_mundo()."
@@ -369,25 +372,16 @@ class LogicaMundoClient:
         return list(resp.cells)
 
     async def actualizar_celdas(
-        self,
-        changed_cells: list,
-        movimientos_externos: list | None = None,
-        timeout: float | None = None,
-    ) -> dict[int, tuple[int, int] | None]:
-        """Devuelve los movimientos rechazados: {id_elemento: pos a la que se
-        devolvió, o None si el elemento se eliminó}. PROPAGA errores."""
+        self, changed_cells: list, timeout: float | None = None
+    ) -> None:
+        """PROPAGA errores (red o ok=False): no hay valor neutro que devolver."""
         await self._ensure_channel()
-        req = pb.ActualizarCeldasRequest(
-            changed_cells=changed_cells,
-            movimientos_externos=movimientos_externos or [],
+        resp = await self._stub.ActualizarCeldas(
+            pb.ActualizarCeldasRequest(changed_cells=changed_cells),
+            timeout=self._t(timeout),
         )
-        resp = await self._stub.ActualizarCeldas(req, timeout=self._t(timeout))
         if not resp.ok:
             raise RuntimeError(f"ActualizarCeldas: {resp.error}")
-        return {
-            r.id_elemento: None if r.eliminado else (r.pos_devuelta.x, r.pos_devuelta.y)
-            for r in resp.rechazados
-        }
 
     async def avanzar_tick(self, tick_id: int, timeout: float | None = None) -> None:
         """Pide a Logica_Mundo que avance el tiempo del mundo un tick (tick
@@ -433,19 +427,12 @@ class LogicaMundoClient:
             req.excluir_min.CopyFrom(self._pos_to_pb(excluir_min))
             req.excluir_max.CopyFrom(self._pos_to_pb(excluir_max))
 
-        try:
-            resp = await self._stub.ObtenerCeldasAtmosferaEnRegion(
-                req, timeout=self._t(timeout)
-            )
-            if not resp.ok:
-                logger.warning(
-                    "ObtenerCeldasAtmosferaEnRegion respondió error: %s", resp.error
-                )
-                return []
-            return list(resp.cells)
-        except grpc.aio.AioRpcError as exc:
-            logger.error("ObtenerCeldasAtmosferaEnRegion falló: %s", exc)
-            return []
+        resp = await self._stub.ObtenerCeldasAtmosferaEnRegion(
+            req, timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"ObtenerCeldasAtmosferaEnRegion: {resp.error}")
+        return list(resp.cells)
 
     async def actualizar_celdas_atmosfera(
         self, changed_atmosphere_cells: list, timeout: float | None = None
@@ -488,13 +475,9 @@ class LogicaMundoClient:
             incluir=incluir,
         )
         try:
-            resp = await self._stub.ConsultarRepresentar(
-                req, timeout=self._t(timeout)
-            )
+            resp = await self._stub.ConsultarRepresentar(req, timeout=self._t(timeout))
             if not resp.ok:
-                logger.warning(
-                    "ConsultarRepresentar respondió error: %s", resp.error
-                )
+                logger.warning("ConsultarRepresentar respondió error: %s", resp.error)
                 return b""
             return resp.datos
         except grpc.aio.AioRpcError as exc:
@@ -543,7 +526,7 @@ class LogicaMundoClient:
         JSON que viaja en resp.cambios). Gestor_Mundo lo llama en su
         _fase_2 pero de momento no hace nada con el resultado más allá
         de recibirlo (ver TODO "distribuir cambios_globales a sectores
-        que lo necesiten" en gestor_mundo.py) — eso queda fuera del
+        que lo necesiten" en gestor_mundo) — eso queda fuera del
         alcance de este método, que solo transporta el dato.
 
         En caso de error (red o resp.ok=False) devuelve {} en vez de

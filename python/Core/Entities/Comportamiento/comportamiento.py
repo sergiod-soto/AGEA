@@ -1,24 +1,8 @@
 # Core/Entities/Comportamiento/comportamiento.py
 
-from dataclasses import dataclass
 import inspect
 
 
-class _NoSerializar:
-    """
-    Sentinel heredado del sistema anterior (hooks que excluían campos).
-    Con la serialización manual ya no lo usa nadie en este fichero; se
-    conserva solo para no romper imports de clases aún sin migrar.
-    Se puede borrar cuando ninguna lo importe.
-    """
-
-    pass
-
-
-NO_SERIALIZAR = _NoSerializar()
-
-
-@dataclass(kw_only=True)
 class Comportamiento:
 
     def __init__(self): ...
@@ -208,9 +192,10 @@ class Comportamiento:
         nombres = [c.__name__ for c in self.comportamientos()]
         return f"{type(self).__name__}({', '.join(nombres)})"
 
+    @staticmethod
     def declarar_comportamientos(*clases):
         """Permite definir de forma externa los comportamientos del Elemento, clarificando sus herencias"""
-        return type("Comportamientos", clases, {})
+        return type("Comportamiento", clases, {})
 
     # ------------------------------------------------------------------
     #  serializar / representar / deserializar  (cadena super() cooperativa)

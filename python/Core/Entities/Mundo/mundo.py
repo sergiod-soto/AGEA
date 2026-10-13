@@ -30,7 +30,6 @@ from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import
 from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Mundo.Suelo.celda import Celda
-from Core.Entities.Elementos.elemento import Elemento
 from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
 
 
@@ -102,6 +101,10 @@ class Mundo:
         """Registra 'elemento' bajo 'eid', lo coloca en 'pos' según
         'tipo_slot', e indexa su posición. 'bot_id' es opcional -- solo
         se pasa cuando el elemento es un bot y se conoce su id externo."""
+        if eid in self.elementos:
+            raise ValueError(f"El id {eid} ya está registrado.")
+        if self._slot_ocupado(pos, tipo_slot):
+            raise ValueError(f"El slot '{tipo_slot}' de {pos} ya está ocupado.")
         self.elementos[eid] = elemento
         celda = self.malla_terreno.setdefault(pos, Celda())
         celda.put_elemento(eid, tipo_slot)
@@ -128,53 +131,15 @@ class Mundo:
             self.bots.pop(bot_id, None)
         return True
 
-    def mover_elemento(self, eid: int, pos_destino: tuple[int, int]) -> bool:
-        """Mueve 'eid' a 'pos_destino', conservando su slot. No hace
-        falta tocar 'bots': esa tabla apunta a id_elemento, no a
-        posición, así que sigue siendo válida tras el movimiento."""
-        pos_origen = self.ids.get(eid)
-        if pos_origen is None:
-            return False
-        celda_origen = self.malla_terreno.get(pos_origen)
-        if celda_origen is None:
-            return False
-
-        tipo_slot = celda_origen.tipo_slot_de(eid)
-        if tipo_slot is None:
-            return False
-        celda_origen.remove_elemento(eid)
-        if celda_origen.vacia():
-            self.malla_terreno.pop(pos_origen, None)
-
-        celda_destino = self.malla_terreno.setdefault(pos_destino, Celda())
-        celda_destino.put_elemento(eid, tipo_slot)
-        self.ids[eid] = pos_destino
-        return True
-
-    def colocar_elemento(
-        self, eid: int, pos: tuple[int, int], tipo_slot: str
-    ) -> bool:
-        """
-        Coloca 'eid' en 'pos' FUSIONÁNDOLO con lo que ya haya (nunca
-        reemplaza la celda). No toca la celda de origen: de eso se encarga
-        actualizar_celda con el estado que manda el Sector origen.
-
-        False, sin cambiar nada, si el slot es de ocupación única (suelo/bot)
-        y ya está ocupado: Celda.put_elemento sobrescribe sin avisar, y
-        dejaría al ocupante anterior huérfano en 'elementos'/'ids'.
-        """
+    def _slot_ocupado(self, pos: tuple[int, int], tipo_slot: str) -> bool:
+        """True si el slot es de ocupación única (suelo/bot) y ya tiene ocupante.
+        Celda.put_elemento sobrescribe sin avisar y dejaría huérfano al anterior."""
         celda = self.malla_terreno.get(pos)
-        if (
+        return (
             celda is not None
             and tipo_slot in ("suelo", "bot")
             and getattr(celda, tipo_slot) is not None
-        ):
-            return False
-        if celda is None:
-            celda = self.malla_terreno[pos] = Celda()
-        celda.put_elemento(eid, tipo_slot)
-        self.ids[eid] = pos
-        return True
+        )
 
     # ---- Consultas ----
 
@@ -275,9 +240,7 @@ class Mundo:
 
         salientes = ids_anteriores - ids_nuevos
         for eid in salientes:
-            # FIX M1: solo se borra el índice si sigue apuntando a ESTA
-            # posición. Si otra celda del mismo lote ya lo situó en su
-            # destino, ids[eid] != pos y no se toca.
+
             if self.ids.get(eid) == pos:
                 self.ids.pop(eid, None)
 
@@ -325,12 +288,3 @@ class Mundo:
         self, pos_atmosfera: tuple[int, int]
     ) -> Optional[Celda_Atmosfera]:
         return self.malla_atmosfera.get(pos_atmosfera)
-
-    # ---- API por objeto (TODO -- ver nota en la respuesta) ----
-
-    def eliminar_elemento_obj(self, elemento: Elemento):
-        raise NotImplementedError  # TODO
-
-    def agregar_elemento(self, elemento: Elemento):
-        elemento.mundo = self
-        # TODO: resto de agregar_elemento() en mundo.py
