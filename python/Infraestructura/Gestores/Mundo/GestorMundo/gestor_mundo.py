@@ -217,6 +217,14 @@ class GestorMundo:
         info.ticks_sin_actividad = 0
         await self._set_sector_mode(info, SectorMode.ACTIVO)
 
+    @staticmethod
+    def _exigir_ok(resp, rpc: str, sector: SectorInfo) -> None:
+        """Un ok=False de un Sector en la fase 0 es fatal, igual que en las fases 1 y 2."""
+        if not resp.ok:
+            raise ErrorSincronizacion(
+                f"{rpc} rechazado en ({sector.col},{sector.row}): {resp.error}"
+            )
+
     async def run_loop(self) -> None:
         while True:
             await self._pause_event.wait()
@@ -262,80 +270,74 @@ class GestorMundo:
         await self._fase_2()
 
     async def _fase_0(self) -> None:
-        activos_y_dormidos = [
+        """
+        Prepara el tick: envía a cada sector su ghost zone (terreno y atmósfera),
+        los sonidos pendientes y el progreso de los ciclos globales.
+        CUALQUIER fallo (excepción gRPC, ok=False, error al leer de Logica) es
+        fatal: un sector con datos del tick anterior calcularía con información
+        vieja y la simulación divergiría sin avisar.
+        """
+        sectores = [
             s
             for s in self._sectores.values()
             if s.mode in (SectorMode.ACTIVO, SectorMode.DORMIDO)
         ]
 
+        # Si falla, propaga la excepción: no hay valor neutro para los ciclos.
         (
             progreso_solar,
             progreso_lunar,
             progreso_anual,
         ) = await self._logica_client.obtener_progreso_ciclos()
 
-        tareas = []
-        for sector in activos_y_dormidos:
-            tareas.append(self._enviar_ghost_zone(sector))
-            tareas.append(self._enviar_sonidos(sector))
-            tareas.append(self._enviar_ghost_zone_atmosfera(sector))
-            tareas.append(
+        tareas, etiquetas = [], []
+        for s in sectores:
+            clave = f"({s.col},{s.row})"
+            tareas += [
+                self._enviar_ghost_zone(s),
+                self._enviar_ghost_zone_atmosfera(s),
+                self._enviar_sonidos(s),
                 self._enviar_ciclos_globales(
-                    sector, progreso_solar, progreso_lunar, progreso_anual
-                )
-            )
+                    s, progreso_solar, progreso_lunar, progreso_anual
+                ),
+            ]
+            etiquetas += [
+                f"ghost{clave}",
+                f"ghost_atm{clave}",
+                f"sonidos{clave}",
+                f"ciclos{clave}",
+            ]
 
+        # return_exceptions=True: se esperan todas las tareas y se reúnen todos
+        # los fallos en un único mensaje, en vez de perder los que lleguen después.
         resultados = await asyncio.gather(*tareas, return_exceptions=True)
-        # return_exceptions=True evita que un fallo cancele el resto de tareas,
-        # pero deja las excepciones como valores: hay que mirarlas a mano o se pierden.
-        for r in resultados:
-            if isinstance(r, Exception):
-                logger.error("Fallo en _fase_0: %r", r)
+        fallos = [
+            f"{etiqueta}: {r!r}"
+            for etiqueta, r in zip(etiquetas, resultados)
+            if isinstance(r, Exception)
+        ]
+        if fallos:
+            raise ErrorSincronizacion(
+                f"Tick {self._tick_id}, fase 0: " + "; ".join(fallos)
+            )
 
     async def _enviar_ghost_zone(self, sector: SectorInfo) -> None:
         ghost_cells = await self._calcular_ghost_zone(sector)
-
-        req = sector_pb.SetGhostZoneRequest(
-            tick_id=self._tick_id,
-            ghost_cells=ghost_cells,
-        )
-        try:
-            resp = await sector.stub.SetGhostZone(req)
-            if not resp.ok:
-                logger.warning(
-                    "SetGhostZone falló en (%d,%d): %s",
-                    sector.col,
-                    sector.row,
-                    resp.error,
-                )
-        except grpc.aio.AioRpcError as e:
-            logger.error(
-                "gRPC error SetGhostZone (%d,%d): %s", sector.col, sector.row, e
+        resp = await sector.stub.SetGhostZone(
+            sector_pb.SetGhostZoneRequest(
+                tick_id=self._tick_id, ghost_cells=ghost_cells
             )
+        )
+        self._exigir_ok(resp, "SetGhostZone", sector)
 
     async def _enviar_ghost_zone_atmosfera(self, sector: SectorInfo) -> None:
-
         ghost_cells = await self._calcular_ghost_zone_atmosfera(sector)
-        req = sector_pb.SetAtmosphereGhostZoneRequest(  # type: ignore
-            tick_id=self._tick_id,
-            ghost_cells=ghost_cells,
-        )
-        try:
-            resp = await sector.stub.SetAtmosphereGhostZone(req)  # type: ignore
-            if not resp.ok:
-                logger.warning(
-                    "SetAtmosphereGhostZone falló en (%d,%d): %s",
-                    sector.col,
-                    sector.row,
-                    resp.error,
-                )
-        except grpc.aio.AioRpcError as e:
-            logger.error(
-                "gRPC error SetAtmosphereGhostZone (%d,%d): %s",
-                sector.col,
-                sector.row,
-                e,
+        resp = await sector.stub.SetAtmosphereGhostZone(
+            sector_pb.SetAtmosphereGhostZoneRequest(
+                tick_id=self._tick_id, ghost_cells=ghost_cells
             )
+        )
+        self._exigir_ok(resp, "SetAtmosphereGhostZone", sector)
 
     async def _enviar_ciclos_globales(
         self,
@@ -344,44 +346,25 @@ class GestorMundo:
         progreso_lunar: float,
         progreso_anual: float,
     ) -> None:
-        """Manda el progreso (mismo para todos los sectores) de los
-        ciclos solar/lunar/anual -- ver Sector.set_ciclos_globales."""
-        req = sector_pb.SetGlobalCyclesRequest(  # type: ignore
-            tick_id=self._tick_id,
-            progreso_solar=progreso_solar,
-            progreso_lunar=progreso_lunar,
-            progreso_anual=progreso_anual,
-        )
-        try:
-            resp = await sector.stub.SetGlobalCycles(req)  # type: ignore
-            if not resp.ok:
-                logger.warning(
-                    "SetGlobalCycles falló en (%d,%d): %s",
-                    sector.col,
-                    sector.row,
-                    resp.error,
-                )
-        except grpc.aio.AioRpcError as e:
-            logger.error(
-                "gRPC error SetGlobalCycles (%d,%d): %s", sector.col, sector.row, e
+        """Progreso (igual para todos los sectores) de los ciclos solar/lunar/anual."""
+        resp = await sector.stub.SetGlobalCycles(
+            sector_pb.SetGlobalCyclesRequest(
+                tick_id=self._tick_id,
+                progreso_solar=progreso_solar,
+                progreso_lunar=progreso_lunar,
+                progreso_anual=progreso_anual,
             )
+        )
+        self._exigir_ok(resp, "SetGlobalCycles", sector)
 
     async def _enviar_sonidos(self, sector: SectorInfo) -> None:
         sounds = self._pending_sounds.get((sector.col, sector.row), [])
         if not sounds:
             return
-        req = sector_pb.SetSoundsRequest(  # type: ignore
-            tick_id=self._tick_id,
-            sounds=sounds,
+        resp = await sector.stub.SetSounds(
+            sector_pb.SetSoundsRequest(tick_id=self._tick_id, sounds=sounds)
         )
-        try:
-            resp = await sector.stub.SetSounds(req)  # type: ignore
-            if not resp.ok:
-                logger.warning(
-                    "SetSounds falló en (%d,%d): %s", sector.col, sector.row, resp.error
-                )
-        except grpc.aio.AioRpcError as e:
-            logger.error("gRPC error SetSounds (%d,%d): %s", sector.col, sector.row, e)
+        self._exigir_ok(resp, "SetSounds", sector)
 
     async def _fase_1(self) -> None:
         """Ordena a todos los sectores ACTIVOS que computen en paralelo.
