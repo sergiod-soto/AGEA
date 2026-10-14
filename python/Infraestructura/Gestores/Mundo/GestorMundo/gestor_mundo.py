@@ -226,13 +226,12 @@ class GestorMundo:
                 self._step_event.clear()
 
             t0 = time.monotonic()
-            try:
-                async with self._tick_lock:
-                    await self._run_tick()
-            except ErrorFatal:
-                raise  # NO se captura: sube y el proceso muere con código != 0
-            except Exception:
-                logger.exception("Tick %d abortado por excepción.", self._tick_id)
+            # Sin try/except: CUALQUIER excepción del tick es fatal. Si un tick
+            # falla a medias, los Sectores pueden haber aplicado cambios que
+            # Logica no tiene, y seguir los dejaría divergiendo en silencio.
+            # La excepción mata la tarea del bucle y serve() sale con código 1.
+            async with self._tick_lock:
+                await self._run_tick()
             elapsed = time.monotonic() - t0
 
             self._tick_id += 1
@@ -398,7 +397,7 @@ class GestorMundo:
             if isinstance(r, Exception):
                 fallos.append(f"{clave}: excepción {r!r}")
             elif not r.ok:
-                fallos.append(f"{clave}: compute_tick lanzó excepción")
+                fallos.append(f"{clave}: compute_tick falló: {r.error}")
             elif r.timed_out:
                 fallos.append(f"{clave}: timeout ({TICK_TIMEOUT_MS} ms)")
         if fallos:

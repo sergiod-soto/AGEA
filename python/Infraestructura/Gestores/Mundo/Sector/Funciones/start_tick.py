@@ -28,6 +28,6 @@ async def handle(sector: Sector, request, context) -> pb.StartTickResponse:
             request.timeout_ms,
         )
         return pb.StartTickResponse(ok=True, timed_out=True)
-    except Exception:
+    except Exception as e:
         logger.exception("Error en StartTick")
-        return pb.StartTickResponse(ok=False, timed_out=False)
+        return pb.StartTickResponse(ok=False, timed_out=False, error=repr(e))

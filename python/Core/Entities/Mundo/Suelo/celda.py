@@ -20,7 +20,7 @@ from typing import Optional
 
 @dataclass
 class Celda:
-    Optional[int] = None
+    suelo: Optional[int] = None
     bot: Optional[int] = None
     resto: list[int] = field(default_factory=list)
 

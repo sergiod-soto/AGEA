@@ -15,21 +15,30 @@ el servicer no tenía el método, así que gRPC usaba el del servicer base
 """
 
 from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
+    logica_mundo_service_pb2 as pb,
     logica_mundo_service_pb2_grpc as pb_grpc,
 )
 from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import LogicaMundo
 from Infraestructura.Gestores.Mundo.LogicaMundo.registry import FUNCIONES
+from Infraestructura.Gestores.Transporte.validar_dispatch import validar_dispatch
 
 
 class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     def __init__(self, logica: LogicaMundo) -> None:
         self._logica = logica
-        # Índice NAME -> módulo. Cada método de abajo busca aquí su
-        # implementación; si un módulo no está en FUNCIONES (registry.py),
-        # el método falla con KeyError al llamarse.
+        # Índice NAME -> módulo de Funciones/. Cada método de abajo busca aquí
+        # su implementación.
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
-        
+        # Falla AL ARRANCAR si algún RPC del .proto no tiene módulo registrado
+        # (o al revés). Sin esto el KeyError solo saltaría la primera vez que
+        # alguien llame a ese RPC. EjecutarComandoConsola se atiende aparte
+        # (COMANDOS_CONSOLA), por eso se excluye.
+        validar_dispatch(
+            pb.DESCRIPTOR.services_by_name["LogicaMundoService"],
+            self._dispatch,
+            excluir=frozenset({"EjecutarComandoConsola"}),
+        )
 
     async def Shutdown(self, request, context):
         return await self._dispatch["Shutdown"].handle(self._logica, request, context)
@@ -159,9 +168,6 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         )
 
     async def EjecutarComandoConsola(self, request, context):
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
-            logica_mundo_service_pb2 as pb,
-        )
         from Infraestructura.Gestores.Mundo.LogicaMundo.ComandosConsola.registry_consola import (
             COMANDOS_CONSOLA,
         )
