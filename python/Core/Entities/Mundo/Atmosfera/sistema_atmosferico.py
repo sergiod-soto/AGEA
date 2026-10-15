@@ -28,7 +28,7 @@ negativa = factor bajo = invierno austral, sin ningún if).
 
 La clasificación categórica de Estacion (Verano/Invierno/Primavera/Otono
 como ETIQUETA para otros sistemas, no para radiación) sigue existiendo
-por separado -- ver Core/Entities/.../Marcadores/Temporales/Estacion/.
+por separado -- ver Core/Entities/.../Marcadores/Temporales/Estaciones/.
 
 Convención de coordenadas (decisión tomada): el ecuador está en
 GRID_HEIGHT/2, no en y=0 literal -- así encaja con que Gestor_Mundo hoy

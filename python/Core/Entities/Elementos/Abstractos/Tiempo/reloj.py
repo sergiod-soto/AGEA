@@ -1,6 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Tiempo/reloj.py
 
-from typing import Tuple
+from typing import Callable, Tuple
 
 from Config.parametros_simulacion import SEGUNDOS_SIMULADOS_TICK
 from Config.settings import ID_RELOJ
@@ -57,35 +57,47 @@ class Reloj(Marcador_Temporal):
             elemento: Elemento,
             end: int,
             start: int = 0,
-            paso: int = 1,
+            paso: int = 1,  # cada cuantos ticks 'tick_actual' debe avanzar 1
+            al_avanzar: Callable[[int], None] | None = None,
         ):
-            self.elemento = elemento
-            self._end = end
-            self._paso = paso
-            self.tick_actual = start
-            self._contador = 0
 
             if end <= 0:
                 raise ValueError(f"Ciclo: 'end' debe ser > 0 (recibido {end}).")
             if paso < 1:
                 raise ValueError(f"Ciclo: 'paso' debe ser >= 1 (recibido {paso}).")
 
+            self.elemento = elemento
+            self._end = end
+            self._paso = paso
+            self.tick_actual = start
+            self._contador_paso = 0
+            self._al_avanzar = al_avanzar
+
         def next_tick(self) -> None:
-            self._contador += 1
-
-            if self._contador < self._paso:
+            # _contador_paso
+            self._contador_paso += 1
+            if self._contador_paso < self._paso:
                 return
+            self._contador_paso = 0
 
-            self._contador = 0
+            # tick_actual
             self.tick_actual += 1
+            if self.tick_actual < self._end:
+                return
+            self.tick_actual = 0
 
-            if self.tick_actual >= self._end:
-                self.tick_actual = 0
+            if self._al_avanzar is not None:
+                self._al_avanzar(self.tick_actual)
 
         @property
         def progreso(self) -> float:
             """Fracción del ciclo recorrida, en [0, 1)."""
             return self.tick_actual / self._end
+
+        @property
+        def duracion(self) -> int:
+            """Duración total del ciclo, en ticks."""
+            return self._end
 
     def __init__(self, **kwargs):
         super().__init__(Reloj, id_elemento=ID_RELOJ, **kwargs)
@@ -133,9 +145,14 @@ class Reloj(Marcador_Temporal):
         self.segundos = hora[0] * 3600 + hora[1] * 60 + hora[2]
 
     def agregar_ciclo(
-        self, elemento: Elemento, end: int, start: int = 0, paso: int = 1
+        self,
+        elemento: Elemento,
+        end: int,
+        start: int = 0,
+        paso: int = 1,
+        al_avanzar: Callable[[int], None] | None = None,
     ) -> Ciclo:
-        ciclo = self.Ciclo(elemento, end, start, paso)
+        ciclo = self.Ciclo(elemento, end, start, paso, al_avanzar)
         self.ciclos.append(ciclo)
         return ciclo
 
@@ -148,3 +165,39 @@ class Reloj(Marcador_Temporal):
         self.avanzar_segundos(SEGUNDOS_SIMULADOS_TICK)
         for ciclo in self.ciclos:
             ciclo.next_tick()
+
+    def volcar_estado(self) -> dict:
+        """
+        Estado mínimo para un snapshot: segundos simulados y, por cada ciclo en
+        el ORDEN de registro (solar, lunar, estación: el de Mundo.__init__),
+        su tick actual y el contador de paso.
+        """
+        return {
+            "segundos": self.segundos,
+            "ciclos": [
+                {"tick_actual": c.tick_actual, "contador": c._contador_paso}
+                for c in self.ciclos
+            ],
+        }
+
+    def restaurar_estado(self, estado: dict) -> None:
+        """
+        Inverso de volcar_estado(). Se valida TODO antes de tocar nada, y los
+        ciclos se actualizan EN SITIO (no se recrean).
+        ValueError si el snapshot no encaja con los ciclos actuales.
+        """
+        guardados = estado["ciclos"]
+        if len(guardados) != len(self.ciclos):
+            raise ValueError(
+                f"Reloj: el snapshot tiene {len(guardados)} ciclos y el mundo "
+                f"{len(self.ciclos)}."
+            )
+        for ciclo, g in zip(self.ciclos, guardados):
+            if not 0 <= g["tick_actual"] < ciclo._end:
+                raise ValueError(
+                    f"Reloj: tick_actual {g['tick_actual']} fuera de [0, {ciclo._end})."
+                )
+        self.segundos = estado["segundos"]
+        for ciclo, g in zip(self.ciclos, guardados):
+            ciclo.tick_actual = g["tick_actual"]
+            ciclo._contador_paso = g["contador"]

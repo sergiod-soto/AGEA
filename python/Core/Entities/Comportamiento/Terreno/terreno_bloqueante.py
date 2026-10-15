@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Terreno/terreno_bloqueante.py
+
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 
 

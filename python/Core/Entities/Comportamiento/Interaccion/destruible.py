@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Interaccion/destruible.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion

@@ -1,4 +1,6 @@
 # Core/Entities/Comportamiento/Material/registro_transformaciones.py
+
+
 """
 Nombre -> función de transformación. Cada función recibe SIEMPRE
 (propietario, ctx) -- ctx puede ser None fuera de un tick de Sector

@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Fisico/inflamable.py
+
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico
 
 import time

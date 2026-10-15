@@ -27,6 +27,7 @@ async def handle(sector: Sector, request, context) -> pb.GetDeltaResponse:
             emitted_sounds=delta.emitted_sounds,
             changed_atmosphere_cells=delta.changed_atmosphere_cells,
             movimientos_salientes=delta.movimientos_salientes,
+            eventos=delta.eventos,
         )
     except Exception as e:
         logger.exception("Error en GetDelta")

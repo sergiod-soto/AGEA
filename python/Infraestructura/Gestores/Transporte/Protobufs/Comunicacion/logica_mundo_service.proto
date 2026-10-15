@@ -1,4 +1,5 @@
 // Infraestructura/Transporte/Protobufs/Comunicacion/logica_mundo_service.proto
+
 syntax = "proto3";
 package logica_mundo;
 import "common.proto";
@@ -50,6 +51,7 @@ service LogicaMundoService {
   rpc EjecutarComandoConsola (ComandoConsolaRequest) returns (ComandoConsolaResponse);
 
   rpc AvanzarTick(AvanzarTickRequest) returns (common.Ack);
+  rpc EmitirEventos (EmitirEventosRequest) returns (common.Ack);
 }
 
 message LogicaMundoHeartbeatResponse {
@@ -206,8 +208,8 @@ message RechazoMovimiento {
 }
 
 message ActualizarCeldasResponse {
-  bool                       ok         = 1;
-  string                     error      = 2;
+  bool   ok    = 1;
+  string error = 2;
 }
 
 // ============================================================
@@ -334,4 +336,8 @@ message AvanzarTickRequest {
   // Mismo tipo que el tick_id de StartTickRequest, para no mezclar
   // signo/anchura entre RPCs.
   uint64 tick_id = 1;
+}
+
+message EmitirEventosRequest {
+  repeated common.EventoMundo eventos = 1;
 }

@@ -1,9 +1,12 @@
+# Core/Entities/Elementos/Abstractos/Sistema_Atmosferico/Fenomenos/nubes.py
+
+
 from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
 
 
 class Nubes(Informacion):
     """
-    Estado GLOBAL de las nubes. Su intensidad depende de la posicion.
+    Estado Sector de las nubes.
     """
 
     def __init__(self, **kwargs):

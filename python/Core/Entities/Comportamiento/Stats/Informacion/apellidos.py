@@ -1,7 +1,10 @@
-from Core.Entities.Elementos.Abstractos.Informacion.informacion import Informacion
+# Core/Entities/Comportamiento/Stats/Informacion/apellidos.py
 
 
-class Apellidos:
+from Core.Entities.Comportamiento.Stats.Informacion.stat_informacion import Stat_Informacion
+
+
+class Apellidos(Stat_Informacion):
     def __init__(self, apellidos: list, **kwargs):
         super().__init__("apellidos", apellidos, **kwargs)
 

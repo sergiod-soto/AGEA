@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Interaccion/crafteable.py
+
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 

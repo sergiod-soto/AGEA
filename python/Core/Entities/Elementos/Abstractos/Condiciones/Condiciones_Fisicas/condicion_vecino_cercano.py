@@ -1,4 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/Fisicas/condicion_vecino_cercano.py
+
+
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 

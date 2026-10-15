@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Salud/hidratante.py
+
 from Core.Entities.Comportamiento.Salud.salud import Salud
 
 

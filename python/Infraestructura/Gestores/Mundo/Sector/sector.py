@@ -319,6 +319,7 @@ class TickDelta:
     changed_atmosphere_cells: list = field(default_factory=list)
 
     movimientos_salientes: list = field(default_factory=list)
+    eventos: list = field(default_factory=list)
 
 
 # ─────────────────────────────────────────────
@@ -1033,6 +1034,7 @@ class Sector:
                     raise
 
         delta.mutaciones = ctx.obtener_mutaciones()
+        delta.eventos = self._consolidar_eventos(ctx.obtener_eventos())
 
         # Desde aquí el Sector ya modifica su copia: si algo lanza, el delta se
         # pierde y Logica no vería esos cambios. Se registra y se relanza.
@@ -1244,6 +1246,22 @@ class Sector:
             if e.id_elemento == id_elemento:
                 return celda.resto.pop(i), "resto"
         return None, None
+
+    @staticmethod
+    def _consolidar_eventos(eventos: list) -> list:
+        """
+        ÚNICO punto por el que pasan los eventos del tick hacia el delta.
+        Hoy los envía TODOS, tal cual, en orden de emisión.
+
+        Para agrupar en el futuro basta cambiar el cuerpo de esta función: para
+        los EventoPedido con agrupable=True, quedarse solo con el último de cada
+        `tipo` (conservando el orden de la última aparición) y dejar intactos los
+        no agrupables. Nada más cambia: ni protos, ni Gestor, ni Logica.
+        """
+        return [
+            common_pb.EventoMundo(tipo=e.tipo, payload=e.payload, agrupable=e.agrupable)
+            for e in eventos
+        ]
 
     def _procesar_sonidos(self, ctx: TickContext) -> None:
         """Aplica los efectos de los sonidos cross-border recibidos.

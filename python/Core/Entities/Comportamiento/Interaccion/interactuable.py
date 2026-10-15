@@ -1,5 +1,6 @@
-from abc import abstractmethod
+# Core/Entities/Comportamiento/Interaccion/interactuable.py
 
+from abc import abstractmethod
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 from Core.Entities.Elementos.elemento import Elemento
 

@@ -25,6 +25,8 @@ Por qué escritura diferida: si tick() aplicase los cambios al momento, el
 resultado dependería del orden en que se computan los elementos.
 """
 
+from dataclasses import dataclass
+import json
 from typing import Any, Optional
 
 from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
@@ -36,6 +38,16 @@ from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     MoverElemento,
     Mutacion,
 )
+
+
+@dataclass(frozen=True)
+class EventoPedido:
+    """Evento pedido durante el tick. El payload ya va serializado (JSON): así
+    un valor no serializable falla en emitir_evento, en el elemento culpable."""
+
+    tipo: str
+    payload: bytes
+    agrupable: bool = False
 
 
 class TickContext:
@@ -62,6 +74,7 @@ class TickContext:
         self.tick_id = tick_id
         self._mutaciones: list[Mutacion] = []
         self._contador_nuevos = 0
+        self._eventos: list[EventoPedido] = []
 
     # ─────────────────────────────────────────
     #  Lectura (siempre estado de inicio de tick)
@@ -192,6 +205,22 @@ class TickContext:
             )
         )
 
+    def emitir_evento(
+        self, tipo: str, *args, agrupable: bool = False, **kwargs
+    ) -> None:
+        """
+        Pide emitir un evento en el bus de Logica_Mundo. Escritura diferida,
+        como las mutaciones: aquí solo se acumula; el Sector lo envía en el
+        delta y Logica lo emite DESPUÉS de aplicar las celdas del tick.
+
+        args/kwargs viajan por red como JSON: solo números, strings, bools,
+        None, listas y dicts (una tupla llega como lista). TypeError si no.
+        agrupable: reservado. True = "estado actual", el último valor del mismo
+        `tipo` sustituye a los anteriores. Hoy se ignora.
+        """
+        payload = json.dumps({"args": list(args), "kwargs": kwargs}).encode()
+        self._eventos.append(EventoPedido(tipo, payload, agrupable))
+
     # ─────────────────────────────────────────
     #  Cierre del tick
     # ─────────────────────────────────────────
@@ -200,3 +229,7 @@ class TickContext:
         """Llamado por Sector al terminar de ejecutar tick() de todos sus
         elementos, para construir el TickDelta que se envía a Logica_Mundo."""
         return self._mutaciones
+
+    def obtener_eventos(self) -> list[EventoPedido]:
+        """Llamado por Sector al acabar el tick, junto a obtener_mutaciones."""
+        return self._eventos

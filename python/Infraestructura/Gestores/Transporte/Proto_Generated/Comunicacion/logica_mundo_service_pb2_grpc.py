@@ -184,6 +184,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.SerializeToString,
                 response_deserializer=common__pb2.Ack.FromString,
                 _registered_method=True)
+        self.EmitirEventos = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/EmitirEventos',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.EmitirEventosRequest.SerializeToString,
+                response_deserializer=common__pb2.Ack.FromString,
+                _registered_method=True)
 
 
 class LogicaMundoServiceServicer(object):
@@ -374,6 +379,12 @@ class LogicaMundoServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def EmitirEventos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_LogicaMundoServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -520,6 +531,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
             'AvanzarTick': grpc.unary_unary_rpc_method_handler(
                     servicer.AvanzarTick,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.FromString,
+                    response_serializer=common__pb2.Ack.SerializeToString,
+            ),
+            'EmitirEventos': grpc.unary_unary_rpc_method_handler(
+                    servicer.EmitirEventos,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.EmitirEventosRequest.FromString,
                     response_serializer=common__pb2.Ack.SerializeToString,
             ),
     }
@@ -1309,6 +1325,33 @@ class LogicaMundoService(object):
             target,
             '/logica_mundo.LogicaMundoService/AvanzarTick',
             Comunicacion_dot_logica__mundo__service__pb2.AvanzarTickRequest.SerializeToString,
+            common__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EmitirEventos(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/EmitirEventos',
+            Comunicacion_dot_logica__mundo__service__pb2.EmitirEventosRequest.SerializeToString,
             common__pb2.Ack.FromString,
             options,
             channel_credentials,

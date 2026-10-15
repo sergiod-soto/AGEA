@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Informativo/rastreable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Informativo.informativo import Informativo

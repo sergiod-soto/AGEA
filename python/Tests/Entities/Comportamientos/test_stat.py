@@ -3,7 +3,7 @@
 import pytest
 
 from Core.Entities.Comportamiento.Stats.stat import Stat
-from Core.Entities.Comportamiento.Stats.stat_derivado import Stat_Derivado
+from Core.Entities.Comportamiento.Stats.Complejos.stat_derivado import Stat_Derivado
 from Core.Entities.Comportamiento.Stats.stat_con_tope import Stat_Con_Tope
 
 

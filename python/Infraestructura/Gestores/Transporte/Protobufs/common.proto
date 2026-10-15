@@ -22,6 +22,14 @@ message MovimientoSaliente {
   BotSnapshot     bot         = 6;   // solo si es un bot
 }
 
+// Evento que un elemento pide emitir en el bus de Logica_Mundo.
+// payload = JSON {"args": [...], "kwargs": {...}} (solo valores simples).
+message EventoMundo {
+  string tipo      = 1;
+  bytes  payload   = 2;
+  bool   agrupable = 3;   // reservado: hoy nadie lo mira (ver Sector._consolidar_eventos)
+}
+
 // ============================================================
 //  Grid
 // ============================================================

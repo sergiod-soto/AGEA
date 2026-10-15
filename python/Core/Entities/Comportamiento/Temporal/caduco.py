@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Temporal/caduco.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal

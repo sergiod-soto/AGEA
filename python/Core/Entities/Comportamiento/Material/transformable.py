@@ -1,4 +1,6 @@
 # Core/Entities/Comportamiento/Material/transformable.py
+
+
 from Core.Entities.Comportamiento.Material.material import Material
 from Core.Entities.Comportamiento.Material.registro_transformaciones import (
     REGISTRO_TRANSFORMACIONES,

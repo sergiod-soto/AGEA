@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Salud/comestible.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Salud.salud import Salud

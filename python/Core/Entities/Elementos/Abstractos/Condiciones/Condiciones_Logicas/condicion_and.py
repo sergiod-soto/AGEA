@@ -1,4 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/condicion_and.py
+
+
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 

@@ -131,6 +131,7 @@ class GestorMundo:
             or delta.movimientos_salientes
             or delta.emitted_sounds
             or delta.dead_bot_ids
+            or delta.eventos
         )
 
     async def start(self, fresh: bool = False) -> None:
@@ -513,12 +514,14 @@ class GestorMundo:
         celdas_atmosfera_cambiadas: list = []
         movimientos: list = []  # (SectorInfo origen, MovimientoSaliente)
         bots_muertos: list[int] = []
+        eventos: list = []  # EventoMundo, en orden de sector y de emisión
 
         async with self._consolidacion_lock:
             for sector, delta in zip(activos, resultados):
                 celdas_cambiadas.extend(delta.changed_cells)
                 celdas_atmosfera_cambiadas.extend(delta.changed_atmosphere_cells)
                 bots_muertos.extend(delta.dead_bot_ids)
+                eventos.extend(delta.eventos)
                 movimientos.extend((sector, m) for m in delta.movimientos_salientes)
                 for sound in delta.emitted_sounds:
                     self._distribuir_sonido(sound)
@@ -539,6 +542,14 @@ class GestorMundo:
                         f"actualizar_celdas falló en el tick {self._tick_id}: {exc!r}"
                     ) from exc
 
+            if eventos:
+                try:
+                    await self._logica_client.emitir_eventos(eventos)
+                except Exception as exc:
+                    raise ErrorSincronizacion(
+                        f"emitir_eventos falló en el tick {self._tick_id}: {exc!r}"
+                    ) from exc
+                    
             if celdas_atmosfera_cambiadas:
                 # NO fatal: cada tick reenvía el estado completo. Pero tampoco
                 # debe abortar el resto de la fase.
@@ -767,11 +778,23 @@ class GestorMundo:
         )
 
     async def _save_snapshot(self) -> None:
+        """
+        Snapshot periódico. Se hace con el _tick_lock: así se toma ENTRE dos
+        ticks y el estado de Logica (terreno, atmósfera, reloj) corresponde a
+        todos los ticks < _tick_id. Se guarda primero el de Logica y solo si
+        tuvo éxito se escribe el mundo_*.json: no puede existir un snapshot del
+        Gestor sin su pareja de Logica.
+        """
+        async with self._tick_lock:
+            snapshot_id = f"{self._tick_id:010d}"
+            ok, error = await self._logica_client.save_snapshot(snapshot_id)
+            if not ok:
+                logger.error(
+                    "Snapshot %s abortado: Logica falló: %s", snapshot_id, error
+                )
+                return
 
-        snapshot_id = f"{self._tick_id:010d}"
-        path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
-
-        async with self._consolidacion_lock:
+            path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
             data = {
                 "tick_id": int(self._tick_id),
                 "snapshot_id": snapshot_id,
@@ -786,14 +809,10 @@ class GestorMundo:
                     for info in self._sectores.values()
                 ],
             }
+            path.write_text(json.dumps(data, ensure_ascii=False))
+            self._snapshot_id = snapshot_id
 
-        path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
-
-        await self._logica_client.save_snapshot(snapshot_id)
-
-        self._snapshot_id = snapshot_id
         logger.info("Snapshot guardado: %s", path)
-
         self._purgar_snapshots_antiguos()
 
     def _purgar_snapshots_antiguos(self) -> None:

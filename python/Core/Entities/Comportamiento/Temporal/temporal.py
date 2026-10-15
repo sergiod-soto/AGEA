@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Temporal/temporal.py
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 

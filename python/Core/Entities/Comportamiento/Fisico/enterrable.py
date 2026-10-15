@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Fisico/enterrable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico

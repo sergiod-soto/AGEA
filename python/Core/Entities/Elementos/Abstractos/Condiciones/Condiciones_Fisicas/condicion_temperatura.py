@@ -1,3 +1,5 @@
+# Core/Entities/Elementos/Abstractos/Condiciones/condiciones_Fisicas/condicion_temperatura.py
+
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 

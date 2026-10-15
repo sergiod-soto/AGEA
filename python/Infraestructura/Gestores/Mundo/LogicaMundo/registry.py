@@ -11,6 +11,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     despawn_global_event,
     eliminar_avatar_bot,
     eliminar_elemento,
+    emitir_eventos,
     get_active_events,
     get_elementos_globales,
     heartbeat,
@@ -60,6 +61,7 @@ FUNCIONES = [
     get_elementos_globales,
     shutdown,
     matar_bot,
+    emitir_eventos,
     #
     # ----- sistema atmosférico --------
     obtener_celdas_atmosfera_en_region,

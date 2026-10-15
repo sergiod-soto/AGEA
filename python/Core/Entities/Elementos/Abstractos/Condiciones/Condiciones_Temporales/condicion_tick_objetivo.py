@@ -1,4 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/Temporales/condicion_tick_objetivo.py
+
+
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 

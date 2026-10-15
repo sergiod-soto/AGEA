@@ -39,6 +39,9 @@ class Elemento(ABC, Comportamiento):
     _TICKS_COMPORTAMIENTO: "weakref.WeakKeyDictionary[type, tuple]" = (
         weakref.WeakKeyDictionary()
     )
+    _REQUISITOS_SERIALIZACION: "weakref.WeakKeyDictionary[type, tuple]" = (
+        weakref.WeakKeyDictionary()
+    )
 
     @classmethod
     def tiene_flag(cls, nombre: str) -> bool:
@@ -91,6 +94,18 @@ class Elemento(ABC, Comportamiento):
     # NO se serializan 'tipo' (es type(self), redundante con '__clase__')
     # ni 'mundo' (arrastraría el grafo entero): se restauran en
     # deserializar().
+    @classmethod
+    def _requisitos_serializacion(cls) -> tuple:
+        """((comportamiento, frozenset(campos)), ...) de cada comportamiento real
+        del MRO. Se calcula una vez por clase."""
+        req = Elemento._REQUISITOS_SERIALIZACION.get(cls)
+        if req is None:
+            req = tuple(
+                (c, frozenset(c._campos_serializables()))
+                for c in cls._get_comportamientos()
+            )
+            Elemento._REQUISITOS_SERIALIZACION[cls] = req
+        return req
 
     def serializar_id_elemento(self):
         return int(self.id_elemento)
@@ -98,23 +113,32 @@ class Elemento(ABC, Comportamiento):
     def serializar(self) -> dict:
         datos = super().serializar()
 
-        # GUARDA: reconstruir_elemento() QUITA los comportamientos cuya
-        # sección no aparece en el snapshot (y quitar una categoría
-        # arrastraría a sus hijos). Por eso toda clase real debe tener
-        # sección:
-        #  - sin datos propios (categorías: Fisico, Informativo...) -> {}
-        #  - con datos y sin sección -> NotImplementedError, mejor que
-        #    perder datos en silencio.
+        # GUARDA: reconstruir_elemento() QUITA los comportamientos cuya sección
+        # no aparece en el snapshot, y el Sector reconstruye con __new__ (sin
+        # __init__): un campo que no viaja en la sección no existe allí y falla
+        # lejos, en un tick posterior. Por eso cada comportamiento debe:
+        #  - sin campos propios (categorías: Fisico, Informativo...) -> {}
+        #  - con campos -> una sección que contenga TODOS (con el mismo nombre
+        #    que su atributo). Se reúnen todos los fallos en un solo error.
         secciones = datos["comportamientos"]
-        for c in self._get_comportamientos():
-            if c.__name__ in secciones:
+        problemas = []
+        for c, campos in self._requisitos_serializacion():
+            seccion = secciones.get(c.__name__)
+            if seccion is None:
+                if campos:
+                    problemas.append(
+                        f"{c.__name__}: no escribe sección (campos {sorted(campos)})"
+                    )
+                else:
+                    secciones[c.__name__] = {}
                 continue
-            if c._campos_serializables():
-                raise NotImplementedError(
-                    f"{c.__name__} tiene datos ({sorted(c._campos_serializables())}) "
-                    "pero no implementa serializar()."
-                )
-            secciones[c.__name__] = {}
+            faltan = campos - seccion.keys()
+            if faltan:
+                problemas.append(f"{c.__name__}: su sección no guarda {sorted(faltan)}")
+        if problemas:
+            raise NotImplementedError(
+                f"{type(self).__name__}.serializar(): " + "; ".join(problemas) + "."
+            )
 
         return {
             "__clase__": type(self).__name__,  # lo lee reconstruir_elemento()

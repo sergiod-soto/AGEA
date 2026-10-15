@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Stats/Modificadores/focus.py
+
 from Core.Entities.Comportamiento.Stats.Modificadores.modificador import Modificador
 
 

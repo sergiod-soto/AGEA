@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Fisico/empujable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Fisico.fisico import Fisico

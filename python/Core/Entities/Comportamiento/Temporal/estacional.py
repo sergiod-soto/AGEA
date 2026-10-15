@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Temporal/estacional.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal

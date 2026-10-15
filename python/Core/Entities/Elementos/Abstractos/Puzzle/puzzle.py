@@ -1,3 +1,5 @@
+# Core/Entities/Elementos/Abstractos/Puzzle/puzzle.py
+
 from abc import ABC, abstractmethod
 from typing import Callable
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto

@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Energetico/energetico.py
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 

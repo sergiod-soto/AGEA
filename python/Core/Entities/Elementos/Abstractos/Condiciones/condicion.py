@@ -1,4 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/condicion.py
+
+
 from abc import abstractmethod
 from enum import Enum, auto
 

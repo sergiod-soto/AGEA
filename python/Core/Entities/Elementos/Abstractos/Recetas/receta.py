@@ -1,4 +1,5 @@
-# receta.py — no importa Ingrediente
+# Core/Entities/Elementos/Abstractos/Recetas/receta.py
+
 from typing import Callable
 
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion

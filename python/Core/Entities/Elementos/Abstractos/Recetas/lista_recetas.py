@@ -1,12 +1,12 @@
 # Core/Entities/Elementos/Abstractos/Recetas/lista_recetas.py
 
+from Core.Entities.Comportamiento.Interaccion.ingrediente import Ingrediente
 from Core.Entities.Comportamiento.Material.liquido import Liquido
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 from Core.Entities.Elementos.Simples.Agua.agua import Agua
 from Core.Entities.Elementos.Simples.Comida.Ingredientes.harina import Harina
-from Core.Entities.Elementos.Simples.Comida.Ingredientes.Ingrediente_Elemento import Ingrediente
 from Core.Entities.Elementos.Simples.Comida.Ingredientes.masa_pan import Masa_Pan
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta

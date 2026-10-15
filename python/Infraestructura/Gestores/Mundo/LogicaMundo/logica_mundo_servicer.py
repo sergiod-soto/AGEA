@@ -131,6 +131,11 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
             self._logica, request, context
         )
 
+    async def EmitirEventos(self, request, context):
+        return await self._dispatch["EmitirEventos"].handle(
+            self._logica, request, context
+        )
+
     async def AvanzarElementosGlobales(self, request, context):
         return await self._dispatch["AvanzarElementosGlobales"].handle(
             self._logica, request, context

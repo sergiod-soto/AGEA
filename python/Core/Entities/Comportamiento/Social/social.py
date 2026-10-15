@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Social/social.py
+
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 class Social(Comportamiento):

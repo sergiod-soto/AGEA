@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Temporal/regenerable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Stats.stat import Stat

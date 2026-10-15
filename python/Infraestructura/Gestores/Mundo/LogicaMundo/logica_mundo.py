@@ -411,6 +411,22 @@ class LogicaMundo:
         logger.info("Bot %s eliminado (causa=%s, tick=%d).", bot_id, cause, tick_id)
         return True, ""
 
+    # ---- Eventos ----
+
+    async def emitir_eventos(self, eventos: list) -> None:
+        """
+        Emite en el bus del mundo los eventos pedidos por los elementos de los
+        Sectores (EventoMundo, en orden). Un payload ilegible PROPAGA (RPC con
+        ok=False -> fatal en el Gestor, decisión B1): es un bug, no un caso normal.
+        Un suscriptor roto NO debe matar el mundo: el bus lo aísla y lo registra.
+        """
+        async with self._lock:
+            for ev in eventos:
+                datos = json.loads(ev.payload.decode())
+                self.mundo.bus_eventos.emitir(
+                    ev.tipo, *datos["args"], **datos["kwargs"]
+                )
+
     # ---- Sonido ----
 
     async def obtener_audio(self, id_sonido: str) -> tuple[bool, str, bytes]:
@@ -792,7 +808,7 @@ class LogicaMundo:
             return (
                 self.mundo.ciclo_solar.ciclo.progreso,
                 self.mundo.ciclo_lunar.ciclo.progreso,
-                self.mundo.estacion.ciclo.progreso,
+                self.mundo.estaciones.ciclo.progreso,
             )
 
     # ---- Región / representación ----
@@ -943,6 +959,52 @@ class LogicaMundo:
 
         return True, "", json.dumps(datos, ensure_ascii=False).encode()
 
+    # ---- Atmósfera <-> dict (snapshots) ----
+    # Se guarda el estado simulado Y los dos campos espejados (resistencia y
+    # bloqueo de viento), porque las ghost zones los leen de aquí (decisión 1-A).
+    # Las cachés de Suelo no se guardan: el Sector las reconstruye desde el terreno.
+    # NOTA: la conversión proto <-> Celda_Atmosfera sigue duplicada en sector.py
+    # (pendiente 8).
+
+    @staticmethod
+    def _atmosfera_a_dict(celda: Celda_Atmosfera) -> dict:
+        return {
+            "direccion_preferente_viento": [
+                celda.direccion_preferente_viento.x,
+                celda.direccion_preferente_viento.y,
+            ],
+            "fuerza_viento": [celda.fuerza_viento.x, celda.fuerza_viento.y],
+            "radiacion": celda.radiacion,
+            "temperatura": celda.temperatura.valor,  # K
+            "presion": celda.presion.valor,  # Pa
+            "viento_intensidad": celda.viento.intensidad,
+            "viento_direccion": [celda.viento.direccion.x, celda.viento.direccion.y],
+            "humedad_absoluta": celda.humedad_absoluta.valor,
+            "humedad_relativa": celda.humedad_relativa.valor,
+            "resistencia_viento": celda.resistencia_viento,
+            "bloqueo_total_viento": celda.bloqueo_total_viento,
+        }
+
+    @staticmethod
+    def _atmosfera_desde_dict(pos: tuple[int, int], d: dict) -> Celda_Atmosfera:
+        # Se construye con los valores por defecto y se sobrescribe cada magnitud
+        # con lo guardado (igual que Sector.CeldaAtmosferaStore.from_proto_cell).
+        celda = Celda_Atmosfera(
+            posicion=pos,
+            direccion_preferente_viento=Vector2(*d["direccion_preferente_viento"]),
+            fuerza_viento=Vector2(*d["fuerza_viento"]),
+        )
+        celda.radiacion = d["radiacion"]
+        celda.temperatura.valor = d["temperatura"]
+        celda.presion.valor = d["presion"]
+        celda.viento.intensidad = d["viento_intensidad"]
+        celda.viento.direccion = Vector2(*d["viento_direccion"])
+        celda.humedad_absoluta.valor = d["humedad_absoluta"]
+        celda.humedad_relativa.valor = d["humedad_relativa"]
+        celda.resistencia_viento = d["resistencia_viento"]
+        celda.bloqueo_total_viento = d["bloqueo_total_viento"]
+        return celda
+
     # ---- Snapshots ----
 
     async def save_snapshot(self, snapshot_id: str) -> None:
@@ -985,14 +1047,13 @@ class LogicaMundo:
                     nombre: elem.to_snapshot()
                     for nombre, elem in self._elementos_globales.items()
                 },
-                # TODO (pendiente): la malla de atmósfera
-                # (self.mundo.malla_atmosfera) no se guarda todavía -- un
-                # save/load pierde hoy todo el estado atmosférico. Haría
-                # falta una entrada análoga a "gold_cells" que serialice cada
-                # Celda_Atmosfera (con sus Sistema_Atmosferico) a un dict
-                # plano. Las cachés de suelo/resistencia NO se guardan: se
-                # reconstruyen desde el terreno. Los snapshots antiguos con
-                # temperatura en °C o presión en hPa ya no valen.
+                "tick_actual": int(self._tick_actual),
+                "reloj": self.mundo.reloj.volcar_estado(),
+                "estaciones": self.mundo.estaciones.serializar(),
+                "atmosfera": {
+                    f"{x},{y}": self._atmosfera_a_dict(celda)
+                    for (x, y), celda in self.mundo.malla_atmosfera.items()
+                },
             }
 
         # Escritura atómica: se escribe en un temporal y se renombra. Si el
@@ -1027,6 +1088,16 @@ class LogicaMundo:
         data = json.loads(path.read_text())
 
         async with self._lock:
+            self.mundo.reloj.restaurar_estado(data["reloj"])
+            self.mundo.estaciones.deserializar(data["estaciones"], self.mundo)
+            self._tick_actual = int(data["tick_actual"])
+            self.mundo.malla_atmosfera = {
+                tuple(map(int, k.split(","))): self._atmosfera_desde_dict(
+                    tuple(map(int, k.split(","))), v
+                )
+                for k, v in data["atmosfera"].items()
+            }
+
             self._id_counter = int(data.get("id_counter", 0))
 
             self.mundo.elementos = {
@@ -1077,9 +1148,6 @@ class LogicaMundo:
             for nombre, elem in self._elementos_globales.items():
                 if nombre in eg_data:
                     elem.__dict__.update(elem.from_snapshot(eg_data[nombre]).__dict__)
-
-            # TODO: mismo pendiente que en save_snapshot -- la malla de
-            # atmósfera no se restaura aquí todavía.
 
         logger.info("Estado de Logica_Mundo restaurado desde %s", path)
         return True, ""

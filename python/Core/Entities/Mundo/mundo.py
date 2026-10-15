@@ -18,8 +18,11 @@ from typing import Any, Optional
 
 
 import Config.settings as config
-from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import (
-    Estacion,
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estaciones import (
+    Estaciones,
+)
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_anual import (
+    Ciclo_Anual,
 )
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_lunar import (
     Ciclo_Lunar,
@@ -84,9 +87,10 @@ class Mundo:
         # Ciclos astrales
         self.ciclo_solar = Ciclo_Solar(self)
         self.ciclo_lunar = Ciclo_Lunar(self)
+        self.ciclo_anual = Ciclo_Anual(self)
 
-        # Estacion
-        self.estacion = Estacion(self)
+        # Estaciones
+        self.estaciones = Estaciones(self)
 
     # ---- Elementos: alta / baja / movimiento ----
 

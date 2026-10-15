@@ -34,6 +34,9 @@ from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Temporales.condi
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion import (
     Estacion,
 )
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estaciones import (
+    Estaciones,
+)
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import (
     Ciclo_Solar,
 )
@@ -61,7 +64,6 @@ from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Core.Entities.Mundo.Suelo.suelo_arena import Suelo_Arena
 from Core.Entities.Mundo.Suelo.suelo_barro import Suelo_Barro
 from Core.Entities.Mundo.Suelo.suelo_cesped import Suelo_Cesped
-from Core.Entities.Mundo.Suelo.suelo_charco import Suelo_Charco
 from Core.Entities.Mundo.Suelo.suelo_grava import Suelo_Grava
 from Core.Entities.Mundo.Suelo.suelo_hielo import Suelo_Hielo
 from Core.Entities.Mundo.Suelo.suelo_oceano import Suelo_Oceano
@@ -146,6 +148,7 @@ ELEMENTOS: dict[str, type] = {
     "Elemento_Simple": Elemento_Simple,
     "Elemento_Test": Elemento_Test,
     "Estacion": Estacion,
+    "Estaciones": Estaciones,
     "Etereo": Etereo,
     # F
     "Fruta": Fruta,
@@ -188,7 +191,6 @@ ELEMENTOS: dict[str, type] = {
     "Suelo_Arena": Suelo_Arena,
     "Suelo_Barro": Suelo_Barro,
     "Suelo_Cesped": Suelo_Cesped,
-    "Suelo_Charco": Suelo_Charco,
     "Suelo_Grava": Suelo_Grava,
     "Suelo_Hielo": Suelo_Hielo,
     "Suelo_Oceano": Suelo_Oceano,

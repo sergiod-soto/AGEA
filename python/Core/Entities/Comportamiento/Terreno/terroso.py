@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Terreno/terroso.py
+
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
 
 

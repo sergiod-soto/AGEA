@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Interaccion/golpeable.py
+
 from abc import abstractmethod
 
 from Core.Entities.Comportamiento.Material.material import Material

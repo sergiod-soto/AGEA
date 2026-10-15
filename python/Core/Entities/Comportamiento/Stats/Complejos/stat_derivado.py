@@ -1,4 +1,4 @@
-# Core/Entities/Comportamiento/Stats/stat_derivado.py
+# Core/Entities/Comportamiento/Stats/Complejos/stat_derivado.py
 
 # Stat cuyo valor no se asigna a mano: se calcula a partir de otros stats
 # (normalmente Stats Complejos) que se le inyectan explicitamente al

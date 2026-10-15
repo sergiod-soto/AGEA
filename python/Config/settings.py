@@ -15,7 +15,9 @@ FRESH: bool = os.getenv("FRESH", "false").lower() == "true"
 # ── LOG LEVEL ────────────────────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-
+#
+#
+#
 # ── Mundo ─────────────────────────────────────────────────────────────────────
 MAX_VISION_DISTANCE = int(
     os.getenv("MAX_VISION_DISTANCE", 50)
@@ -33,13 +35,19 @@ MAX_SOUND_DISTANCE = int(os.getenv("MAX_SOUND_DISTANCE", 50))
 ID_CICLO_SOLAR: int = int(os.getenv("ID_CICLO_SOLAR", "1"))
 ID_CICLO_LUNAR: int = int(os.getenv("ID_CICLO_LUNAR", "2"))
 ID_RELOJ: int = int(os.getenv("ID_RELOJ", "3"))
-ID_ESTACION: int = int(os.getenv("ID_ESTACION", "4"))
-ID_ATMOSFERA: int = int(os.getenv("ID_ATMOSFERA", "5")) # sin uso #################################
+ID_ESTACIONES: int = int(os.getenv("ID_ESTACIONES", "4"))
+ID_LUZ_AMBIENTAL: int = int(os.getenv("ID_LUZ_AMBIENTAL", "5"))
 ID_TEMPERATURA_ATMOSFERICA: int = int(os.getenv("ID_TEMPERATURA_ATMOSFERICA", "6"))
 ID_PRESION: int = int(os.getenv("ID_PRESION", "7"))
 ID_VIENTO: int = int(os.getenv("ID_VIENTO", "8"))
 ID_HUMEDAD_ABSOLUTA: int = int(os.getenv("ID_HUMEDAD_ABSOLUTA", "9"))
-ID_HUMEDAD_RELATIVA: int = int(os.getenv("HUMEDAD_RELATIVA", "10"))
+ID_HUMEDAD_RELATIVA: int = int(os.getenv("ID_HUMEDAD_RELATIVA", "10"))
+ID_CICLO_ANUAL: int = int(os.getenv("ID_CICLO_ANUAL", "11"))
+ID_INVIERNO: int = int(os.getenv("ID_INVIERNO", "12"))
+ID_PRIMAVERA: int = int(os.getenv("ID_PRIMAVERA", "13"))
+ID_VERANO: int = int(os.getenv("ID_VERANO", "14"))
+ID_OTONO: int = int(os.getenv("ID_OTONO", "15"))
+
 
 # ── Unity ────────────────────────────────────────────────────────
 UNITY_HOST: str = os.getenv("UNITY_HOST", "127.0.0.1")

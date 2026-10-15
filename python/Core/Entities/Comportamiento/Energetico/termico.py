@@ -1,5 +1,6 @@
+# Core/Entities/Comportamiento/Energetico/termico.py
+
 from Core.Entities.Comportamiento.Energetico.energetico import Energetico
-from Core.Entities.Elementos.elemento import Elemento
 
 
 class Termico(Energetico):
@@ -39,7 +40,11 @@ class Termico(Energetico):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"termico": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "temperatura_propia": self.temperatura_propia,
+            "tasa_transferencia_temperatura": self.tasa_transferencia_temperatura,
+            "radio_termico": self.radio_termico,
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -51,6 +56,10 @@ class Termico(Energetico):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data["comportamientos"][__class__.__name__]
+        self.temperatura_propia = seccion["temperatura_propia"]
+        self.tasa_transferencia_temperatura = seccion["tasa_transferencia_temperatura"]
+        self.radio_termico = seccion["radio_termico"]
 
     @classmethod
     def _campos_internos(cls):
@@ -60,12 +69,14 @@ class Termico(Energetico):
             "radio_termico",
         }
 
-    def tick_comportamiento(self, elementos: list[(float, float)]) -> float:
-        # TODO: comprobar que tick no machaque a super().tick()
+    def intercambiar_temperatura(
+        self, elementos: list[tuple[float, float]], ctx
+    ) -> None:
         """
-        calculo del intercambio de temperaturas con el resto de elementos.
-
-        list(temperatura, tasa)
+        Intercambio de calor con vecinos: elementos = [(temperatura, tasa), ...].
+        Si la temperatura cambia más de 1e-2, pide emitir
+        'temperatura_cambiada_<id_elemento>' con la temperatura nueva. Es un
+        evento de "estado actual": agrupable en el futuro.
         """
         temp_propia_inicial = self.temperatura_propia
         delta = 0
@@ -73,15 +84,14 @@ class Termico(Energetico):
             U = (self.tasa_transferencia_temperatura * neighbor_rate) / (
                 self.tasa_transferencia_temperatura + neighbor_rate
             )
-            Q = U * (self.temperatura_propia - neighbor_temp)
-            delta -= Q
-
+            delta -= U * (self.temperatura_propia - neighbor_temp)
         self.temperatura_propia += delta
 
-        # emision del evento del cambio de temperatura
         if abs(self.temperatura_propia - temp_propia_inicial) > 1e-2:
-            Elemento.mundo.bus.emitir(
-                f"temperatura_cambiada_{id(self)}", self.temperatura_propia
+            ctx.emitir_evento(
+                f"temperatura_cambiada_{self.id_elemento}",
+                self.temperatura_propia,
+                agrupable=True,
             )
 
     @classmethod
@@ -95,13 +105,15 @@ class Termico(Energetico):
     @classmethod
     def ayuda_creacion(cls) -> str:
         return """
-•Peso es la masa del elemento.
+- El Elemento intercambia calor con su entorno.
 
 Atributos:
-\tpeso: float
+\ttemperatura_propia: float
+\ttasa_transferencia_temperatura: float
+\tradio_termico: int = 0
 
 Métodos:
-\ttick(self, elementos: list[(float, float)]) -> float
+\tintercambiar_temperatura(self, elementos: list[tuple[float, float]], ctx) -> None
 \t--------------------------------------
-\tComputa el siguiente tick.
+\tCalcula el intercambio de calor con los vecinos (temperatura, tasa).
         """

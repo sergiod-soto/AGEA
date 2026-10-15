@@ -1,3 +1,5 @@
+// Infraestructura/Gestores/Transporte/Protobufs/Sectores/sector_service.proto
+
 syntax = "proto3";
 package sector;
 import "common.proto";
@@ -205,25 +207,15 @@ message GetDeltaRequest {
 }
 
 message GetDeltaResponse {
-  bool   ok      = 1;
-  string error   = 2;
-  uint64 tick_id = 3;
-
-  repeated common.Cell       changed_cells  = 4;
-  repeated uint64            dead_bot_ids   = 6;
-  repeated common.SoundEvent emitted_sounds = 7;
-
-  // Estado completo de las celdas de atmósfera propias, ya avanzadas este tick.
-  repeated common.AtmosphereCell changed_atmosphere_cells = 8;
-
-  // Elementos que quieren pasar a otro Sector. NO han salido de su celda: el
-  // Gestor los resuelve con RecibirElemento (destino) y ConfirmarSalida (origen).
-  repeated common.MovimientoSaliente movimientos_salientes = 10;
-
-  // Eliminados: 5 (outgoing_bots, sustituido por RecibirElemento) y 9
-  // (movimientos_externos, sustituido por movimientos_salientes).
-  reserved 5, 9;
-  reserved "outgoing_bots", "movimientos_externos";
+  bool                               ok                       = 1;
+  string                             error                    = 2;
+  uint64                             tick_id                  = 3;
+  repeated common.Cell               changed_cells            = 4;
+  repeated uint64                    dead_bot_ids             = 5;
+  repeated common.SoundEvent         emitted_sounds           = 6;
+  repeated common.AtmosphereCell     changed_atmosphere_cells = 7;
+  repeated common.MovimientoSaliente movimientos_salientes    = 8;
+  repeated common.EventoMundo        eventos                  = 9;
 }
 
 message RecibirElementoRequest {

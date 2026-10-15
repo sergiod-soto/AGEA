@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Informativo/luminoso.py
+
 from Core.Entities.Comportamiento.Informativo.informativo import Informativo
 
 

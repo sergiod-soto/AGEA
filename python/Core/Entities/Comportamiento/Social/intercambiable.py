@@ -1,3 +1,5 @@
+# Core/Entities/Comportamiento/Social/intercambiable.py
+
 from Core.Entities.Comportamiento.Social.social import Social
 
 

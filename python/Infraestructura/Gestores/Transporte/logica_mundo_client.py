@@ -383,6 +383,15 @@ class LogicaMundoClient:
         if not resp.ok:
             raise RuntimeError(f"ActualizarCeldas: {resp.error}")
 
+    async def emitir_eventos(self, eventos: list, timeout: float | None = None) -> None:
+        """PROPAGA errores (red o ok=False): un evento perdido es fatal (B1)."""
+        await self._ensure_channel()
+        resp = await self._stub.EmitirEventos(
+            pb.EmitirEventosRequest(eventos=eventos), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"EmitirEventos: {resp.error}")
+
     async def avanzar_tick(self, tick_id: int, timeout: float | None = None) -> None:
         """Pide a Logica_Mundo que avance el tiempo del mundo un tick (tick
         actual + reloj, y con él los ciclos solar/lunar/anual). Ver

@@ -1,3 +1,6 @@
+# Core/Entities/Elementos/Abstractos/Marcadores/marcador.py
+
+
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 
 

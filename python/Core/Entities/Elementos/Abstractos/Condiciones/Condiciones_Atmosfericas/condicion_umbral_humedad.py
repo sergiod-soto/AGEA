@@ -1,3 +1,5 @@
+# Core/Entities/Elementos/Abstractos/Condiciones/Condiciones_Atmosfericas/condicion_umbral_humedad.py
+
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 

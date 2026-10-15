@@ -1,6 +1,6 @@
-# ingrediente.py — TYPE_CHECKING rompe el ciclo en runtime
-from __future__ import annotations
+# Core/Entities/Comportamiento/Interaccion/ingrediente.py
 
+from __future__ import annotations
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
 from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 
