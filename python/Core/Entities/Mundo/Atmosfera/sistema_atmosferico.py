@@ -45,8 +45,8 @@ Modelo "híbrido" (decisión tomada, no inventada aquí):
     obligatorio: los vecinos pueden vivir en otro Sector calculando en
     paralelo.
 
-Adyacencia: 8 vecinos por celda (decisión tomada). Este módulo no
-construye esa lista -- la construye Sector._avanzar_atmosfera /
+Adyacencia: 4 vecinos cardinales por celda (decisión tomada); los bordes del
+mundo son cerrados. Este módulo no construye esa lista -- la construye
 Sector._vecinos_atmosfera, mezclando celdas propias y ghost zone.
 
 IMPORTANTE: avanzar_celda() MUTA la celda que recibe (cada
@@ -73,11 +73,9 @@ class EstadoVecino:
     Copia de solo lectura del estado de una celda de atmósfera vecina
     (una "ghost cell"), tomada del TICK ANTERIOR.
 
-    direccion: vector unitario (x, y) que apunta DESDE la celda que se
-    está calculando HACIA este vecino. Lo calcula quien construya la
-    lista (Sector._vecinos_atmosfera); este módulo no asume nada sobre
-    la topología de la malla de atmósfera, solo usa el vector que le
-    dan.
+    direccion: vector unitario CARDINAL (±1,0)/(0,±1) que apunta DESDE la celda
+    que se está calculando HACIA este vecino. Lo calcula quien construya la
+    lista (Sector._vecinos_atmosfera).
     """
 
     temperatura: float
@@ -104,18 +102,24 @@ def _latitud_radianes(y: int) -> float:
 
 def _factor_estacional_y_latitud(y: int, progreso_anual: float) -> float:
     """
-    factor = cos(latitud - declinación_solar). declinación_solar oscila
-    entre ±INCLINACION_AXIAL_GRADOS a lo largo del año.
+    factor = cos(latitud - declinación_solar): coseno del ángulo cenital
+    al mediodía. La declinación oscila entre ±INCLINACION_AXIAL_GRADOS.
 
-    progreso_anual=0 se toma como el equinoccio (declinación 0);
-    progreso_anual=0.25 -> declinación máxima ("verano" del hemisferio
-    donde y está cerca de 0, según _latitud_radianes). Es una
-    convención de FASE, ajustable sin tocar la forma de la curva.
+    FASE: progreso_anual = 0 es el inicio de Invierno, que coincide con el
+    solsticio de invierno del hemisferio de y cercano a 0 (el de latitud
+    positiva en _latitud_radianes). Por eso la declinación es -cos(...):
+      0.00 -> -23.44° (solsticio de invierno)
+      0.25 ->   0°    (equinoccio, empieza Primavera)
+      0.50 -> +23.44° (solsticio de verano, empieza Verano)
+      0.75 ->   0°    (equinoccio, empieza Otoño)
+    Así coincide con el ciclo de Estaciones (4 pasos de 3 meses desde 0).
+    El hemisferio opuesto queda invertido sin ningún if, porque su latitud
+    es negativa.
 
-    max(0, ...) recorta a 0 los casos de "noche polar" (cos negativo,
-    sol por debajo del horizonte incluso al mediodía).
+    max(0, ...) recorta a 0 la noche polar (cos negativo: el sol queda por
+    debajo del horizonte incluso al mediodía).
     """
-    declinacion = math.radians(INCLINACION_AXIAL_GRADOS) * math.sin(
+    declinacion = -math.radians(INCLINACION_AXIAL_GRADOS) * math.cos(
         2 * math.pi * progreso_anual
     )
     latitud = _latitud_radianes(y)

@@ -24,7 +24,7 @@ async def handle(logica, request, context):
 
     # logica.obtener_celdas_en_region ya devuelve directamente una lista
     # de common_pb2.Cell (la traducción Celda→Cell ocurre dentro de
-    # logicaMundo.py porque necesita self._elements/_lock).
+    # logicaMundo porque necesita self._elements/_lock).
     cells = await logica.obtener_celdas_en_region(
         min_pos=(request.min.x, request.min.y),
         max_pos=(request.max.x, request.max.y),

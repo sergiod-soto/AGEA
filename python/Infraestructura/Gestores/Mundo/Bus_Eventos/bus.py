@@ -39,15 +39,23 @@ class BusEventos:
         self._listeners.setdefault(tipo, []).append(ref)
 
     def emitir(self, tipo: str, *args, **kwargs) -> None:
-        listeners_vivos = []
-        for ref in self._listeners.get(tipo, []):
+        refs = self._listeners.get(tipo)
+        if not refs:
+            return  # nadie escucha: no se crea la clave
+
+        # Se itera sobre una COPIA: un suscriptor puede llamar a suscribir()
+        # durante la emisión y eso modifica `refs`. Esa nueva suscripción
+        # recibirá el evento siguiente, no este.
+        for ref in list(refs):
             callback = ref()
             if callback is None:
-                continue  # el suscriptor ya no existe: se descarta
-            listeners_vivos.append(ref)
+                continue  # el suscriptor ya no existe: se purga abajo
             try:
                 callback(*args, **kwargs)
             except Exception:
                 # Un suscriptor roto no debe impedir que los demás reciban el evento.
                 logger.exception("Suscriptor de '%s' falló.", tipo)
-        self._listeners[tipo] = listeners_vivos
+
+        # Purga de referencias muertas EN SITIO: conserva las suscripciones
+        # añadidas durante la emisión (antes se reemplazaba la lista y se perdían).
+        refs[:] = [ref for ref in refs if ref() is not None]

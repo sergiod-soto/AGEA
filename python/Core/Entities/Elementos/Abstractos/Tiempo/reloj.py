@@ -74,17 +74,16 @@ class Reloj(Marcador_Temporal):
             self._al_avanzar = al_avanzar
 
         def next_tick(self) -> None:
-            # _contador_paso
+            # Un tick de reloj más; el ciclo solo avanza cada `_paso` ticks.
             self._contador_paso += 1
             if self._contador_paso < self._paso:
                 return
             self._contador_paso = 0
 
-            # tick_actual
+            # Avance del ciclo, con reinicio al llegar a _end.
             self.tick_actual += 1
-            if self.tick_actual < self._end:
-                return
-            self.tick_actual = 0
+            if self.tick_actual >= self._end:
+                self.tick_actual = 0
 
             if self._al_avanzar is not None:
                 self._al_avanzar(self.tick_actual)
@@ -196,6 +195,11 @@ class Reloj(Marcador_Temporal):
             if not 0 <= g["tick_actual"] < ciclo._end:
                 raise ValueError(
                     f"Reloj: tick_actual {g['tick_actual']} fuera de [0, {ciclo._end})."
+                )
+            # El contador de paso cuenta ticks dentro de un paso: [0, paso).
+            if not 0 <= g["contador"] < ciclo._paso:
+                raise ValueError(
+                    f"Reloj: contador {g['contador']} fuera de [0, {ciclo._paso})."
                 )
         self.segundos = estado["segundos"]
         for ciclo, g in zip(self.ciclos, guardados):

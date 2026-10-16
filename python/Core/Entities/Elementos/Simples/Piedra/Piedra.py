@@ -68,7 +68,7 @@ class Piedra(Elemento_Simple, comportamientos):
         temperatura_propia: float,
         tasa_transferencia_temperatura: float,
         # Agarrable:
-        agarrado_por: Elemento = None,
+        agarrado_por: int = None,
         # Destruible:
         durabilidad_max_destruible: float = None,
         # Erosionable:
@@ -147,8 +147,8 @@ class Piedra(Elemento_Simple, comportamientos):
             **kwargs,
         )
 
-    def soltar(self, por: Elemento): ...
-    def agarrar(self, por: Elemento): ...
+    def soltar(self, por: int): ...
+    def agarrar(self, por: int): ...
     def erosionar(self, cantidad: float): ...
     def danhar(self, danho: float): ...
     def check_push(self, direccion) -> Elemento | bool: ...
@@ -196,7 +196,7 @@ class Piedra(Elemento_Simple, comportamientos):
             "\trgb_base: tuple[int, int, int]\n"
             "\ttemperatura_propia: float\n"
             "\ttasa_transferencia_temperatura: float\n"
-            "\tagarrado_por: Elemento = None\n"
+            "\tagarrado_por: int = None\n"
             "\tdurabilidad_max_destruible: float = None\n"
             "\tdurabilidad_max_erosion=1 (a cambiar)\n"
         )

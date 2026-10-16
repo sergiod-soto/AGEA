@@ -12,32 +12,40 @@ class Agarrable(Interaccion):
 
     Parametros:
 
-    - agarrado_por: Elemento = None
+    - agarrado_por: int = None   (id_elemento de quien lo agarra, None si nadie)
+
+    Se usa el ID y no el objeto: en un Sector no hay Mundo para resolver ids a
+    objetos, así que el atributo es un entero en TODOS los procesos.
 
     Metodos abstractos:
 
-    - agarrar(self, por: Elemento)
-
-    - soltar(self, por: Elemento)
+    - agarrar(self, por: int)
+    - soltar(self, por: int)
     """
 
     REQUIERE = {
-        "agarrado_por: Elemento = None",
+        "agarrado_por: int = None",
     }
 
     ABSTRACTOS = {
-        "def agarrar(self, por: Elemento)",
-        "def soltar(self, por: Elemento)",
+        "def agarrar(self, por: int)",
+        "def soltar(self, por: int)",
     }
 
-    def __init__(self, agarrado_por: Elemento = None, **kwargs):
+    def __init__(self, agarrado_por: int | None = None, **kwargs):
         super().__init__(**kwargs)
         self.agarrado_por = agarrado_por
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"agarrable": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "agarrado_por": self.agarrado_por,
+        }
         return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        self.agarrado_por = data["comportamientos"][__class__.__name__]["agarrado_por"]
 
     def representar(self, incluir: list[str] | None = None) -> dict:
         """Informacion pasada a Unity para representar el Elemento."""
@@ -46,17 +54,14 @@ class Agarrable(Interaccion):
             datos["comportamientos"][__class__.__name__] = {"agarrable": {}}
         return datos
 
-    def deserializar(self, data: dict, mundo=None) -> None:
-        super().deserializar(data, mundo)
-
     @abstractmethod
-    def agarrar(self, por: Elemento):
-        """Accion pasiva. Se indica que el elemento atributo tiene intencion de agarrar este elemento"""
+    def agarrar(self, por: int):
+        """Accion pasiva. `por` es el id_elemento de quien tiene intencion de agarrar este elemento."""
         ...
 
     @abstractmethod
-    def soltar(self, por: Elemento):
-        """Accion pasiva. Se indica que el elemento atributo tiene intencion de soltar este elemento"""
+    def soltar(self, por: int):
+        """Accion pasiva. `por` es el id_elemento de quien tiene intencion de soltar este elemento."""
         ...
 
     @classmethod

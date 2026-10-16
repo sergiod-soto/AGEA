@@ -97,7 +97,7 @@ def get_parametros_init(comportamientos: list[Comportamiento]):
             partes.append("")
         #
         elif c is Agarrable:
-            partes.append("\n#Agarrable:\nagarrado_por: Elemento, ")
+            partes.append("\n#Agarrable:\nagarrado_por: int, ")
         elif c is Consumible:
             partes.append("")
         elif c is Contenedor:

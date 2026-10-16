@@ -71,7 +71,7 @@ CATALOGO_CAMPOS: dict[str, CampoCuestionario] = {
     "agarrado_por": CampoCuestionario(
         nombre="agarrado_por",
         prompt="Agarrado Por",
-        tipo=Elemento,
+        tipo=int,
         opcional=True,
         valor_por_defecto=None,
     ),

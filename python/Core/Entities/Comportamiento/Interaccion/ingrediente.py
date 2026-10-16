@@ -1,32 +1,42 @@
 # Core/Entities/Comportamiento/Interaccion/ingrediente.py
 
-from __future__ import annotations
+
 from Core.Entities.Comportamiento.Interaccion.interaccion import Interaccion
-from Core.Entities.Elementos.Abstractos.Recetas.receta import Receta
 
 
 class Ingrediente(Interaccion):
     """
     Parametros:
 
-    - recetas_de: list[Receta]
+    - recetas_de: list[int] = None   (id_elemento de cada Receta de la que forma parte)
 
-    Metodos abstractos:
-
-    -
+    None equivale a "ninguna receta". Todos los elementos de un mismo tipo
+    (p. ej. varias Agua) comparten las mismas recetas, pero cada uno guarda su
+    propia lista. Se guardan IDs y no objetos Receta, por lo mismo que
+    Agarrable: en un Sector no hay Mundo para resolverlos.
     """
 
-    REQUIERE = {"recetas_de: list[Receta]"}
+    REQUIERE = {"recetas_de: list[int] = None"}
     ABSTRACTOS = {}
 
-    def __init__(self, recetas_de: list[Receta], **kwargs):
+    def __init__(self, recetas_de: list[int] | None = None, **kwargs):
         super().__init__(**kwargs)
-        self.recetas_de: list[Receta] = recetas_de
+        self.recetas_de: list[int] = list(
+            recetas_de or []
+        )  # ID de las recetas a las que pertenece
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"ingrediente": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "recetas_de": list(self.recetas_de),
+        }
         return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        self.recetas_de = list(
+            data["comportamientos"][__class__.__name__]["recetas_de"]
+        )
 
     def representar(self, incluir: list[str] | None = None) -> dict:
         """Informacion pasada a Unity para representar el Elemento."""
@@ -35,16 +45,14 @@ class Ingrediente(Interaccion):
             datos["comportamientos"][__class__.__name__] = {"ingrediente": {}}
         return datos
 
-    def deserializar(self, data: dict, mundo=None) -> None:
-        super().deserializar(data, mundo)
+    def incluir_en_receta(self, id_receta: int) -> None:
+        """Marca que este Elemento forma parte de la receta `id_receta`."""
+        if id_receta not in self.recetas_de:
+            self.recetas_de.append(id_receta)
 
-    def incluir_en_receta(self, receta: Receta) -> None:
-        if receta.nombre in self.recetas_de:
-            return
-        self.recetas_de[receta.nombre] = receta
-
-    def parte_de_que_recetas(self) -> dict[str, Receta]:
-        return self.recetas_de
+    def parte_de_que_recetas(self) -> list[int]:
+        """ids de las recetas de las que forma parte (copia)."""
+        return list(self.recetas_de)
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

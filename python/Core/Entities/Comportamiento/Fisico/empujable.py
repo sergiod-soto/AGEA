@@ -34,8 +34,17 @@ class Empujable(Fisico):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"empujable": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "coste_empujar": self.coste_empujar,
+            "empujable": self.empujable,
+        }
         return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        seccion = data["comportamientos"][__class__.__name__]
+        self.coste_empujar = seccion["coste_empujar"]
+        self.empujable = seccion["empujable"]
 
     def representar(self, incluir: list[str] | None = None) -> dict:
         """Informacion pasada a Unity para representar el Elemento."""
@@ -43,9 +52,6 @@ class Empujable(Fisico):
         if self._incluido(incluir, __class__):
             datos["comportamientos"][__class__.__name__] = {"empujable": {}}
         return datos
-
-    def deserializar(self, data: dict, mundo=None) -> None:
-        super().deserializar(data, mundo)
 
     @classmethod
     def _campos_internos(cls):
@@ -73,12 +79,12 @@ class Empujable(Fisico):
                     direccion
                 )
             else:
-                return False
+                return -1.0
 
     @abstractmethod
-    def check_push(self, direccion, fuerza) -> Elemento | bool:
+    def check_push(self, direccion) -> Elemento | bool:
         """
-        Intenta mover la entidad una celda en 'direccion' con 'fuerza'.
+        Intenta mover la entidad una celda en 'direccion'.
         Devuelve un Elemento si choca contra algo, True si tendria exito o False si no puede.
         """
         ...

@@ -35,8 +35,17 @@ class Enterrable(Fisico):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"enterrable": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "_des_enterrable": self._des_enterrable,
+            "_enterrado": self._enterrado,
+        }
         return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        seccion = data["comportamientos"][__class__.__name__]
+        self._des_enterrable = seccion["_des_enterrable"]
+        self._enterrado = seccion["_enterrado"]
 
     def representar(self, incluir: list[str] | None = None) -> dict:
         """Informacion pasada a Unity para representar el Elemento."""
@@ -44,9 +53,6 @@ class Enterrable(Fisico):
         if self._incluido(incluir, __class__):
             datos["comportamientos"][__class__.__name__] = {"enterrable": {}}
         return datos
-
-    def deserializar(self, data: dict, mundo=None) -> None:
-        super().deserializar(data, mundo)
 
     @classmethod
     def _campos_internos(cls):
@@ -66,9 +72,8 @@ class Enterrable(Fisico):
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:
-        return [
-            "peso",
-        ]
+        # Sin parámetros propios: el estado interno se inicializa solo.
+        return []
 
     @classmethod
     def ayuda_creacion(cls) -> str:

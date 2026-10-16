@@ -66,6 +66,13 @@ from Infraestructura.Gestores.Transporte.Proto_Generated import (
 
 logger = logging.getLogger(__name__)
 
+_DIRECCIONES_ATMOSFERA: tuple[tuple[int, int], ...] = (
+    (1, 0),
+    (-1, 0),
+    (0, 1),
+    (0, -1),
+)
+
 
 # ─────────────────────────────────────────────
 #  Modo de sector
@@ -356,7 +363,7 @@ class Sector:
         self._ghost: dict[tuple[int, int], Any] = {}
 
         # Ghost zone de ATMÓSFERA: celdas de atmósfera de sectores
-        # vecinos (adyacencia-8), de solo lectura, del tick anterior.
+        # vecinos (adyacencia-4), de solo lectura, del tick anterior.
         # Separada de self._ghost -- ver set_ghost_zone_atmosfera.
         self._ghost_atmosfera: dict[tuple[int, int], Any] = {}
 
@@ -384,8 +391,7 @@ class Sector:
         # Índice inverso: id_elemento (el avatar en el mundo) → bot_id (el
         # script). Son ids independientes — este índice es la única forma de
         # ir de uno a otro sin adivinar por posición. Se mantiene en
-        # load_state / add_migrating_bot / _detectar_migraciones /
-        # _resolver_mutaciones.
+        # load_state / _resolver_mutaciones.
         self._elemento_a_bot: dict[int, int] = {}
 
     # ─────────────────────────────────────────
@@ -654,8 +660,10 @@ class Sector:
                     celda.suelo.inercia_termica,
                 )
 
-            for elemento in celda.resto:
-                if elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
+            for elemento in (celda.suelo, celda.bot, *celda.resto):
+                if elemento is not None and elemento.tiene_flag(
+                    Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE
+                ):
                     celda_atmosfera.registrar_resistencia_elemento(
                         elemento.id_elemento, elemento.resistencia_viento
                     )
@@ -930,54 +938,6 @@ class Sector:
             tick_id,
         )
 
-    def add_migrating_bot(self, tick_id: int, bot, elemento: bytes = b"") -> None:
-        """Registra un bot que llega a este sector y coloca su avatar en el
-        store. Sin lo segundo el avatar no ejecutaría tick() aquí, y la
-        próxima celda que este sector reporte en esa posición lo borraría de
-        Mundo (actualizar_celda sustituye la celda entera).
-
-        `elemento` es el avatar serializado (mismo formato que un slot de
-        Cell). Por defecto vacío para no romper a los llamadores actuales:
-        en ese caso solo se registra el bot, como antes."""
-        self._bots[bot.bot_id] = bot
-        self._elemento_a_bot[bot.id_elemento] = bot.bot_id
-
-        if elemento:
-            pos = (bot.pos.x, bot.pos.y)
-            if not self._en_region_propia(pos):
-                logger.warning(
-                    "Sector (%d,%d): avatar %s llega a %s, fuera de su región.",
-                    self._col,
-                    self._row,
-                    bot.id_elemento,
-                    pos,
-                )
-            else:
-                celda = self._celdas.get_or_create(*pos)
-                if celda.bot is not None and celda.bot.id_elemento == bot.id_elemento:
-                    # Ya cargado por un LoadState reciente (p. ej. la
-                    # activación de un sector INACTIVO, que carga antes de
-                    # recibir al bot): la operación es idempotente.
-                    pass
-                elif not self._asignar_slot(
-                    celda, "bot", CeldaSectorStore._deserializar_slot(elemento)
-                ):
-                    logger.error(
-                        "Sector (%d,%d): slot bot de %s ocupado al recibir %s.",
-                        self._col,
-                        self._row,
-                        pos,
-                        bot.id_elemento,
-                    )
-
-        logger.debug(
-            "Sector (%d,%d): bot %s migrado (tick %d)",
-            self._col,
-            self._row,
-            bot.bot_id,
-            tick_id,
-        )
-
     # ─────────────────────────────────────────
     #  FASE 1 — Computación del tick
     # ─────────────────────────────────────────
@@ -1091,60 +1051,49 @@ class Sector:
         estados_previos: dict[tuple[int, int], tuple[float, float, float]],
     ) -> list[sistema_atmosferico.EstadoVecino]:
         """
-        Lista de EstadoVecino (adyacencia-8) de la celda en 'pos', con los
-        valores del TICK ANTERIOR: los vecinos propios salen de
-        'estados_previos' (congelados) y los de otro Sector, de la ghost
-        zone. Los vecinos que no existen en ninguna de las dos (borde del
-        mundo) se omiten: el borde es adiabático.
-
-        (Estaba definido DENTRO de _avanzar_atmosfera, tras el bucle, así
-        que self._vecinos_atmosfera no existía.)
+        EstadoVecino de los 4 vecinos cardinales de la celda en 'pos', con los
+        valores del TICK ANTERIOR: los propios salen de 'estados_previos'
+        (congelados) y los de otro Sector, de la ghost zone. Un vecino que no
+        está en ninguna de las dos es borde del mundo y se omite: el borde es
+        cerrado (sin flujo de nada).
         """
         x, y = pos
         vecinos: list[sistema_atmosferico.EstadoVecino] = []
 
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                if dx == 0 and dy == 0:
-                    continue
-                vecino_pos = (x + dx, y + dy)
+        for dx, dy in _DIRECCIONES_ATMOSFERA:
+            vecino_pos = (x + dx, y + dy)
 
-                estado = estados_previos.get(vecino_pos)
-                if estado is not None:
-                    temperatura, presion, humedad_absoluta = estado
-                    # Vecino propio: bloqueo_total_viento no lo muta
-                    # avanzar_celda, así que se lee en vivo del store propio
-                    # -- no hace falta congelarlo como el resto.
-                    celda_vecina = self._atmosfera.get(*vecino_pos)
-                    bloqueo_total_viento = (
-                        celda_vecina.bloqueo_total_viento
-                        if celda_vecina is not None
-                        else False
-                    )
-                else:
-                    vecino_proto = self._ghost_atmosfera.get(vecino_pos)
-                    if vecino_proto is None:
-                        continue
-                    temperatura = vecino_proto.temperatura
-                    presion = vecino_proto.presion
-                    humedad_absoluta = vecino_proto.humedad_absoluta
-                    # Vecino de GHOST ZONE (otro Sector): su bloqueo viaja en
-                    # el proto (AtmosphereCell.bloqueo_total_viento). Ojo: lo
-                    # rellena Logica_Mundo desde SU Celda_Atmosfera, cuyas
-                    # cachés hoy nadie mantiene (pendiente de la fase de
-                    # cachés) -- hasta entonces valdrá siempre False.
-                    bloqueo_total_viento = vecino_proto.bloqueo_total_viento
+            estado = estados_previos.get(vecino_pos)
+            if estado is not None:
+                temperatura, presion, humedad_absoluta = estado
+                # estados_previos solo contiene celdas que existen, así que
+                # get() no devuelve None. avanzar_celda no muta el bloqueo
+                # (lo cambian las mutaciones, ya resueltas antes), así que se
+                # lee en vivo y no hace falta congelarlo.
+                bloqueo_total_viento = self._atmosfera.get(
+                    *vecino_pos
+                ).bloqueo_total_viento
+            else:
+                vecino_proto = self._ghost_atmosfera.get(vecino_pos)
+                if vecino_proto is None:
+                    continue  # borde del mundo (cerrado)
+                temperatura = vecino_proto.temperatura
+                presion = vecino_proto.presion
+                humedad_absoluta = vecino_proto.humedad_absoluta
+                # Vecino de otro Sector: su bloqueo viaja en el proto y lo
+                # espeja Logica de lo que envían los Sectores (decisión 1=A);
+                # llega con un tick de retraso, como el resto de la ghost zone.
+                bloqueo_total_viento = vecino_proto.bloqueo_total_viento
 
-                distancia = math.hypot(dx, dy)
-                vecinos.append(
-                    sistema_atmosferico.EstadoVecino(
-                        temperatura=temperatura,
-                        presion=presion,
-                        humedad_absoluta=humedad_absoluta,
-                        direccion=Vector2(dx / distancia, dy / distancia),
-                        bloqueo_total_viento=bloqueo_total_viento,
-                    )
+            vecinos.append(
+                sistema_atmosferico.EstadoVecino(
+                    temperatura=temperatura,
+                    presion=presion,
+                    humedad_absoluta=humedad_absoluta,
+                    direccion=Vector2(dx, dy),  # ya es unitario: no hay hypot
+                    bloqueo_total_viento=bloqueo_total_viento,
                 )
+            )
         return vecinos
 
     def _sincronizar_atmosfera_de_suelo(
@@ -1270,33 +1219,6 @@ class Sector:
         for sound in self._sounds_pendientes:
             pass
         self._sounds_pendientes = []
-
-    def _detectar_migraciones(self, delta: TickDelta) -> None:
-        """
-        Comprueba qué bots han salido de la región del sector
-        y los añade a delta.outgoing_bots.
-        """
-        from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores.sector_service_pb2 import (
-            MigratingBot,
-        )
-
-        x0, y0, x1, y1 = self._x0, self._y0, self._x1, self._y1
-
-        bots_fuera = []
-        for bot_id, bot in self._bots.items():
-            x, y = bot.pos.x, bot.pos.y
-            if not (x0 <= x < x1 and y0 <= y < y1):
-                delta.outgoing_bots.append(
-                    MigratingBot(
-                        bot=bot,
-                        target_pos=common_pb.Position(x=x, y=y),
-                    )
-                )
-                bots_fuera.append(bot_id)
-
-        for bot_id in bots_fuera:
-            self._elemento_a_bot.pop(self._bots[bot_id].id_elemento, None)
-            del self._bots[bot_id]
 
     # ─────────────────────────────────────────
     #  FASE 2 — GetDelta

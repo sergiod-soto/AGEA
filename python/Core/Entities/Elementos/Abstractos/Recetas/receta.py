@@ -29,7 +29,7 @@ class Receta(Elemento_Abstracto):
         # para evitar dependencia circular, ¡NO! decir que es de Ingrediente.
         ingredientes: list,
         #
-        # puede que alguna de las condiciones sea el trigger.
+        # 
         condiciones: list[Condicion],
         #
         # accion que hace de trigger. puede no tener.
