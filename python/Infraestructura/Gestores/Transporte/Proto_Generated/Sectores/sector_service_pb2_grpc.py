@@ -72,11 +72,6 @@ class SectorServiceStub(object):
                 request_serializer=Sectores_dot_sector__service__pb2.SetSoundsRequest.SerializeToString,
                 response_deserializer=Sectores_dot_sector__service__pb2.SetSoundsResponse.FromString,
                 _registered_method=True)
-        self.AddMigratingBot = channel.unary_unary(
-                '/sector.SectorService/AddMigratingBot',
-                request_serializer=Sectores_dot_sector__service__pb2.AddMigratingBotRequest.SerializeToString,
-                response_deserializer=Sectores_dot_sector__service__pb2.AddMigratingBotResponse.FromString,
-                _registered_method=True)
         self.SetAtmosphereGhostZone = channel.unary_unary(
                 '/sector.SectorService/SetAtmosphereGhostZone',
                 request_serializer=Sectores_dot_sector__service__pb2.SetAtmosphereGhostZoneRequest.SerializeToString,
@@ -86,6 +81,11 @@ class SectorServiceStub(object):
                 '/sector.SectorService/SetGlobalCycles',
                 request_serializer=Sectores_dot_sector__service__pb2.SetGlobalCyclesRequest.SerializeToString,
                 response_deserializer=Sectores_dot_sector__service__pb2.SetGlobalCyclesResponse.FromString,
+                _registered_method=True)
+        self.AplicarParchesAtmosfera = channel.unary_unary(
+                '/sector.SectorService/AplicarParchesAtmosfera',
+                request_serializer=Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaRequest.SerializeToString,
+                response_deserializer=Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaResponse.FromString,
                 _registered_method=True)
         self.StartTick = channel.unary_unary(
                 '/sector.SectorService/StartTick',
@@ -170,29 +170,20 @@ class SectorServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def AddMigratingBot(self, request, context):
+    def SetAtmosphereGhostZone(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetAtmosphereGhostZone(self, request, context):
-        """NUEVO -- ghost zone de atmósfera. Separada de SetGhostZone (terreno)
-        a propósito: la adyacencia de atmósfera es 8 (fija, alrededor del
-        bloque propio) y no depende de MAX_VISION_DISTANCE como la de
-        terreno -- son conceptos distintos que solo comparten el nombre
-        "ghost zone" por analogía, mezclarlos en un único mensaje habría
-        forzado a uno de los dos a cargar campos que no usa.
-        """
+    def SetGlobalCycles(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SetGlobalCycles(self, request, context):
-        """NUEVO -- progreso de los ciclos globales (solar, lunar, anual).
-        Ver Sector.set_ciclos_globales: llega ya como float 0.0-1.0,
-        calculado por quien tiene el Reloj.Ciclo real (Mundo/Logica_Mundo).
-        """
+    def AplicarParchesAtmosfera(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -270,11 +261,6 @@ def add_SectorServiceServicer_to_server(servicer, server):
                     request_deserializer=Sectores_dot_sector__service__pb2.SetSoundsRequest.FromString,
                     response_serializer=Sectores_dot_sector__service__pb2.SetSoundsResponse.SerializeToString,
             ),
-            'AddMigratingBot': grpc.unary_unary_rpc_method_handler(
-                    servicer.AddMigratingBot,
-                    request_deserializer=Sectores_dot_sector__service__pb2.AddMigratingBotRequest.FromString,
-                    response_serializer=Sectores_dot_sector__service__pb2.AddMigratingBotResponse.SerializeToString,
-            ),
             'SetAtmosphereGhostZone': grpc.unary_unary_rpc_method_handler(
                     servicer.SetAtmosphereGhostZone,
                     request_deserializer=Sectores_dot_sector__service__pb2.SetAtmosphereGhostZoneRequest.FromString,
@@ -284,6 +270,11 @@ def add_SectorServiceServicer_to_server(servicer, server):
                     servicer.SetGlobalCycles,
                     request_deserializer=Sectores_dot_sector__service__pb2.SetGlobalCyclesRequest.FromString,
                     response_serializer=Sectores_dot_sector__service__pb2.SetGlobalCyclesResponse.SerializeToString,
+            ),
+            'AplicarParchesAtmosfera': grpc.unary_unary_rpc_method_handler(
+                    servicer.AplicarParchesAtmosfera,
+                    request_deserializer=Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaRequest.FromString,
+                    response_serializer=Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaResponse.SerializeToString,
             ),
             'StartTick': grpc.unary_unary_rpc_method_handler(
                     servicer.StartTick,
@@ -496,33 +487,6 @@ class SectorService(object):
             _registered_method=True)
 
     @staticmethod
-    def AddMigratingBot(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/sector.SectorService/AddMigratingBot',
-            Sectores_dot_sector__service__pb2.AddMigratingBotRequest.SerializeToString,
-            Sectores_dot_sector__service__pb2.AddMigratingBotResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def SetAtmosphereGhostZone(request,
             target,
             options=(),
@@ -566,6 +530,33 @@ class SectorService(object):
             '/sector.SectorService/SetGlobalCycles',
             Sectores_dot_sector__service__pb2.SetGlobalCyclesRequest.SerializeToString,
             Sectores_dot_sector__service__pb2.SetGlobalCyclesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AplicarParchesAtmosfera(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/sector.SectorService/AplicarParchesAtmosfera',
+            Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaRequest.SerializeToString,
+            Sectores_dot_sector__service__pb2.AplicarParchesAtmosferaResponse.FromString,
             options,
             channel_credentials,
             insecure,

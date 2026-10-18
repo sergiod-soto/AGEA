@@ -35,6 +35,7 @@ from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
+    Evaporar,
     MoverElemento,
     Mutacion,
 )
@@ -92,7 +93,7 @@ class TickContext:
         """
         Devuelve la Celda_Atmosfera que cubre la posición de TERRENO (x, y)
         -- quien llama no necesita conocer ATMOSFERA_ESCALA, la conversión
-        se hace aquí (igual que Mundo.pos_suelo_a_atmosfera).
+        se hace aquí.
 
         Devuelve la celda VIVA (no una copia): en compute_tick, tick() de
         los elementos corre ANTES de _avanzar_atmosfera, así que esto ya
@@ -204,6 +205,22 @@ class TickContext:
                 bot_id=bot_id,
             )
         )
+
+    def evaporar(self, pos: tuple[int, int], kg_por_m2: float) -> None:
+        """
+        Pide pasar `kg_por_m2` de agua de la casilla `pos` al aire. Escritura
+        diferida: aquí solo se acumula; el Sector la aplica a la humedad de la
+        Celda_Atmosfera antes de _avanzar_atmosfera. Nunca escribas la
+        atmósfera desde tick(): get_atmosfera es solo para LECTURA.
+
+        ValueError si no es un número finito >= 0 (fallar aquí señala al
+        elemento culpable; en el Sector sería un fallo fatal anónimo).
+        """
+        if not (kg_por_m2 >= 0.0) or kg_por_m2 == float("inf"):
+            raise ValueError(
+                f"kg_por_m2 debe ser finito y >= 0 (recibido {kg_por_m2})."
+            )
+        self._mutaciones.append(Evaporar(pos=pos, kg_por_m2=kg_por_m2))
 
     def emitir_evento(
         self, tipo: str, *args, agrupable: bool = False, **kwargs

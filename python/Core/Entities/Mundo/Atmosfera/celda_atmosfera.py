@@ -2,6 +2,7 @@
 
 from vectors import Vector2
 
+from Config.parametros_simulacion import ALTURA_CAPA_AIRE, CALOR_LATENTE_VAPORIZACION
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
     TemperaturaAtmosferica,
 )
@@ -18,22 +19,11 @@ from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Derivado.hum
     Humedad_Relativa,
 )
 
-# Campos con estado interno propio: aplicar_patch NO puede tocarlos. Cada uno
-# se cambia solo por su método específico (temperatura.actualizar,
-# registrar_suelo, registrar_resistencia_elemento...).
-_CAMPOS_DERIVADOS = frozenset(
-    {
-        "temperatura",
-        "presion",
-        "viento",
-        "humedad_absoluta",
-        "humedad_relativa",
-        "tasa_conversion_radiacion_calor",
-        "inercia_termica",
-        "resistencia_viento",
-        "bloqueo_total_viento",
-    }
-)
+# Únicos campos que aplicar_patch puede cambiar: propiedades simples de
+# terreno. Lista BLANCA: todo lo demás (magnitudes, cachés, radiación,
+# posición...) tiene estado interno propio y se cambia por su método
+# específico. Un campo de terreno nuevo hay que añadirlo aquí a propósito.
+_CAMPOS_PATCH_PERMITIDOS = frozenset({"viento_objetivo"})
 
 
 class Celda_Atmosfera:
@@ -41,12 +31,11 @@ class Celda_Atmosfera:
     def __init__(
         self,
         posicion: tuple[int, int],
-        direccion_preferente_viento: Vector2,
-        fuerza_viento: Vector2,
+        viento_objetivo: Vector2,
     ) -> None:
         self.posicion = posicion
 
-        # Radiación (W/m²): se recalcula cada tick en sistema_atmosferico.py;
+        # Radiación (W/m²): se recalcula cada tick en sistema_atmosferico;
         # es un float simple, sin clase propia.
         self.radiacion: float = 0.0
 
@@ -60,9 +49,10 @@ class Celda_Atmosfera:
         self.humedad_absoluta = Humedad_Absoluta()
         self.humedad_relativa = Humedad_Relativa()
 
-        # Propiedades del terreno.
-        self.direccion_preferente_viento = direccion_preferente_viento
-        self.fuerza_viento = fuerza_viento
+        # m/s. Velocidad hacia la que se relaja el viento (rozamiento). Es
+        # propiedad del TERRENO: la fuente de verdad es Logica; el Sector la
+        # recibe en LoadState y por parche (fase 0).
+        self.viento_objetivo = viento_objetivo
 
         # ---- Caché de Suelo (térmica) ----
         # Valores de cada Suelo cubierto por esta celda, por posición, para
@@ -116,13 +106,13 @@ class Celda_Atmosfera:
     ) -> None:
         """
         Alta de un Suelo. ValueError si esa posición ya tiene uno: un Suelo
-        nunca se elimina, solo se sustituye (actualizar_suelo). `inercia` es
-        la masa térmica TOTAL que aporta esa casilla a la celda, en
-        J/(m²·K). El Suelo hace dos cosas: convierte radiación en calor
-        (tasa) y actúa de batería (inercia), frenando tanto el calentamiento
-        diurno como el enfriamiento nocturno. La validación de rangos (tasa
-        en [0, 100], inercia > 0) vive en Suelo.__init__ y, como red de
-        seguridad, en Temperatura.actualizar.
+        nunca se elimina, solo se sustituye (actualizar_suelo).
+        `inercia` es la masa térmica del SUELO de esa casilla,
+        en J/(m²·K), sin el aire.
+        El Suelo convierte radiación en calor (tasa) y es la batería que frena
+        el calentamiento y el enfriamiento del suelo de la celda.
+        La validación de rangos (tasa en [0, 100], inercia > 0) vive en
+        Suelo.__init__ y, como red de seguridad, en Temperatura.actualizar.
         """
         if posicion_suelo in self._tasas_conversion_por_suelo:
             raise ValueError(
@@ -166,9 +156,10 @@ class Celda_Atmosfera:
             self.inercia_termica = 0.0
             return
         self.tasa_conversion_radiacion_calor = self._suma_tasas / n
-        # Las masas térmicas por m² de la celda son las de sus casillas, así
-        # que la inercia de la celda es la media. No hay término de aire
-        # aparte: el Suelo es la única batería de calor del modelo.
+
+        # Media de la masa térmica del SUELO de las casillas de la celda. El
+        # aire no entra aquí: su capacidad (C_AIRE) se cuenta aparte en
+        # TemperaturaAtmosferica.
         self.inercia_termica = self._suma_inercias / n
 
     # ------------------------------------------------------------------
@@ -242,23 +233,74 @@ class Celda_Atmosfera:
         self.resistencia_viento = max(0.0, min(1.0, 1.0 - self._producto_paso_libre))
 
     # ------------------------------------------------------------------
+    # Evaporación
+    # ------------------------------------------------------------------
+
+    def aplicar_evaporacion(self, kg_por_m2_celda: float) -> None:
+        """
+        Pasa agua del suelo al aire. `kg_por_m2_celda` es la masa evaporada en
+        este tick POR m² DE CELDA (no de casilla: quien llama ya repartió la
+        casilla entre las casillas de la celda).
+
+          - Aire: la humedad sube kg/ALTURA_CAPA_AIRE (kg/m³).
+          - Suelo: se enfría por calor latente, ΔT = L·kg / inercia_termica.
+            Usa la inercia media del suelo de la celda, no la del aire.
+
+        ValueError si no hay Suelo registrado (inercia 0): mismo criterio que
+        Temperatura.actualizar, mejor fallar que dividir por cero.
+        """
+        if self.inercia_termica <= 0:
+            raise ValueError(
+                "aplicar_evaporacion: celda de atmósfera sin Suelo registrado."
+            )
+        self.humedad_absoluta.valor += kg_por_m2_celda / ALTURA_CAPA_AIRE
+        self.temperatura.valor_suelo -= (
+            CALOR_LATENTE_VAPORIZACION * kg_por_m2_celda / self.inercia_termica
+        )
+
+    # ------------------------------------------------------------------
     # Patch genérico
     # ------------------------------------------------------------------
 
     def aplicar_patch(self, patch: dict) -> None:
         """
-        setattr plano SOLO para campos de terreno simples
-        (direccion_preferente_viento, fuerza_viento y similares futuros).
-        Los campos de _CAMPOS_DERIVADOS (incluida resistencia_viento) están
-        prohibidos a propósito: se cambian por su método específico
-        (temperatura.actualizar, registrar_suelo/actualizar_suelo,
-        registrar/actualizar_resistencia_elemento), nunca por aquí.
+        setattr plano SOLO para los campos de _CAMPOS_PATCH_PERMITIDOS.
+        Se valida TODO el patch antes de aplicar nada: si un campo no está
+        permitido (o es un typo) se rechaza entero y la celda queda intacta.
+        No valida el tipo de los valores (se espera Vector2).
         """
+        no_permitidos = sorted(set(patch) - _CAMPOS_PATCH_PERMITIDOS)
+        if no_permitidos:
+            raise ValueError(
+                f"Campos no modificables vía aplicar_patch: {no_permitidos}. "
+                f"Permitidos: {sorted(_CAMPOS_PATCH_PERMITIDOS)}. El resto se "
+                f"cambia por su método específico."
+            )
         for nombre, valor in patch.items():
-            if nombre in _CAMPOS_DERIVADOS:
-                raise ValueError(
-                    f"'{nombre}' es un valor derivado con estado interno "
-                    f"propio; no se puede fijar vía aplicar_patch. Usa el "
-                    f"método específico correspondiente."
-                )
             setattr(self, nombre, valor)
+
+    # ------------------------------------------------------------------
+    # Representación (Unity)
+    # ------------------------------------------------------------------
+
+    def representar(self) -> dict:
+        """
+        Estado simulado de la celda para Unity, en unidades SI (K, Pa, m/s,
+        kg/m³, W/m²). Los vectores van como {"x","y"}, el mismo formato que
+        la casilla del Suelo. No incluye cachés ni campos internos.
+        """
+        return {
+            "radiacion": self.radiacion,
+            "temperatura_aire": self.temperatura.valor,  # aire, K
+            "temperatura_suelo": self.temperatura.valor_suelo,  # K
+            "presion": self.presion.valor,  # Pa
+            "viento": {
+                "intensidad": self.viento.intensidad,  # m/s
+                "direccion": {
+                    "x": self.viento.direccion.x,
+                    "y": self.viento.direccion.y,
+                },
+            },
+            "humedad_absoluta": self.humedad_absoluta.valor,  # kg/m³
+            "humedad_relativa": self.humedad_relativa.valor,  # % (0-100)
+        }

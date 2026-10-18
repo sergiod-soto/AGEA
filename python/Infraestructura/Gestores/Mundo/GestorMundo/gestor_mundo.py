@@ -184,7 +184,16 @@ class GestorMundo:
             self._sectores[(info.col, info.row)] = info
             await self._connect_sector(info)
 
-        await self._logica_client.load_state(self._snapshot_id)
+        # load_state PROPAGA (RuntimeError si ok=False, AioRpcError si falla la
+        # red): no devuelve tupla. Cualquier fallo es fatal: arrancar con la
+        # atmósfera o el terreno a medio restaurar divergiría en silencio.
+        try:
+            await self._logica_client.load_state(self._snapshot_id)
+        except Exception as exc:
+            raise ErrorCargaSector(
+                f"Logica no pudo restaurar '{self._snapshot_id}': {exc!r}"
+            ) from exc
+
         await self._distribute_gold_to_sectors()
         # El "mode" guardado en el snapshot se IGNORA a propósito:
         # la hibernación está deshabilitada y todos arrancan ACTIVO.
@@ -291,6 +300,22 @@ class GestorMundo:
             progreso_anual,
         ) = await self._logica_client.obtener_progreso_ciclos()
 
+        parches = await self._logica_client.tomar_parches_atmosfera()
+        parches_por_sector: dict[tuple[int, int], list] = {}
+        for cell in parches:
+            clave = (
+                (cell.pos.x * ATMOSFERA_ESCALA) // SECTOR_SIZE,
+                (cell.pos.y * ATMOSFERA_ESCALA) // SECTOR_SIZE,
+            )
+            parches_por_sector.setdefault(clave, []).append(cell)
+        claves_activas = {(s.col, s.row) for s in sectores}
+        ausentes = set(parches_por_sector) - claves_activas
+        if ausentes:
+            raise ErrorSincronizacion(
+                f"Tick {self._tick_id}, fase 0: parches de atmósfera para sectores "
+                f"no activos {sorted(ausentes)}."
+            )
+
         tareas, etiquetas = [], []
         for s in sectores:
             clave = f"({s.col},{s.row})"
@@ -302,6 +327,14 @@ class GestorMundo:
                     s, progreso_solar, progreso_lunar, progreso_anual
                 ),
             ]
+            if (s.col, s.row) in parches_por_sector:
+                tareas.append(
+                    self._enviar_parches_atmosfera(
+                        s, parches_por_sector[(s.col, s.row)]
+                    )
+                )
+                etiquetas.append(f"parches_atm{clave}")
+
             etiquetas += [
                 f"ghost{clave}",
                 f"ghost_atm{clave}",
@@ -339,6 +372,12 @@ class GestorMundo:
             )
         )
         self._exigir_ok(resp, "SetAtmosphereGhostZone", sector)
+
+    async def _enviar_parches_atmosfera(self, sector: SectorInfo, cells: list) -> None:
+        resp = await sector.stub.AplicarParchesAtmosfera(
+            sector_pb.AplicarParchesAtmosferaRequest(tick_id=self._tick_id, cells=cells)
+        )
+        self._exigir_ok(resp, "AplicarParchesAtmosfera", sector)
 
     async def _enviar_ciclos_globales(
         self,
@@ -549,7 +588,7 @@ class GestorMundo:
                     raise ErrorSincronizacion(
                         f"emitir_eventos falló en el tick {self._tick_id}: {exc!r}"
                     ) from exc
-                    
+
             if celdas_atmosfera_cambiadas:
                 # NO fatal: cada tick reenvía el estado completo. Pero tampoco
                 # debe abortar el resto de la fase.
@@ -562,10 +601,23 @@ class GestorMundo:
                         "Tick %d: no se pudo actualizar la atmósfera.", self._tick_id
                     )
 
-            for bot_id in bots_muertos:
-                await self._logica_client.matar_bot(
-                    bot_id, "avatar eliminado en sector", self._tick_id
-                )
+                for bot_id in bots_muertos:
+                    # Fatal: si el script del bot no se termina, sigue ejecutándose
+                    # sin avatar y la simulación diverge sin avisar. Logica ya
+                    # tolera "avatar ya eliminado" (caso normal) y solo devuelve
+                    # ok=False si falla la terminación del script.
+                    try:
+                        ok, error = await self._logica_client.matar_bot(
+                            bot_id, "avatar eliminado en sector", self._tick_id
+                        )
+                    except Exception as exc:
+                        raise ErrorSincronizacion(
+                            f"matar_bot({bot_id}) falló en el tick {self._tick_id}: {exc!r}"
+                        ) from exc
+                    if not ok:
+                        raise ErrorSincronizacion(
+                            f"matar_bot({bot_id}) rechazado en el tick {self._tick_id}: {error}"
+                        )
 
             await self._actualizar_modos_sector()
             await self._logica_client.avanzar_tick(self._tick_id)
@@ -777,6 +829,35 @@ class GestorMundo:
             "sin límite" if ticks_per_second <= 0 else f"{ticks_per_second}/s",
         )
 
+    def _escribir_snapshot_mundo(self, snapshot_id: str) -> Path:
+        """
+        Escribe mundo_<id>.json (sectores y tick). Único sitio que construye
+        este dict: antes estaba repetido en _save_snapshot y _deep_save.
+        Escritura atómica (temporal + rename): si el proceso muere a mitad
+        queda el snapshot anterior intacto, no un JSON truncado que
+        _latest_snapshot_path elegiría al arrancar. Síncrono y sin awaits, así
+        que nada puede modificar _sectores mientras se construye.
+        """
+        path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
+        data = {
+            "tick_id": int(self._tick_id),
+            "snapshot_id": snapshot_id,
+            "fecha": datetime.datetime.now().isoformat(),
+            "sectores": [
+                {
+                    "col": info.col,
+                    "row": info.row,
+                    "address": info.address,
+                    "mode": info.mode.value,
+                }
+                for info in self._sectores.values()
+            ],
+        }
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False))
+        tmp.replace(path)
+        return path
+
     async def _save_snapshot(self) -> None:
         """
         Snapshot periódico. Se hace con el _tick_lock: así se toma ENTRE dos
@@ -794,22 +875,7 @@ class GestorMundo:
                 )
                 return
 
-            path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
-            data = {
-                "tick_id": int(self._tick_id),
-                "snapshot_id": snapshot_id,
-                "fecha": datetime.datetime.now().isoformat(),
-                "sectores": [
-                    {
-                        "col": info.col,
-                        "row": info.row,
-                        "address": info.address,
-                        "mode": info.mode.value,
-                    }
-                    for info in self._sectores.values()
-                ],
-            }
-            path.write_text(json.dumps(data, ensure_ascii=False))
+            path = self._escribir_snapshot_mundo(snapshot_id)
             self._snapshot_id = snapshot_id
 
         logger.info("Snapshot guardado: %s", path)
@@ -832,27 +898,21 @@ class GestorMundo:
 
         await self.freeze()
         try:
-            snapshot_id = f"{self._tick_id:010d}_deep"
-            self._snapshot_id = snapshot_id
 
-            path = SNAPSHOT_DIR / f"mundo_{snapshot_id}.json"
-            async with self._consolidacion_lock:
-                data = {
-                    "tick_id": self._tick_id,
-                    "snapshot_id": snapshot_id,
-                    "fecha": datetime.datetime.now().isoformat(),
-                    "sectores": [
-                        {
-                            "col": info.col,
-                            "row": info.row,
-                            "address": info.address,
-                            "mode": info.mode.value,
-                        }
-                        for info in self._sectores.values()
-                    ],
-                }
-            path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
-            await self._logica_client.save_snapshot(snapshot_id)
+            snapshot_id = f"{self._tick_id:010d}_deep"
+
+            # Primero Logica: sin su pareja, el mundo_*.json no debe existir.
+            # El `return` dentro del try ejecuta igualmente el finally (resume).
+            ok, error = await self._logica_client.save_snapshot(snapshot_id)
+            if not ok:
+                logger.error(
+                    "Guardado profundo %s abortado: Logica falló: %s",
+                    snapshot_id,
+                    error,
+                )
+                return
+            self._snapshot_id = snapshot_id
+            self._escribir_snapshot_mundo(snapshot_id)
 
             try:
                 await self._bots_stub.SaveSnapshot(
@@ -964,11 +1024,11 @@ class GestorMundo:
 
     async def _calcular_ghost_zone_atmosfera(self, info: SectorInfo) -> list:
         """
-        Análogo a _calcular_ghost_zone, pero en espacio de atmósfera y
-        con margen 1 (adyacencia-8) en vez de MAX_VISION_DISTANCE -- la
-        difusión atmosférica solo mira al vecino inmediato. El
-        rectángulo propio del sector en espacio de atmósfera es exacto
-        (sin bloques a caballo) gracias a
+        Análogo a _calcular_ghost_zone, pero en espacio de atmósfera y con
+        margen 1: la atmósfera solo mira a sus 4 vecinos cardinales. El
+        rectángulo pedido incluye las 4 esquinas del anillo, que no se usan
+        (4 celdas por sector; quitarlas exigiría 4 peticiones en tiras y no
+        compensa). El rectángulo propio es exacto gracias a
         Sector._validar_escala_atmosfera.
         """
         ax0 = (info.col * SECTOR_SIZE) // ATMOSFERA_ESCALA

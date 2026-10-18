@@ -47,42 +47,32 @@ class Viento(Sistema_Atmosferico):
         poder sumarle fuerzas, y al final se descompone en (intensidad,
         direccion). Un tick dura SEGUNDOS_SIMULADOS_TICK segundos.
 
-        Unidades: velocidad m/s; presión Pa; densidad kg/m³; aceleración
-        m/s². `celda.direccion_preferente_viento + celda.fuerza_viento` es
-        el viento objetivo del terreno, AHORA EN m/s.
-
         Fuerzas combinadas:
           1) Relajación hacia el viento objetivo del terreno (rozamiento).
-          2) Gradiente de presión: la aceleración hacia cada vecino es
-                 a = (p_celda - p_vecino) / (rho * L)        [m/s²]
-             con rho la densidad del aire de ESTA celda y L el lado de la
-             celda de atmósfera (TAMANHO_CELDA_ATMOSFERICA) como distancia al
-             vecino. Se ignora que los vecinos diagonales están a L*raíz(2):
-             error pequeño, acepto por simplicidad. Es física: ya no hay
-             un factor mágico, solo cambiar el tamaño de celda la modifica.
-             `presion` es la de ESTA celda recién recalculada este tick
-             (por eso llega como parámetro); la de los vecinos es del tick
-             anterior (ghost zone).
-          3) resistencia_viento del terreno amortigua el resultado:
-             - Si celda.bloqueo_total_viento es True, el viento se detiene
-               por completo SIN mirar celda.resistencia_viento (mientras haya
-               bloqueo total ese valor solo describe a los elementos no
-               bloqueantes). Se consulta siempre la flag primero.
-             - Si no, se amortigua con (1 - resistencia_viento).
-
-        TODO(modelo): el sumatorio sobre 8 vecinos con dirección unitaria sobreestima
-        el gradiente ~4.8x frente a -(1/rho)*grad(p). Corregir antes de añadir una
-        fuente de presión: a = sum((p - p_i) * n_i * L_i) / (6 * L**2 * rho), con
-        L_i = L en ejes y L*raiz(2) en diagonales.
+          2) Gradiente de presión con diferencias centradas sobre los 4
+             vecinos cardinales: a_x = (p_oeste - p_este) / (2·rho·L).
+             Cada vecino aporta (p - p_vecino)/(2·rho·L) en su dirección; el
+             2 sale de que la distancia entre oeste y este es 2L. `presion` es
+             la de ESTA celda recién recalculada este tick; la de los vecinos
+             es del tick anterior (ghost zone).
+          3) Bordes cerrados: si no hay vecino en una dirección (borde del
+             mundo), se anula la componente que empuja hacia fuera.
+          4) resistencia_viento del terreno amortigua el resultado:
+             - Con celda.bloqueo_total_viento el viento se detiene por
+               completo SIN mirar resistencia_viento (se consulta siempre la
+               flag primero).
+             - Si no, se amortigua con (1 - resistencia_viento)^dt.
         """
+        dt = SEGUNDOS_SIMULADOS_TICK
 
         vx = self.direccion.x * self.intensidad
         vy = self.direccion.y * self.intensidad
 
-        objetivo_x = celda.direccion_preferente_viento.x + celda.fuerza_viento.x
-        objetivo_y = celda.direccion_preferente_viento.y + celda.fuerza_viento.y
-        vx += (objetivo_x - vx) * RELAJACION_VIENTO * SEGUNDOS_SIMULADOS_TICK
-        vy += (objetivo_y - vy) * RELAJACION_VIENTO * SEGUNDOS_SIMULADOS_TICK
+        # m/s. Velocidad objetivo del terreno hacia la que relaja el viento.
+        objetivo_x = celda.viento_objetivo.x
+        objetivo_y = celda.viento_objetivo.y
+        vx += (objetivo_x - vx) * RELAJACION_VIENTO * dt
+        vy += (objetivo_y - vy) * RELAJACION_VIENTO * dt
 
         # kg/m³. La temperatura ya está validada (> 0 K) por
         # Temperatura.actualizar, que corre antes en el mismo tick.
@@ -90,24 +80,34 @@ class Viento(Sistema_Atmosferico):
 
         for vecino in vecinos:
             aceleracion = (presion - vecino.presion) / (
-                densidad_aire * TAMANHO_CELDA_ATMOSFERICA
+                2.0 * densidad_aire * TAMANHO_CELDA_ATMOSFERICA
             )
-            vx += vecino.direccion.x * aceleracion * SEGUNDOS_SIMULADOS_TICK
-            vy += vecino.direccion.y * aceleracion * SEGUNDOS_SIMULADOS_TICK
+            vx += vecino.direccion.x * aceleracion * dt
+            vy += vecino.direccion.y * aceleracion * dt
 
-        # PLACEHOLDER -- redirección de viento por bloqueo total (montaña,
-        # etc.; punto #5 aparcado). Hoy no redirige nada hacia los lados
-        # del bloqueo: eso requiere geometría de vectores entre celdas.
+        # PLACEHOLDER -- redirección de viento por bloqueo total (punto #5
+        # aparcado): hoy no redirige nada.
         dx_redireccion, dy_redireccion = self._calcular_redireccion(vecinos)
         vx += dx_redireccion
         vy += dy_redireccion
 
+        # Bordes cerrados. Las direcciones de los vecinos son exactamente
+        # (±1,0)/(0,±1), así que se pueden comparar por igualdad.
+        presentes = {(v.direccion.x, v.direccion.y) for v in vecinos}
+        if (1.0, 0.0) not in presentes:
+            vx = min(vx, 0.0)  # sin vecino al este: no puede salir hacia él
+        if (-1.0, 0.0) not in presentes:
+            vx = max(vx, 0.0)
+        if (0.0, 1.0) not in presentes:
+            vy = min(vy, 0.0)
+        if (0.0, -1.0) not in presentes:
+            vy = max(vy, 0.0)
+
         factor_libre = (
             0.0
             if celda.bloqueo_total_viento
-            else (1.0 - celda.resistencia_viento) ** SEGUNDOS_SIMULADOS_TICK
+            else (1.0 - celda.resistencia_viento) ** dt
         )
-
         vx *= factor_libre
         vy *= factor_libre
 

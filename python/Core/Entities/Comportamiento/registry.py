@@ -115,7 +115,6 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Combinable": Combinable,
     "Combustible": Combustible,
     "Comestible": Comestible,
-    "Comportamiento": Comportamiento,
     "Comportamiento_Test": Comportamiento_Test,
     "Consumible": Consumible,
     "Contenedor": Contenedor,

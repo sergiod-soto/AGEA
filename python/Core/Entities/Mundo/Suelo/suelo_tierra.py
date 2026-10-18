@@ -33,9 +33,9 @@ def _convertir_a_cesped(suelo, ctx) -> None:
         tipo_slot="suelo",
         elemento=Suelo_Cesped(
             casilla=suelo.casilla,
-            id_elemento=None,
-            tasa_conversion_radiacion_calor=80,
-            inercia_termica=1.3e6,
+            id_elemento=ctx.id_elemento,
+            tasa_conversion_radiacion_calor=75,
+            inercia_termica=3e5,
         ),
     )
 
@@ -53,7 +53,7 @@ class Suelo_Tierra(Suelo, comportamientos):
                 # cerca) expresado como comprobación compuesta -- ver
                 # nota de diseño de CondicionVecinoCercano más abajo,
                 # sobre por qué no son dos entradas separadas del dict.
-                CondicionAnd(
+                "suelo_tierra_convertir_cesped": CondicionAnd(
                     [
                         CondicionUmbralHumedad(
                             umbral=UMBRAL_HUMEDAD_MIN, por_debajo=False
@@ -65,7 +65,9 @@ class Suelo_Tierra(Suelo, comportamientos):
                             tipo_buscado="Suelo_Cesped", radio=RADIO_CESPED_CERCANO
                         ),
                     ]
-                ): "suelo_tierra_convertir_cesped"
+                )
             },
             **kwargs,
         )
+
+    def tick_elemento(self, ctx): ...

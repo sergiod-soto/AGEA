@@ -20,14 +20,19 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 #
 # ── Mundo ─────────────────────────────────────────────────────────────────────
 MAX_VISION_DISTANCE = int(
-    os.getenv("MAX_VISION_DISTANCE", 50)
+    os.getenv("MAX_VISION_DISTANCE", 10)
 )  # la distancia de vision es la maxima distancia de interaccion
-GRID_WIDTH = int(os.getenv("GRID_WIDTH", 100))
-GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 100))
+GRID_WIDTH = int(os.getenv("GRID_WIDTH", 300))
+GRID_HEIGHT = int(os.getenv("GRID_HEIGHT", 200))
+#
 SECTOR_SIZE = int(os.getenv("SECTOR_SIZE", 100))
+#
+# ---- ↓ SI SE MODIFICA, HAY QUE RETOCAR VARIABLES DEL CLIMA O SE ROMPE --------
 ATMOSFERA_ESCALA: int = int(
     os.getenv("ATMOSFERA_ESCALA", 10)
 )  # tamaño relativo del grid atmosferico respecto al grid del suelo
+#
+#
 SOUND_MAP_CELL_SIZE = int(os.getenv("SOUND_MAP_CELL_SIZE", 10))
 MAX_SOUND_DISTANCE = int(os.getenv("MAX_SOUND_DISTANCE", 50))
 

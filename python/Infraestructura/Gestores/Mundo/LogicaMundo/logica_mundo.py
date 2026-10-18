@@ -14,6 +14,7 @@ from typing import Any, Optional
 
 from vectors import Vector2
 
+from Config.validacion_simulacion import validar_estabilidad
 from Core.Entities.Mundo.Funciones.tipo_slot import tipo_slot_de
 from Core.Entities.Mundo.mundo import Mundo
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
@@ -24,6 +25,10 @@ from Core.Entities.Elementos.registry import (
     reconstruir_elemento,
 )
 
+from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
+    pos_terreno_a_atmosfera,
+)
+from Infraestructura.Gestores.Transporte import celda_atmosfera_proto
 from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
     GestorBotsClientAsync,
 )
@@ -41,8 +46,13 @@ logger = logging.getLogger(__name__)
 # respondiendo (Heartbeat, EstadoGeneracionMundo...).
 CELDAS_POR_CESION: int = 500
 
+# Claves sin las cuales un snapshot de Logica no se puede restaurar. Se
+# comprueban ANTES de tocar nada: así un snapshot incompleto (p. ej. de una
+# versión anterior) se rechaza limpio en vez de dejar el mundo a medio restaurar.
+_CLAVES_SNAPSHOT_EXIGIDAS = ("atmosfera", "reloj", "tick_actual", "estaciones")
+
 # Clase de suelo con la que se rellena el mundo de prueba. Es el nombre con
-# el que está registrada en Core/Entities/Elementos/registry.py.
+# el que está registrada en Core/Entities/Elementos/registry.
 TIPO_SUELO_BASE: str = "Suelo_Piedra"
 
 
@@ -83,6 +93,9 @@ class LogicaMundo:
         gestor_bots_client: "GestorBotsClientAsync | None" = None,
         mundo: "Mundo | None" = None,
     ):
+        # Falla rápido si dt, tamaño de celda o difusividades vuelven inestable
+        # el esquema explícito (ver Config/validacion_simulacion.py).
+        validar_estabilidad()
         self.SNAPSHOT_DIR = Path(config.SNAPSHOT_DIR)
 
         # Todo el estado espacial (celdas de terreno, celdas de atmósfera,
@@ -95,6 +108,7 @@ class LogicaMundo:
         self._id_counter: int = 100
 
         self._active_events: dict[str, GlobalEvent] = {}
+        self._parches_atmosfera: set[tuple[int, int]] = set()
         self._event_counter: int = 0
 
         self._elementos_globales: dict[str, ElementoGlobal] = {}
@@ -175,48 +189,6 @@ class LogicaMundo:
             suelo=self._id_a_slot_bytes(celda.suelo),
             bot=self._id_a_slot_bytes(celda.bot),
             resto=[self._id_a_slot_bytes(eid) for eid in celda.resto],
-        )
-
-    # ---- Traducción AtmosphereCell (proto) <-> Celda_Atmosfera (interno) ----
-    #
-    # NOTA DE DUPLICACIÓN: esta pareja de métodos es prácticamente
-    # idéntica a Sector.CeldaAtmosferaStore.to_proto_cells/
-    # from_proto_cell. Se duplica a propósito por ahora -- pendiente de
-    # extraer a un módulo compartido (p.ej.
-    # Core/Entities/Mundo/Celda/celda_atmosfera_proto.py con
-    # a_proto(celda)/desde_proto(cell)) para que un cambio futuro en el
-    # proto no se pueda actualizar en un sitio y olvidar en el otro.
-
-    def _celda_atmosfera_a_atmosphere_cell(self, pos: tuple[int, int], celda):
-        from Infraestructura.Gestores.Transporte.Proto_Generated import (
-            common_pb2 as common_pb,
-        )
-
-        x, y = pos
-
-        # REQUIERE el proto regenerado: bloqueo_total_viento es un campo
-        # nuevo de AtmosphereCell. Quien lea resistencia_viento debe mirar
-        # SIEMPRE bloqueo_total_viento primero.
-        return common_pb.AtmosphereCell(  # type: ignore
-            pos=common_pb.Position(x=x, y=y),  # type: ignore
-            resistencia_viento=celda.resistencia_viento,
-            bloqueo_total_viento=celda.bloqueo_total_viento,
-            direccion_preferente_viento=common_pb.Vector2(  # type: ignore
-                x=celda.direccion_preferente_viento.x,
-                y=celda.direccion_preferente_viento.y,
-            ),
-            fuerza_viento=common_pb.Vector2(  # type: ignore
-                x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
-            ),
-            radiacion=celda.radiacion,
-            temperatura=celda.temperatura.valor,  # K
-            presion=celda.presion.valor,  # Pa
-            viento_intensidad=celda.viento.intensidad,
-            viento_direccion=common_pb.Vector2(  # type: ignore
-                x=celda.viento.direccion.x, y=celda.viento.direccion.y
-            ),
-            humedad_absoluta=celda.humedad_absoluta.valor,
-            humedad_relativa=celda.humedad_relativa.valor,
         )
 
     # ---- Identidad ----
@@ -674,7 +646,7 @@ class LogicaMundo:
         #    un objeto mutable entre todas.
         for ax in range(columnas_atm):
             for ay in range(filas_atm):
-                self.mundo.crear_atmosfera((ax, ay), Vector2(0, 0), Vector2(0, 0))
+                self.mundo.crear_atmosfera((ax, ay), Vector2(0, 0))
                 await self._avanzar_generacion()
 
         # 2) Suelo. Su casilla es su posición (x, y). Se construye por NOMBRE
@@ -692,6 +664,15 @@ class LogicaMundo:
                     )
                 await self._avanzar_generacion()
 
+    @staticmethod
+    def _pos_atmosfera(pos_suelo: tuple[int, int]) -> tuple[int, int]:
+        """Posición de TERRENO -> posición en espacio de atmósfera. Una única
+        fórmula (la del Sector): si Logica y los Sectores discreparan, la celda
+        espejo que lee Unity no sería la que simula el Sector."""
+        return pos_terreno_a_atmosfera(
+            pos_suelo[0], pos_suelo[1], config.ATMOSFERA_ESCALA
+        )
+
     # ---- Atmósfera (una sola definición de cada método) ----
     #
     # OJO con el espacio de coordenadas: crear_atmosfera recibe la posición
@@ -699,26 +680,20 @@ class LogicaMundo:
     # actualizar_atmosfera reciben la del SUELO y la convierten.
 
     async def crear_atmosfera(
-        self,
-        pos_atmosfera: tuple[int, int],
-        direccion_preferente_viento: Any,
-        fuerza_viento: Any,
+        self, pos_atmosfera: tuple[int, int], viento_objetivo: Any
     ) -> tuple[bool, str]:
         async with self._lock:
             if self.mundo.obtener_atmosfera(pos_atmosfera) is not None:
-                # Sobrescribir descarta las cachés de la celda anterior.
                 logger.warning(
                     "crear_atmosfera: ya existía %s -- se sobrescribe.", pos_atmosfera
                 )
-            self.mundo.crear_atmosfera(
-                pos_atmosfera, direccion_preferente_viento, fuerza_viento
-            )
+            self.mundo.crear_atmosfera(pos_atmosfera, viento_objetivo)
             return True, ""
 
     async def obtener_atmosfera(
         self, pos_suelo: tuple[int, int]
     ) -> tuple[bool, str, Optional[Celda_Atmosfera]]:
-        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos_suelo)
+        pos_atmosfera = self._pos_atmosfera(pos_suelo)
         async with self._lock:
             celda = self.mundo.obtener_atmosfera(pos_atmosfera)
             if celda is None:
@@ -732,7 +707,7 @@ class LogicaMundo:
     async def actualizar_atmosfera(
         self, pos_suelo: tuple[int, int], patch: dict
     ) -> tuple[bool, str]:
-        pos_atmosfera = self.mundo.pos_suelo_a_atmosfera(pos_suelo)
+        pos_atmosfera = self._pos_atmosfera(pos_suelo)
         async with self._lock:
             celda = self.mundo.obtener_atmosfera(pos_atmosfera)
             if celda is None:
@@ -743,9 +718,24 @@ class LogicaMundo:
             try:
                 celda.aplicar_patch(patch)
             except ValueError as exc:
-                # p.ej. un campo derivado (prohibido en aplicar_patch).
                 return False, str(exc)
+            # Pendiente de entrega al Sector en la fase 0 del próximo tick.
+            self._parches_atmosfera.add(pos_atmosfera)
             return True, ""
+
+    async def tomar_parches_atmosfera(self) -> list:
+        """Celdas de atmósfera parcheadas desde el último tick, como
+        AtmosphereCell, y VACÍA la lista de pendientes. El Gestor las reparte
+        a los Sectores en la fase 0. Si la entrega falla es fatal, así que no
+        hace falta reencolar: el valor ya está en el gold y en el snapshot."""
+        async with self._lock:
+            posiciones = sorted(self._parches_atmosfera)
+            self._parches_atmosfera.clear()
+            return [
+                celda_atmosfera_proto.a_proto(self.mundo.malla_atmosfera[p])
+                for p in posiciones
+                if p in self.mundo.malla_atmosfera
+            ]
 
     async def obtener_celdas_atmosfera_en_region(
         self,
@@ -760,8 +750,8 @@ class LogicaMundo:
         en espacio de atmósfera."""
         async with self._lock:
             return [
-                self._celda_atmosfera_a_atmosphere_cell(pos, celda)
-                for pos, celda in self.mundo.celdas_atmosfera_en_region(
+                celda_atmosfera_proto.a_proto(celda)
+                for _, celda in self.mundo.celdas_atmosfera_en_region(
                     min_pos, max_pos, excluir_min, excluir_max
                 )
             ]
@@ -788,18 +778,9 @@ class LogicaMundo:
                     )
                     continue
 
-                celda.radiacion = cell.radiacion
-                celda.temperatura.valor = cell.temperatura
-                celda.presion.valor = cell.presion
-                celda.viento.intensidad = cell.viento_intensidad
-                celda.viento.direccion = Vector2(
-                    cell.viento_direccion.x, cell.viento_direccion.y
-                )
-                celda.humedad_absoluta.valor = cell.humedad_absoluta
-                celda.humedad_relativa.valor = cell.humedad_relativa
+                celda_atmosfera_proto.aplicar_estado_simulado(cell, celda)
                 # Espejo (decisión 1-A): se copian, no se recalculan.
-                celda.resistencia_viento = cell.resistencia_viento
-                celda.bloqueo_total_viento = cell.bloqueo_total_viento
+                celda_atmosfera_proto.aplicar_espejo_terreno(cell, celda)
 
     async def obtener_progreso_ciclos(self) -> tuple[float, float, float]:
         """Progreso (0.0-1.0) de los ciclos solar, lunar y anual, para que
@@ -808,7 +789,7 @@ class LogicaMundo:
             return (
                 self.mundo.ciclo_solar.ciclo.progreso,
                 self.mundo.ciclo_lunar.ciclo.progreso,
-                self.mundo.estaciones.ciclo.progreso,
+                self.mundo.ciclo_anual.ciclo.progreso,
             )
 
     # ---- Región / representación ----
@@ -883,13 +864,14 @@ class LogicaMundo:
         campo 'repeated' sin enviar llega como [], así que el handler debe
         convertirlo (list(request.incluir) or None) antes de llamar aquí.
         El suelo ignora `incluir` a propósito (ver Suelo.representar).
+
         """
         x0, y0 = min_pos
         x1, y1 = max_pos
 
         elementos = []
         suelo_resultado = []
-        atmosfera = []  # TODO: representar sistema atmosferico
+        atmosfera = None
 
         # TODO(rendimiento): recorre TODA la malla en cada consulta y con el
         # lock tomado (O(mundo) por llamada). Mundo.celdas_en_region ya
@@ -922,6 +904,16 @@ class LogicaMundo:
                     if not campos.get("elemento") and not campos.get("comportamientos"):
                         continue
                     elementos.append(campos)
+
+            # Atmósfera: SOLO la celda que cubre el CENTRO del foco pedido (no
+            # todas las del rectángulo). Con tamaño par, // toma la casilla
+            # central superior. Es la copia espejo de Logica: refleja el final
+            # del último tick completado. Si el centro cae fuera del mundo,
+            # queda vacía.
+            centro = ((x0 + x1) // 2, (y0 + y1) // 2)
+            celda_atm = self.mundo.obtener_atmosfera(self._pos_atmosfera(centro))
+            if celda_atm is not None:
+                atmosfera = celda_atm.representar()
 
             return json.dumps(
                 {
@@ -963,19 +955,19 @@ class LogicaMundo:
     # Se guarda el estado simulado Y los dos campos espejados (resistencia y
     # bloqueo de viento), porque las ghost zones los leen de aquí (decisión 1-A).
     # Las cachés de Suelo no se guardan: el Sector las reconstruye desde el terreno.
-    # NOTA: la conversión proto <-> Celda_Atmosfera sigue duplicada en sector.py
-    # (pendiente 8).
+    #
+    # NOTA (pendiente 6, opción A): este dict es el ÚNICO formato de snapshot y
+    # vive aquí a propósito. Un campo nuevo de Celda_Atmosfera que deba
+    # persistir (p. ej. temperatura_suelo) hay que añadirlo en estas dos
+    # funciones Y, si también viaja por proto, en celda_atmosfera_proto.
 
     @staticmethod
     def _atmosfera_a_dict(celda: Celda_Atmosfera) -> dict:
         return {
-            "direccion_preferente_viento": [
-                celda.direccion_preferente_viento.x,
-                celda.direccion_preferente_viento.y,
-            ],
-            "fuerza_viento": [celda.fuerza_viento.x, celda.fuerza_viento.y],
+            "viento_objetivo": [celda.viento_objetivo.x, celda.viento_objetivo.y],
             "radiacion": celda.radiacion,
-            "temperatura": celda.temperatura.valor,  # K
+            "temperatura": celda.temperatura.valor,  # K, AIRE
+            "temperatura_suelo": celda.temperatura.valor_suelo,  # K, SUELO
             "presion": celda.presion.valor,  # Pa
             "viento_intensidad": celda.viento.intensidad,
             "viento_direccion": [celda.viento.direccion.x, celda.viento.direccion.y],
@@ -987,15 +979,13 @@ class LogicaMundo:
 
     @staticmethod
     def _atmosfera_desde_dict(pos: tuple[int, int], d: dict) -> Celda_Atmosfera:
-        # Se construye con los valores por defecto y se sobrescribe cada magnitud
-        # con lo guardado (igual que Sector.CeldaAtmosferaStore.from_proto_cell).
         celda = Celda_Atmosfera(
             posicion=pos,
-            direccion_preferente_viento=Vector2(*d["direccion_preferente_viento"]),
-            fuerza_viento=Vector2(*d["fuerza_viento"]),
+            viento_objetivo=Vector2(*d["viento_objetivo"]),
         )
         celda.radiacion = d["radiacion"]
         celda.temperatura.valor = d["temperatura"]
+        celda.temperatura.valor_suelo = d["temperatura_suelo"]
         celda.presion.valor = d["presion"]
         celda.viento.intensidad = d["viento_intensidad"]
         celda.viento.direccion = Vector2(*d["viento_direccion"])
@@ -1086,6 +1076,11 @@ class LogicaMundo:
             return False, msg
 
         data = json.loads(path.read_text())
+        faltan = [k for k in _CLAVES_SNAPSHOT_EXIGIDAS if k not in data]
+        if faltan:
+            msg = f"Snapshot '{snapshot_id}' incompleto: faltan {faltan}."
+            logger.error(msg)
+            return False, msg
 
         async with self._lock:
             self.mundo.reloj.restaurar_estado(data["reloj"])

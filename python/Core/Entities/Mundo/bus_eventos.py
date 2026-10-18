@@ -1,5 +1,8 @@
-# Infraestructura/Gestores/Mundo/Bus_Eventos/bus.py
-
+# Core/Entities/Mundo/bus_eventos.py
+"""
+Bus de eventos del mundo. Vive en Core (solo usa librería estándar) para que
+Mundo no dependa de Infraestructura.
+"""
 
 import inspect
 import logging
@@ -11,26 +14,20 @@ logger = logging.getLogger(__name__)
 
 class BusEventos:
     """
-    Clase encargada de gestionar los eventos.
-
-    Ejemplo:
-
-    - El comportamiento termico comprueba si algo ha cambiado de temperatura.
-    En caso de asi ser, llama a emitir el evento 'temperatura_cambiada_'.
-    Por otra parte, he creado una Condicion que escucha dicho evento.
-    Al emitirse, ejecuta una funcion
+    Gestiona los eventos. Ejemplo: Termico emite 'temperatura_cambiada_<id>' y
+    una Condicion suscrita a ese evento ejecuta una función al recibirlo.
     """
 
     def __init__(self):
-        self._listeners: dict[str, list[Callable]] = {}
+        self._listeners: dict[str, list] = {}
 
     def suscribir(self, tipo: str, callback: Callable) -> None:
         """
         Referencia DÉBIL al suscriptor: si su objeto desaparece, la suscripción
-        se descarta sola. Los métodos enlazados (self.metodo) necesitan
-        WeakMethod: el objeto "método" es temporal y un weakref.ref normal
-        moriría al instante. Lambdas y funciones locales no se retienen: quien
-        las suscriba debe guardar la referencia.
+        se descarta sola. Los métodos enlazados necesitan WeakMethod (el objeto
+        "método" es temporal y un weakref.ref normal moriría al instante).
+        Lambdas y funciones locales no se retienen: quien las suscriba debe
+        guardar la referencia.
         """
         if inspect.ismethod(callback):
             ref = weakref.WeakMethod(callback)
@@ -44,8 +41,7 @@ class BusEventos:
             return  # nadie escucha: no se crea la clave
 
         # Se itera sobre una COPIA: un suscriptor puede llamar a suscribir()
-        # durante la emisión y eso modifica `refs`. Esa nueva suscripción
-        # recibirá el evento siguiente, no este.
+        # durante la emisión. Esa suscripción recibe el evento siguiente.
         for ref in list(refs):
             callback = ref()
             if callback is None:
@@ -56,6 +52,5 @@ class BusEventos:
                 # Un suscriptor roto no debe impedir que los demás reciban el evento.
                 logger.exception("Suscriptor de '%s' falló.", tipo)
 
-        # Purga de referencias muertas EN SITIO: conserva las suscripciones
-        # añadidas durante la emisión (antes se reemplazaba la lista y se perdían).
+        # Purga EN SITIO: conserva las suscripciones añadidas durante la emisión.
         refs[:] = [ref for ref in refs if ref() is not None]

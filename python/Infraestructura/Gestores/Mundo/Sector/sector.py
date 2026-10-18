@@ -10,7 +10,7 @@ Responsabilidades:
   - Ejecutar el tick de computación (solo si ACTIVO)
   - Gestionar ghost zones recibidas del Gestor_Mundo (terreno y atmósfera)
   - Procesar sonidos cross-border
-  - Detectar y reportar migraciones de bots
+  - Declarar movimientos entre sectores (ver _registrar_movimiento_saliente)
   - Persistir su estado en S3 cuando recibe SaveSnapshot
 
 La serialización/deserialización de elementos está desacoplada en
@@ -29,7 +29,6 @@ Configuración (Config.settings):
 
 import json
 import logging
-import math
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -43,6 +42,7 @@ from Config.settings import (
     SECTOR_ROW,
     SECTOR_SIZE,
 )
+from Config.validacion_simulacion import validar_estabilidad
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.registry import reconstruir_elemento
 
@@ -54,12 +54,14 @@ from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
 from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
     CrearElemento,
     EliminarElemento,
+    Evaporar,
     MoverElemento,
     Mutacion,
 )
 from Infraestructura.Gestores.Mundo.Sector.sector_mode import SectorMode
 from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
 
+from Infraestructura.Gestores.Transporte import celda_atmosfera_proto
 from Infraestructura.Gestores.Transporte.Proto_Generated import (
     common_pb2 as common_pb,
 )
@@ -191,9 +193,7 @@ class CeldaAtmosferaStore:
     Análogo de CeldaSectorStore pero para celdas de atmósfera. A
     diferencia de CeldaSectorStore, aquí no hay slots (suelo/bot/resto):
     una celda de atmósfera no es un contenedor de elementos, es un único
-    objeto con su propio estado (temperatura, presion, viento...). Cada
-    posición -- en espacio de atmósfera, no de terreno; ver
-    Mundo.pos_suelo_a_atmosfera -- mapea a UNA Celda_Atmosfera.
+    objeto con su propio estado (temperatura, presion, viento...).
 
     Reconstruido en cada LoadState a partir de lo que envíe Gestor_Mundo,
     igual que CeldaSectorStore -- sin persistencia propia.
@@ -222,72 +222,16 @@ class CeldaAtmosferaStore:
         return self._celdas.items()
 
     def from_proto_cell(self, cell) -> None:
-        """
-        Reconstruye una Celda_Atmosfera a partir de un AtmosphereCell
-        proto, y la indexa por posición.
-
-        Se reconstruye "a mano": Celda_Atmosfera.__init__ crea sus
-        Sistema_Atmosferico con los valores iniciales por defecto de cada
-        clase (K, Pa...) -- después de construirla hay que sobreescribir
-        cada .valor con lo que realmente venía en el proto, o se perdería
-        el estado real de la celda en cada LoadState.
-
-        Las cachés (tasa/inercia de Suelo, resistencia y bloqueo de
-        viento) NO se restauran del proto: se reconstruyen desde el
-        terreno en Sector._sincronizar_atmosfera_desde_terreno.
-        """
-        pos = (cell.pos.x, cell.pos.y)
-
-        celda = Celda_Atmosfera(
-            posicion=pos,
-            direccion_preferente_viento=Vector2(
-                cell.direccion_preferente_viento.x,
-                cell.direccion_preferente_viento.y,
-            ),
-            fuerza_viento=Vector2(cell.fuerza_viento.x, cell.fuerza_viento.y),
-        )
-
-        celda.radiacion = cell.radiacion
-        celda.temperatura.valor = cell.temperatura  # K
-        celda.presion.valor = cell.presion  # Pa
-        celda.viento.intensidad = cell.viento_intensidad
-        celda.viento.direccion = Vector2(
-            cell.viento_direccion.x, cell.viento_direccion.y
-        )
-        celda.humedad_absoluta.valor = cell.humedad_absoluta
-        celda.humedad_relativa.valor = cell.humedad_relativa
-
-        self._celdas[pos] = celda
+        """AtmosphereCell -> Celda_Atmosfera, indexada por su posición. La
+        conversión vive en celda_atmosfera_proto. Las cachés (tasa/inercia de
+        Suelo, resistencia y bloqueo) NO se restauran del proto: se
+        reconstruyen desde el terreno en _sincronizar_atmosfera_desde_terreno."""
+        celda = celda_atmosfera_proto.desde_proto(cell)
+        self._celdas[celda.posicion] = celda
 
     def to_proto_cells(self) -> list:
-        """Serializa todas las celdas propias a AtmosphereCell proto,
-        volcando terreno y estado simulado actual (SI: K, Pa, m/s...)."""
-        result = []
-        for (x, y), celda in self._celdas.items():
-            result.append(
-                common_pb.AtmosphereCell(
-                    pos=common_pb.Position(x=x, y=y),
-                    resistencia_viento=celda.resistencia_viento,
-                    bloqueo_total_viento=celda.bloqueo_total_viento,
-                    direccion_preferente_viento=common_pb.Vector2(
-                        x=celda.direccion_preferente_viento.x,
-                        y=celda.direccion_preferente_viento.y,
-                    ),
-                    fuerza_viento=common_pb.Vector2(
-                        x=celda.fuerza_viento.x, y=celda.fuerza_viento.y
-                    ),
-                    radiacion=celda.radiacion,
-                    temperatura=celda.temperatura.valor,
-                    presion=celda.presion.valor,
-                    viento_intensidad=celda.viento.intensidad,
-                    viento_direccion=common_pb.Vector2(
-                        x=celda.viento.direccion.x, y=celda.viento.direccion.y
-                    ),
-                    humedad_absoluta=celda.humedad_absoluta.valor,
-                    humedad_relativa=celda.humedad_relativa.valor,
-                )
-            )
-        return result
+        """Serializa todas las celdas propias a AtmosphereCell proto."""
+        return [celda_atmosfera_proto.a_proto(c) for c in self._celdas.values()]
 
 
 # ─────────────────────────────────────────────
@@ -344,6 +288,8 @@ class Sector:
         self._row = SECTOR_ROW
         self._size = SECTOR_SIZE
 
+        # Estabilidad numérica de la atmósfera (dt, tamaño de celda, difusividades).
+        validar_estabilidad()
         self._validar_escala_atmosfera()
 
         self._mode = SectorMode.INACTIVO
@@ -450,6 +396,25 @@ class Sector:
             for x in range(self._atmosfera_x0, self._atmosfera_x1)
             for y in range(self._atmosfera_y0, self._atmosfera_y1)
         ]
+
+    def aplicar_parches_atmosfera(self, tick_id: int, cells: list) -> None:
+        """Fase 0: aplica los parches de terreno que Logica (gold) ha cambiado
+        desde el tick anterior. Solo copia los campos de _CAMPOS_PATCH_PERMITIDOS.
+        Una celda ausente es fatal: el Gestor solo manda las de este Sector."""
+        for cell in cells:
+            celda = self._atmosfera.get(cell.pos.x, cell.pos.y)
+            if celda is None:
+                raise ValueError(
+                    f"Parche para la celda de atmósfera {(cell.pos.x, cell.pos.y)} "
+                    "que este Sector no tiene."
+                )
+            celda.aplicar_patch(
+                {
+                    "viento_objetivo": Vector2(
+                        cell.viento_objetivo.x, cell.viento_objetivo.y
+                    )
+                }
+            )
 
     def _validar_escala_atmosfera(self) -> None:
         """
@@ -617,6 +582,7 @@ class Sector:
         # Las celdas de atmósfera recién deserializadas no traen cachés:
         # se reconstruyen desde el terreno.
         self._sincronizar_atmosfera_desde_terreno()
+        self._validar_atmosfera_completa()
 
         self._bots = {bot.bot_id: bot for bot in bots}
         self._elemento_a_bot = {bot.id_elemento: bot.bot_id for bot in bots}
@@ -667,6 +633,38 @@ class Sector:
                     celda_atmosfera.registrar_resistencia_elemento(
                         elemento.id_elemento, elemento.resistencia_viento
                     )
+
+    def _validar_atmosfera_completa(self) -> None:
+        """
+        Falla en load_state, no en el primer tick, si la atmósfera no encaja
+        con el terreno cargado:
+          - cada casilla con Suelo debe tener su Celda_Atmosfera;
+          - cada Celda_Atmosfera debe tener al menos un Suelo registrado
+            (inercia > 0; sin ella Temperatura.actualizar lanza ValueError).
+        Se compara contra el terreno cargado y no contra la región nominal del
+        sector, porque un mundo más pequeño que el sector no cubre toda la región.
+        """
+        existentes = {pos for pos, _ in self._atmosfera.items()}
+        esperadas = {
+            pos_terreno_a_atmosfera(x, y, ATMOSFERA_ESCALA)
+            for (x, y), celda in self._celdas.items()
+            if celda.suelo is not None
+        }
+        faltan = sorted(esperadas - existentes)
+        if faltan:
+            raise ValueError(
+                f"Sector ({self._col},{self._row}): faltan {len(faltan)} celdas "
+                f"de atmósfera para el terreno cargado (p. ej. {faltan[:3]}). "
+                "¿LoadState antes de que terminara GenerarMundo?"
+            )
+        sin_suelo = sorted(
+            pos for pos, c in self._atmosfera.items() if c.inercia_termica <= 0
+        )
+        if sin_suelo:
+            raise ValueError(
+                f"Sector ({self._col},{self._row}): celdas de atmósfera sin "
+                f"Suelo registrado (p. ej. {sin_suelo[:3]})."
+            )
 
     def get_state(self):
         """
@@ -856,6 +854,24 @@ class Sector:
                     if bot is not None:
                         bot.pos.x, bot.pos.y = posicion_final
 
+            elif isinstance(mutacion, Evaporar):
+                # Aditiva: varias peticiones sobre la misma celda se suman, así
+                # que el orden no importa. Va ANTES de _avanzar_atmosfera (que
+                # corre después de resolver todas las mutaciones). No toca el
+                # terreno, por eso no añade a posiciones_cambiadas.
+                celda_atm = self._celda_atmosfera_de(mutacion.pos)
+                if celda_atm is None:
+                    logger.warning(
+                        "Sector (%d,%d): evaporación en %s sin Celda_Atmosfera.",
+                        self._col,
+                        self._row,
+                        mutacion.pos,
+                    )
+                    continue
+                # kg/m² de casilla -> kg/m² de celda: la casilla es 1 de
+                # ATMOSFERA_ESCALA² que forman la celda.
+                celda_atm.aplicar_evaporacion(mutacion.kg_por_m2 / ATMOSFERA_ESCALA**2)
+
         delta.changed_cells = [
             self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas
         ]
@@ -879,7 +895,7 @@ class Sector:
         )
 
     def set_ghost_zone_atmosfera(self, tick_id: int, ghost_cells: list) -> None:
-        """Recibe y almacena la ghost zone de ATMÓSFERA (adyacencia-8,
+        """Recibe y almacena la ghost zone de ATMÓSFERA (4 vecinos cardinales,
         celdas de solo lectura del tick anterior) para este tick.
         Separada de self._ghost (terreno): son conceptos distintos que
         solo comparten el nombre por analogía -- ver sector_service.proto,
@@ -1026,14 +1042,21 @@ class Sector:
         # Guardar las celdas en un dict NO congelaba nada: avanzar_celda las
         # muta in-place y el dict apuntaba a los mismos objetos, con lo que
         # el resultado dependía del orden del bucle.
-        estados_previos: dict[tuple[int, int], tuple[float, float, float]] = {}
+        estados_previos: dict[
+            tuple[int, int],
+            tuple[float, float, float, float, float],
+        ] = {}
         for pos in posiciones_propias:
             celda = self._atmosfera.get(*pos)
             if celda is not None:
+                # Floats inmutables: la copia es real. Incluye la velocidad del
+                # viento (la muta viento.actualizar) para la advección.
                 estados_previos[pos] = (
                     celda.temperatura.valor,
                     celda.presion.valor,
                     celda.humedad_absoluta.valor,
+                    celda.viento.direccion.x * celda.viento.intensidad,
+                    celda.viento.direccion.y * celda.viento.intensidad,
                 )
 
         for pos in posiciones_propias:
@@ -1048,7 +1071,9 @@ class Sector:
     def _vecinos_atmosfera(
         self,
         pos: tuple[int, int],
-        estados_previos: dict[tuple[int, int], tuple[float, float, float]],
+        estados_previos: dict[
+            tuple[int, int], tuple[float, float, float, float, float]
+        ],
     ) -> list[sistema_atmosferico.EstadoVecino]:
         """
         EstadoVecino de los 4 vecinos cardinales de la celda en 'pos', con los
@@ -1056,6 +1081,10 @@ class Sector:
         (congelados) y los de otro Sector, de la ghost zone. Un vecino que no
         está en ninguna de las dos es borde del mundo y se omite: el borde es
         cerrado (sin flujo de nada).
+
+        estados_previos[pos] = (temperatura, presion, humedad_absoluta,
+        viento_x, viento_y). Temperatura = la del AIRE (K); el viento son las
+        componentes en m/s, que necesita la advección.
         """
         x, y = pos
         vecinos: list[sistema_atmosferico.EstadoVecino] = []
@@ -1065,11 +1094,11 @@ class Sector:
 
             estado = estados_previos.get(vecino_pos)
             if estado is not None:
-                temperatura, presion, humedad_absoluta = estado
+                temperatura, presion, humedad_absoluta, viento_x, viento_y = estado
                 # estados_previos solo contiene celdas que existen, así que
-                # get() no devuelve None. avanzar_celda no muta el bloqueo
-                # (lo cambian las mutaciones, ya resueltas antes), así que se
-                # lee en vivo y no hace falta congelarlo.
+                # get() no devuelve None. El bloqueo no lo muta avanzar_celda
+                # (lo cambian las mutaciones, ya resueltas antes): se lee en
+                # vivo y no hace falta congelarlo.
                 bloqueo_total_viento = self._atmosfera.get(
                     *vecino_pos
                 ).bloqueo_total_viento
@@ -1080,9 +1109,15 @@ class Sector:
                 temperatura = vecino_proto.temperatura
                 presion = vecino_proto.presion
                 humedad_absoluta = vecino_proto.humedad_absoluta
+                # El proto guarda (intensidad, dirección): se pasa a componentes.
+                viento_x = (
+                    vecino_proto.viento_intensidad * vecino_proto.viento_direccion.x
+                )
+                viento_y = (
+                    vecino_proto.viento_intensidad * vecino_proto.viento_direccion.y
+                )
                 # Vecino de otro Sector: su bloqueo viaja en el proto y lo
-                # espeja Logica de lo que envían los Sectores (decisión 1=A);
-                # llega con un tick de retraso, como el resto de la ghost zone.
+                # espeja Logica (decisión 1=A); llega con un tick de retraso.
                 bloqueo_total_viento = vecino_proto.bloqueo_total_viento
 
             vecinos.append(
@@ -1090,92 +1125,13 @@ class Sector:
                     temperatura=temperatura,
                     presion=presion,
                     humedad_absoluta=humedad_absoluta,
-                    direccion=Vector2(dx, dy),  # ya es unitario: no hay hypot
+                    direccion=Vector2(dx, dy),  # ya es unitario
                     bloqueo_total_viento=bloqueo_total_viento,
+                    viento_x=viento_x,
+                    viento_y=viento_y,
                 )
             )
         return vecinos
-
-    def _sincronizar_atmosfera_de_suelo(
-        self, ctx: TickContext, mutacion: CrearElemento
-    ) -> None:
-        """
-        Refleja en la Celda_Atmosfera la tasa/inercia de un Suelo recién
-        creado. Un Suelo solo se sustituye (nunca se elimina), así que lo
-        normal es que la posición ya esté registrada: se actualiza y, si no
-        lo estaba (KeyError), se da de alta.
-
-        PROVISIONAL: este método no existía (los hooks de CrearElemento lo
-        llamaban y reventaban con AttributeError). Es el mínimo coherente
-        con las decisiones cerradas; la regla definitiva de las cachés
-        (dónde vive, upsert...) queda para la fase de cachés.
-        """
-        x, y = mutacion.pos
-        celda_atmosfera = ctx.get_atmosfera(x, y)
-        if celda_atmosfera is None:
-            logger.warning(
-                "Sector (%d,%d): Suelo en %s sin Celda_Atmosfera "
-                "correspondiente -- no se registra su tasa/inercia.",
-                self._col,
-                self._row,
-                mutacion.pos,
-            )
-            return
-        suelo = mutacion.elemento
-        try:
-            celda_atmosfera.actualizar_suelo(
-                mutacion.pos,
-                suelo.tasa_conversion_radiacion_calor,
-                suelo.inercia_termica,
-            )
-        except KeyError:
-            celda_atmosfera.registrar_suelo(
-                mutacion.pos,
-                suelo.tasa_conversion_radiacion_calor,
-                suelo.inercia_termica,
-            )
-
-    def _registrar_resistencia_viento(
-        self, ctx: TickContext, pos: tuple[int, int], elemento: Any
-    ) -> None:
-        """Da de alta la contribución de 'elemento' a resistencia_viento
-        en la Celda_Atmosfera que cubre 'pos'. No falla si la celda no
-        existe (borde del mundo / bloque aún sin crear) -- solo avisa."""
-        x, y = pos
-        celda_atmosfera = ctx.get_atmosfera(x, y)
-        if celda_atmosfera is None:
-            logger.warning(
-                "Sector (%d,%d): elemento %s (estático-viento) en %s sin "
-                "Celda_Atmosfera correspondiente -- no se registra su "
-                "resistencia_viento.",
-                self._col,
-                self._row,
-                elemento.id_elemento,
-                pos,
-            )
-            return
-        celda_atmosfera.registrar_resistencia_elemento(
-            elemento.id_elemento, elemento.resistencia_viento
-        )
-
-    def _eliminar_resistencia_viento(
-        self, ctx: TickContext, pos: tuple[int, int], id_elemento: int
-    ) -> None:
-        """Da de baja la contribución de id_elemento a resistencia_viento
-        en la Celda_Atmosfera que cubre 'pos'."""
-        x, y = pos
-        celda_atmosfera = ctx.get_atmosfera(x, y)
-        if celda_atmosfera is None:
-            logger.warning(
-                "Sector (%d,%d): baja de resistencia_viento de %s en %s "
-                "sin Celda_Atmosfera correspondiente -- ignorada.",
-                self._col,
-                self._row,
-                id_elemento,
-                pos,
-            )
-            return
-        celda_atmosfera.eliminar_resistencia_elemento(id_elemento)
 
     def _quitar_de_celda(
         self, pos: tuple[int, int], id_elemento: int

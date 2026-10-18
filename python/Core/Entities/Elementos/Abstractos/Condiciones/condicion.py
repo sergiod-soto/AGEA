@@ -26,7 +26,7 @@ class Condicion(Elemento_Abstracto):
     comportamiento).
 
     IMPORTANTE: cada subtipo concreto (no "Condicion" a secas) debe
-    registrarse en Core/Entities/Elementos/registry.py -- reconstruir
+    registrarse en Core/Entities/Elementos/registry -- reconstruir
     una CondicionUmbralHumedad requiere que el registro sepa
     instanciar ESA clase, "Condicion" sola no basta.
     """

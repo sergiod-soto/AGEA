@@ -11,5 +11,6 @@ class Suelo_Arena(Suelo, Arenoso):
             casilla=casilla,
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=65,
-            inercia_termica=1.3e6,
+            inercia_termica=3e5,
         )
+    def tick_elemento(self, ctx): ...

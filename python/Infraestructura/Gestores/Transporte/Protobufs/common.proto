@@ -11,8 +11,6 @@ message Ack {
   string error = 2;
 }
 
-// common.proto: elemento que quiere pasar a un Sector vecino. Lo genera el
-// Sector origen (GetDelta) y el Gestor se lo entrega al destino.
 message MovimientoSaliente {
   uint64          id_elemento = 1;
   string          tipo_slot   = 2;
@@ -70,31 +68,21 @@ message Cell {
 // en °C y presión en unidades arbitrarias, así que los snapshots antiguos
 // ya no son válidos).
 message AtmosphereCell {
-  Position pos = 1;
-
-  // Terreno: no cambia salvo reconfiguración explícita del mapa o cambios
-  // de elementos. Las cachés de Suelo (tasa de conversión, inercia) NO viajan
-  // por aquí: cada Sector las reconstruye desde el terreno en su LoadState.
-  // resistencia_viento sí viaja, porque la usan los Sectores vecinos a
-  // través de la ghost zone.
-  double  resistencia_viento          = 2;
-  Vector2 direccion_preferente_viento = 3;
-  Vector2 fuerza_viento               = 4;
+  Position pos                = 1;
+  double   resistencia_viento = 2;
+  Vector2  viento_objetivo    = 3;   // m/s
 
   // Estado simulado: cambia cada tick
-  double  radiacion         = 5;    // W/m²
-  double  temperatura       = 6;    // K (kelvin)
-  double  presion           = 7;    // Pa
-  double  viento_intensidad = 8;    // m/s
-  Vector2 viento_direccion  = 9;    // vector unitario
-  double  humedad_absoluta  = 10;   // kg/m³
-  double  humedad_relativa  = 11;   // % (0-100)
+  double  radiacion            = 5;    // W/m²
+  double  temperatura          = 6;    // K (kelvin)
+  double  presion              = 7;    // Pa
+  double  viento_intensidad    = 8;    // m/s
+  Vector2 viento_direccion     = 9;    // vector unitario
+  double  humedad_absoluta     = 10;   // kg/m³
+  double  humedad_relativa     = 11;   // % (0-100)
+  double  temperatura_suelo    = 12;
+  bool    bloqueo_total_viento = 13;
 
-  // NUEVO. true si algún elemento bloquea por completo el viento en esta
-  // celda. Quien lea resistencia_viento debe mirar SIEMPRE este campo
-  // primero: con bloqueo total, resistencia_viento solo describe a los
-  // elementos NO bloqueantes.
-  bool bloqueo_total_viento = 12;
 }
 
 // ============================================================

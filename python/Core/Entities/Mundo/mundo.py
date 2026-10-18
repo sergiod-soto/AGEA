@@ -33,7 +33,7 @@ from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import
 from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Core.Entities.Mundo.Suelo.celda import Celda
-from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
+from Core.Entities.Mundo.bus_eventos import BusEventos
 
 
 class Mundo:
@@ -267,25 +267,9 @@ class Mundo:
 
     # ---- Atmósfera ----
 
-    def pos_suelo_a_atmosfera(self, pos_suelo: tuple[int, int]) -> tuple[int, int]:
-        """// (floor division), no /, para que las coordenadas negativas
-        agrupen bien: con escala 2, -1 y -2 caen en el mismo bloque."""
-        x, y = pos_suelo
-        escala = self.escala_atmosfera
-        return (x // escala, y // escala)
-
-    def crear_atmosfera(
-        self,
-        pos_atmosfera: tuple[int, int],
-        direccion_preferente_viento: Any,
-        fuerza_viento: Any,
-    ) -> None:
-        # Sin bioma ni resistencia_viento: la celda deriva ambos de las cachés
-        # que rellenan registrar_suelo / registrar_resistencia_elemento.
+    def crear_atmosfera(self, pos_atmosfera, viento_objetivo: Any) -> None:
         self.malla_atmosfera[pos_atmosfera] = Celda_Atmosfera(
-            posicion=pos_atmosfera,
-            direccion_preferente_viento=direccion_preferente_viento,
-            fuerza_viento=fuerza_viento,
+            posicion=pos_atmosfera, viento_objetivo=viento_objetivo
         )
 
     def obtener_atmosfera(

@@ -134,6 +134,11 @@ class LogicaMundoServiceStub(object):
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
                 response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
                 _registered_method=True)
+        self.TomarParchesAtmosfera = channel.unary_unary(
+                '/logica_mundo.LogicaMundoService/TomarParchesAtmosfera',
+                request_serializer=Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaRequest.SerializeToString,
+                response_deserializer=Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaResponse.FromString,
+                _registered_method=True)
         self.GenerarMundo = channel.unary_unary(
                 '/logica_mundo.LogicaMundoService/GenerarMundo',
                 request_serializer=Comunicacion_dot_logica__mundo__service__pb2.GenerarMundoRequest.SerializeToString,
@@ -247,9 +252,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def MatarBot(self, request, context):
-        """NUEVO -- terminar un bot: elimina su avatar (si sigue en el mundo) y
-        termina su script. Lo llama Gestor_Mundo.
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -297,11 +300,7 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ObtenerCeldasAtmosferaEnRegion(self, request, context):
-        """Sistema atmosférico. Mismo trío de responsabilidad que
-        ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
-        ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
-        todos los Sectores en un tick dado).
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -313,6 +312,12 @@ class LogicaMundoServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ObtenerProgresoCiclos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TomarParchesAtmosfera(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -482,6 +487,11 @@ def add_LogicaMundoServiceServicer_to_server(servicer, server):
                     servicer.ObtenerProgresoCiclos,
                     request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.FromString,
                     response_serializer=Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.SerializeToString,
+            ),
+            'TomarParchesAtmosfera': grpc.unary_unary_rpc_method_handler(
+                    servicer.TomarParchesAtmosfera,
+                    request_deserializer=Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaRequest.FromString,
+                    response_serializer=Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaResponse.SerializeToString,
             ),
             'GenerarMundo': grpc.unary_unary_rpc_method_handler(
                     servicer.GenerarMundo,
@@ -1056,6 +1066,33 @@ class LogicaMundoService(object):
             '/logica_mundo.LogicaMundoService/ObtenerProgresoCiclos',
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosRequest.SerializeToString,
             Comunicacion_dot_logica__mundo__service__pb2.ObtenerProgresoCiclosResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TomarParchesAtmosfera(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/logica_mundo.LogicaMundoService/TomarParchesAtmosfera',
+            Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaRequest.SerializeToString,
+            Comunicacion_dot_logica__mundo__service__pb2.TomarParchesAtmosferaResponse.FromString,
             options,
             channel_credentials,
             insecure,

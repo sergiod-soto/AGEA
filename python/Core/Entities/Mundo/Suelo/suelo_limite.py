@@ -16,3 +16,4 @@ class Suelo_Limite(Suelo):
             casilla=casilla,
             id_elemento=id_elemento,
         )
+    def tick_elemento(self, ctx): ...

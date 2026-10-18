@@ -8,9 +8,9 @@ Para añadir un elemento nuevo: importarlo aquí y añadirlo a ELEMENTOS.
 
 from typing import TYPE_CHECKING
 
-from Core.Entities.Comportamiento.Stats.Informacion.apellidos import Apellidos
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Comportamiento.registry import COMPORTAMIENTOS
+
 from Core.Entities.Elementos.Abstractos.Acciones.accion import Accion
 from Core.Entities.Elementos.Abstractos.Acciones.mezclar import Mezclar
 from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Atmosfericas.condicion_umbral_humedad import (
@@ -36,6 +36,9 @@ from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estacion 
 )
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estaciones import (
     Estaciones,
+)
+from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_anual import (
+    Ciclo_Anual,
 )
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.ciclo_solar import (
     Ciclo_Solar,
@@ -131,6 +134,7 @@ ELEMENTOS: dict[str, type] = {
     "Carne": Carne,
     "Carne_Fresca": Carne_Fresca,
     "Carne_Seca": Carne_Seca,
+    "Ciclo_Anual": Ciclo_Anual,
     "Ciclo_Lunar": Ciclo_Lunar,
     "Ciclo_Solar": Ciclo_Solar,
     # "Clima": Clima,
@@ -159,6 +163,7 @@ ELEMENTOS: dict[str, type] = {
     "Humedad_Relativa": Humedad_Relativa,
     # I
     "Informacion": Informacion,
+    "Invierno": Estaciones.Invierno,
     # J
     # K
     # L
@@ -171,10 +176,12 @@ ELEMENTOS: dict[str, type] = {
     "Mezclar": Mezclar,
     # N
     # O
+    "Otono": Estaciones.Otono,
     # P
     "Piedra": Piedra,
     "Premio": Premio,
     "Presion": Presion,
+    "Primavera": Estaciones.Primavera,
     "Puzzle": Puzzle,
     # Q
     # R
@@ -200,6 +207,7 @@ ELEMENTOS: dict[str, type] = {
     "TemperaturaAtmosferica": TemperaturaAtmosferica,
     # U
     # V
+    "Verano": Estaciones.Verano,
     "Viento": Viento,
     # W
     # X

@@ -38,12 +38,12 @@ def _entra_en_franja_secado(suelo, ctx) -> None:
     del suelo.dict_transformable[condicion_entrada]
 
     tick_objetivo = ctx.tick_id + TICKS_SECADO_BARRO
-    suelo.dict_transformable[CondicionTickObjetivo(tick_objetivo=tick_objetivo)] = (
-        "suelo_barro_secar"
+    suelo.dict_transformable["suelo_barro_secar"] = CondicionTickObjetivo(
+        tick_objetivo=tick_objetivo
     )
-    suelo.dict_transformable[
+    suelo.dict_transformable["suelo_barro_sale_de_franja_secado"] = (
         CondicionUmbralHumedad(umbral=UMBRAL_HUMEDAD_SECADO, por_debajo=False)
-    ] = "suelo_barro_sale_de_franja_secado"
+    )
 
 
 @registrar("suelo_barro_sale_de_franja_secado")
@@ -51,9 +51,9 @@ def _sale_de_franja_secado(suelo, ctx) -> None:
     """Humedad volvió a subir antes de completar la cuenta: se
     eliminan cuenta y salida, y se restaura la vigilancia original."""
     suelo.dict_transformable = {
-        CondicionUmbralHumedad(
+        "suelo_barro_entra_en_franja_secado": CondicionUmbralHumedad(
             umbral=UMBRAL_HUMEDAD_SECADO, por_debajo=True
-        ): "suelo_barro_entra_en_franja_secado"
+        )
     }
 
 
@@ -73,8 +73,6 @@ def _secar_barro(suelo, ctx) -> None:
         elemento=Suelo_Tierra(
             casilla=suelo.casilla,
             id_elemento=None,  # lo asigna Logica_Mundo al resolver la mutación
-            tasa_conversion_radiacion_calor=80,
-            inercia_termica=1.5e6,
         ),
     )
 
@@ -88,9 +86,11 @@ class Suelo_Barro(Suelo):
             tasa_conversion_radiacion_calor=80,
             inercia_termica=5e5,
             dict_transformable={
-                CondicionUmbralHumedad(
+                "suelo_barro_entra_en_franja_secado": CondicionUmbralHumedad(
                     umbral=UMBRAL_HUMEDAD_SECADO, por_debajo=True
-                ): "suelo_barro_entra_en_franja_secado"
+                )
             },
             **kwargs,
         )
+
+    def tick_elemento(self, ctx): ...

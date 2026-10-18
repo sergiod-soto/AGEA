@@ -22,7 +22,7 @@ class Transformable(Material):
     REQUIERE = {"dict_transformable: dict[str, Condicion]"}
     ABSTRACTOS = {}
 
-    def __init__(self, dict_transformable: dict[Condicion, str], **kwargs):
+    def __init__(self, dict_transformable: dict[str, Condicion], **kwargs):
         super().__init__(**kwargs)
         self.dict_transformable = dict_transformable
 
@@ -44,7 +44,7 @@ class Transformable(Material):
     def get_condiciones(self) -> list[Condicion]:
         return list(self.dict_transformable.keys())
 
-    def tick_comportamiento(self, pos: tuple[int, int], ctx) -> None:
+    def tick_comportamiento(self, ctx) -> None:
         """Una transformación por tick -- si en algún caso real hiciera
         falta encadenar varias en el mismo tick, esto habría que
         revisarlo entonces. Se itera sobre una copia (list(...)) porque
@@ -64,12 +64,10 @@ class Transformable(Material):
                 return
 
     def serializar_dict_transformable(self) -> list[dict]:
+        # dict_transformable es {Condicion: nombre}: items() da (condicion, nombre).
         return [
-            {
-                "transformacion": nombre,
-                "condicion": condicion.serializar(),
-            }
-            for nombre, condicion, in self.dict_transformable.items()
+            {"transformacion": nombre, "condicion": condicion.serializar()}
+            for condicion, nombre in self.dict_transformable.items()
         ]
 
     def deserializar_dict_transformable(self, valor: list[dict]) -> None:
@@ -94,7 +92,7 @@ class Transformable(Material):
 o cambiar sus comportamientos, al cumplirse ciertas condiciones LOCAL.
 
 Atributos:
-\tdict_transformable: dict[Condicion, str]  (nombre en REGISTRO_TRANSFORMACIONES)
+\tdict_transformable: dict[str, Condicion]  (nombre en REGISTRO_TRANSFORMACIONES)
 
 Métodos:
 \tget_condiciones(self) -> list[Condicion]

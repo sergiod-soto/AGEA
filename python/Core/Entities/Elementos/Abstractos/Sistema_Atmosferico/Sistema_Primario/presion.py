@@ -39,8 +39,8 @@ class Presion(Sistema_Atmosferico):
 
         ESTABILIDAD: esquema explícito; hace falta
             _COEFICIENTE_DIFUSION * dt * n_vecinos < 1
-        (8 vecinos, dt = 1 s: 0.05 * 1 * 8 = 0.4, correcto). Si se sube dt o
-        se baja el tamaño de celda, hay que revisarlo.
+        (4 vecinos cardinales, dt = 1 s: 0.05 * 1 * 4 = 0.2, correcto). Si se
+        sube dt o se baja el tamaño de celda, hay que revisarlo.
         """
         dt = SEGUNDOS_SIMULADOS_TICK  # s simulados que avanza este tick
         difusion = sum(

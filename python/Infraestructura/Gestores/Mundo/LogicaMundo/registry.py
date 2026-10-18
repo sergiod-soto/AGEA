@@ -30,6 +30,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     obtener_celdas_atmosfera_en_region,
     actualizar_celdas_atmosfera,
     obtener_progreso_ciclos,
+    tomar_parches_atmosfera,
 )
 
 from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
@@ -67,6 +68,7 @@ FUNCIONES = [
     obtener_celdas_atmosfera_en_region,
     actualizar_celdas_atmosfera,
     obtener_progreso_ciclos,
+    tomar_parches_atmosfera,
     #
     # ----- generacion del mundo --------
     estado_generacion_mundo,

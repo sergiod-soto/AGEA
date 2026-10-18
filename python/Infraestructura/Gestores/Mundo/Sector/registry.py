@@ -17,6 +17,7 @@ from Infraestructura.Gestores.Mundo.Sector.Funciones import (
 )
 from Infraestructura.Gestores.Mundo.Sector.Funciones import (
     set_atmosphere_ghost_zone,
+    aplicar_parches_atmosfera,
     set_global_cycles,
 )
 
@@ -35,5 +36,6 @@ FUNCIONES = [
     #
     # ----- sistema atmosférico --------
     set_atmosphere_ghost_zone,
+    aplicar_parches_atmosfera,
     set_global_cycles,
 ]

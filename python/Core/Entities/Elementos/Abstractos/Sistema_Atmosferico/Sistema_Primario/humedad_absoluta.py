@@ -18,26 +18,46 @@ _COEFICIENTE_DIFUSION: float = DIFUSIVIDAD_HUMEDAD / TAMANHO_CELDA_ATMOSFERICA**
 
 
 class Humedad_Absoluta(Sistema_Atmosferico):
+
     def __init__(self, valor_inicial: float = 0.0, **kwargs):
         super().__init__(Humedad_Absoluta, ID_HUMEDAD_ABSOLUTA, **kwargs)
         # kg/m³ de vapor de agua en el aire (densidad de vapor). Es la unidad
         # que espera Humedad_Relativa para comparar con la saturación.
         self.valor: float = valor_inicial
 
-    def actualizar(self, temperatura: float, vecinos: list) -> None:
+    def actualizar(
+        self,
+        temperatura: float,
+        vecinos: list,
+        velocidad: tuple[float, float],
+        bloqueado: bool,
+    ) -> None:
         """
-        TODO(modelo): sin evaporación todavía (depende de ríos/oasis y de la
-        vegetación, ficheros aún vacíos). `temperatura` (K) ya está en la firma
-        pero todavía NO se usa.
+        Difunde con los vecinos y se advecta con el viento (`velocidad` en m/s
+        y `bloqueado` son los de ESTA celda al inicio del tick). Los vecinos
+        son del tick anterior (ghost zone). Estabilidad: ver
+        Config/validacion_simulacion.
 
-        De momento solo difunde con los vecinos (tick anterior, ghost zone).
-        Mismo criterio de estabilidad que Presion: coeficiente * dt * n < 1.
+        La FUENTE de humedad (evaporación) no entra aquí: la aplica el Sector
+        antes de este paso vía Celda_Atmosfera.aplicar_evaporacion. `temperatura`
+        (K) sigue en la firma sin usarse (hará falta para la condensación).
         """
-        # Segundos que avanza la simulación en este tick.
         dt = SEGUNDOS_SIMULADOS_TICK
         difusion = sum(
             (vecino.humedad_absoluta - self.valor) * _COEFICIENTE_DIFUSION * dt
             for vecino in vecinos
         )
+        # kg/m³ que entran/salen con el viento (ya incluye dt).
+        adveccion = sum(
+            self.delta_advectivo(
+                self.valor,
+                vecino.humedad_absoluta,
+                velocidad,
+                (vecino.viento_x, vecino.viento_y),
+                vecino.direccion,
+                bloqueado or vecino.bloqueo_total_viento,
+            )
+            for vecino in vecinos
+        )
         # max(): la humedad no puede ser negativa.
-        self.valor = max(0.0, self.valor + difusion)
+        self.valor = max(0.0, self.valor + difusion + adveccion)

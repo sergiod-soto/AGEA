@@ -1,6 +1,6 @@
 # Infraestructura/Gestores/Mundo/LogicaMundo/logica_mundo_servicer.py
 """
-logica_mundo_servicer.py — Servicer gRPC de LogicaMundoService.
+logica_mundo_servicer — Servicer gRPC de LogicaMundoService.
 
 Sigue el mismo patrón de dispatch por NAME que gestor_bots_servicer.py /
 gestor_mundo_servicer.py / sector_servicer.py: cada RPC delega en su
@@ -125,8 +125,6 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         )
 
     async def AvanzarTick(self, request, context):
-        # Avanza el tiempo del mundo (tick actual + reloj). Independiente
-        # de los elementos globales: ver Funciones/avanzar_tick.py.
         return await self._dispatch["AvanzarTick"].handle(
             self._logica, request, context
         )
@@ -190,5 +188,10 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
 
     async def ObtenerBotsEnRegion(self, request, context):
         return await self._dispatch["ObtenerBotsEnRegion"].handle(
+            self._logica, request, context
+        )
+
+    async def TomarParchesAtmosfera(self, request, context):
+        return await self._dispatch["TomarParchesAtmosfera"].handle(
             self._logica, request, context
         )

@@ -1,7 +1,7 @@
 # Infraestructura/Gestores/Transporte/logica_mundo_client.py
 
 """
-logica_mundo_client.py — Cliente async gRPC hacia LogicaMundo.
+logica_mundo_client — Cliente async gRPC hacia LogicaMundo.
 
 Usado por:
   - Gestor_Mundo   → celdas de región, actualizar celdas, celdas de
@@ -212,7 +212,9 @@ class LogicaMundoClient:
     async def matar_bot(
         self, bot_id: int, cause: str, tick_id: int, timeout: float | None = None
     ) -> tuple[bool, str]:
-        # "Blando": el gestor no usa el resultado.
+
+        # Devuelve (ok, error). El Gestor lo trata como FATAL (si el script del
+        # bot no se termina, sigue vivo sin avatar).
         await self._ensure_channel()
         req = pb.MatarBotRequest(bot_id=bot_id, cause=cause, tick_id=tick_id)
         try:
@@ -453,6 +455,17 @@ class LogicaMundoClient:
         resp = await self._stub.ActualizarCeldasAtmosfera(req, timeout=self._t(timeout))
         if not resp.ok:
             raise RuntimeError(f"ActualizarCeldasAtmosfera: {resp.error}")
+
+    async def tomar_parches_atmosfera(self, timeout: float | None = None) -> list:
+        """PROPAGA errores: los parches se vacían al tomarlos, un fallo no se
+        puede tragar. Devuelve AtmosphereCell (solo cuenta viento_objetivo)."""
+        await self._ensure_channel()
+        resp = await self._stub.TomarParchesAtmosfera(
+            pb.TomarParchesAtmosferaRequest(), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"TomarParchesAtmosfera: {resp.error}")
+        return list(resp.cells)
 
     async def obtener_progreso_ciclos(
         self, timeout: float | None = None

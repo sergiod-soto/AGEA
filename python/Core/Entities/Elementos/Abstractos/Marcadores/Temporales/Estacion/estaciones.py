@@ -28,7 +28,7 @@ class Estaciones(Marcador_Temporal):
     isinstance(x, Estaciones.Verano).
 
     La clasificación es GLOBAL y con un hemisferio fijo: NO la usa la radiación
-    de cada celda (esa sale de latitud+declinación en sistema_atmosferico.py).
+    de cada celda (esa sale de latitud+declinación en sistema_atmosferico).
     """
 
     class Invierno(Estacion):

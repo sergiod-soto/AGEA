@@ -17,11 +17,7 @@ service LogicaMundoService {
   rpc EliminarElemento  (EliminarElementoRequest)  returns (common.Ack);
   rpc ResolverAccion (ResolverAccionRequest) returns (common.ActionResult);
   rpc EliminarAvatarBot (EliminarAvatarBotRequest) returns (common.Ack);
-
-  // NUEVO -- terminar un bot: elimina su avatar (si sigue en el mundo) y
-  // termina su script. Lo llama Gestor_Mundo.
   rpc MatarBot (MatarBotRequest) returns (common.Ack);
-
   rpc SpawnGlobalEvent   (SpawnGlobalEventRequest)   returns (SpawnGlobalEventResponse);
   rpc DespawnGlobalEvent (DespawnGlobalEventRequest) returns (common.Ack);
   rpc GetActiveEvents    (GetActiveEventsRequest)    returns (GetActiveEventsResponse);
@@ -30,13 +26,10 @@ service LogicaMundoService {
   rpc ObtenerBotsEnRegion (ObtenerBotsEnRegionRequest) returns (ObtenerBotsEnRegionResponse);
   rpc ActualizarCeldas (ActualizarCeldasRequest) returns (ActualizarCeldasResponse);
 
-  // Sistema atmosférico. Mismo trío de responsabilidad que
-  // ObtenerCeldasEnRegion/ActualizarCeldas, en versión atmósfera, más
-  // ObtenerProgresoCiclos (dato global, no por región -- lo mismo para
-  // todos los Sectores en un tick dado).
   rpc ObtenerCeldasAtmosferaEnRegion (ObtenerCeldasAtmosferaEnRegionRequest) returns (ObtenerCeldasAtmosferaEnRegionResponse);
   rpc ActualizarCeldasAtmosfera (ActualizarCeldasAtmosferaRequest) returns (common.Ack);
   rpc ObtenerProgresoCiclos (ObtenerProgresoCiclosRequest) returns (ObtenerProgresoCiclosResponse);
+  rpc TomarParchesAtmosfera (TomarParchesAtmosferaRequest) returns (TomarParchesAtmosferaResponse);
 
   // Generacion del mundo
   rpc GenerarMundo (GenerarMundoRequest) returns (common.Ack);
@@ -244,8 +237,16 @@ message ObtenerProgresoCiclosResponse {
   double progreso_anual = 5;
 }
 
+message TomarParchesAtmosferaRequest {}
+
+message TomarParchesAtmosferaResponse {
+  bool                           ok    = 1;
+  string                         error = 2;
+  repeated common.AtmosphereCell cells = 3;
+}
+
 // ============================================================
-//  Generación del mundo (NUEVO)
+//  Generación del mundo 
 // ============================================================
 
 // Los valores numéricos deben coincidir con

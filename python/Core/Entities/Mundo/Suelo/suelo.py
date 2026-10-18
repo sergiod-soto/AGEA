@@ -6,13 +6,14 @@ from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstr
 class Suelo(Elemento_Abstracto):
     """
     Base de cada casilla. En la física solo hace dos cosas: convierte la
-    radiación en calor y fija la inercia térmica de la CELDA completa
-    (la temperatura es única por celda, aire+suelo; el suelo es la única
-    "batería" de calor).
+    radiación solar entrante en calor (tasa) y fija la masa térmica del
+    suelo (inercia). La celda de atmósfera promedia ambos valores de sus
+    casillas y con ellos calienta su temperatura de suelo, que a su vez
+    calienta el aire.
 
     - tasa_conversion_radiacion_calor: en [0, 100].
-    - inercia_termica: J/(m²·K), debe ser > 0. Cada valor INCLUYE ~1e6 de
-      la capa de aire de la celda: los Suelo_* concretos deben documentarlo.
+    - inercia_termica: J/(m²·K), debe ser > 0. Es SOLO la masa del suelo;
+      el aire de la celda se cuenta aparte (C_AIRE, en temperatura_atmosferica).
     """
 
     def __init__(

@@ -1,18 +1,15 @@
 # Infraestructura/Gestores/Mundo/Sector/mutaciones.py
+
 """
 Tipos de mutación que un elemento puede pedir durante su tick().
 
-Por qué existen como tipos separados en vez de aplicar el cambio directamente:
-  Sector nunca es la fuente de verdad del estado del mundo (eso vive en
-  Logica_Mundo, ver logica_mundo: _gold_cells / _elements). Si tick()
-  escribiera directamente sobre algún diccionario del Sector, ese cambio se
-  perdería al final del tick (Sector no persiste nada — se retiraron los
-  snapshots de sector por ser estado transitorio) y Logica_Mundo nunca se
-  enteraría de que ocurrió.
-
-  Por eso cada mutación se representa como un dato (no como una llamada que
-  ya se ejecutó), se acumula en TickContext y solo se aplica de verdad en
-  Logica_Mundo, al recibir el TickDelta completo del sector.
+Por qué son datos y no llamadas ya ejecutadas: si tick() modificara la celda
+directamente, el resultado dependería del orden en que se computan los
+elementos. Cada mutación se acumula en TickContext (escritura diferida) y
+Sector._resolver_mutaciones las aplica sobre su copia de trabajo al terminar
+todos los tick(). El resultado viaja a Logica_Mundo (el gold) como
+changed_cells; un movimiento a otro Sector viaja como MovimientoSaliente y lo
+resuelve el Gestor_Mundo (RecibirElemento / ConfirmarSalida).
 """
 
 from dataclasses import dataclass
@@ -23,13 +20,10 @@ from typing import Any, Optional, Union
 class CrearElemento:
     """Petición de crear un elemento nuevo en una celda.
 
-    marcador_local identifica a este elemento SOLO dentro de este tick y
-    este sector — no es un id real. Hace falta porque un mismo sector puede
-    crear varios elementos en el mismo tick (dos reproducciones a la vez,
-    por ejemplo): un único valor especial (tipo id=None) no bastaría para
-    distinguir cuál-es-cuál cuando Logica_Mundo les asigne id real.
-    El elemento se vuelve interactuable recién en el siguiente tick, así
-    que no hace falta que Logica_Mundo devuelva el id real de inmediato.
+    marcador_local identifica al elemento SOLO dentro de este tick y sector;
+    no es un id real. PENDIENTE (ids de elementos nacidos en tick(), aplazado):
+    Sector._resolver_mutaciones descarta hoy toda creación cuyo elemento no
+    tenga id_elemento, así que ninguna creación sin id llega a ejecutarse.
     """
 
     marcador_local: str
@@ -54,10 +48,9 @@ class EliminarElemento:
 class MoverElemento:
     """Petición de mover un elemento existente de una celda a otra.
 
-    El movimiento puede terminar cruzando la frontera del sector (migración).
-    Eso lo detecta y resuelve Logica_Mundo al aplicar la mutación — el
-    Sector que la generó no necesita saber a qué otro sector pertenece
-    pos_destino, solo pedir el movimiento.
+    Si pos_destino cae fuera de la región del Sector, Sector._resolver_mutaciones
+    no mueve nada: lo declara como MovimientoSaliente y el Gestor_Mundo lo
+    resuelve. El elemento que lo pide solo necesita indicar el destino.
     """
 
     id_elemento: int
@@ -66,6 +59,20 @@ class MoverElemento:
     bot_id: Optional[int] = None
 
 
-# Unión de todas las mutaciones posibles. Se usa para tipar la lista interna
-# de TickContext y el campo `mutaciones` del TickDelta que viaja a Logica_Mundo.
-Mutacion = Union[CrearElemento, EliminarElemento, MoverElemento]
+@dataclass
+class Evaporar:
+    """Petición de pasar agua del terreno al aire en una casilla.
+
+    kg_por_m2: masa de agua evaporada en ESTE tick por m² de casilla (>= 0).
+    El elemento solo dice cuánta agua pasa; la conversión a humedad (kg/m³) y
+    el efecto térmico del calor latente los resuelve el Sector en un único
+    sitio (Sector._resolver_mutaciones). Es ADITIVA: varias peticiones sobre la
+    misma celda de atmósfera se suman, así que el resultado no depende del
+    orden en que tickean los elementos.
+    """
+
+    pos: tuple[int, int]  # posición de TERRENO de la casilla
+    kg_por_m2: float
+
+
+Mutacion = Union[CrearElemento, EliminarElemento, MoverElemento, Evaporar]

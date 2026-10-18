@@ -1,9 +1,7 @@
 # Core/Entities/Mundo/Atmosfera/sistema_atmosferico.py
 
 """
-Orquestador del tick atmosférico de UNA celda. VERSIÓN FINAL de esta
-ronda de diseño -- sustituye cualquier versión anterior (la que usaba
-Estacion/progreso_estacional para la radiación ya no aplica).
+Orquestador del tick atmosférico de UNA celda.
 
 Con Temperatura, Presion, Viento, Humedad_Absoluta y Humedad_Relativa
 llevando su propia lógica de cálculo (ver
@@ -83,6 +81,10 @@ class EstadoVecino:
     humedad_absoluta: float
     direccion: Vector2
     bloqueo_total_viento: bool = False
+    # Velocidad del viento del vecino (m/s) en el TICK ANTERIOR, para la
+    # advección. Se guarda como componentes y no como (intensidad, dirección).
+    viento_x: float = 0.0
+    viento_y: float = 0.0
 
 
 def _latitud_radianes(y: int) -> float:
@@ -149,26 +151,38 @@ def avanzar_celda(
     """
     Avanza `celda` un tick. Muta `celda` in-place.
 
-    celda.posicion está en espacio de atmósfera (bloques de
-    ATMOSFERA_ESCALA celdas de terreno) -- para la latitud se usa el
-    centro del bloque en coordenadas de terreno, no el índice de
-    bloque (error despreciable salvo que ATMOSFERA_ESCALA sea enorme
-    frente al tamaño del mapa).
+    celda.posicion está en espacio de atmósfera (bloques de ATMOSFERA_ESCALA
+    celdas de terreno) -- para la latitud se usa el centro del bloque en
+    coordenadas de terreno, no el índice de bloque.
     """
     _, y_bloque = celda.posicion
     y_terreno = y_bloque * ATMOSFERA_ESCALA + ATMOSFERA_ESCALA // 2
 
     celda.radiacion = calcular_radiacion(y_terreno, progreso_solar, progreso_anual)
 
+    # Velocidad del viento al INICIO del tick (la del tick anterior). Se captura
+    # antes de viento.actualizar porque la advección de las caras debe usar el
+    # mismo valor que ven los vecinos: así el flujo de cada cara coincide en
+    # sus dos lados y se conserva la cantidad. (Humedad se calcula DESPUÉS del
+    # viento, pero también usa esta velocidad.)
+    velocidad = (
+        celda.viento.direccion.x * celda.viento.intensidad,
+        celda.viento.direccion.y * celda.viento.intensidad,
+    )
+
     celda.temperatura.actualizar(
         celda.tasa_conversion_radiacion_calor,
         celda.inercia_termica,
         celda.radiacion,
         vecinos,
+        velocidad,
+        celda.bloqueo_total_viento,
     )
     celda.presion.actualizar(celda.temperatura.valor, vecinos)
     celda.viento.actualizar(celda, celda.presion.valor, vecinos)
-    celda.humedad_absoluta.actualizar(celda.temperatura.valor, vecinos)
+    celda.humedad_absoluta.actualizar(
+        celda.temperatura.valor, vecinos, velocidad, celda.bloqueo_total_viento
+    )
     celda.humedad_relativa.actualizar(
         celda.humedad_absoluta.valor, celda.temperatura.valor
     )

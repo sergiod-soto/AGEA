@@ -3,34 +3,41 @@
 """
 Temperatura de una celda de atmósfera, en unidades del SISTEMA INTERNACIONAL.
 
-Unidades (todas SI salvo la tasa de conversión):
-  - temperatura ........................ K (kelvin). SIEMPRE kelvin dentro del
-                                         sistema; kelvin_a_celsius() solo para
-                                         mostrar o para fórmulas que pidan °C
-                                         (p. ej. Magnus en humedad_relativa).
-  - radiacion .......................... W/m².
-  - inercia_termica .................... J/(m²·K) de la CELDA COMPLETA (aire +
-                                         suelo), ya promediada por
-                                         Celda_Atmosfera.
-  - tasa_conversion_radiacion_calor .... 0-100 adimensional: 0 = espejo,
-                                         100 = cuerpo negro (absorptividad %).
+Cada celda lleva DOS temperaturas, ambas en K:
+  - valor ........ temperatura del AIRE. Es la que leen presión, viento,
+                   humedad, vecinos, proto y snapshots.
+  - valor_suelo .. temperatura del SUELO (media de las casillas de la celda).
+
+Unidades:
+  - radiacion .......................... W/m². Es lo que llega del sol: no se
+                                         "emite" en este modelo.
+  - inercia_termica .................... J/(m²·K) del SUELO de la celda (media
+                                         de sus casillas). El aire se cuenta
+                                         aparte con C_AIRE.
+  - tasa_conversion_radiacion_calor .... 0-100: 0 = espejo, 100 = cuerpo negro
+                                         (porcentaje de radiación que el suelo
+                                         convierte en calor).
   - tiempo ............................. s. Cada tick avanza la simulación
                                          dt = SEGUNDOS_SIMULADOS_TICK segundos.
 
-Modelo: balance de potencia por m² de celda.
+Modelo (balance de potencia por m² de celda):
 
-    inercia * dT/dt = absorbido + difusion - emitido
+    inercia · dTs/dt = absorbido - K·(Ts - Ta)
+    C_AIRE  · dTa/dt = K·(Ts - Ta) - emitido + C_AIRE·difusion + adveccion
 
-  absorbido = radiacion * (tasa / 100)
-  emitido   = EMISIVIDAD_EFECTIVA * sigma * T^4          (Stefan-Boltzmann)
-  difusion  = suma sobre vecinos de COEFICIENTE_DIFUSION_TERMICA * (T_v - T)
+  absorbido = radiacion · (tasa / 100)         el suelo convierte sol en calor
+  K·(Ts-Ta) = calor del suelo al aire          el suelo calienta el aire
+  emitido   = ε · σ · Ta⁴                      el AIRE emite al espacio
+  difusion  = Σ_vecinos (D/L²)·(Ta_v - Ta)     mezcla lateral (solo aire)
 
-No hay suelo ni techo artificial de temperatura: la estabilidad sale de que la
-pérdida crece con T^4. Sin radiación, una celda se enfría hacia 0 K (cada vez
-más despacio).
+Por qué emite el aire y no el suelo: en la Tierra, lo que escapa al espacio lo
+emite sobre todo la atmósfera, no la superficie. La estabilidad sale de que la
+pérdida crece con Ta⁴: no hay techo artificial de temperatura. Sin radiación,
+la celda se enfría hacia 0 K (cada vez más despacio).
 """
 
 from Config.parametros_simulacion import (
+    C_AIRE,
     SEGUNDOS_SIMULADOS_TICK,
     TAMANHO_CELDA_ATMOSFERICA,
 )
@@ -47,27 +54,24 @@ CONSTANTE_STEFAN_BOLTZMANN: float = 5.670374419e-8
 # Diferencia entre las escalas Celsius y kelvin.
 _KELVIN_EN_CERO_CELSIUS: float = 273.15
 
-# ---- Constantes del modelo (ajustables sin tocar la lógica) ----
+# ---- Constantes del modelo (ajustables sin tocar la lógica; SIN CALIBRAR) ----
 
-# Fracción de la potencia emitida que de verdad escapa al espacio (efecto
-# invernadero). SIN CALIBRAR de forma fina: 0.52 da ~27 °C de media en el
-# ecuador para roca (tasa 75) con 1000 W/m² de pico. A futuro: ligarlo a la
-# humedad absoluta.
+# Fracción de la potencia emitida por el aire que de verdad escapa al espacio
+# (efecto invernadero). Con 0.52, ~24-27 °C de media en el ecuador. A futuro:
+# ligarlo a la humedad absoluta.
 EMISIVIDAD_EFECTIVA: float = 0.52
 
-# Calor que fluye hacia CADA vecino por kelvin de diferencia, en W/K, para la
-# celda completa. SIN CALIBRAR. Con celdas de 10 m equivale al 1.0 W/(m²·K)
-# que había antes.
-CONDUCTANCIA_LATERAL_EFECTIVA: float = 100.0
-
-# La inercia está por m² de celda, así que la conductancia también se pasa a
-# W/(m²·K) dividiendo por el área de la celda (L²). Por eso, al cambiar el
-# tamaño de celda, el intercambio lateral se reescala solo.
-COEFICIENTE_DIFUSION_TERMICA: float = (
-    CONDUCTANCIA_LATERAL_EFECTIVA / TAMANHO_CELDA_ATMOSFERICA**2
-)
 
 
+# Intercambio de calor suelo <-> aire, W/(m²·K).
+COEFICIENTE_INTERCAMBIO_SUELO_AIRE: float = 25.0
+
+# Difusividad térmica del aire, m²/s. Mismo criterio que humedad y presión.
+DIFUSIVIDAD_TERMICA: float = 5.0
+
+# Fracción de la diferencia con CADA vecino que se iguala por segundo, 1/s
+# (D/L²): al cambiar el tamaño de celda, la física cambia de forma coherente.
+_COEFICIENTE_DIFUSION: float = DIFUSIVIDAD_TERMICA / TAMANHO_CELDA_ATMOSFERICA**2
 
 
 def celsius_a_kelvin(celsius: float) -> float:
@@ -81,15 +85,23 @@ def kelvin_a_celsius(kelvin: float) -> float:
 
 
 class TemperaturaAtmosferica(Sistema_Atmosferico):
-    def __init__(self, valor_inicial: float = celsius_a_kelvin(15.0), **kwargs):
+    def __init__(
+        self,
+        valor_inicial: float = celsius_a_kelvin(15.0),
+        valor_suelo_inicial: float | None = None,
+        **kwargs,
+    ):
         super().__init__(
             TemperaturaAtmosferica,
             ID_TEMPERATURA_ATMOSFERICA,
             **kwargs,
         )
-        # Kelvin. Todo lo que lea .valor (presión, viento, proto, snapshots)
-        # lo recibe en kelvin.
+        # K. Temperatura del AIRE: es la que todo lo demás lee como `.valor`.
         self.valor: float = valor_inicial
+        # K. Temperatura del SUELO. Arranca igual que el aire si no se indica.
+        self.valor_suelo: float = (
+            valor_inicial if valor_suelo_inicial is None else valor_suelo_inicial
+        )
 
     def actualizar(
         self,
@@ -97,24 +109,26 @@ class TemperaturaAtmosferica(Sistema_Atmosferico):
         inercia_termica: float,
         radiacion: float,
         vecinos: list,
+        velocidad: tuple[float, float],
+        bloqueado: bool,
     ) -> None:
         """
-        Avanza la temperatura un tick (dt = SEGUNDOS_SIMULADOS_TICK segundos).
+        Avanza las dos temperaturas un tick (dt = SEGUNDOS_SIMULADOS_TICK s).
 
         `tasa_conversion_radiacion_calor` e `inercia_termica` son las MEDIAS
         ya resueltas por Celda_Atmosfera. `vecinos` son EstadoVecino del TICK
-        ANTERIOR (ghost zone), con `temperatura` en kelvin.
+        ANTERIOR (ghost zone), con `temperatura` = temperatura del AIRE (K).
 
-        PRECONDICIONES (fallan con ValueError, mejor que un valor silencioso):
-        tasa en [0, 100]; inercia_termica > 0 (sin Suelo registrado no hay
-        media válida); temperatura propia > 0 K.
+        PRECONDICIONES (ValueError, mejor que un valor silencioso): tasa en
+        [0, 100]; inercia_termica > 0 (sin Suelo registrado no hay media
+        válida); ambas temperaturas > 0 K.
 
-        ESTABILIDAD: paso explícito (Euler). Estable mientras
-            inercia_termica > dt * (4*EMISIVIDAD_EFECTIVA*sigma*T^3
-                                    + n_vecinos*COEFICIENTE_DIFUSION_TERMICA)
-        unos 10 J/(m²·K) con dt = 1 s; todos los suelos reales están muy por
-        encima. Si se sube dt (o se baja TAMANHO_CELDA_ATMOSFERICA) hay que
-        revisarlo.
+        ESTABILIDAD: paso explícito (Euler). Hace falta que cada una sea < 1:
+            suelo:  dt · K / inercia_termica
+            aire:   dt · (K + 4·ε·σ·Ta³) / C_AIRE
+            mezcla: dt · (D/L²) · n_vecinos        (n = 4: 0.05·1·4 = 0.2)
+        Con dt = 1 s y los valores actuales todas quedan muy por debajo de 1.
+        Si se sube dt o se baja TAMANHO_CELDA_ATMOSFERICA, hay que revisarlo.
         """
         if not 0.0 <= tasa_conversion_radiacion_calor <= 100.0:
             raise ValueError(
@@ -126,30 +140,63 @@ class TemperaturaAtmosferica(Sistema_Atmosferico):
                 f"inercia_termica debe ser > 0 (recibido {inercia_termica}); "
                 "¿celda de atmósfera sin Suelo registrado?"
             )
-        if self.valor <= 0:
+        if self.valor <= 0 or self.valor_suelo <= 0:
             raise ValueError(
-                f"Temperatura <= 0 K ({self.valor}): simulación inestable."
+                f"Temperatura <= 0 K (aire {self.valor}, suelo "
+                f"{self.valor_suelo}): simulación inestable."
             )
 
-        # Segundos que avanza la simulación en este tick.
         dt = SEGUNDOS_SIMULADOS_TICK
 
-        # W/m²: la parte de la radiación que el suelo convierte en calor.
+        # Todos los flujos se calculan con los valores del INICIO del tick y
+        # solo después se actualizan las dos temperaturas: así el calor que
+        # sale del suelo es exactamente el que entra en el aire.
+
+        # W/m²: radiación solar que el suelo convierte en calor.
         potencia_absorbida = radiacion * (tasa_conversion_radiacion_calor / 100.0)
 
-        # W/m²: Stefan-Boltzmann. Es lo que frena el calentamiento sin
-        # necesidad de ningún tope artificial.
+        # W/m²: calor del suelo al aire (negativo si el aire está más caliente).
+        flujo_suelo_aire = COEFICIENTE_INTERCAMBIO_SUELO_AIRE * (
+            self.valor_suelo - self.valor
+        )
+
+        # W/m²: Stefan-Boltzmann. El AIRE emite al espacio; es lo que frena el
+        # calentamiento sin ningún tope artificial.
         potencia_emitida = (
             EMISIVIDAD_EFECTIVA * CONSTANTE_STEFAN_BOLTZMANN * self.valor**4
         )
 
-        # W/m²: el calor fluye del vecino más caliente al más frío.
-        potencia_difusion = sum(
-            COEFICIENTE_DIFUSION_TERMICA * (vecino.temperatura - self.valor)
+        # K/s: mezcla lateral del aire con los vecinos.
+        ritmo_difusion = sum(
+            _COEFICIENTE_DIFUSION * (vecino.temperatura - self.valor)
             for vecino in vecinos
         )
 
-        potencia_neta = potencia_absorbida + potencia_difusion - potencia_emitida
+        # J/m² = W/m² · s;  K = (J/m²) / (J/(m²·K)).
+        self.valor_suelo += (
+            (potencia_absorbida - flujo_suelo_aire) * dt / inercia_termica
+        )
 
-        # J/m² = W/m² * s;  K = (J/m²) / (J/(m²·K)).
-        self.valor += potencia_neta * dt / inercia_termica
+        # K: aire que entra/sale con el viento por cada cara cardinal. Ya
+        # incluye dt. Se calcula con el valor del inicio del tick.
+        adveccion = sum(
+            self.delta_advectivo(
+                self.valor,
+                vecino.temperatura,
+                velocidad,
+                (vecino.viento_x, vecino.viento_y),
+                vecino.direccion,
+                bloqueado or vecino.bloqueo_total_viento,
+            )
+            for vecino in vecinos
+        )
+
+        # Las dos temperaturas se actualizan UNA vez, con flujos del inicio del
+        # tick: el calor que sale del suelo es exactamente el que entra al aire.
+        # J/m² = W/m² · s;  K = (J/m²) / (J/(m²·K)).
+        self.valor_suelo += (
+            (potencia_absorbida - flujo_suelo_aire) * dt / inercia_termica
+        )
+        self.valor += (
+            (flujo_suelo_aire - potencia_emitida) / C_AIRE + ritmo_difusion
+        ) * dt + adveccion

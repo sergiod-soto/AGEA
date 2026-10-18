@@ -23,7 +23,7 @@ import gc
 
 import pytest
 
-from Infraestructura.Gestores.Mundo.Bus_Eventos.bus import BusEventos
+from Infraestructura.Gestores.Mundo.Bus_Eventos.old_bus import BusEventos
 
 
 @pytest.mark.unit

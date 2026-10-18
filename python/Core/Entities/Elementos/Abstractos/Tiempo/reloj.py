@@ -74,7 +74,7 @@ class Reloj(Marcador_Temporal):
             self._al_avanzar = al_avanzar
 
         def next_tick(self) -> None:
-            # Un tick de reloj más; el ciclo solo avanza cada `_paso` ticks.
+            # Un tick de reloj más; el ciclo solo avanza cada '_paso' ticks.
             self._contador_paso += 1
             if self._contador_paso < self._paso:
                 return
