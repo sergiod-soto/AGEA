@@ -1,6 +1,6 @@
 # Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/avanzar_tick.py
 """
-avanzar_tick.py — Implementación del RPC AvanzarTick.
+avanzar_tick — Implementación del RPC AvanzarTick.
 
 Avanza el tiempo del mundo un tick (tick actual + reloj). Es independiente
 de los elementos globales: ver LogicaMundo.avanzar_tick.

@@ -45,14 +45,14 @@ from Config.settings import ID_TEMPERATURA_ATMOSFERICA
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )
+from Core.Fisica.termodinamica import celsius_a_kelvin
 
 # ---- Constantes físicas ----
 
 # Constante de Stefan-Boltzmann, W/(m²·K⁴).
 CONSTANTE_STEFAN_BOLTZMANN: float = 5.670374419e-8
 
-# Diferencia entre las escalas Celsius y kelvin.
-_KELVIN_EN_CERO_CELSIUS: float = 273.15
+
 
 # ---- Constantes del modelo (ajustables sin tocar la lógica; SIN CALIBRAR) ----
 
@@ -60,7 +60,6 @@ _KELVIN_EN_CERO_CELSIUS: float = 273.15
 # (efecto invernadero). Con 0.52, ~24-27 °C de media en el ecuador. A futuro:
 # ligarlo a la humedad absoluta.
 EMISIVIDAD_EFECTIVA: float = 0.52
-
 
 
 # Intercambio de calor suelo <-> aire, W/(m²·K).
@@ -72,16 +71,6 @@ DIFUSIVIDAD_TERMICA: float = 5.0
 # Fracción de la diferencia con CADA vecino que se iguala por segundo, 1/s
 # (D/L²): al cambiar el tamaño de celda, la física cambia de forma coherente.
 _COEFICIENTE_DIFUSION: float = DIFUSIVIDAD_TERMICA / TAMANHO_CELDA_ATMOSFERICA**2
-
-
-def celsius_a_kelvin(celsius: float) -> float:
-    """°C -> K. Para fijar valores iniciales legibles (p. ej. 15 °C)."""
-    return celsius + _KELVIN_EN_CERO_CELSIUS
-
-
-def kelvin_a_celsius(kelvin: float) -> float:
-    """K -> °C. Solo para mostrar o para fórmulas que trabajen en °C."""
-    return kelvin - _KELVIN_EN_CERO_CELSIUS
 
 
 class TemperaturaAtmosferica(Sistema_Atmosferico):
@@ -170,11 +159,6 @@ class TemperaturaAtmosferica(Sistema_Atmosferico):
         ritmo_difusion = sum(
             _COEFICIENTE_DIFUSION * (vecino.temperatura - self.valor)
             for vecino in vecinos
-        )
-
-        # J/m² = W/m² · s;  K = (J/m²) / (J/(m²·K)).
-        self.valor_suelo += (
-            (potencia_absorbida - flujo_suelo_aire) * dt / inercia_termica
         )
 
         # K: aire que entra/sale con el viento por cada cara cardinal. Ya

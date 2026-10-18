@@ -1,4 +1,4 @@
-# Gestores/Mundo/Sector/funciones/set_global_cycles.py
+# Infraestructura/Gestores/Mundo/Sector/Funciones/set_global_cycles.py
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2 as pb,
 )

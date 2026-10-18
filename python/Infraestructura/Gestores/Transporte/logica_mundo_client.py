@@ -397,7 +397,7 @@ class LogicaMundoClient:
     async def avanzar_tick(self, tick_id: int, timeout: float | None = None) -> None:
         """Pide a Logica_Mundo que avance el tiempo del mundo un tick (tick
         actual + reloj, y con él los ciclos solar/lunar/anual). Ver
-        LogicaMundo.avanzar_tick y Funciones/avanzar_tick.py.
+        LogicaMundo.avanzar_tick y Funciones/avanzar_tick.
 
         PROPAGA errores (red o ok=False), igual que obtener_progreso_ciclos
         y actualizar_celdas: aquí no existe un valor neutro que devolver. Si

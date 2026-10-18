@@ -18,7 +18,6 @@ from functools import partial
 
 from Core.Entities.Elementos.elemento import Elemento
 from Core.Entities.Elementos.Simples.Bot.bot import Bot
-from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Infraestructura.Gestores.Transporte.logica_mundo_client import LogicaMundoClient
 
 
@@ -119,11 +118,6 @@ class Serie_Estados:
             raise RuntimeError(
                 f"Mover_Elemento_Logica: eliminar_elemento falló en {pos_origen}: {error}"
             )
-        type_id = "resto"
-        if type(elemento) == type(Suelo):
-            type_id = "suelo"
-        if elemento.tipo == Bot:
-            type_id = "bot"
 
         elemento.casilla = pos_destino
         elemento_bytes = json.dumps(elemento.serializar()).encode()
@@ -144,26 +138,18 @@ class Serie_Estados:
     #####################################################################
 
     # region   ELEMENTO
-    async def Crear_Elemento(
-        self, clase, casilla: tuple[int, int], type_id: str = "resto", **kwargs
-    ):
+    async def Crear_Elemento(self, clase, casilla: tuple[int, int], **kwargs):
         """
         Crea un elemento real en Logica_Mundo (vía gRPC): pide un id
         nuevo con AsignarId, instancia `clase` con ese id, lo
         serializa igual que lo hace el propio LogicaMundoClient
         internamente (modo=Modos.transporte) y lo registra con
         CrearElemento.
-
-        type_id es el SLOT de la celda en Logica_Mundo ("suelo",
-        "bot", o cualquier otra cosa -> cae en "resto"), no la clase
-        de Python -- por eso el valor por defecto es "resto", el que
-        corresponde a un elemento que no es ni suelo ni bot.
         """
         import json
 
         id_elemento = await self._logica.asignar_id()
         elemento = clase(id_elemento=id_elemento, casilla=casilla, **kwargs)
-
 
         elemento_bytes = json.dumps(elemento.serializar()).encode()
         ok, error = await self._logica.crear_elemento(casilla, elemento_bytes)
@@ -180,20 +166,13 @@ class Serie_Estados:
 
     async def Crear_Suelo(self, clase, casilla: tuple[int, int], **kwargs):
         """
-        Crea un Suelo en `casilla`. Es un envoltorio fino sobre
-        Crear_Elemento con type_id="suelo" fijo -- a nivel de
-        Logica_Mundo un Suelo SIGUE viajando por el mismo RPC
-        CrearElemento y viviendo en el mismo self._elements que
-        cualquier otro elemento (ver LogicaMundo.crear_elemento: solo
-        cambia a qué campo de Celda se cuelga según type_id). Lo único
-        que hace esta función es evitar que quien escribe un escenario
-        tenga que acordarse de pasar "suelo" a mano cada vez.
+        Crea un Suelo en `casilla`.
 
-        `clase` es obligatoria y sin valor por defecto (decisión
+        'clase' es obligatoria y sin valor por defecto (decisión
         explícita: no hay un tipo de terreno "por defecto" razonable --
         Suelo, Suelo_Cesped, etc. deben elegirse siempre a propósito).
         """
-        return await self.Crear_Elemento(clase, casilla, type_id="suelo", **kwargs)
+        return await self.Crear_Elemento(clase, casilla, **kwargs)
 
     # endregion
     #####################################################################
@@ -213,11 +192,6 @@ class Serie_Estados:
         Crear_Bot, que solo escribía en Core.Entities.Mundo.datos.bots
         (local a este proceso, invisible para el resto del sistema).
 
-        Envoltorio fino sobre Crear_Elemento con type_id="bot" fijo, igual
-        que Crear_Suelo lo es con type_id="suelo": a nivel de Logica_Mundo
-        un Bot viaja por el mismo RPC CrearElemento, solo cambia a qué
-        slot de Celda se cuelga.
-
         IMPORTANTE (sin confirmar todavía, pendiente de ver Bot.py): esto
         asume que Bot.__init__ guarda id_bot de forma que, tras
         serializar/deserializar, el elemento reconstruido responde
@@ -230,7 +204,6 @@ class Serie_Estados:
         return await self.Crear_Elemento(
             Bot,
             casilla,
-            type_id="bot",
             id_bot=id_bot,
             stats_script=stats_script,
             tamanho=tamanho,

@@ -5,7 +5,7 @@ Funciones termodinámicas compartidas por varias magnitudes y comportamientos.
 
 Por qué existe: la saturación del aire la necesitan Humedad_Relativa (derivada),
 y a futuro Humedad_Absoluta (condensación) y Acuoso (evaporación). Antes vivía
-como función privada en humedad_relativa.py; importarla desde ahí obligaba a un
+como función privada en humedad_relativa; importarla desde ahí obligaba a un
 módulo primario o a un comportamiento a depender de uno derivado.
 
 Este módulo es puro (sin estado). Solo importa kelvin_a_celsius, que no depende
@@ -14,9 +14,6 @@ de nada de aquí, así que no hay ciclos.
 
 import math
 
-from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
-    kelvin_a_celsius,
-)
 
 # Constante específica del vapor de agua, J/(kg·K).
 CONSTANTE_GAS_VAPOR_AGUA: float = 461.5
@@ -25,6 +22,9 @@ CONSTANTE_GAS_VAPOR_AGUA: float = 461.5
 # deja de ser fiable y, cerca de -243 °C, el denominador se anula.
 _MAGNUS_MIN_C: float = -45.0
 _MAGNUS_MAX_C: float = 60.0
+
+# Diferencia entre las escalas Celsius y kelvin.
+_KELVIN_EN_CERO_CELSIUS: float = 273.15
 
 
 def densidad_vapor_saturacion(temperatura_k: float) -> float:
@@ -46,3 +46,13 @@ def densidad_vapor_saturacion(temperatura_k: float) -> float:
         (17.62 * temperatura_c) / (243.12 + temperatura_c)
     )
     return presion_saturacion_pa / (CONSTANTE_GAS_VAPOR_AGUA * temperatura_k)
+
+
+def celsius_a_kelvin(celsius: float) -> float:
+    """°C -> K. Para fijar valores iniciales legibles (p. ej. 15 °C)."""
+    return celsius + _KELVIN_EN_CERO_CELSIUS
+
+
+def kelvin_a_celsius(kelvin: float) -> float:
+    """K -> °C. Solo para mostrar o para fórmulas que trabajen en °C."""
+    return kelvin - _KELVIN_EN_CERO_CELSIUS

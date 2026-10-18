@@ -319,6 +319,8 @@ class GestorMundo:
         tareas, etiquetas = [], []
         for s in sectores:
             clave = f"({s.col},{s.row})"
+            # Cada tarea y su etiqueta se añaden en el MISMO orden: el zip de
+            # abajo las empareja por posición.
             tareas += [
                 self._enviar_ghost_zone(s),
                 self._enviar_ghost_zone_atmosfera(s),
@@ -326,6 +328,12 @@ class GestorMundo:
                 self._enviar_ciclos_globales(
                     s, progreso_solar, progreso_lunar, progreso_anual
                 ),
+            ]
+            etiquetas += [
+                f"ghost{clave}",
+                f"ghost_atm{clave}",
+                f"sonidos{clave}",
+                f"ciclos{clave}",
             ]
             if (s.col, s.row) in parches_por_sector:
                 tareas.append(
@@ -601,23 +609,22 @@ class GestorMundo:
                         "Tick %d: no se pudo actualizar la atmósfera.", self._tick_id
                     )
 
-                for bot_id in bots_muertos:
-                    # Fatal: si el script del bot no se termina, sigue ejecutándose
-                    # sin avatar y la simulación diverge sin avisar. Logica ya
-                    # tolera "avatar ya eliminado" (caso normal) y solo devuelve
-                    # ok=False si falla la terminación del script.
-                    try:
-                        ok, error = await self._logica_client.matar_bot(
-                            bot_id, "avatar eliminado en sector", self._tick_id
-                        )
-                    except Exception as exc:
-                        raise ErrorSincronizacion(
-                            f"matar_bot({bot_id}) falló en el tick {self._tick_id}: {exc!r}"
-                        ) from exc
-                    if not ok:
-                        raise ErrorSincronizacion(
-                            f"matar_bot({bot_id}) rechazado en el tick {self._tick_id}: {error}"
-                        )
+            # Fuera del if anterior: la muerte de un bot no depende de la atmósfera.
+            for bot_id in bots_muertos:
+                # Fatal: si el script del bot no se termina, sigue ejecutándose
+                # sin avatar y la simulación diverge sin avisar.
+                try:
+                    ok, error = await self._logica_client.matar_bot(
+                        bot_id, "avatar eliminado en sector", self._tick_id
+                    )
+                except Exception as exc:
+                    raise ErrorSincronizacion(
+                        f"matar_bot({bot_id}) falló en el tick {self._tick_id}: {exc!r}"
+                    ) from exc
+                if not ok:
+                    raise ErrorSincronizacion(
+                        f"matar_bot({bot_id}) rechazado en el tick {self._tick_id}: {error}"
+                    )
 
             await self._actualizar_modos_sector()
             await self._logica_client.avanzar_tick(self._tick_id)

@@ -4,8 +4,12 @@ import logging
 from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2_grpc as pb_grpc,
 )
+from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
+    sector_service_pb2 as pb,
+)
 from Infraestructura.Gestores.Mundo.Sector.sector import Sector
 from Infraestructura.Gestores.Mundo.Sector.registry import FUNCIONES
+from Infraestructura.Gestores.Transporte.validar_dispatch import validar_dispatch
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +19,11 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
     def __init__(self, sector: Sector) -> None:
         self._sector = sector
         self._dispatch = {fn.NAME: fn for fn in FUNCIONES}
+        validar_dispatch(
+            pb.DESCRIPTOR.services_by_name["SectorService"],
+            self._dispatch,
+            excluir=frozenset({"GetElementAttributes"}),  # sin implementación aún
+        )
         # Las operaciones de FASE 0 pueden llegar en paralelo
         self._fase0_lock = asyncio.Lock()
 
@@ -47,6 +56,12 @@ class SectorServicer(pb_grpc.SectorServiceServicer):
     async def SetGlobalCycles(self, request, context):
         async with self._fase0_lock:
             return await self._dispatch["SetGlobalCycles"].handle(
+                self._sector, request, context
+            )
+
+    async def AplicarParchesAtmosfera(self, request, context):
+        async with self._fase0_lock:
+            return await self._dispatch["AplicarParchesAtmosfera"].handle(
                 self._sector, request, context
             )
 

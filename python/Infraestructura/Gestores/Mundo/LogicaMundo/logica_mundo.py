@@ -108,7 +108,6 @@ class LogicaMundo:
         self._id_counter: int = 100
 
         self._active_events: dict[str, GlobalEvent] = {}
-        self._parches_atmosfera: set[tuple[int, int]] = set()
         self._event_counter: int = 0
 
         self._elementos_globales: dict[str, ElementoGlobal] = {}
@@ -673,68 +672,35 @@ class LogicaMundo:
             pos_suelo[0], pos_suelo[1], config.ATMOSFERA_ESCALA
         )
 
-    # ---- Atmósfera (una sola definición de cada método) ----
-    #
-    # OJO con el espacio de coordenadas: crear_atmosfera recibe la posición
-    # EN ESPACIO DE ATMÓSFERA, mientras que obtener_atmosfera y
-    # actualizar_atmosfera reciben la del SUELO y la convierten.
-
-    async def crear_atmosfera(
-        self, pos_atmosfera: tuple[int, int], viento_objetivo: Any
-    ) -> tuple[bool, str]:
-        async with self._lock:
-            if self.mundo.obtener_atmosfera(pos_atmosfera) is not None:
-                logger.warning(
-                    "crear_atmosfera: ya existía %s -- se sobrescribe.", pos_atmosfera
-                )
-            self.mundo.crear_atmosfera(pos_atmosfera, viento_objetivo)
-            return True, ""
-
-    async def obtener_atmosfera(
-        self, pos_suelo: tuple[int, int]
-    ) -> tuple[bool, str, Optional[Celda_Atmosfera]]:
-        pos_atmosfera = self._pos_atmosfera(pos_suelo)
-        async with self._lock:
-            celda = self.mundo.obtener_atmosfera(pos_atmosfera)
-            if celda is None:
-                return (
-                    False,
-                    f"No hay celda de atmósfera para {pos_suelo} (bloque {pos_atmosfera}).",
-                    None,
-                )
-            return True, "", celda
+    # ---- Atmósfera  -------------------------------------------
 
     async def actualizar_atmosfera(
         self, pos_suelo: tuple[int, int], patch: dict
     ) -> tuple[bool, str]:
+        """Envoltorio async de Mundo.actualizar_atmosfera: aporta el lock y la
+        conversión suelo -> atmósfera, y traduce los errores a (False, msg)
+        (un parche inválido es error de quien llama, no del servidor)."""
         pos_atmosfera = self._pos_atmosfera(pos_suelo)
         async with self._lock:
-            celda = self.mundo.obtener_atmosfera(pos_atmosfera)
-            if celda is None:
+            try:
+                self.mundo.actualizar_atmosfera(pos_atmosfera, patch)
+            except KeyError:
                 return (
                     False,
                     f"No hay celda de atmósfera para {pos_suelo} (bloque {pos_atmosfera}).",
                 )
-            try:
-                celda.aplicar_patch(patch)
             except ValueError as exc:
                 return False, str(exc)
-            # Pendiente de entrega al Sector en la fase 0 del próximo tick.
-            self._parches_atmosfera.add(pos_atmosfera)
             return True, ""
 
     async def tomar_parches_atmosfera(self) -> list:
-        """Celdas de atmósfera parcheadas desde el último tick, como
-        AtmosphereCell, y VACÍA la lista de pendientes. El Gestor las reparte
-        a los Sectores en la fase 0. Si la entrega falla es fatal, así que no
-        hace falta reencolar: el valor ya está en el gold y en el snapshot."""
+        """Celdas parcheadas desde el último tick, como AtmosphereCell, y vacía
+        los pendientes (los gestiona Mundo). El Gestor las reparte a los
+        Sectores en la fase 0."""
         async with self._lock:
-            posiciones = sorted(self._parches_atmosfera)
-            self._parches_atmosfera.clear()
             return [
-                celda_atmosfera_proto.a_proto(self.mundo.malla_atmosfera[p])
-                for p in posiciones
-                if p in self.mundo.malla_atmosfera
+                celda_atmosfera_proto.a_proto(c)
+                for c in self.mundo.tomar_parches_atmosfera()
             ]
 
     async def obtener_celdas_atmosfera_en_region(
@@ -1076,9 +1042,25 @@ class LogicaMundo:
             return False, msg
 
         data = json.loads(path.read_text())
+
         faltan = [k for k in _CLAVES_SNAPSHOT_EXIGIDAS if k not in data]
         if faltan:
             msg = f"Snapshot '{snapshot_id}' incompleto: faltan {faltan}."
+            logger.error(msg)
+            return False, msg
+
+        # Se construye ANTES de tocar nada: un formato antiguo o corrupto se
+        # rechaza limpio, sin dejar reloj/estaciones ya restaurados.
+        try:
+            malla_atmosfera = {}
+            for clave, d in data["atmosfera"].items():
+                pos = tuple(map(int, clave.split(",")))
+                malla_atmosfera[pos] = self._atmosfera_desde_dict(pos, d)
+        except (KeyError, ValueError, TypeError) as exc:
+            msg = (
+                f"Snapshot '{snapshot_id}': atmósfera ilegible (¿formato "
+                f"antiguo?): {type(exc).__name__}: {exc}"
+            )
             logger.error(msg)
             return False, msg
 
@@ -1086,12 +1068,10 @@ class LogicaMundo:
             self.mundo.reloj.restaurar_estado(data["reloj"])
             self.mundo.estaciones.deserializar(data["estaciones"], self.mundo)
             self._tick_actual = int(data["tick_actual"])
-            self.mundo.malla_atmosfera = {
-                tuple(map(int, k.split(","))): self._atmosfera_desde_dict(
-                    tuple(map(int, k.split(","))), v
-                )
-                for k, v in data["atmosfera"].items()
-            }
+            self.mundo.malla_atmosfera = malla_atmosfera
+
+            # Parches pendientes de antes del restore: ya no tienen sentido.
+            self.mundo.descartar_parches_atmosfera()
 
             self._id_counter = int(data.get("id_counter", 0))
 

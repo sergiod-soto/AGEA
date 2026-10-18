@@ -32,7 +32,7 @@ CALOR_ESPECIFICO_AIRE: float = 1005.0  # J/(kg·K)
 DENSIDAD_AIRE: float = 1.2  # kg/m³
 
 # Capacidad térmica de la capa de aire de la celda, J/(m²·K). Antes estaba en
-# temperatura_atmosferica.py; el suelo se cuenta aparte con su inercia.
+# temperatura_atmosferica; el suelo se cuenta aparte con su inercia.
 C_AIRE: float = 1.0e6
 
 # Altura equivalente de la capa de aire, m. DERIVADA de C_AIRE: así la

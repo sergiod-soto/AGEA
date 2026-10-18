@@ -156,12 +156,6 @@ message SetGlobalCyclesResponse {
   string error = 2;
 }
 
-message MovimientoRechazado {
-  uint64          id_elemento  = 1;
-  common.Position pos_devuelta = 2;
-  bool            eliminado    = 3;
-}
-
 // ============================================================
 //  FASE 1 — computación
 // ============================================================
@@ -180,11 +174,6 @@ message StartTickResponse {
 // ============================================================
 //  FASE 2 — consolidación
 // ============================================================
-
-message MigratingBot {
-  common.BotSnapshot bot        = 1;
-  common.Position    target_pos = 2;
-}
 
 message GetDeltaRequest {
   uint64 tick_id = 1;

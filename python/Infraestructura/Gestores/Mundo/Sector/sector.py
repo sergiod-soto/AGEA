@@ -742,6 +742,10 @@ class Sector:
     ) -> None:
         posiciones_cambiadas: set[tuple[int, int]] = set()
 
+        # La evaporación se resuelve en una SEGUNDA pasada, cuando el terreno
+        # ya está final: su ΔT del suelo depende de inercia_termica, que
+        # puede cambiar este mismo tick si se sustituye un Suelo.
+        evaporaciones: list[Evaporar] = []
         for mutacion in mutaciones:
             if isinstance(mutacion, CrearElemento):
                 # PENDIENTE (ids de elementos nacidos en tick(), aplazado): sin
@@ -855,22 +859,23 @@ class Sector:
                         bot.pos.x, bot.pos.y = posicion_final
 
             elif isinstance(mutacion, Evaporar):
-                # Aditiva: varias peticiones sobre la misma celda se suman, así
-                # que el orden no importa. Va ANTES de _avanzar_atmosfera (que
-                # corre después de resolver todas las mutaciones). No toca el
-                # terreno, por eso no añade a posiciones_cambiadas.
-                celda_atm = self._celda_atmosfera_de(mutacion.pos)
-                if celda_atm is None:
-                    logger.warning(
-                        "Sector (%d,%d): evaporación en %s sin Celda_Atmosfera.",
-                        self._col,
-                        self._row,
-                        mutacion.pos,
-                    )
-                    continue
-                # kg/m² de casilla -> kg/m² de celda: la casilla es 1 de
-                # ATMOSFERA_ESCALA² que forman la celda.
-                celda_atm.aplicar_evaporacion(mutacion.kg_por_m2 / ATMOSFERA_ESCALA**2)
+                evaporaciones.append(mutacion)
+
+        # Aditiva: varias peticiones sobre la misma celda se suman. Va ANTES de
+        # _avanzar_atmosfera. No toca el terreno (no entra en posiciones_cambiadas).
+        for evap in evaporaciones:
+            celda_atm = self._celda_atmosfera_de(evap.pos)
+            if celda_atm is None:
+                logger.warning(
+                    "Sector (%d,%d): evaporación en %s sin Celda_Atmosfera.",
+                    self._col,
+                    self._row,
+                    evap.pos,
+                )
+                continue
+            # kg/m² de casilla -> kg/m² de celda: la casilla es 1 de
+            # ATMOSFERA_ESCALA² que forman la celda.
+            celda_atm.aplicar_evaporacion(evap.kg_por_m2 / ATMOSFERA_ESCALA**2)
 
         delta.changed_cells = [
             self._celdas.serializar_celda(x, y) for (x, y) in posiciones_cambiadas

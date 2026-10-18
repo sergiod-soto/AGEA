@@ -7,7 +7,7 @@ from Config.parametros_simulacion import (
     SEGUNDOS_SIMULADOS_TICK,
 )
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
-from Core.Entities.Mundo.Atmosfera.termodinamica import densidad_vapor_saturacion
+from Core.Fisica.termodinamica import densidad_vapor_saturacion
 
 
 class Acuoso(Terreno):

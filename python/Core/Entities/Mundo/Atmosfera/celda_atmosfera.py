@@ -1,5 +1,7 @@
 # Core/Entities/Mundo/Atmosfera/celda_atmosfera.py
 
+import math
+
 from vectors import Vector2
 
 from Config.parametros_simulacion import ALTURA_CAPA_AIRE, CALOR_LATENTE_VAPORIZACION
@@ -19,11 +21,27 @@ from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Derivado.hum
     Humedad_Relativa,
 )
 
-# Únicos campos que aplicar_patch puede cambiar: propiedades simples de
-# terreno. Lista BLANCA: todo lo demás (magnitudes, cachés, radiación,
-# posición...) tiene estado interno propio y se cambia por su método
-# específico. Un campo de terreno nuevo hay que añadirlo aquí a propósito.
-_CAMPOS_PATCH_PERMITIDOS = frozenset({"viento_objetivo"})
+
+def _validar_viento_objetivo(valor) -> None:
+    """Un parche inválido debe fallar al RECIBIRSE (Logica lo devuelve como
+    (False, msg)), no en la fase 0, donde sería fatal. Se asume que Vector2
+    es una clase (isinstance); si no lo fuera, cambiar por comprobación de .x/.y."""
+    if not isinstance(valor, Vector2):
+        raise ValueError(
+            f"viento_objetivo debe ser Vector2 (recibido {type(valor).__name__})."
+        )
+    if not (math.isfinite(valor.x) and math.isfinite(valor.y)):
+        raise ValueError(
+            f"viento_objetivo debe ser finito (recibido ({valor.x}, {valor.y}))."
+        )
+
+
+# Lista BLANCA de campos que aplicar_patch puede cambiar, cada uno con su
+# validador. Una sola fuente de verdad: no se puede permitir un campo sin
+# decidir cómo se valida. Todo lo demás (magnitudes, cachés, radiación...)
+# tiene estado interno propio y se cambia por su método específico.
+_VALIDADORES_PATCH = {"viento_objetivo": _validar_viento_objetivo}
+_CAMPOS_PATCH_PERMITIDOS = frozenset(_VALIDADORES_PATCH)
 
 
 class Celda_Atmosfera:
@@ -52,6 +70,7 @@ class Celda_Atmosfera:
         # m/s. Velocidad hacia la que se relaja el viento (rozamiento). Es
         # propiedad del TERRENO: la fuente de verdad es Logica; el Sector la
         # recibe en LoadState y por parche (fase 0).
+        _validar_viento_objetivo(viento_objetivo)  # también cubre crear_atmosfera
         self.viento_objetivo = viento_objetivo
 
         # ---- Caché de Suelo (térmica) ----
@@ -265,9 +284,8 @@ class Celda_Atmosfera:
     def aplicar_patch(self, patch: dict) -> None:
         """
         setattr plano SOLO para los campos de _CAMPOS_PATCH_PERMITIDOS.
-        Se valida TODO el patch antes de aplicar nada: si un campo no está
-        permitido (o es un typo) se rechaza entero y la celda queda intacta.
-        No valida el tipo de los valores (se espera Vector2).
+        Se valida TODO (nombres y valores) antes de aplicar nada: si algo es
+        inválido se rechaza el patch entero y la celda queda intacta.
         """
         no_permitidos = sorted(set(patch) - _CAMPOS_PATCH_PERMITIDOS)
         if no_permitidos:
@@ -276,6 +294,8 @@ class Celda_Atmosfera:
                 f"Permitidos: {sorted(_CAMPOS_PATCH_PERMITIDOS)}. El resto se "
                 f"cambia por su método específico."
             )
+        for nombre, valor in patch.items():
+            _VALIDADORES_PATCH[nombre](valor)
         for nombre, valor in patch.items():
             setattr(self, nombre, valor)
 

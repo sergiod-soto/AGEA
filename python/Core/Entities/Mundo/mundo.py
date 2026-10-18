@@ -15,9 +15,8 @@ ella, sin condiciones de carrera que gestionar por sí mismo.
 from __future__ import annotations
 
 from typing import Any, Optional
+from vectors import Vector2
 
-
-import Config.settings as config
 from Core.Entities.Elementos.Abstractos.Marcadores.Temporales.Estacion.estaciones import (
     Estaciones,
 )
@@ -61,6 +60,12 @@ class Mundo:
         # Antes Logica_Mundo._gold_atmosfera.
         self.malla_atmosfera: dict[tuple[int, int], Celda_Atmosfera] = {}
 
+        # Celdas de atmósfera cuyo terreno (viento_objetivo) cambió desde el
+        # último tick, en espacio de atmósfera. Las toma el Gestor en la fase 0
+        # (tomar_parches_atmosfera) para enviarlas al Sector. Estado TRANSITORIO:
+        # no se persiste en snapshots, porque el valor ya está en la celda.
+        self._parches_atmosfera: set[tuple[int, int]] = set()
+
         # id_elemento -> posición. Único índice de posición por id --
         # sustituye a Logica_Mundo._bot_positions (que solo indexaba
         # bots, y por su stat "id" externo, no por id_elemento).
@@ -75,11 +80,6 @@ class Mundo:
         # Deliberadamente pequeña (solo bots), no un segundo mapa de
         # posiciones.
         self.bots: dict[int, int] = {}
-
-        # Cuántas celdas de suelo (por lado) cubre una celda de
-        # atmósfera. Con escala 2, una Celda_Atmosfera engloba un bloque
-        # de 2x2 celdas de suelo (mismo origen 0,0 en ambos grids).
-        self.escala_atmosfera: int = config.ATMOSFERA_ESCALA
 
         # Reloj encargado de controlar los eventos guiados por el tiempo.
         self.reloj = Reloj()
@@ -203,7 +203,7 @@ class Mundo:
         """
         Análogo a celdas_en_region, pero sobre malla_atmosfera. A
         diferencia de esa, min_pos/max_pos ya están en espacio de
-        atmósfera (no hace falta pos_suelo_a_atmosfera) -- quien llama
+        atmósfera (no hace falta convertir) -- quien llama
         (Gestor_Mundo, calculando el rectángulo de un Sector) ya sabe
         convertir.
         """
@@ -267,7 +267,16 @@ class Mundo:
 
     # ---- Atmósfera ----
 
-    def crear_atmosfera(self, pos_atmosfera, viento_objetivo: Any) -> None:
+    def crear_atmosfera(
+        self, pos_atmosfera: tuple[int, int], viento_objetivo: Vector2
+    ) -> None:
+        """Alta de una Celda_Atmosfera. `pos_atmosfera` está en espacio de
+        ATMÓSFERA (no de suelo). ValueError si ya existe: sobrescribir en
+        silencio perdería el estado simulado y el viento_objetivo (que el
+        espejo no restaura) sin avisar al Sector. Para cambiar el viento de
+        una celda existente se usa actualizar_atmosfera (parche)."""
+        if pos_atmosfera in self.malla_atmosfera:
+            raise ValueError(f"Ya existe una celda de atmósfera en {pos_atmosfera}.")
         self.malla_atmosfera[pos_atmosfera] = Celda_Atmosfera(
             posicion=pos_atmosfera, viento_objetivo=viento_objetivo
         )
@@ -275,4 +284,38 @@ class Mundo:
     def obtener_atmosfera(
         self, pos_atmosfera: tuple[int, int]
     ) -> Optional[Celda_Atmosfera]:
+        """Celda_Atmosfera VIVA en `pos_atmosfera` (espacio de atmósfera), o
+        None. Sin lock: quien llame desde código async debe tomar el de Logica."""
         return self.malla_atmosfera.get(pos_atmosfera)
+
+    def actualizar_atmosfera(self, pos_atmosfera: tuple[int, int], patch: dict) -> None:
+        """
+        Aplica un parche de terreno a la celda y la marca pendiente de envío al
+        Sector (fase 0). `pos_atmosfera` en espacio de ATMÓSFERA.
+          - KeyError si no hay celda en esa posición.
+          - ValueError si el parche es inválido (lo valida Celda_Atmosfera).
+        La marca se añade DESPUÉS de aplicar: un parche rechazado no deja
+        ninguna celda marcada.
+        """
+        celda = self.malla_atmosfera.get(pos_atmosfera)
+        if celda is None:
+            raise KeyError(f"No hay celda de atmósfera en {pos_atmosfera}.")
+        celda.aplicar_patch(patch)
+        self._parches_atmosfera.add(pos_atmosfera)
+
+    def tomar_parches_atmosfera(self) -> list[Celda_Atmosfera]:
+        """
+        Celdas parcheadas desde la última llamada, ordenadas por posición (orden
+        determinista), y VACÍA la lista de pendientes. Si la entrega al Sector
+        falla es fatal, así que no se reencola: el valor ya está en la celda.
+        """
+        posiciones = sorted(self._parches_atmosfera)
+        self._parches_atmosfera.clear()
+        return [
+            self.malla_atmosfera[p] for p in posiciones if p in self.malla_atmosfera
+        ]
+
+    def descartar_parches_atmosfera(self) -> None:
+        """Olvida los parches pendientes (p. ej. tras restaurar un snapshot,
+        que ya sustituye toda la malla y deja obsoletas las marcas)."""
+        self._parches_atmosfera.clear()

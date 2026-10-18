@@ -10,7 +10,7 @@ puede salir en UN tick debe ser <= 1, o la celda puede quedar negativa.
     propio cálculo (Sistema_Atmosferico.delta_advectivo); aquí se comprueba
     que, sumado a la difusión, no pasa de 1.
 
-Vive aparte de parametros_simulacion.py porque importa de los módulos de las
+Vive aparte de parametros_simulacion porque importa de los módulos de las
 magnitudes, que a su vez importan parametros_simulacion (sería circular).
 """
 

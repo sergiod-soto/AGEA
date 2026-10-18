@@ -1,6 +1,6 @@
 # Dev/ejecutar_escenario.py
 """
-ejecutar_escenario.py — Lanzador manual mínimo: conecta un
+ejecutar_escenario — Lanzador manual mínimo: conecta un
 LogicaMundoClient propio, carga un escenario y ejecuta sus estados a
 la misma cadencia (estados/segundo) que DEFAULT_TICK_RATE, para que
 el ritmo del escenario sea coherente con el del mundo real.

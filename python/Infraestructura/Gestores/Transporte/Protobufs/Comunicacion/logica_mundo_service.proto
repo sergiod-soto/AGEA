@@ -1,4 +1,4 @@
-// Infraestructura/Transporte/Protobufs/Comunicacion/logica_mundo_service.proto
+// Infraestructura/Gestores/Transporte/Protobufs/Comunicacion/logica_mundo_service.proto
 
 syntax = "proto3";
 package logica_mundo;
@@ -189,17 +189,6 @@ message ActualizarCeldasRequest {
   repeated common.Cell changed_cells = 1;
 }
 
-// Un movimiento externo que Logica_Mundo NO aceptó (slot de destino ya
-// ocupado). Gestor_Mundo lo usa para no migrar ese bot.
-message RechazoMovimiento {
-  uint64 id_elemento = 1;
-  // true: no cupo ni en destino ni en origen y el elemento se eliminó
-  // (caso residual); pos_devuelta no tiene sentido.
-  bool eliminado = 2;
-  // Posición de origen a la que volvió el elemento (si eliminado = false).
-  common.Position pos_devuelta = 3;
-}
-
 message ActualizarCeldasResponse {
   bool   ok    = 1;
   string error = 2;
@@ -246,7 +235,7 @@ message TomarParchesAtmosferaResponse {
 }
 
 // ============================================================
-//  Generación del mundo 
+//  Generación del mundo
 // ============================================================
 
 // Los valores numéricos deben coincidir con

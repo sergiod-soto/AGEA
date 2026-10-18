@@ -3,7 +3,7 @@
 logica_mundo_servicer — Servicer gRPC de LogicaMundoService.
 
 Sigue el mismo patrón de dispatch por NAME que gestor_bots_servicer.py /
-gestor_mundo_servicer.py / sector_servicer.py: cada RPC delega en su
+gestor_mundo_servicer.py / sector_servicer: cada RPC delega en su
 módulo de Funciones/, resuelto por nombre en self._dispatch.
 
 Shutdown añadido: faltaba en el servicer, aunque el RPC ya estaba

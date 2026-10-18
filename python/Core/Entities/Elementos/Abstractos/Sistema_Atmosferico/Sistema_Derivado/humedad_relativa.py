@@ -4,7 +4,7 @@ from Config.settings import ID_HUMEDAD_RELATIVA
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico import (
     Sistema_Atmosferico,
 )
-from Core.Entities.Mundo.Atmosfera.termodinamica import densidad_vapor_saturacion
+from Core.Fisica.termodinamica import densidad_vapor_saturacion
 
 
 class Humedad_Relativa(Sistema_Atmosferico):

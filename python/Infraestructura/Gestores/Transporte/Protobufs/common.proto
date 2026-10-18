@@ -1,4 +1,4 @@
-// Infraestructura/Transporte/Protobufs/common.proto
+// Infraestructura/Gestores/Transporte/Protobufs/common.proto
 syntax = "proto3";
 package common;
 
@@ -70,18 +70,18 @@ message Cell {
 message AtmosphereCell {
   Position pos                = 1;
   double   resistencia_viento = 2;
-  Vector2  viento_objetivo    = 3;   // m/s
+  Vector2  viento_objetivo    = 3;     // m/s
 
   // Estado simulado: cambia cada tick
-  double  radiacion            = 5;    // W/m²
-  double  temperatura          = 6;    // K (kelvin)
-  double  presion              = 7;    // Pa
-  double  viento_intensidad    = 8;    // m/s
-  Vector2 viento_direccion     = 9;    // vector unitario
-  double  humedad_absoluta     = 10;   // kg/m³
-  double  humedad_relativa     = 11;   // % (0-100)
-  double  temperatura_suelo    = 12;
-  bool    bloqueo_total_viento = 13;
+  double  radiacion            = 4;    // W/m²
+  double  temperatura          = 5;    // K (kelvin)
+  double  presion              = 6;    // Pa
+  double  viento_intensidad    = 7;    // m/s
+  Vector2 viento_direccion     = 8;    // vector unitario
+  double  humedad_absoluta     = 9;    // kg/m³
+  double  humedad_relativa     = 10;   // % (0-100)
+  double  temperatura_suelo    = 11;   // K (kelvin)
+  bool    bloqueo_total_viento = 12;
 
 }
 
