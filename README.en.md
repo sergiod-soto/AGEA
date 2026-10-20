@@ -4,16 +4,14 @@
 
 > A living-world simulator where agents controlled by evolving neural networks (**HyperNEAT**) survive and interact with a simulated physical environment: climate, terrain, biomes, and objects with behaviors of their own.
 
-<!-- TODO: add a screenshot or GIF of Unity showing the world here. It makes the biggest impression. -->
 <!-- ![AGEA running](docs/screenshot.png) -->
 
-**Status:** under active development · **Author:** [Sergio D. Soto](https://github.com/sergiod-soto)
+**Status:** under active development · **Author:** [Sergio Domínguez Soto](https://github.com/sergiod-soto)
 
 ---
 
 ## What is AGEA?
 
-<!-- TODO: rewrite this paragraph in your own words: what you wanted to achieve and why. 2-4 sentences are enough. -->
 
 AGEA is a simulation environment where **agent intelligence is evolved rather than programmed**. The world is computed turn by turn (*ticks*), is divided into sectors that can run as independent processes, and each agent chooses its actions using a neural network generated through HyperNEAT.
 
@@ -84,7 +82,7 @@ AGEA/
 │   ├── Infraestructura/
 │   │   ├── Gestores/        # Components, bootstrap, gRPC transport, console and logs
 │   │   └── AWS/             # EC2 / S3 orchestration
-│   ├── Services/            # Profiles, masks and serialization
+│   ├── Services/            # Cache services
 │   ├── Utils/               # Utilities (geometry, files, sound…)
 │   ├── DEV/                 # Test scenarios and example bot
 │   ├── Tests/               # Test suite (pytest)
@@ -170,14 +168,6 @@ pytest -m integration     # real components working together (in-process gRPC)
 pytest -m e2e             # full stack as subprocesses
 ```
 
-## Roadmap
-
-- [ ] Finish the master-slave mode of the Unity client
-- [ ] Complete AWS infrastructure management
-- [ ] Layered visualization: normal, sound and temperature
-- [ ] Separate the neural network (ANN) from the DNA weights
-- [ ] Proximity-based infection with a cost proportional to DNA size
-- [ ] Add a `requirements.txt` and automate installation
 
 ## Tech stack
 
