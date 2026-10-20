@@ -10,6 +10,7 @@
 [Bb]uilds/
 [Ll]ogs/
 UserSettings/
+[Mm]emoryCaptures/
 
 # Visual Studio cache
 .vs/
@@ -27,6 +28,7 @@ Crashlytics/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
@@ -44,6 +46,13 @@ TextMesh Pro.meta
 *.exe
 *.app
 *.xcodeproj/
+
+# NUEVO: carpetas de compilación del ejecutable de Unity (en la raíz del repo)
+AGEA_Data/
+MonoBleedingEdge/
+*_BurstDebugInformation_DoNotShip/
+UnityCrashHandler*.exe
+UnityPlayer.dll
 
 # Platform specific
 *.DS_Store
@@ -64,6 +73,13 @@ __pycache__/
 venv/
 ENV/
 env/
+
+# NUEVO: ficheros de entorno y credenciales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Distribution
 build/
@@ -94,8 +110,8 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
-# Protobufs
-Services/Hypervisores/Transporte/Proto_Generated/
+# Protobufs (RUTA CORREGIDA: la anterior no existía en el proyecto)
+python/Infraestructura/Gestores/Transporte/Proto_Generated/
 
 ########################################
 #        OS/EDITOR COMMON IGNORE       #
