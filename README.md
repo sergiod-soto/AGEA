@@ -7,13 +7,12 @@
 <!-- TODO: añade aquí una captura o un GIF de Unity mostrando el mundo. Es lo que más impacto causa. -->
 <!-- ![AGEA en funcionamiento](docs/captura.png) -->
 
-**Estado:** en desarrollo activo · **Autor:** [Sergio D. Soto](https://github.com/sergiod-soto)
+**Estado:** en desarrollo activo · **Autor:** [Sergio Domínguez Soto](https://github.com/sergiod-soto)
 
 ---
 
 ## ¿Qué es AGEA?
 
-<!-- TODO: reescribe este párrafo con tus palabras: qué querías conseguir y por qué. 2-4 frases bastan. -->
 
 AGEA es un entorno de simulación donde **la inteligencia de los agentes se evoluciona en lugar de programarse**. El mundo se calcula por turnos (*ticks*), está dividido en sectores que pueden ejecutarse como procesos independientes, y cada agente decide sus acciones con una red neuronal generada mediante HyperNEAT.
 
@@ -82,7 +81,7 @@ AGEA/
 │   ├── Infraestructura/
 │   │   ├── Gestores/        # Componentes, bootstrap, transporte gRPC, consola y logs
 │   │   └── AWS/             # Orquestación en EC2 / S3
-│   ├── Services/            # Perfiles, máscaras y serialización
+│   ├── Services/            # Servicio de cachés
 │   ├── Utils/               # Utilidades (geometría, ficheros, sonido…)
 │   ├── DEV/                 # Escenarios de prueba y bot de ejemplo
 │   ├── Tests/               # Suite de pruebas (pytest)
@@ -168,14 +167,6 @@ pytest -m integration     # componentes reales colaborando (gRPC en proceso)
 pytest -m e2e             # stack completo como subprocesos
 ```
 
-## Hoja de ruta
-
-- [ ] Completar el modo maestro-esclavo del cliente Unity
-- [ ] Gestión completa de la infraestructura en AWS
-- [ ] Visualización por capas: normal, sonido y temperatura
-- [ ] Separar la red neuronal (ANN) de los pesos del ADN
-- [ ] Contagio por cercanía con coste proporcional al tamaño del ADN
-- [ ] Añadir `requirements.txt` y automatizar la instalación
 
 ## Tecnologías
 
