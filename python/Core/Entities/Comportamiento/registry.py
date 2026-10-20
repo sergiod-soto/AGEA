@@ -82,7 +82,7 @@ from Core.Entities.Comportamiento.Temporal.latente import Latente
 from Core.Entities.Comportamiento.Temporal.perecedero import Perecedero
 from Core.Entities.Comportamiento.Temporal.temporal import Temporal
 from Core.Entities.Comportamiento.Terreno.arenoso import Arenoso
-from Core.Entities.Comportamiento.Terreno.herboso import Hervoso
+from Core.Entities.Comportamiento.Terreno.herboso import Herboso
 from Core.Entities.Comportamiento.Terreno.encharcado import Encharcado
 from Core.Entities.Comportamiento.Terreno.helado import Helado
 from Core.Entities.Comportamiento.Terreno.embarrado import Embarrado
@@ -148,7 +148,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Hambre": Hambre,
     "Helado": Helado,
     "Herida": Herida,
-    "Hervoso": Hervoso,
+    "Herboso": Herboso,
     "Hidratante": Hidratante,
     "Humedo": Humedo,
     # I

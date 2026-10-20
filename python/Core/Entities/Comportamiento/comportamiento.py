@@ -220,7 +220,7 @@ class Comportamiento:
     @staticmethod
     def _incluido(incluir: list[str] | None, clase: type) -> bool:
         """
-        Filtro `incluir` de representar(). None o [] = SIN filtro (se
+        Filtro 'incluir' de representar(). None o [] = SIN filtro (se
         incluye todo); si la lista tiene nombres, la clase se incluye solo
         si su nombre está en ella. Así un campo 'repeated' del proto sin
         enviar (que llega como []) significa "todo" sin conversiones.

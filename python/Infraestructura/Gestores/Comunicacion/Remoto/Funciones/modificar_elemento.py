@@ -13,10 +13,9 @@ async def handle(clientes, payload: bytes) -> bytes:
     req.ParseFromString(payload)
 
     # patch viaja como bytes opacos — Logica_Mundo es quien lo
-    # deserializa a dict (ver Logica_Mundo/Funciones/modificar_elemento.py).
+    # deserializa a dict (ver Logica_Mundo/Funciones/modificar_elemento).
     ok, error = await clientes.logica_mundo.modificar_elemento(
         pos=(req.pos.x, req.pos.y),
-        type_id=req.type_id,
         patch=req.patch,
     )
     resp = common_pb2.Ack(ok=ok, error=error)

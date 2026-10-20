@@ -1,6 +1,6 @@
 # Infraestructura/Gestores/Mundo/LogicaMundo/Funciones/modificar_elemento.py
 """
-modificar_elemento.py — Implementación del RPC ModificarElemento.
+modificar_elemento — Implementación del RPC ModificarElemento.
 
 La conversión patch (bytes JSON) → dict ocurre aquí, en la frontera de
 red — logica_mundo.modificar_elemento() recibe ya un dict, coherente

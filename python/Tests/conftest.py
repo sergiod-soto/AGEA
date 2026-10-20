@@ -11,6 +11,8 @@ Filosofía:
   - E2E: usan bootstrap.ejecutar_modo_local() de verdad, con variables
     de entorno aisladas (SNAPSHOT_DIR/puertos en tmp_path) para no pisar
     una sesión local real que puedas tener abierta a la vez.
+  - Elementos: usan un TickContext real con una celda de atmósfera controlable
+    (fixtures crear_ctx y celda_atmosfera, más abajo).
 
 Todas las fixtures de aquí son pytest-asyncio-compatibles (asyncio_mode
 = auto en pytest.ini, así que no hace falta el decorador @pytest.mark.asyncio
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
 import grpc
@@ -210,3 +213,69 @@ def _limpiar_cache_de_clase():
     Sonido._cache_audio = None
     yield
     Sonido._cache_audio = None
+
+
+# ─────────────────────────────────────────────────────────────
+#  Contexto de tick — para tests de ELEMENTOS (suelos, condiciones...)
+# ─────────────────────────────────────────────────────────────
+# Se usa el TickContext REAL (no un falso) para validar que las mutaciones
+# salen tal y como las espera el Sector. Los imports van dentro de las
+# fixtures para no cargar Infraestructura en los tests que no lo necesitan.
+
+
+class _AlmacenAtmosfera:
+    """Imita CeldaAtmosferaStore: con escala 1 la posición de atmósfera es la
+    del terreno, y una sola celda cubre todo (o None = sin atmósfera)."""
+
+    def __init__(self, celda):
+        self._celda = celda
+
+    def get(self, x, y):
+        return self._celda
+
+
+class _AlmacenCeldas:
+    """Imita CeldaSectorStore: solo expone .suelo, lo único que leen las
+    condiciones."""
+
+    def __init__(self, suelos: dict):
+        self._celdas = {pos: SimpleNamespace(suelo=s) for pos, s in suelos.items()}
+
+    def get(self, x, y):
+        return self._celdas.get((x, y))
+
+
+@pytest.fixture
+def celda_atmosfera():
+    from vectors import Vector2
+
+    from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
+
+    return Celda_Atmosfera(posicion=(0, 0), viento_objetivo=Vector2(0, 0))
+
+
+@pytest.fixture
+def crear_ctx(celda_atmosfera):
+    """Fábrica de TickContext. Modifica la celda de atmósfera ANTES de crearlo."""
+    from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
+
+    def _crear(
+        tick_id=0, humedad_relativa=None, suelos_vecinos=None, con_atmosfera=True
+    ):
+        if humedad_relativa is not None:
+            celda_atmosfera.humedad_relativa.valor = humedad_relativa
+        return TickContext(
+            celdas_inicio_tick=_AlmacenCeldas(suelos_vecinos or {}),
+            ghost={},
+            x0=0,
+            y0=0,
+            x1=100,
+            y1=100,
+            atmosfera=_AlmacenAtmosfera(celda_atmosfera if con_atmosfera else None),
+            ghost_atmosfera={},
+            escala_atmosfera=1,
+            tick_id=tick_id,
+            margen_ghost=10,  # >= radio de CondicionVecinoCercano (3)
+        )
+
+    return _crear

@@ -94,7 +94,7 @@ class LogicaMundo:
         mundo: "Mundo | None" = None,
     ):
         # Falla rápido si dt, tamaño de celda o difusividades vuelven inestable
-        # el esquema explícito (ver Config/validacion_simulacion.py).
+        # el esquema explícito (ver Config/validacion_simulacion).
         validar_estabilidad()
         self.SNAPSHOT_DIR = Path(config.SNAPSHOT_DIR)
 
@@ -209,7 +209,7 @@ class LogicaMundo:
         self, pos: tuple[int, int], element: bytes
     ) -> tuple[bool, str]:
         """Añade al mundo un elemento ya construido y serializado. El slot se
-        decide por CLASE (tipo_slot_de); ya no hay type_id. Se valida TODO
+        decide por CLASE (tipo_slot_de). Se valida TODO
         antes de registrar nada, para no dejar huérfanos."""
         async with self._lock:
             try:

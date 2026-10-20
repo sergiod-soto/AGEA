@@ -119,8 +119,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# TODO: meter al registry las condiciones
-
 ELEMENTOS: dict[str, type] = {
     # A
     "Accion": Accion,
@@ -137,7 +135,6 @@ ELEMENTOS: dict[str, type] = {
     "Ciclo_Anual": Ciclo_Anual,
     "Ciclo_Lunar": Ciclo_Lunar,
     "Ciclo_Solar": Ciclo_Solar,
-    # "Clima": Clima,
     "Comida": Comida,
     "Condicion": Condicion,
     "CondicionAnd": CondicionAnd,

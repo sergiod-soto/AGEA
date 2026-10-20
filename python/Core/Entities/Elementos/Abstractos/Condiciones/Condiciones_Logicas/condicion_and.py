@@ -1,4 +1,4 @@
-# Core/Entities/Elementos/Abstractos/Condiciones/condicion_and.py
+# Core/Entities/Elementos/Abstractos/Condiciones/Condiciones_Logicas/condicion_and.py
 
 
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
@@ -14,16 +14,17 @@ class CondicionAnd(Condicion):
         super().__init__(**kwargs)
         self.condiciones = condiciones
 
-    def serializar(self) -> list[dict]:
-        return [c.serializar() for c in self.condiciones]
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos["condiciones"] = [c.serializar() for c in self.condiciones]
+        return datos
 
-    def representar(self):
-        return self.serializar()
-
-    def deserializar(self, valor: list[dict]) -> None:
+    def deserializar(self, data: dict, mundo=None) -> None:
+        # Import diferido: evita el ciclo con el registry.
         from Core.Entities.Elementos.registry import reconstruir_elemento
 
-        self.condiciones = [reconstruir_elemento(d, self.mundo) for d in valor]
+        super().deserializar(data, mundo)
+        self.condiciones = [reconstruir_elemento(d, mundo) for d in data["condiciones"]]
 
     def evaluar(self, propietario, ctx) -> bool:
         return all(c.evaluar(propietario, ctx) for c in self.condiciones)

@@ -40,7 +40,6 @@ from typing import Any
 
 import pytest
 
-from Core.Entities.entity import Modos
 from Infraestructura.Gestores.Comunicacion.Remoto import vista_foco
 from Infraestructura.Gestores.Comunicacion.Remoto.vista_foco import FocoBroadcaster
 
@@ -207,7 +206,7 @@ async def test_actualizar_foco_dispara_broadcast_a_todos_los_suscriptores(
     assert fake_cliente.llamadas_globales == 0  # confirma que aún no hay foco
 
     broadcaster.actualizar_foco(
-        min_pos=(0, 0), max_pos=(10, 10), incluir=["bots"], modo=Modos.guardado
+        min_pos=(0, 0), max_pos=(10, 10), incluir=["bots"]
     )
 
     actualizacion_1, actualizacion_2 = await asyncio.wait_for(

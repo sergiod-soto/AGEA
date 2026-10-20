@@ -29,6 +29,7 @@ from dataclasses import dataclass
 import json
 from typing import Any, Optional
 
+from Core.Entities.Mundo.Funciones.tipo_slot import tipo_slot_de
 from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
     pos_terreno_a_atmosfera,
 )
@@ -64,6 +65,7 @@ class TickContext:
         atmosfera=None,  # CeldaAtmosferaStore propio del Sector
         ghost_atmosfera: Optional[dict] = None,
         escala_atmosfera: int = 1,
+        margen_ghost: int = 0,
         tick_id: int = 0,
     ):
         self._celdas = celdas_inicio_tick
@@ -72,6 +74,7 @@ class TickContext:
         self._atmosfera = atmosfera
         self._ghost_atmosfera = ghost_atmosfera or {}
         self._escala_atmosfera = escala_atmosfera
+        self._margen_ghost = margen_ghost
         self.tick_id = tick_id
         self._mutaciones: list[Mutacion] = []
         self._contador_nuevos = 0
@@ -140,6 +143,16 @@ class TickContext:
         if radio < 0:
             raise ValueError("radio no puede ser negativo")
 
+        if radio > self._margen_ghost:
+            # Más allá del margen de la ghost zone las celdas de otro Sector no
+            # existen aquí: el resultado dependería de cómo se reparte el mundo
+            # en Sectores (distinto en local y en AWS). Se falla en vez de
+            # devolver menos celdas en silencio.
+            raise ValueError(
+                f"radio {radio} supera el margen de la ghost zone "
+                f"({self._margen_ghost}); subir MAX_VISION_DISTANCE."
+            )
+
         resultado = []
         for dx in range(-radio, radio + 1):
             for dy in range(-radio, radio + 1):
@@ -158,11 +171,12 @@ class TickContext:
     def guardar_elemento(
         self,
         pos: tuple[int, int],
-        tipo_slot: str,
         elemento: Any,
         bot_id: Optional[int] = None,
     ) -> str:
-
+        # El slot sale de la CLASE (igual que en Logica): una sola fuente de
+        # verdad, para que nadie pueda poner un suelo en "resto".
+        tipo_slot = tipo_slot_de(elemento)
         marcador = f"nuevo_{self._contador_nuevos}"
         self._contador_nuevos += 1
         self._mutaciones.append(

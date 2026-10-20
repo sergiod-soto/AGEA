@@ -31,8 +31,7 @@ import pytest
 
 import Config.settings as config
 from Core.Entities.Elementos.elemento_test import Elemento_Test
-from Core.Entities.Elementos.Simples.Bot.Bot import Bot
-from Core.Entities.entity import Modos
+from Core.Entities.Elementos.Simples.Bot.bot import Bot
 from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import (
     EstadoGeneracion,
     LogicaMundo,
@@ -47,7 +46,7 @@ def _elemento_test_dict(eid: int, casilla: tuple[int, int] = (0, 0)) -> dict:
     de lo que Elemento_Test.serializar() produce de verdad.
     """
     elemento = Elemento_Test(casilla=casilla, id_elemento=eid, peso=1.0)
-    return elemento.serializar(modo=Modos.transporte)
+    return elemento.serializar()
 
 
 def _elemento_test_bytes(eid: int, casilla: tuple[int, int] = (0, 0)) -> bytes:
@@ -82,7 +81,7 @@ def _bot_test_bytes(
         casilla=casilla,
         rotacion=0.0,
     )
-    return json.dumps(bot.serializar(modo=Modos.transporte)).encode()
+    return json.dumps(bot.serializar()).encode()
 
 
 class _GestorBotsFalso:

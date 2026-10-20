@@ -3,10 +3,6 @@
 """
 Conversión entre Celda_Atmosfera (Core) y AtmosphereCell (proto).
 
-Antes estaba repetida en Sector (CeldaAtmosferaStore) y en LogicaMundo
-(a_proto, y la copia de estado de actualizar_celdas_atmosfera). Vive en
-Infraestructura/Transporte y no en Core: Core no debe depender de los protos.
-
 Qué viaja y qué no:
   - ESTADO SIMULADO (radiacion, temperatura, presion, viento, humedades):
     aplicar_estado_simulado() lo copia a una celda, nueva o existente.

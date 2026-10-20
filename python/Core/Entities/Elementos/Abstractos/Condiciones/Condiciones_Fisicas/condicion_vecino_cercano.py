@@ -1,5 +1,7 @@
-# Core/Entities/Elementos/Abstractos/Condiciones/Fisicas/condicion_vecino_cercano.py
+# Core/Entities/Elementos/Abstractos/Condiciones/Condiciones_Fisicas/condicion_vecino_cercano.py
 
+
+import json
 
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
@@ -25,17 +27,27 @@ class CondicionVecinoCercano(Condicion):
     'propietario' debe exponer 'casilla' -- lo cumple Suelo.
     """
 
+    CAMPOS = ("tipo_buscado", "radio")
+
     def __init__(self, tipo_buscado: str, radio: int, **kwargs):
         super().__init__(**kwargs)
         self.tipo_buscado = tipo_buscado
         self.radio = radio
 
     def evaluar(self, propietario, ctx) -> bool:
-        for _pos, celda in ctx.celdas_en_radio(propietario.casilla, self.radio):
-            if (
-                celda.suelo is not None
-                and type(celda.suelo).__name__ == self.tipo_buscado
-            ):
+        x, y = propietario.casilla
+        for celda in ctx.celdas_en_radio(x, y, self.radio):
+            suelo = celda.suelo
+            if not suelo:
+                continue
+            if isinstance(suelo, (bytes, bytearray)):
+                # Celda de la ghost zone (proto): el suelo va serializado. Solo
+                # se lee el nombre de clase; coste asumible porque afecta solo a
+                # las celdas del margen de un Sector.
+                nombre = json.loads(suelo.decode())["__clase__"]
+            else:
+                nombre = type(suelo).__name__
+            if nombre == self.tipo_buscado:
                 return True
         return False
 

@@ -1,10 +1,17 @@
 # Core/Entities/Mundo/Suelo/suelo_oceano.py
 
+from Core.Entities.Comportamiento.Material.transformable import Transformable
 from Core.Entities.Comportamiento.Terreno.oceanico import Oceanico
 from Core.Entities.Mundo.Suelo.suelo import Suelo
+from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 
-class Suelo_Oceano(Suelo, Oceanico):
+
+comportamientos = Comportamiento.declarar_comportamientos(
+    Transformable,
+)
+
+class Suelo_Oceano(Suelo, Oceanico, comportamientos):
     """
     Suelo oceánico: tasa de conversión 92, inercia 2.1e7 J/(m²·K), solo la
     masa de agua; la capa de aire de la celda (C_AIRE) se cuenta aparte.
@@ -17,5 +24,6 @@ class Suelo_Oceano(Suelo, Oceanico):
             id_elemento=id_elemento,
             tasa_conversion_radiacion_calor=92,
             inercia_termica=2.1e7,
+            dict_transformable={},
         )
     def tick_elemento(self, ctx): ...

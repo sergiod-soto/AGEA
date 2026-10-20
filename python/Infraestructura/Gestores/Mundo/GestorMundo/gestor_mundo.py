@@ -1,4 +1,4 @@
-# Infraestructura/Gestores/Mundo/Gestor_Mundo/gestor_mundo.py
+# Infraestructura/Gestores/Mundo/GestorMundo/gestor_mundo.py
 
 
 import asyncio
@@ -342,13 +342,6 @@ class GestorMundo:
                     )
                 )
                 etiquetas.append(f"parches_atm{clave}")
-
-            etiquetas += [
-                f"ghost{clave}",
-                f"ghost_atm{clave}",
-                f"sonidos{clave}",
-                f"ciclos{clave}",
-            ]
 
         # return_exceptions=True: se esperan todas las tareas y se reúnen todos
         # los fallos en un único mensaje, en vez de perder los que lleguen después.
@@ -773,7 +766,12 @@ class GestorMundo:
         self._pause_event.clear()
 
         async with self._tick_lock:  # espera a que acabe el tick en curso
-            pass
+            try:
+                await self._traer_estado_de_sectores()
+            except ErrorFatal as exc:
+                # freeze() puede venir de la consola: ahí la excepción no mata el proceso.
+                self._escalar_fatal(exc)
+                raise
 
         try:
             await self._bots_stub.FreezeAll(bots_pb.FreezeAllRequest())
@@ -875,6 +873,7 @@ class GestorMundo:
         """
         async with self._tick_lock:
             snapshot_id = f"{self._tick_id:010d}"
+            await self._traer_estado_de_sectores()
             ok, error = await self._logica_client.save_snapshot(snapshot_id)
             if not ok:
                 logger.error(
@@ -972,6 +971,37 @@ class GestorMundo:
         for r in resultados:
             if isinstance(r, Exception):
                 raise r
+
+    async def _traer_estado_de_sectores(self) -> None:
+        """
+        Copia el estado COMPLETO de los elementos de cada Sector a Logica (gold).
+        Los deltas solo llevan celdas con mutaciones; el estado propio de un
+        elemento (cuentas, franjas de Transformable...) cambia sin mutación y,
+        si no se vuelca aquí, se pierde en el snapshot y en resume() (que
+        recarga los Sectores desde Logica). Se llama con _tick_lock tomado y
+        los Sectores quietos. Todo fallo es fatal.
+        """
+        infos = [i for i in self._sectores.values() if i.stub is not None]
+        resultados = await asyncio.gather(
+            *(i.stub.GetState(sector_pb.GetStateRequest()) for i in infos),
+            return_exceptions=True,
+        )
+        for info, r in zip(infos, resultados):
+            clave = f"({info.col},{info.row})"
+            if isinstance(r, Exception):
+                raise ErrorSincronizacion(f"GetState de {clave} falló: {r!r}") from r
+            if not r.ok:
+                raise ErrorSincronizacion(f"GetState rechazado en {clave}: {r.error}")
+            if not r.cells:
+                continue
+            # Un ActualizarCeldas POR SECTOR (regiones disjuntas, el orden no
+            # importa): un único mensaje con todos superaría el límite de gRPC.
+            try:
+                await self._logica_client.actualizar_celdas(list(r.cells))
+            except Exception as exc:
+                raise ErrorSincronizacion(
+                    f"actualizar_celdas (volcado de {clave}) falló: {exc!r}"
+                ) from exc
 
     async def _load_sector_state(self, info: SectorInfo) -> None:
         x0, y0 = info.col * SECTOR_SIZE, info.row * SECTOR_SIZE

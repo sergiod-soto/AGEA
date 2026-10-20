@@ -34,6 +34,11 @@ tests: list[str] = [
     # "Tests/Entities/Elementos/Sonido/test_logica_mundo_audio.py",
     # "Tests/Entities/Elementos/Sonido/test_sonido.py",
     # "Tests/Entities/Elementos/Sonido/test_sonoro_modos.py",
+    #
+    # # ── Suelo
+    # "Tests/Entities/Elementos/Suelo/test_roundtrip_suelos.py",
+    # "Tests/Entities/Elementos/Suelo/test_transformaciones_suelos.py",
+    # "Tests/Entities/Elementos/Suelo/test_evaporacion_oceano.py",
     # #
     # # ── Integracion
     # #
@@ -41,10 +46,10 @@ tests: list[str] = [
     # # ── Infraestructura / Remoto ──────────────────────────────
     # #
     # # ── Unitarios
-    "Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py",
+    # "Tests/Infraestructura/Remoto/Unitarios/test_logica_mundo.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_bots.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_mundo.py",
-    # "Tests/Infraestructura/Remoto/Unitarios/test_campos_para_creacion.py",  
+    # "Tests/Infraestructura/Remoto/Unitarios/test_campos_para_creacion.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_gestor_mundo_ciclo_vida.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_hypervisor.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_sector.py",
@@ -100,7 +105,7 @@ tests: list[str] = [
     # "Tests/Otros/ejemplo_tick_completo.py",
     # #
     # Salida a consola:
-    # "-s",
+    "-s",
 ]
 
 if __name__ == "__main__":

@@ -479,7 +479,6 @@ class Sector:
         dx, dy = mutacion.pos_destino
         mov = common_pb.MovimientoSaliente(
             id_elemento=mutacion.id_elemento,
-            tipo_slot=slot,
             pos_origen=common_pb.Position(x=ox, y=oy),
             pos_destino=common_pb.Position(x=dx, y=dy),
             elemento=CeldaSectorStore._serializar_slot(elemento),
@@ -751,14 +750,10 @@ class Sector:
                 # PENDIENTE (ids de elementos nacidos en tick(), aplazado): sin
                 # id real, Logica rechazaría la celda y sería fatal.
                 if not mutacion.elemento.id_elemento:
-                    logger.error(
-                        "Sector (%d,%d): creación en %s descartada, el elemento (%s) no tiene id.",
-                        self._col,
-                        self._row,
-                        mutacion.pos,
-                        type(mutacion.elemento).__name__,
+                    # Fatal: sin id Logica rechazaría la celda. compute_tick lo registra y relanza.
+                    raise ValueError(
+                        f"Creación en {mutacion.pos} de {type(mutacion.elemento).__name__} sin id_elemento."
                     )
-                    continue
                 celda = self._celdas.get_or_create(*mutacion.pos)
                 if not self._asignar_slot(celda, mutacion.tipo_slot, mutacion.elemento):
                     logger.warning(

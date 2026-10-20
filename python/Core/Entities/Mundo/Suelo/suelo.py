@@ -73,10 +73,16 @@ class Suelo(Elemento_Abstracto):
     def representar(self, incluir: list[str] | None = None) -> dict:
         """
         El suelo es la base visual imprescindible: IGNORA `incluir` y manda
-        siempre todo (pasando None a la cadena super()).
+        siempre todo (pasando None a la cadena super()). Los valores físicos
+        comunes a todos los suelos (tasa e inercia) se exponen aquí, para que
+        ningún suelo concreto tenga que repetirlos.
         """
         datos = super().representar(None)
         datos["elemento"]["casilla"] = self.serializar_casilla()
+        datos["elemento"][
+            "tasa_conversion_radiacion_calor"
+        ] = self.tasa_conversion_radiacion_calor
+        datos["elemento"]["inercia_termica"] = self.inercia_termica
         return datos
 
     def deserializar(self, data: dict, mundo=None) -> None:

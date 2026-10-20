@@ -5,9 +5,7 @@ from Config.settings import ATMOSFERA_ESCALA
 # ---- Tiempo -----------------------------------------
 # -----------------------------------------------------
 SEGUNDOS_SIMULADOS_TICK = 1
-TICKS_POR_DIA = round(
-    60 * 60 * 24 / SEGUNDOS_SIMULADOS_TICK
-)  # Cuantos ticks dura un dia simulado
+
 
 # ---- Celdas -----------------------------------------
 # -----------------------------------------------------

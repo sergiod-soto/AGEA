@@ -10,13 +10,12 @@ from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
 
 class Transformable(Material):
     """
-    dict_transformable: dict[Condicion, str] -- el string es el nombre
-    de la transformación en REGISTRO_TRANSFORMACIONES, NUNCA un
-    Callable directo: así el diccionario entero es serializable (la
-    llave porque Condicion es un Elemento con campos propios, el valor
-    porque es un string plano) y sobrevive a cualquier reserialización
-    a mitad de una transformación en curso (p.ej. a media franja de
-    espera, ver CondicionTickObjetivo).
+    dict_transformable: dict[str, Condicion]. La CLAVE es el nombre de la
+    transformación en REGISTRO_TRANSFORMACIONES (nunca un Callable) y el valor
+    su Condicion. El nombre es único por elemento (una transformación, una
+    condición; para varias, CondicionAnd/Or) y hace de id estable de la
+    condición: (id_elemento del dueño, nombre). Así el dict entero es
+    serializable y sobrevive a una reserialización a mitad de una cuenta.
     """
 
     REQUIERE = {"dict_transformable: dict[str, Condicion]"}
@@ -28,7 +27,11 @@ class Transformable(Material):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"transformable": {}}
+        # La guarda de Elemento.serializar exige que la sección incluya TODOS
+        # los campos del __init__ (aquí, dict_transformable).
+        datos["comportamientos"][__class__.__name__] = {
+            "dict_transformable": self.serializar_dict_transformable()
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -40,9 +43,13 @@ class Transformable(Material):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data["comportamientos"][__class__.__name__]
+        # 'mundo' se pasa a mano: Elemento.deserializar asigna self.mundo
+        # DESPUÉS de esta cadena y el objeto viene de __new__.
+        self.deserializar_dict_transformable(seccion["dict_transformable"], mundo)
 
     def get_condiciones(self) -> list[Condicion]:
-        return list(self.dict_transformable.keys())
+        return list(self.dict_transformable.values())
 
     def tick_comportamiento(self, ctx) -> None:
         """Una transformación por tick -- si en algún caso real hiciera
@@ -51,9 +58,7 @@ class Transformable(Material):
         el propio callable puede mutar dict_transformable (caso franja:
         al cumplirse la condición de entrada, se sustituyen las
         condiciones vigentes por las de cuenta/salida)."""
-        for condicion, nombre_transformacion in list(self.dict_transformable.items()):
-            if condicion.modo is not Condicion.Modo.LOCAL:
-                continue
+        for nombre_transformacion, condicion in list(self.dict_transformable.items()):
             if condicion.evaluar(self, ctx):
                 funcion = REGISTRO_TRANSFORMACIONES.get(nombre_transformacion)
                 if funcion is None:
@@ -64,20 +69,19 @@ class Transformable(Material):
                 return
 
     def serializar_dict_transformable(self) -> list[dict]:
-        # dict_transformable es {Condicion: nombre}: items() da (condicion, nombre).
         return [
             {"transformacion": nombre, "condicion": condicion.serializar()}
-            for condicion, nombre in self.dict_transformable.items()
+            for nombre, condicion in self.dict_transformable.items()
         ]
 
-    def deserializar_dict_transformable(self, valor: list[dict]) -> None:
+    def deserializar_dict_transformable(self, valor: list[dict], mundo=None) -> None:
         # Import diferido: evita ciclo Transformable -> registry -> ... -> Transformable
         from Core.Entities.Elementos.registry import reconstruir_elemento
 
+        # aplicar_patch lo llama con un solo argumento: ahí self.mundo ya existe.
+        mundo = mundo if mundo is not None else getattr(self, "mundo", None)
         self.dict_transformable = {
-            reconstruir_elemento(entrada["condicion"], self.mundo): entrada[
-                "transformacion"
-            ]
+            entrada["transformacion"]: reconstruir_elemento(entrada["condicion"], mundo)
             for entrada in valor
         }
 

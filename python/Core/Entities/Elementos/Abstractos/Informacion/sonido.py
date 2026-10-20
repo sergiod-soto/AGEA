@@ -1,6 +1,6 @@
 # Core/Entities/Elementos/Abstractos/Informacion/sonido.py
 """
-sonido.py
+sonido
 =========
 Dos clases:
 

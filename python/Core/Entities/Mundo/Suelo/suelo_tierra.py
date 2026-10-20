@@ -2,6 +2,7 @@
 from Core.Entities.Comportamiento.Material.registro_transformaciones import registrar
 
 from Core.Entities.Comportamiento.Material.transformable import Transformable
+from Core.Entities.Comportamiento.Terreno.terroso import Terroso
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Atmosfericas.condicion_umbral_humedad import (
     CondicionUmbralHumedad,
@@ -30,17 +31,11 @@ def _convertir_a_cesped(suelo, ctx) -> None:
     ctx.eliminar_elemento(suelo.id_elemento, suelo.casilla)
     ctx.guardar_elemento(
         pos=suelo.casilla,
-        tipo_slot="suelo",
-        elemento=Suelo_Cesped(
-            casilla=suelo.casilla,
-            id_elemento=ctx.id_elemento,
-            tasa_conversion_radiacion_calor=75,
-            inercia_termica=3e5,
-        ),
+        elemento=Suelo_Cesped(casilla=suelo.casilla, id_elemento=suelo.id_elemento),
     )
 
 
-class Suelo_Tierra(Suelo, comportamientos):
+class Suelo_Tierra(Suelo, Terroso, comportamientos):
     def __init__(self, casilla, id_elemento, **kwargs):
         super().__init__(
             casilla=casilla,
@@ -49,10 +44,6 @@ class Suelo_Tierra(Suelo, comportamientos):
             tasa_conversion_radiacion_calor=80,
             inercia_termica=3e5,
             dict_transformable={
-                # AND de dos condiciones (humedad EN rango + césped
-                # cerca) expresado como comprobación compuesta -- ver
-                # nota de diseño de CondicionVecinoCercano más abajo,
-                # sobre por qué no son dos entradas separadas del dict.
                 "suelo_tierra_convertir_cesped": CondicionAnd(
                     [
                         CondicionUmbralHumedad(

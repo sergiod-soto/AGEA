@@ -1,4 +1,4 @@
-# Core/Entities/Mundo/Atmosfera/termodinamica.py
+# Core/Fisica/termodinamica.py
 
 """
 Funciones termodinámicas compartidas por varias magnitudes y comportamientos.

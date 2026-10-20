@@ -1,4 +1,4 @@
-# Core/Entities/Elementos/Abstractos/Condiciones/Temporales/condicion_tick_objetivo.py
+# Core/Entities/Elementos/Abstractos/Condiciones/Condiciones_Temporales/condicion_tick_objetivo.py
 
 
 from Core.Entities.Elementos.Abstractos.Condiciones.condicion import Condicion
@@ -10,6 +10,8 @@ class CondicionTickObjetivo(Condicion):
     campo plano fijado UNA vez al crear la condición (al entrar en la
     franja).
     """
+
+    CAMPOS = ("tick_objetivo",)
 
     def __init__(self, tick_objetivo: int, **kwargs):
         super().__init__(**kwargs)

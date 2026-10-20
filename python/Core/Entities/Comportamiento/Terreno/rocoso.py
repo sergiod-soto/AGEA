@@ -19,7 +19,7 @@ class Rocoso(Terreno):
     def representar(self, incluir: list[str] | None = None) -> dict:
         datos = super().representar(incluir)
         if self._incluido(incluir, __class__):
-            datos["comportamientos"][__class__.__name__] = {}
+            datos["comportamientos"][__class__.__name__] = {"rocoso": {}}
         return datos
 
     def deserializar(self, data: dict, mundo=None) -> None:
