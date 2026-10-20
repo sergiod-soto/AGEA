@@ -1,15 +1,19 @@
-# AGEA (Artificial Genetic Evolutionary Agent)
+**🌐 Español · [English](README.en.md)**
 
-ES:
+# AGEA
+
 > Simulador de un mundo vivo en el que agentes controlados por redes neuronales evolutivas (**HyperNEAT**) sobreviven e interactúan con un entorno físico simulado: clima, terreno, biomas y objetos con comportamientos propios.
 
+<!-- TODO: añade aquí una captura o un GIF de Unity mostrando el mundo. Es lo que más impacto causa. -->
 <!-- ![AGEA en funcionamiento](docs/captura.png) -->
 
-**Estado:** en desarrollo activo · **Autor:** [Sergio Domínguez Soto](https://github.com/sergiod-soto)
+**Estado:** en desarrollo activo · **Autor:** [Sergio D. Soto](https://github.com/sergiod-soto)
 
 ---
 
 ## ¿Qué es AGEA?
+
+<!-- TODO: reescribe este párrafo con tus palabras: qué querías conseguir y por qué. 2-4 frases bastan. -->
 
 AGEA es un entorno de simulación donde **la inteligencia de los agentes se evoluciona en lugar de programarse**. El mundo se calcula por turnos (*ticks*), está dividido en sectores que pueden ejecutarse como procesos independientes, y cada agente decide sus acciones con una red neuronal generada mediante HyperNEAT.
 
@@ -17,13 +21,14 @@ El proyecto está pensado desde el principio para **escalar**: todo el sistema p
 
 ## Características
 
-- **Mundo simulado por sectores.** Malla de 300×200 celdas (configurable) dividida en sectores de 100×100 (configurable) que se calculan en paralelo.
-- **Sistema atmosférico por celda.** Temperatura, presión, viento, nubes (WIP) y humedad (absoluta y relativa). La radiación solar se calcula con la fórmula astronómica del ángulo cenital, de modo que las estaciones aparecen solas (más extremas cerca de los polos, invertidas en el hemisferio sur). La saturación del aire usa Magnus-Tetens y la ley de los gases ideales.
+- **Mundo simulado por sectores.** Malla de 300×200 celdas (configurable) dividida en sectores de 100×100 que se calculan en paralelo.
+- **Biomas y suelos.** Bosque, desierto, mar, pradera, selva, taiga y tundra; suelos de piedra, arena, barro, césped, grava, hielo y agua. Generación del terreno con ruido (OpenSimplex).
+- **Sistema atmosférico por celda.** Temperatura, presión, viento y humedad (absoluta y relativa). La radiación solar se calcula con la fórmula astronómica del ángulo cenital, de modo que las estaciones aparecen solas (más extremas cerca de los polos, invertidas en el hemisferio sur). La saturación del aire usa Magnus-Tetens y la ley de los gases ideales.
 - **Entidades por composición de comportamientos.** Más de 100 módulos reutilizables (salud, energía, material, terreno, temporalidad, interacción, percepción, social, estadísticas…) que se combinan para definir cualquier elemento del mundo.
 - **IA evolutiva.** Implementación propia de HyperNEAT sobre `neat-python` y `numpy`: una red pequeña (CPPN) genera los pesos de la red grande que actúa como cerebro del agente.
 - **Arquitectura distribuida.** Componentes independientes que se comunican por **gRPC + Protocol Buffers** (10 definiciones `.proto`), con heartbeats, apagado ordenado y logging centralizado.
-- **Control de ejecución.** Pausa, avance tick a tick, congelación de bots, guardado y carga de *snapshots*, y una consola independiente e interactiva.
-- **Despliegue en AWS.** Arranque de la infraestructura en EC2 y almacenamiento en S3 mediante `boto3`. (WIP)
+- **Control de ejecución.** Pausa, avance tick a tick, congelación de bots, guardado y carga de *snapshots*, y una consola interactiva.
+- **Despliegue en AWS.** Arranque de la infraestructura en EC2 y almacenamiento en S3 mediante `boto3`.
 - **Visualización en Unity.** Un cliente suscrito a un stream gRPC recibe la región del mundo que se quiere observar.
 
 ## Arquitectura
