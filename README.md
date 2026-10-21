@@ -44,41 +44,41 @@ flowchart TD
     end
 
     subgraph Backend ["⚙️ Backend Distribuido (Python / asyncio)"]
-        Main[Main.py \n Bootstrap & Orquestador]
+        Main["Main.py\nBootstrap & Orquestador"]
 
         subgraph InfraLayer ["Capa de Infraestructura y Red (gRPC Servers)"]
-            Comm[Comunicaciones Remoto\nPuente de red gRPC]
+            Comm["Comunicaciones Remoto\nPuente de red gRPC"]
             Consola[Consola Interactiva]
             LogSys[Logging Centralizado]
             
             subgraph GRPCServices ["Servidores gRPC (10 .proto)"]
-                ServerWorld[World Server\nServidor gRPC de Mundo]
-                ServerSector[Sector Server\nServidor gRPC de Sector]
-                ServerBot[Bot / Hypervisor Server\nServidor gRPC de Bots]
+                ServerWorld["World Server\nServidor gRPC de Mundo"]
+                ServerSector["Sector Server\nServidor gRPC de Sector"]
+                ServerBot["Bot / Hypervisor Server\nServidor gRPC de Bots"]
             end
         end
 
         subgraph CoreEngine ["Capa de Motor y Modelos"]
-            GM[Gestor de Mundo\nReloj, Ticks, Snapshots]
-            Registry[Registries & Caches\nGestor de Cachés y Catálogos]
+            GM["Gestor de Mundo\nReloj, Ticks, Snapshots"]
+            Registry["Registries & Caches\nGestor de Cachés y Catálogos"]
             
             subgraph EntitiesSub ["Modelo de Entidades & Físicas"]
-                Entities[Entities /\nComportamientos (>100 módulos)]
-                Biomes[Biomas, Suelos & OpenSimplex]
-                Atmo[Sistema Atmosférico\nMagnus-Tetens & Térmica]
+                Entities["Entities /\nComportamientos (>100 módulos)"]
+                Biomes["Biomas, Suelos & OpenSimplex"]
+                Atmo["Sistema Atmosférico\nMagnus-Tetens & Térmica"]
             end
 
-            LM[Lógica de Mundo\nResolución de Acciones]
+            LM["Lógica de Mundo\nResolución de Acciones"]
             
             subgraph AISub ["Subsistema de IA"]
                 GB[Gestor de Bots]
                 HV[Hypervisor]
-                HNEAT[HyperNEAT / NEAT + NumPy]
+                HNEAT["HyperNEAT / NEAT + NumPy"]
             end
         end
 
         subgraph Testing ["Calidad"]
-            Pytest[pytest\nUnit, Integration, E2E]
+            Pytest["pytest\nUnit, Integration, E2E"]
         end
     end
 
@@ -96,7 +96,6 @@ flowchart TD
     Entities --> Atmo
     
     GM --> LM
-    LM --> SectorsPanel
     
     GB --> HV
     HV --> HNEAT
