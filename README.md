@@ -33,26 +33,63 @@ El proyecto está pensado desde el principio para **escalar**: todo el sistema p
 ## Arquitectura
 
 ```mermaid
-flowchart LR
-    subgraph Mundo
-        GM[Gestor de Mundo]
-        LM[Lógica de Mundo]
-        S[Sectores]
+flowchart TD
+    subgraph AWS ["☁️ Infraestructura AWS (Modo Remoto / Producción)"]
+        S3[(Amazon S3\nSnapshots & Storage)]
+        EC2[Instancias EC2\nMulti-node execution]
     end
-    subgraph Agentes
-        GB[Gestor de Bots]
-        HV[Hypervisor]
-    end
-    CR[Comunicaciones Remoto]
-    U[Cliente Unity]
 
-    GM --> S
+    subgraph Client ["🖥️ Cliente Externo"]
+        Unity[Cliente Unity URP\nVisor gráfico en tiempo real]
+    end
+
+    subgraph LocalBackend ["⚙️ Backend Principal (Python / asyncio)"]
+        Main[Main.py\nOrquestador y Bootstrap]
+
+        subgraph Infra ["Infraestructura & Transporte gRPC (10 .proto)"]
+            Comm[Comunicaciones Remoto\nPuente de red / gRPC]
+            Consola[Consola Interactiva]
+            LogSys[Logging Centralizado]
+        end
+
+        subgraph CoreSim ["Motor de Simulación"]
+            GM[Gestor de Mundo\nReloj, ticks, snapshots]
+            LM[Lógica de Mundo\nCreación, modificación, deltas]
+            
+            subgraph Sectors ["Sectores (Paralelo)"]
+                Sec1[Sector 1\nTerreno OpenSimplex & Atmósfera]
+                Sec2[Sector N\nTermodinámica / Magnus-Tetens]
+            end
+
+            subgraph Agents ["Subsistema de Agentes (IA)"]
+                GB[Gestor de Bots\nPresupuestos de cómputo]
+                HV[Hypervisor\nEjecución de agentes]
+                HNEAT[HyperNEAT / NEAT + NumPy\nCPPN & Redes Neuronales]
+            end
+        end
+
+        subgraph TestSuite ["Calidad y Pruebas"]
+            Pytest[pytest\nUnitarias, Integración, E2E]
+        end
+    end
+
+    %% Conexiones y Flujos principales
+    Main --> Comm
+    Main --> GM
+    Comm <-->|gRPC Bidireccional| Unity
+    GM --> Sectors
     GM --> LM
-    LM --> S
+    LM --> Sectors
+    GM --> S3
+    EC2 --> GM
+    
     GB --> HV
-    HV -- acciones --> LM
-    U -- stream de foco --> CR
-    CR --> GM
+    HV --> HNEAT
+    HV -- Acciones y Estados --> LM
+    
+    Consola -. Control de ejecución .- Main
+    LogSys -. Recopila logs .- Infra
+    Pytest -. Valida componentes .- CoreSim
 ```
 
 > El diagrama es una vista simplificada. La topología exacta (cuántos sectores, cuántos hypervisors, puertos) se define en `Infraestructura/Gestores/Bootstrap/topologia.py`.
