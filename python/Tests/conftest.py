@@ -24,7 +24,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from types import SimpleNamespace
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import grpc
 import grpc.aio

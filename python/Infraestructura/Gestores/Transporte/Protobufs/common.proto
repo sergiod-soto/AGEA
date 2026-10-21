@@ -81,7 +81,8 @@ message AtmosphereCell {
   double  humedad_relativa     = 10;   // % (0-100)
   double  temperatura_suelo    = 11;   // K (kelvin)
   bool    bloqueo_total_viento = 12;
-
+  double  nube                 = 13;   // kg/m³ de agua líquida
+  double  lluvia               = 14;   // kg/m² de celda caídos en el último tick
 }
 
 // ============================================================

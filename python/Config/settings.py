@@ -69,6 +69,8 @@ ID_INVIERNO: int = int(os.getenv("ID_INVIERNO", "12"))
 ID_PRIMAVERA: int = int(os.getenv("ID_PRIMAVERA", "13"))
 ID_VERANO: int = int(os.getenv("ID_VERANO", "14"))
 ID_OTONO: int = int(os.getenv("ID_OTONO", "15"))
+ID_NUBE: int = int(os.getenv("ID_NUBE", "16"))
+ID_LLUVIA: int = int(os.getenv("ID_LLUVIA", "17"))
 
 
 # ── Unity ────────────────────────────────────────────────────────

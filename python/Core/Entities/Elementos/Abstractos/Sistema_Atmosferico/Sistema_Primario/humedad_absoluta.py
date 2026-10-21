@@ -27,7 +27,6 @@ class Humedad_Absoluta(Sistema_Atmosferico):
 
     def actualizar(
         self,
-        temperatura: float,
         vecinos: list,
         velocidad: tuple[float, float],
         bloqueado: bool,
@@ -38,9 +37,10 @@ class Humedad_Absoluta(Sistema_Atmosferico):
         son del tick anterior (ghost zone). Estabilidad: ver
         Config/validacion_simulacion.
 
-        La FUENTE de humedad (evaporación) no entra aquí: la aplica el Sector
-        antes de este paso vía Celda_Atmosfera.aplicar_evaporacion. `temperatura`
-        (K) sigue en la firma sin usarse (hará falta para la condensación).
+        Las FUENTES y SUMIDEROS de vapor no entran aquí: la evaporación la
+        aplica el Sector (Celda_Atmosfera.aplicar_evaporacion) y la
+        condensación el orquestador (sistema_atmosferico._condensar), después
+        del transporte.
         """
         dt = SEGUNDOS_SIMULADOS_TICK
         difusion = sum(

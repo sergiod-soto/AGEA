@@ -39,6 +39,11 @@ tests: list[str] = [
     # "Tests/Entities/Elementos/Suelo/test_roundtrip_suelos.py",
     # "Tests/Entities/Elementos/Suelo/test_transformaciones_suelos.py",
     # "Tests/Entities/Elementos/Suelo/test_evaporacion_oceano.py",
+    #
+    # # ── Suelo
+    # "Tests/Entities/Elementos/Atmosfera/test_termodinamica.py",
+    # "Tests/Entities/Elementos/Atmosfera/test_nube_atmosfera.py",
+    # "Tests/Entities/Elementos/Atmosfera/test_lluvia_atmosfera.py",
     # #
     # # ── Integracion
     # #
@@ -60,6 +65,8 @@ tests: list[str] = [
     # "Tests/Infraestructura/Remoto/Unitarios/test_world_proxy_servicer.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_transporte_clients_async_errores.py",
     # "Tests/Infraestructura/Remoto/Unitarios/test_vista_foco.py",
+    # "Tests/Infraestructura/Remoto/Unitarios/test_celda_atmosfera_proto.py",
+    # "Tests/Infraestructura/Remoto/Unitarios/test_sector_atmosfera.py",
     # # #
     # # ── Integracion
     # "Tests/Infraestructura/Remoto/Integracion/test_ayuda.py",  # ------------------
@@ -104,7 +111,7 @@ tests: list[str] = [
     # "Tests/Otros/test_salida_representacion_unity.py",
     # "Tests/Otros/ejemplo_tick_completo.py",
     # #
-    # Salida a consola:
+    # Salida a consola (descomentar para habilitar print()):
     "-s",
 ]
 

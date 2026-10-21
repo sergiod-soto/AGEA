@@ -19,6 +19,7 @@ from vectors import Vector2
 
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
+from Core.Entities.Mundo.Atmosfera.sistema_atmosferico import EstadoCelda
 
 
 def _vector_a_proto(v: Vector2):
@@ -45,6 +46,8 @@ def a_proto(celda: Celda_Atmosfera):
         viento_direccion=_vector_a_proto(celda.viento.direccion),
         humedad_absoluta=celda.humedad_absoluta.valor,
         humedad_relativa=celda.humedad_relativa.valor,
+        nube=celda.nube.valor,
+        lluvia=celda.lluvia.valor,
         temperatura_suelo=celda.temperatura.valor_suelo,
     )
 
@@ -59,7 +62,22 @@ def aplicar_estado_simulado(cell, celda: Celda_Atmosfera) -> None:
     celda.viento.intensidad = cell.viento_intensidad
     celda.viento.direccion = _vector_desde_proto(cell.viento_direccion)
     celda.humedad_absoluta.valor = cell.humedad_absoluta
+    celda.nube.valor = cell.nube
+    celda.lluvia.valor = cell.lluvia
     celda.humedad_relativa.valor = cell.humedad_relativa
+
+
+def estado_desde_proto(cell) -> EstadoCelda:
+    """AtmosphereCell -> EstadoCelda (lo que ve un vecino). El proto guarda el
+    viento como (intensidad, dirección): aquí se pasa a componentes."""
+    return EstadoCelda(
+        temperatura=cell.temperatura,
+        presion=cell.presion,
+        humedad_absoluta=cell.humedad_absoluta,
+        nube=cell.nube,
+        viento_x=cell.viento_intensidad * cell.viento_direccion.x,
+        viento_y=cell.viento_intensidad * cell.viento_direccion.y,
+    )
 
 
 def aplicar_espejo_terreno(cell, celda: Celda_Atmosfera) -> None:

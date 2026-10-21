@@ -5,7 +5,7 @@ Comprobación de estabilidad numérica de la atmósfera, al arrancar.
 Esquemas explícitos (Euler): la fracción total del valor de una celda que
 puede salir en UN tick debe ser <= 1, o la celda puede quedar negativa.
   - Difusión: (D/L²)·dt·n_vecinos.
-  - Advección (solo temperatura y humedad): n_vecinos·FRACCION_MAXIMA_ADVECCION,
+  - Advección (temperatura, humedad y nube): n_vecinos·FRACCION_MAXIMA_ADVECCION,
     el peor caso (viento saliendo por las 4 caras). Ese tope lo impone el
     propio cálculo (Sistema_Atmosferico.delta_advectivo); aquí se comprueba
     que, sumado a la difusión, no pasa de 1.
@@ -17,6 +17,7 @@ magnitudes, que a su vez importan parametros_simulacion (sería circular).
 from Config.parametros_simulacion import (
     SEGUNDOS_SIMULADOS_TICK,
     TAMANHO_CELDA_ATMOSFERICA,
+    TAU_LLUVIA,
 )
 
 # Vecinos cardinales por celda (los mismos que Sector._DIRECCIONES_ATMOSFERA).
@@ -50,12 +51,20 @@ def validar_estabilidad() -> None:
         "temperatura": (DIFUSIVIDAD_TERMICA, True),
         "presión": (DIFUSIVIDAD_PRESION, False),
         "humedad": (DIFUSIVIDAD_HUMEDAD, True),
+        "nube": (0.0, True),  # solo advección, sin difusión: 0.8 <= 1
     }
     fallos = []
     for nombre, (d, advecta) in magnitudes.items():
         salida = d / area * dt * _N_VECINOS + (adveccion if advecta else 0.0)
         if salida > 1.0 + _TOLERANCIA:
             fallos.append(f"{nombre}: salida máxima por tick {salida:.3f} > 1")
+
+    # Lluvia: la autoconversión quita dt/TAU del exceso de nube en un tick.
+    # Si dt/TAU > 1 se retiraría más nube de la que hay por encima del umbral.
+    if TAU_LLUVIA <= 0 or dt / TAU_LLUVIA > 1.0 + _TOLERANCIA:
+        fallos.append(
+            f"lluvia: TAU_LLUVIA={TAU_LLUVIA} s exige 0 < dt/TAU <= 1 (dt={dt} s)"
+        )
     if fallos:
         raise ValueError(
             "Simulación atmosférica inestable (revisa dt, tamaño de celda, "

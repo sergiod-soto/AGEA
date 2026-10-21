@@ -36,6 +36,7 @@ from vectors import Vector2
 
 from Config.settings import (
     ATMOSFERA_ESCALA,
+    MAX_VISION_DISTANCE,
     S3_BUCKET,
     S3_PREFIX,
     SECTOR_COL,
@@ -48,6 +49,7 @@ from Core.Entities.Elementos.registry import reconstruir_elemento
 
 from Core.Entities.Mundo.Atmosfera import sistema_atmosferico
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
+from Core.Entities.Mundo.Funciones.tipo_slot import tipo_slot_de
 from Infraestructura.Gestores.Mundo.Sector.escala_atmosfera import (
     pos_terreno_a_atmosfera,
 )
@@ -61,9 +63,13 @@ from Infraestructura.Gestores.Mundo.Sector.mutaciones import (
 from Infraestructura.Gestores.Mundo.Sector.sector_mode import SectorMode
 from Infraestructura.Gestores.Mundo.Sector.tick_context import TickContext
 
-from Infraestructura.Gestores.Transporte import celda_atmosfera_proto
 from Infraestructura.Gestores.Transporte.Proto_Generated import (
     common_pb2 as common_pb,
+)
+from Infraestructura.Gestores.Transporte.celda_atmosfera_proto import (
+    a_proto,
+    desde_proto,
+    estado_desde_proto,
 )
 
 logger = logging.getLogger(__name__)
@@ -226,12 +232,12 @@ class CeldaAtmosferaStore:
         conversión vive en celda_atmosfera_proto. Las cachés (tasa/inercia de
         Suelo, resistencia y bloqueo) NO se restauran del proto: se
         reconstruyen desde el terreno en _sincronizar_atmosfera_desde_terreno."""
-        celda = celda_atmosfera_proto.desde_proto(cell)
+        celda = desde_proto(cell)
         self._celdas[celda.posicion] = celda
 
     def to_proto_cells(self) -> list:
         """Serializa todas las celdas propias a AtmosphereCell proto."""
-        return [celda_atmosfera_proto.a_proto(c) for c in self._celdas.values()]
+        return [a_proto(c) for c in self._celdas.values()]
 
 
 # ─────────────────────────────────────────────
@@ -494,6 +500,11 @@ class Sector:
         Destino de un movimiento entre sectores: aloja el elemento si cabe.
         Devuelve (aceptado, motivo, celda_resultante). Todo o nada: se valida
         antes de tocar nada y el slot es el último paso que puede rechazar.
+
+        El slot sale de la CLASE del elemento (tipo_slot_de), igual que en
+        TickContext.guardar_elemento y en Logica: una sola fuente de verdad.
+        MovimientoSaliente no lleva el slot en el proto, así que no hay dos
+        valores que puedan discrepar.
         """
         pos = (mov.pos_destino.x, mov.pos_destino.y)
         if not self._en_region_propia(pos):
@@ -502,9 +513,10 @@ class Sector:
         if elemento is None:
             raise ValueError("MovimientoSaliente sin elemento serializado.")
 
+        tipo_slot = tipo_slot_de(elemento)
         celda = self._celdas.get_or_create(*pos)
-        if not self._asignar_slot(celda, mov.tipo_slot, elemento):
-            return False, f"slot '{mov.tipo_slot}' de {pos} ocupado", None
+        if not self._asignar_slot(celda, tipo_slot, elemento):
+            return False, f"slot '{tipo_slot}' de {pos} ocupado", None
 
         self._fijar_casilla(elemento, pos)
         if elemento.tiene_flag(Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE):
@@ -981,6 +993,7 @@ class Sector:
             atmosfera=self._atmosfera,
             ghost_atmosfera=self._ghost_atmosfera,
             escala_atmosfera=ATMOSFERA_ESCALA,
+            margen_ghost=MAX_VISION_DISTANCE,
             tick_id=tick_id,
         )
 
@@ -1037,26 +1050,16 @@ class Sector:
         leen SIEMPRE del tick anterior (modelo acordado)."""
         posiciones_propias = self._posiciones_atmosfera_propias()
 
-        # Se congelan ANTES de mutar nada los únicos valores que leen los
-        # vecinos. Son floats (inmutables), así que la copia es real.
-        # Guardar las celdas en un dict NO congelaba nada: avanzar_celda las
-        # muta in-place y el dict apuntaba a los mismos objetos, con lo que
-        # el resultado dependía del orden del bucle.
-        estados_previos: dict[
-            tuple[int, int],
-            tuple[float, float, float, float, float],
-        ] = {}
+        # Se congela ANTES de mutar nada lo único que leen los vecinos.
+        # EstadoCelda es inmutable (floats): la copia es real. Guardar las
+        # celdas en un dict NO congelaba nada: avanzar_celda las muta in-place
+        # y el resultado dependería del orden del bucle.
+        estados_previos: dict[tuple[int, int], sistema_atmosferico.EstadoCelda] = {}
         for pos in posiciones_propias:
             celda = self._atmosfera.get(*pos)
             if celda is not None:
-                # Floats inmutables: la copia es real. Incluye la velocidad del
-                # viento (la muta viento.actualizar) para la advección.
-                estados_previos[pos] = (
-                    celda.temperatura.valor,
-                    celda.presion.valor,
-                    celda.humedad_absoluta.valor,
-                    celda.viento.direccion.x * celda.viento.intensidad,
-                    celda.viento.direccion.y * celda.viento.intensidad,
+                estados_previos[pos] = sistema_atmosferico.EstadoCelda.desde_celda(
+                    celda
                 )
 
         for pos in posiciones_propias:
@@ -1071,9 +1074,7 @@ class Sector:
     def _vecinos_atmosfera(
         self,
         pos: tuple[int, int],
-        estados_previos: dict[
-            tuple[int, int], tuple[float, float, float, float, float]
-        ],
+        estados_previos: dict[tuple[int, int], sistema_atmosferico.EstadoCelda],
     ) -> list[sistema_atmosferico.EstadoVecino]:
         """
         EstadoVecino de los 4 vecinos cardinales de la celda en 'pos', con los
@@ -1081,10 +1082,6 @@ class Sector:
         (congelados) y los de otro Sector, de la ghost zone. Un vecino que no
         está en ninguna de las dos es borde del mundo y se omite: el borde es
         cerrado (sin flujo de nada).
-
-        estados_previos[pos] = (temperatura, presion, humedad_absoluta,
-        viento_x, viento_y). Temperatura = la del AIRE (K); el viento son las
-        componentes en m/s, que necesita la advección.
         """
         x, y = pos
         vecinos: list[sistema_atmosferico.EstadoVecino] = []
@@ -1094,11 +1091,9 @@ class Sector:
 
             estado = estados_previos.get(vecino_pos)
             if estado is not None:
-                temperatura, presion, humedad_absoluta, viento_x, viento_y = estado
-                # estados_previos solo contiene celdas que existen, así que
-                # get() no devuelve None. El bloqueo no lo muta avanzar_celda
-                # (lo cambian las mutaciones, ya resueltas antes): se lee en
-                # vivo y no hace falta congelarlo.
+                # estados_previos solo contiene celdas que existen. El bloqueo
+                # no lo muta avanzar_celda (lo cambian las mutaciones, ya
+                # resueltas antes): se lee en vivo y no hace falta congelarlo.
                 bloqueo_total_viento = self._atmosfera.get(
                     *vecino_pos
                 ).bloqueo_total_viento
@@ -1106,29 +1101,14 @@ class Sector:
                 vecino_proto = self._ghost_atmosfera.get(vecino_pos)
                 if vecino_proto is None:
                     continue  # borde del mundo (cerrado)
-                temperatura = vecino_proto.temperatura
-                presion = vecino_proto.presion
-                humedad_absoluta = vecino_proto.humedad_absoluta
-                # El proto guarda (intensidad, dirección): se pasa a componentes.
-                viento_x = (
-                    vecino_proto.viento_intensidad * vecino_proto.viento_direccion.x
-                )
-                viento_y = (
-                    vecino_proto.viento_intensidad * vecino_proto.viento_direccion.y
-                )
+                estado = estado_desde_proto(vecino_proto)
                 # Vecino de otro Sector: su bloqueo viaja en el proto y lo
                 # espeja Logica (decisión 1=A); llega con un tick de retraso.
                 bloqueo_total_viento = vecino_proto.bloqueo_total_viento
 
             vecinos.append(
-                sistema_atmosferico.EstadoVecino(
-                    temperatura=temperatura,
-                    presion=presion,
-                    humedad_absoluta=humedad_absoluta,
-                    direccion=Vector2(dx, dy),  # ya es unitario
-                    bloqueo_total_viento=bloqueo_total_viento,
-                    viento_x=viento_x,
-                    viento_y=viento_y,
+                sistema_atmosferico.EstadoVecino.desde_estado(
+                    estado, Vector2(dx, dy), bloqueo_total_viento  # ya es unitario
                 )
             )
         return vecinos

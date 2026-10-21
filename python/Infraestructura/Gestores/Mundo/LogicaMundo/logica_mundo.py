@@ -938,6 +938,8 @@ class LogicaMundo:
             "viento_intensidad": celda.viento.intensidad,
             "viento_direccion": [celda.viento.direccion.x, celda.viento.direccion.y],
             "humedad_absoluta": celda.humedad_absoluta.valor,
+            "nube": celda.nube.valor,  # kg/m³ de agua líquida
+            "lluvia": celda.lluvia.valor,  # kg/m² caídos en el último tick
             "humedad_relativa": celda.humedad_relativa.valor,
             "resistencia_viento": celda.resistencia_viento,
             "bloqueo_total_viento": celda.bloqueo_total_viento,
@@ -956,6 +958,8 @@ class LogicaMundo:
         celda.viento.intensidad = d["viento_intensidad"]
         celda.viento.direccion = Vector2(*d["viento_direccion"])
         celda.humedad_absoluta.valor = d["humedad_absoluta"]
+        celda.nube.valor = d["nube"]
+        celda.lluvia.valor = d["lluvia"]
         celda.humedad_relativa.valor = d["humedad_relativa"]
         celda.resistencia_viento = d["resistencia_viento"]
         celda.bloqueo_total_viento = d["bloqueo_total_viento"]

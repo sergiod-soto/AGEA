@@ -11,7 +11,10 @@ se queda con dos responsabilidades:
   1) calcular la radiación entrante del tick (ver calcular_radiacion), y
   2) llamar a actualizar() de cada sistema de la celda en el ORDEN
      acordado: temperatura -> presion -> viento -> humedad_absoluta ->
-     humedad_relativa.
+     nube -> condensación -> lluvia -> humedad_relativa. La condensación es la única
+     fase que toca varias magnitudes a la vez (vapor, nube, temperatura del
+     aire) y va DESPUÉS del transporte, para que ninguna celda termine el tick
+     sobresaturada.
 
 Modelo de radiación (decisión final): en vez de un multiplicador
 estacional discreto por Estacion/Verano/Invierno..., se usa la fórmula
@@ -56,35 +59,80 @@ viajan por proto: se reconstruyen desde el terreno en cada load_state del Sector
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from vectors import Vector2
 
-from Config.parametros_simulacion import INCLINACION_AXIAL_GRADOS, RADIACION_MAXIMA
+from Config.parametros_simulacion import (
+    ALTURA_CAPA_AIRE,
+    CALENTAMIENTO_POR_CONDENSACION,
+    INCLINACION_AXIAL_GRADOS,
+    NUBE_CRITICA,
+    OPACIDAD_MASICA_NUBE,
+    RADIACION_MAXIMA,
+    SEGUNDOS_SIMULADOS_TICK,
+    TAU_LLUVIA,
+)
 from Config.settings import ATMOSFERA_ESCALA, GRID_HEIGHT
 from Core.Entities.Mundo.Atmosfera.celda_atmosfera import Celda_Atmosfera
+from Core.Fisica.termodinamica import ajuste_saturacion, autoconversion
 
 
-@dataclass(frozen=True)
-class EstadoVecino:
+@dataclass(frozen=True, kw_only=True)
+class EstadoCelda:
     """
-    Copia de solo lectura del estado de una celda de atmósfera vecina
-    (una "ghost cell"), tomada del TICK ANTERIOR.
+    Lo que un vecino necesita saber de una celda: copia INMUTABLE (floats) del
+    estado del TICK ANTERIOR. Única definición de "qué se congela": una
+    magnitud nueva se añade aquí y en las dos fábricas (desde_celda y
+    celda_atmosfera_proto.estado_desde_proto), sin tuplas posicionales que
+    puedan descolocarse en silencio.
 
-    direccion: vector unitario CARDINAL (±1,0)/(0,±1) que apunta DESDE la celda
-    que se está calculando HACIA este vecino. Lo calcula quien construya la
-    lista (Sector._vecinos_atmosfera).
+    temperatura = la del AIRE (K). El viento va como componentes (m/s), que es
+    lo que necesita la advección.
     """
 
     temperatura: float
     presion: float
     humedad_absoluta: float
-    direccion: Vector2
-    bloqueo_total_viento: bool = False
-    # Velocidad del viento del vecino (m/s) en el TICK ANTERIOR, para la
-    # advección. Se guarda como componentes y no como (intensidad, dirección).
+    nube: float = 0.0
     viento_x: float = 0.0
     viento_y: float = 0.0
+
+    @classmethod
+    def desde_celda(cls, celda: Celda_Atmosfera) -> "EstadoCelda":
+        return cls(
+            temperatura=celda.temperatura.valor,
+            presion=celda.presion.valor,
+            humedad_absoluta=celda.humedad_absoluta.valor,
+            nube=celda.nube.valor,
+            viento_x=celda.viento.direccion.x * celda.viento.intensidad,
+            viento_y=celda.viento.direccion.y * celda.viento.intensidad,
+        )
+
+
+@dataclass(frozen=True, kw_only=True)
+class EstadoVecino(EstadoCelda):
+    """
+    EstadoCelda de una celda vecina más lo que depende de la celda que se
+    calcula.
+
+    direccion: vector unitario CARDINAL (±1,0)/(0,±1) que apunta DESDE la celda
+    que se calcula HACIA este vecino. Lo pone Sector._vecinos_atmosfera.
+    """
+
+    direccion: Vector2
+    bloqueo_total_viento: bool = False
+
+    @classmethod
+    def desde_estado(
+        cls, estado: EstadoCelda, direccion: Vector2, bloqueo_total_viento: bool
+    ) -> "EstadoVecino":
+        # asdict copia los campos de EstadoCelda (todos floats).
+        return cls(
+            **asdict(estado),
+            direccion=direccion,
+            bloqueo_total_viento=bloqueo_total_viento,
+        )
 
 
 def _latitud_radianes(y: int) -> float:
@@ -133,13 +181,56 @@ def calcular_radiacion(
 ) -> float:
     """
     Radiación de un tick = curva día/noche x factor estacional+latitud x
-    nubes. factor_nubes queda en 1.0 (neutro) hasta que exista un
-    sistema de nubes real -- la sombra de árboles se podrá aplicar
-    igual, como otro factor más, cuando exista.
+    factor_nubes (transmitancia de la nube, ver _factor_nubes). La sombra de
+    árboles se podrá aplicar igual, como otro factor más, cuando exista.
     """
     base_diaria = max(0.0, math.sin(2 * math.pi * progreso_solar))
     factor_estacional = _factor_estacional_y_latitud(y, progreso_anual)
     return RADIACION_MAXIMA * base_diaria * factor_estacional * factor_nubes
+
+
+def _factor_nubes(nube: float) -> float:
+    """
+    Transmitancia de la celda, en (0, 1]: Beer-Lambert sobre el agua líquida de
+    la columna (nube · ALTURA_CAPA_AIRE, kg/m²). Continua: sin nube vale 1 y
+    baja suavemente al crecer, sin saltos de umbral. Una sola magnitud (la
+    nube); la opacidad se deriva, no se guarda.
+    """
+    return math.exp(-OPACIDAD_MASICA_NUBE * nube * ALTURA_CAPA_AIRE)
+
+
+def _condensar(celda: Celda_Atmosfera) -> None:
+    """
+    Aplica el cambio de fase de ajuste_saturacion (función pura):
+    vapor + nube se conserva, y el calor latente va al AIRE de la celda
+    (condensar lo calienta, evaporar la nube lo enfría). Se ejecuta tras el
+    transporte, sobre el estado ya mezclado.
+    """
+    delta = ajuste_saturacion(
+        celda.humedad_absoluta.valor, celda.nube.valor, celda.temperatura.valor
+    )
+    celda.humedad_absoluta.valor -= delta
+    celda.nube.valor += delta
+    celda.temperatura.valor += CALENTAMIENTO_POR_CONDENSACION * delta
+
+
+def _precipitar(celda: Celda_Atmosfera) -> None:
+    """
+    Convierte parte de la nube en lluvia (autoconversión, función pura en
+    termodinamica.autoconversion). Va tras _condensar, para precipitar sobre la
+    nube ya formada este tick, y antes de humedad_relativa.
+
+    - La nube baja lo convertido (kg/m³ de aire).
+    - lluvia = lo convertido · ALTURA_CAPA_AIRE (kg/m² de celda). Se ASIGNA, no
+      se suma: vale 0 en un tick sin lluvia.
+    - Sin calor latente nuevo: el que se liberó al condensar ya está en el aire.
+    - El vapor no se toca, así que no hay re-evaporación de la lluvia al caer.
+    """
+    llovido = autoconversion(
+        celda.nube.valor, NUBE_CRITICA, TAU_LLUVIA, SEGUNDOS_SIMULADOS_TICK
+    )
+    celda.nube.valor -= llovido
+    celda.lluvia.valor = llovido * ALTURA_CAPA_AIRE
 
 
 def avanzar_celda(
@@ -158,13 +249,21 @@ def avanzar_celda(
     _, y_bloque = celda.posicion
     y_terreno = y_bloque * ATMOSFERA_ESCALA + ATMOSFERA_ESCALA // 2
 
-    celda.radiacion = calcular_radiacion(y_terreno, progreso_solar, progreso_anual)
+    # La nube que ve la radiación es la del TICK ANTERIOR (la celda aún no la
+    # ha actualizado): retraso de 1 s, inocuo, y la realimentación es negativa
+    # (más nube -> suelo más frío -> menos evaporación).
+    celda.radiacion = calcular_radiacion(
+        y_terreno,
+        progreso_solar,
+        progreso_anual,
+        _factor_nubes(celda.nube.valor),
+    )
 
     # Velocidad del viento al INICIO del tick (la del tick anterior). Se captura
     # antes de viento.actualizar porque la advección de las caras debe usar el
     # mismo valor que ven los vecinos: así el flujo de cada cara coincide en
-    # sus dos lados y se conserva la cantidad. (Humedad se calcula DESPUÉS del
-    # viento, pero también usa esta velocidad.)
+    # sus dos lados y se conserva la cantidad. Humedad y nube, que se calculan
+    # DESPUÉS del viento, también usan esta velocidad.
     velocidad = (
         celda.viento.direccion.x * celda.viento.intensidad,
         celda.viento.direccion.y * celda.viento.intensidad,
@@ -180,9 +279,13 @@ def avanzar_celda(
     )
     celda.presion.actualizar(celda.temperatura.valor, vecinos)
     celda.viento.actualizar(celda, celda.presion.valor, vecinos)
-    celda.humedad_absoluta.actualizar(
-        celda.temperatura.valor, vecinos, velocidad, celda.bloqueo_total_viento
-    )
+    celda.humedad_absoluta.actualizar(vecinos, velocidad, celda.bloqueo_total_viento)
+    celda.nube.actualizar(vecinos, velocidad, celda.bloqueo_total_viento)
+    # Tras el transporte: cambio de fase y calor latente sobre el estado mezclado.
+    _condensar(celda)
+    # Autoconversión de la nube ya formada: la lluvia caída se publica en la
+    # celda y los elementos la leen el tick siguiente.
+    _precipitar(celda)
     celda.humedad_relativa.actualizar(
         celda.humedad_absoluta.valor, celda.temperatura.valor
     )

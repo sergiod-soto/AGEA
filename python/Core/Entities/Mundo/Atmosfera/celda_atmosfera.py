@@ -5,6 +5,12 @@ import math
 from vectors import Vector2
 
 from Config.parametros_simulacion import ALTURA_CAPA_AIRE, CALOR_LATENTE_VAPORIZACION
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.lluvia import (
+    Lluvia,
+)
+from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.nube import (
+    Nube,
+)
 from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.Sistema_Primario.temperatura_atmosferica import (
     TemperaturaAtmosferica,
 )
@@ -64,6 +70,8 @@ class Celda_Atmosfera:
         self.temperatura = TemperaturaAtmosferica()
         self.presion = Presion()
         self.viento = Viento()
+        self.nube = Nube()  # agua líquida, kg/m³; ver nube
+        self.lluvia = Lluvia()  # kg/m² caídos en el último tick; ver lluvia.py
         self.humedad_absoluta = Humedad_Absoluta()
         self.humedad_relativa = Humedad_Relativa()
 
@@ -323,4 +331,6 @@ class Celda_Atmosfera:
             },
             "humedad_absoluta": self.humedad_absoluta.valor,  # kg/m³
             "humedad_relativa": self.humedad_relativa.valor,  # % (0-100)
+            "nube": self.nube.valor,  # kg/m³ de agua líquida
+            "lluvia": self.lluvia.valor,  # kg/m² caídos en el último tick
         }
