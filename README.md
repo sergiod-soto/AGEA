@@ -35,67 +35,76 @@ El proyecto está pensado desde el principio para **escalar**: todo el sistema p
 ```mermaid
 flowchart TD
     subgraph Client ["🖥️ Cliente Externo"]
-        Unity[Cliente Unity URP]
+        Unity["Cliente Unity URP\n(Stream gRPC / Visualización)"]
     end
 
-    subgraph AWS ["☁️ AWS (EC2 / S3)"]
-        S3[(Amazon S3\nSnapshots & Storage)]
-        EC2[Instancias Cloud]
+    subgraph AWS ["☁️ Infraestructura AWS (Modo Remoto / Producción)"]
+        S3["Amazon S3\n(Snapshots & Storage)"]
+        EC2["Instancias EC2\n(Ejecución Multi-nodo con boto3)"]
     end
 
-    subgraph Backend ["⚙️ Backend Distribuido (Python / asyncio)"]
-        Main["Main.py\nBootstrap & Orquestador"]
+    subgraph Backend ["⚙️ Backend Distribuido (Python 3.11+ / asyncio)"]
+        Main["Main.py\n(Bootstrap, CLI & Modos: local/remoto/producción)"]
+        Config["Config/settings.py\n(Variables de entorno & Config global)"]
 
         subgraph InfraLayer ["Capa de Infraestructura y Red (gRPC Servers)"]
-            Comm["Comunicaciones Remoto\nPuente de red gRPC"]
-            Consola[Consola Interactiva]
-            LogSys[Logging Centralizado]
+            Comm["Comunicaciones Remoto\n(Puente gRPC Bidireccional)"]
+            Consola["Consola Interactiva\n(Control de ejecución y comandos)"]
+            LogSys["Logging Centralizado\n(Gestión de trazas y niveles)"]
             
-            subgraph GRPCServices ["Servidores gRPC (10 .proto)"]
-                ServerWorld["World Server\nServidor gRPC de Mundo"]
-                ServerSector["Sector Server\nServidor gRPC de Sector"]
-                ServerBot["Bot / Hypervisor Server\nServidor gRPC de Bots"]
+            subgraph GRPCServices ["Servidores gRPC (10 definiciones .proto)"]
+                ServerWorld["World Server\n(Gestión global y ticks)"]
+                ServerSector["Sector Server\n(Procesamiento paralelo de sectores)"]
+                ServerBot["Bot / Hypervisor Server\n(Control y ciclo de vida de bots)"]
             end
         end
 
-        subgraph CoreEngine ["Capa de Motor y Modelos"]
-            GM["Gestor de Mundo\nReloj, Ticks, Snapshots"]
-            Registry["Registries & Caches\nGestor de Cachés y Catálogos"]
+        subgraph CoreEngine ["Capa de Motor y Modelos (Core)"]
+            GM["Gestor de Mundo\n(Reloj, Ticks, Snapshots, Coordinación)"]
+            Registry["Registries & Caches\n(Gestor de catálogos y recursos)"]
             
-            subgraph EntitiesSub ["Modelo de Entidades & Físicas"]
-                Entities["Entities /\nComportamientos (>100 módulos)"]
-                Biomes["Biomas, Suelos & OpenSimplex"]
-                Atmo["Sistema Atmosférico\nMagnus-Tetens & Térmica"]
+            subgraph EntitiesSub ["Modelo de Entidades & Físicas (Entities / Fisica)"]
+                Entities["Entities /\nComportamientos (>100 módulos reutilizables)"]
+                Biomes["Biomas & Suelos\n(Bosque, desierto, mar, tundra...)"]
+                Terrain["Generador de Terreno\n(Ruido OpenSimplex)"]
+                Atmo["Sistema Atmosférico por Celda\n(Temp., presión, viento, humedad, Magnus-Tetens)"]
+                Astronomy["Radiación Solar\n(Ángulo cenital y cálculo astronómico)"]
             end
 
-            LM["Lógica de Mundo\nResolución de Acciones"]
+            LM["Lógica de Mundo (Logica/)\n(Asignación de IDs, gestión de cambios y deltas)"]
             
-            subgraph AISub ["Subsistema de IA"]
-                GB[Gestor de Bots]
-                HV[Hypervisor]
-                HNEAT["HyperNEAT / NEAT + NumPy"]
+            subgraph AISub ["Subsistema de IA (HyperNEAT / NEAT)"]
+                GB["Gestor de Bots\n(Creación, eliminación y presupuestos)"]
+                HV["Hypervisor\nAlojamiento y ejecución de bots"]
+                HNEAT["HyperNEAT / NumPy\n(CPPN generador de pesos neuronales)"]
             end
         end
 
-        subgraph Testing ["Calidad"]
-            Pytest["pytest\nUnit, Integration, E2E"]
+        subgraph Testing ["Calidad y Pruebas (Tests/)"]
+            Pytest["pytest\n(~400 tests unitarios, de integración y E2E)"]
         end
     end
 
-    %% Conexiones principales
+    %% Conexiones principales de flujo y arquitectura
+    Main --> Config
     Main --> Comm
     Main --> GM
-    Comm <-->|gRPC Stream| Unity
+    
+    Comm <-->|gRPC Streaming| Unity
     GM --> GRPCServices
+    GRPCServices --> ServerWorld
     GRPCServices --> ServerSector
     GRPCServices --> ServerBot
     
     GM --> Registry
     Registry --> Entities
     Entities --> Biomes
+    Entities --> Terrain
     Entities --> Atmo
+    Atmo --> Astronomy
     
     GM --> LM
+    LM --> EntitiesSub
     
     GB --> HV
     HV --> HNEAT
@@ -104,9 +113,9 @@ flowchart TD
     GM --> S3
     EC2 --> Main
     
-    Consola -. Control .- Main
-    LogSys -. Logs .- InfraLayer
-    Pytest -. Testea .- CoreEngine
+    Consola -. Control en vivo .- Main
+    LogSys -. Recopilación de trazas .- InfraLayer
+    Pytest -. Valida robustez .- CoreEngine
 ```
 
 > El diagrama es una vista simplificada. La topología exacta (cuántos sectores, cuántos hypervisors, puertos) se define en `Infraestructura/Gestores/Bootstrap/topologia.py`.
