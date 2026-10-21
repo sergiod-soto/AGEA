@@ -37,10 +37,6 @@ class Viento(Sistema_Atmosferico):
         self.intensidad: float = intensidad_inicial
         self.direccion: Vector2 = direccion_inicial or Vector2(0, 0)
 
-    def get(
-        self, posicion: tuple[int, int]
-    ): ...  # TODO -- fuera del alcance de este cambio, se deja tal cual.
-
     def actualizar(self, celda, presion: float, vecinos: list) -> None:
         """
         El viento se trabaja como un único vector de velocidad (m/s) para

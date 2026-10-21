@@ -32,5 +32,5 @@ class Lluvia(Sistema_Atmosferico):
 
     def __init__(self, valor_inicial: float = 0.0, **kwargs):
         super().__init__(Lluvia, ID_LLUVIA, **kwargs)
-        # kg/m² de celda caídos en el último tick.
+        # kg/m² de agua/celda caídos en el último tick.
         self.valor: float = valor_inicial
