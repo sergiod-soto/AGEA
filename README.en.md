@@ -33,62 +33,88 @@ The project was designed from the start to **scale**: the whole system can run o
 
 ```mermaid
 flowchart TD
-    subgraph AWS ["☁️ AWS Infrastructure (Remote / Production Mode)"]
-        S3[(Amazon S3\nSnapshots & Storage)]
-        EC2[EC2 Instances\nMulti-node execution]
-    end
-
     subgraph Client ["🖥️ External Client"]
-        Unity[Unity URP Client\nReal-time visualizer]
+        Unity["Unity URP Client\n(gRPC Stream / Real-time visualization)"]
     end
 
-    subgraph LocalBackend ["⚙️ Core Backend (Python / asyncio)"]
-        Main[Main.py\nOrchestration & Bootstrap]
+    subgraph AWS ["☁️ AWS Infrastructure (Remote / Production Mode)"]
+        S3["Amazon S3\n(Snapshots & Storage)"]
+        EC2["EC2 Instances\n(Multi-node execution via boto3)"]
+    end
 
-        subgraph Infra ["Infrastructure & gRPC Transport (10 .proto files)"]
-            Comm[Remote Communications\nNetwork Bridge / gRPC]
-            Consola[Interactive Console]
-            LogSys[Centralized Logging]
-        end
+    subgraph Backend ["⚙️ Distributed Backend (Python 3.11+ / asyncio)"]
+        Main["Main.py\n(Bootstrap, CLI & Modes: local/remote/production)"]
+        Config["Config/settings.py\n(Environment variables & Global config)"]
 
-        subgraph CoreSim ["Simulation Engine"]
-            GM[World Manager\nClock, ticks, snapshots]
-            LM[World Logic\nCreation, modification, deltas]
+        subgraph InfraLayer ["Infrastructure & Network Layer (gRPC Servers)"]
+            Comm["Remote Communications\n(Bidirectional gRPC Bridge)"]
+            Consola["Interactive Console\n(Execution control & commands)"]
+            LogSys["Centralized Logging\n(Trace and level management)"]
             
-            subgraph Sectors ["Sectors (Parallel)"]
-                Sec1[Sector 1\nOpenSimplex Terrain & Atmosphere]
-                Sec2[Sector N\nThermodynamics / Magnus-Tetens]
-            end
-
-            subgraph Agents ["Agent Subsystem (AI)"]
-                GB[Bot Manager\nCompute budgets]
-                HV[Hypervisor\nAgent execution]
-                HNEAT[HyperNEAT / NEAT + NumPy\nCPPN & Neural Networks]
+            subgraph GRPCServices ["gRPC Servers (10 .proto definitions)"]
+                ServerWorld["World Server\n(Global management and ticks)"]
+                ServerSector["Sector Server\n(Parallel sector processing)"]
+                ServerBot["Bot / Hypervisor Server\n(Bot lifecycle and control)"]
             end
         end
 
-        subgraph TestSuite ["Quality & Testing"]
-            Pytest[pytest\nUnit, Integration, E2E]
+        subgraph CoreEngine ["Engine & Models Layer (Core)"]
+            GM["World Manager\n(Clock, Ticks, Snapshots, Coordination)"]
+            Registry["Registries & Caches\n(Catalog and resource manager)"]
+            
+            subgraph EntitiesSub ["Entities & Physics Model (Entities / Fisica)"]
+                Entities["Entities /\nBehaviors (>100 reusable modules)"]
+                Biomes["Biomes & Soils\n(Forest, desert, sea, tundra...)"]
+                Terrain["Terrain Generator\n(OpenSimplex noise)"]
+                Atmo["Cell Atmospheric System\n(Temp, pressure, wind, humidity, Magnus-Tetens)"]
+                Astronomy["Solar Radiation\n(Zenith angle and astronomical calculation)"]
+            end
+
+            LM["World Logic (Logica/)\n(ID assignment, change management and deltas)"]
+            
+            subgraph AISub ["AI Subsystem (HyperNEAT / NEAT)"]
+                GB["Bot Manager\n(Creation, deletion, and compute budgets)"]
+                HV["Hypervisor\nHosting and execution of bots"]
+                HNEAT["HyperNEAT / NumPy\n(CPPN neural weight generator)"]
+            end
+        end
+
+        subgraph Testing ["Quality Assurance (Tests/)"]
+            Pytest["pytest\n(~400 unit, integration, and E2E tests)"]
         end
     end
 
-    %% Main Connections and Workflows
+    %% Main flow and architecture connections
+    Main --> Config
     Main --> Comm
     Main --> GM
-    Comm <-->|Bidirectional gRPC| Unity
-    GM --> Sectors
+    
+    Comm <-->|gRPC Streaming| Unity
+    GM --> GRPCServices
+    GRPCServices --> ServerWorld
+    GRPCServices --> ServerSector
+    GRPCServices --> ServerBot
+    
+    GM --> Registry
+    Registry --> Entities
+    Entities --> Biomes
+    Entities --> Terrain
+    Entities --> Atmo
+    Atmo --> Astronomy
+    
     GM --> LM
-    LM --> Sectors
-    GM --> S3
-    EC2 --> GM
+    LM --> EntitiesSub
     
     GB --> HV
     HV --> HNEAT
-    HV -- Actions & States --> LM
+    HV --> LM
     
-    Consola -. Execution control .- Main
-    LogSys -. Log collection .- Infra
-    Pytest -. Validates components .- CoreSim
+    GM --> S3
+    EC2 --> Main
+    
+    Consola -. Live control .- Main
+    LogSys -. Trace collection .- InfraLayer
+    Pytest -. Validates robustness .- CoreEngine
 ```
 
 > The diagram is a simplified view. The exact topology (how many sectors, how many hypervisors, ports) is defined in `Infraestructura/Gestores/Bootstrap/topologia.py`.
