@@ -5,11 +5,13 @@ from Core.Entities.Comportamiento.Terreno.oceanico import Oceanico
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
-
-
 comportamientos = Comportamiento.declarar_comportamientos(
     Transformable,
 )
+
+TASA_CONVERSION_OCEANO = 92
+INERCIA_TERMICA_OCEANO = 2.1e7
+
 
 class Suelo_Oceano(Suelo, Oceanico, comportamientos):
     """
@@ -22,8 +24,9 @@ class Suelo_Oceano(Suelo, Oceanico, comportamientos):
             tipo=Suelo_Oceano,
             casilla=casilla,
             id_elemento=id_elemento,
-            tasa_conversion_radiacion_calor=92,
-            inercia_termica=2.1e7,
+            tasa_conversion_radiacion_calor=TASA_CONVERSION_OCEANO,
+            inercia_termica=INERCIA_TERMICA_OCEANO,
             dict_transformable={},
         )
+
     def tick_elemento(self, ctx): ...

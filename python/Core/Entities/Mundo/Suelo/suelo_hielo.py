@@ -9,6 +9,9 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Transformable,
 )
 
+TASA_CONVERSION_HIELO = 35
+INERCIA_TERMICA_HIELO = 4e5
+
 
 class Suelo_Hielo(Suelo, Helado, comportamientos):
     def __init__(self, id_elemento, casilla):
@@ -16,8 +19,8 @@ class Suelo_Hielo(Suelo, Helado, comportamientos):
             tipo=Suelo_Hielo,
             casilla=casilla,
             id_elemento=id_elemento,
-            tasa_conversion_radiacion_calor=35,
-            inercia_termica=4e5,
+            tasa_conversion_radiacion_calor=TASA_CONVERSION_HIELO,
+            inercia_termica=INERCIA_TERMICA_HIELO,
             dict_transformable={},
         )
 

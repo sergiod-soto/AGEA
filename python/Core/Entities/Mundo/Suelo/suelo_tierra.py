@@ -15,13 +15,16 @@ from Core.Entities.Elementos.Abstractos.Condiciones.Condiciones_Logicas.condicio
 )
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 
+comportamientos = Comportamiento.declarar_comportamientos(
+    Transformable,
+)
+
 RADIO_CESPED_CERCANO: int = 3
 UMBRAL_HUMEDAD_MIN: float = 5.0
 UMBRAL_HUMEDAD_MAX: float = 10.0
 
-comportamientos = Comportamiento.declarar_comportamientos(
-    Transformable,
-)
+TASA_CONVERSION_TIERRA = 80
+INERCIA_TERMICA_TIERRA = 3e5
 
 
 @registrar("suelo_tierra_convertir_cesped")
@@ -41,8 +44,8 @@ class Suelo_Tierra(Suelo, Terroso, comportamientos):
             casilla=casilla,
             id_elemento=id_elemento,
             tipo=Suelo_Tierra,
-            tasa_conversion_radiacion_calor=80,
-            inercia_termica=3e5,
+            tasa_conversion_radiacion_calor=TASA_CONVERSION_TIERRA,
+            inercia_termica=INERCIA_TERMICA_TIERRA,
             dict_transformable={
                 "suelo_tierra_convertir_cesped": CondicionAnd(
                     [

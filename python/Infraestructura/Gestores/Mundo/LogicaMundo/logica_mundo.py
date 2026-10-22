@@ -34,6 +34,7 @@ from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
 )
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 import Config.settings as config
+from Mundo.generacion_suelos import generar_mapa_suelos
 
 logger = logging.getLogger(__name__)
 
@@ -648,19 +649,22 @@ class LogicaMundo:
                 self.mundo.crear_atmosfera((ax, ay), Vector2(0, 0))
                 await self._avanzar_generacion()
 
-        # 2) Suelo. Su casilla es su posición (x, y). Se construye por NOMBRE
-        #    con argumentos con nombre: Suelo_Piedra(id_elemento, casilla) y
-        #    Suelo_Barro(casilla, id_elemento) no comparten orden.
+        # 2) Suelo. El mapa de suelos se genera por capas (ver Generacion);
+        #    clave faltante = bug, se revienta explícito (sin relleno silencioso).
+        mapa_suelos = generar_mapa_suelos(seed=config.SEMILLA_MUNDO)
         for x in range(config.GRID_WIDTH):
             for y in range(config.GRID_HEIGHT):
                 pos = (x, y)
+                tipo = mapa_suelos.get(pos)
+                if tipo is None:
+                    raise RuntimeError(
+                        f"generar_mapa_suelos no cubre la casilla {pos}."
+                    )
                 ok, error, _ = self._construir_elemento_sin_lock(
-                    pos, TIPO_SUELO_BASE, {"casilla": pos}
+                    pos, tipo, {"casilla": pos}
                 )
                 if not ok:
-                    raise RuntimeError(
-                        f"No se pudo crear {TIPO_SUELO_BASE} en {pos}: {error}"
-                    )
+                    raise RuntimeError(f"No se pudo crear {tipo} en {pos}: {error}")
                 await self._avanzar_generacion()
 
     @staticmethod

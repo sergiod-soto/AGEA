@@ -18,6 +18,9 @@ comportamientos = Comportamiento.declarar_comportamientos(
     Transformable,
 )
 
+TASA_CONVERSION_BARRO = 80
+INERCIA_TERMICA_BARRO = 5e5
+
 # Cuántos ticks seguidos por debajo del umbral hacen falta para que el
 # barro se considere seco -- valor de partida, sin calibrar.
 TICKS_SECADO_BARRO: int = 5000
@@ -79,8 +82,8 @@ class Suelo_Barro(Suelo, Embarrado, comportamientos):
             casilla=casilla,
             id_elemento=id_elemento,
             tipo=Suelo_Barro,
-            tasa_conversion_radiacion_calor=80,
-            inercia_termica=5e5,
+            tasa_conversion_radiacion_calor=TASA_CONVERSION_BARRO,
+            inercia_termica=INERCIA_TERMICA_BARRO,
             dict_transformable={
                 "suelo_barro_entra_en_franja_secado": CondicionUmbralHumedad(
                     umbral=UMBRAL_HUMEDAD_SECADO, por_debajo=True

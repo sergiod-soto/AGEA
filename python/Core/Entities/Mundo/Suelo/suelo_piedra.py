@@ -5,11 +5,13 @@ from Core.Entities.Comportamiento.Terreno.rocoso import Rocoso
 from Core.Entities.Mundo.Suelo.suelo import Suelo
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
-
-
 comportamientos = Comportamiento.declarar_comportamientos(
     Transformable,
 )
+
+TASA_CONVERSION_PIEDRA = 75
+INERCIA_TERMICA_PIEDRA = 4e5
+
 
 class Suelo_Piedra(Suelo, Rocoso, comportamientos):
     """
@@ -23,11 +25,9 @@ class Suelo_Piedra(Suelo, Rocoso, comportamientos):
             tipo=Suelo_Piedra,
             casilla=casilla,
             id_elemento=id_elemento,
-            tasa_conversion_radiacion_calor=75,
-            inercia_termica=4e5,
+            tasa_conversion_radiacion_calor=TASA_CONVERSION_PIEDRA,
+            inercia_termica=INERCIA_TERMICA_PIEDRA,
             dict_transformable={},
         )
-
-   
 
     def tick_elemento(self, ctx): ...

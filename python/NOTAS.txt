@@ -11,3 +11,32 @@ SERVIDOR
 
  falta terminar de desarrollar la parte de unity master-slave
 
+PARAMETROS_MUNDO = ParametrosGeneracion(
+    ancho=600,
+    alto=600,
+    seed=42,
+    # Orografía
+    proporcion_agua=0.5,  # fracción del mapa bajo el nivel del mar
+    proporcion_montana=0.95,  # cuantil de tierra donde empieza montaña
+    proporcion_piedra=0.97,  # cumbres altas
+    banda_grava=0.08,  # piedemonte: montaña - banda
+    ganancia_relieve=2.2,  # contraste del ruido de elevación
+    octavas_orografia=5,
+    # Tamaño de "continente" con fragmentacion = 0 (en celdas).
+    escala_orografia=200.0,
+    fragmentacion=0.2,
+    borde_oceano=0.15,
+    # Clima
+    penalizacion_altitud=1.2,  # cuánto enfría la altitud
+    octavas_clima=3,
+    escala_clima=150.0,
+    num_rios=140,
+    # Humedad: distancia máx. (celdas) al agua que sigue influyendo.
+    alcance_humedad=12,
+    bono_humedad_agua=0.35,
+    proporcion_hielo=0.12,  # tundra polar + banquisa del mar
+    proporcion_arena=0.10,  # desierto cálido y seco
+    proporcion_cesped=0.30,  # praderas húmedas
+    # Barro
+    umbral_humedad_barro=0.55,
+)

@@ -19,6 +19,8 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 #
 #
 # ── Mundo ─────────────────────────────────────────────────────────────────────
+SEMILLA_MUNDO: int = int(os.getenv("SEMILLA_MUNDO", "43"))
+#
 MAX_VISION_DISTANCE = int(
     os.getenv("MAX_VISION_DISTANCE", 10)
 )  # la distancia de vision es la maxima distancia de interaccion
@@ -29,8 +31,8 @@ ATMOSFERA_ESCALA: int = int(
     os.getenv("ATMOSFERA_ESCALA", 10)
 )  # tamaño relativo del grid atmosferico respecto al grid del suelo
 #
-NUM_SECTORES_X = 3
-NUM_SECTORES_Y = 2
+NUM_SECTORES_X = 6
+NUM_SECTORES_Y = 6
 #
 # cantidad de celdas atmosfericas/sector (lado del cuadrado)
 NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR = 2
