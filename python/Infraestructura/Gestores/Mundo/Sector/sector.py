@@ -455,8 +455,16 @@ class Sector:
     @staticmethod
     def _asignar_slot(celda: CeldaSector, slot: str, elemento: Any) -> bool:
         """Coloca 'elemento' en el slot de 'celda'. False, sin cambiar nada,
-        si el slot es de ocupación única (suelo/bot) y ya está ocupado: así
-        no se sobrescribe en silencio al ocupante anterior."""
+        si el slot es de ocupación única (suelo/bot) y ya está ocupado, o si
+        el Suelo de la celda no admite ocupantes (Suelo_Limite): así no se
+        sobrescribe en silencio ni se coloca nada sobre el límite del mundo."""
+        if slot != "suelo":
+            suelo = celda.suelo
+            # admite_ocupantes es atributo de clase de Suelo (True por defecto,
+            # False en Suelo_Limite). Supuesto: suelo.py ya lo tiene; si no,
+            # esto lanza AttributeError, que es lo que queremos (falla a la vista).
+            if suelo is not None and not suelo.admite_ocupantes:
+                return False
         if slot == "suelo":
             if celda.suelo is not None:
                 return False

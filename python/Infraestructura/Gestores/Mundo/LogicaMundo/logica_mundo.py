@@ -606,12 +606,23 @@ class LogicaMundo:
 
     async def _generar_mundo_en_segundo_plano(self) -> None:
         try:
-            # El lock se mantiene TODO el rato: nadie puede leer ni modificar
-            # el mundo a medio generar. A cambio, cualquier otro RPC que
-            # necesite el lock espera a que termine (incluido el tick de
-            # Gestor_Mundo: por eso debe arrancar congelado).
+            # El generador de suelos es una función PURA (no toca Mundo ni
+            # estado compartido), así que puede correr en un hilo. Va FUERA
+            # del lock: es la parte lenta y no necesita exclusión. ancho/alto/seed
+            # se pasan explícitos para no depender de que el generador lea
+            # Config por su cuenta (si discreparan con GRID_*, no cubriría el mapa).
+            suelos, hidrologia, alturas = await asyncio.to_thread(
+                generar_mapa_suelos,
+                seed=config.SEMILLA_MUNDO,
+                ancho=config.GRID_WIDTH,
+                alto=config.GRID_HEIGHT,
+            )
+            # El lock se mantiene TODO el rato desde aquí: nadie puede leer ni
+            # modificar el mundo a medio generar.
             async with self._lock:
-                await self._generar_mundo_bajo_lock()
+                await self._generar_mundo_bajo_lock(suelos)
+                # PENDIENTE de decisión (ver pregunta): aquí se guardarían
+                # hidrologia y alturas.
         except asyncio.CancelledError:
             self._generacion_error = "Generación cancelada (apagado)."
             self._estado_generacion = EstadoGeneracion.ERROR
@@ -631,13 +642,44 @@ class LogicaMundo:
         if self._generacion_hechas % CELDAS_POR_CESION == 0:
             await asyncio.sleep(0)
 
-    async def _generar_mundo_bajo_lock(self) -> None:
-        """Debe llamarse con self._lock YA tomado."""
+    async def _generar_mundo_bajo_lock(
+        self, suelos: dict[tuple[int, int], str]
+    ) -> None:
+        """Debe llamarse con self._lock YA tomado.
+
+        `suelos` es {(x, y): nombre_clase}, generado FUERA del lock y en un
+        hilo (ver _generar_mundo_en_segundo_plano). Aquí solo se vuelca al
+        Mundo: es la parte que NO puede ir a un hilo, porque Mundo no es
+        seguro entre hilos.
+        """
+        ancho, alto = config.GRID_WIDTH, config.GRID_HEIGHT
+        casillas = ancho * alto
+
+        # 0) Validación ANTES de tocar nada. Esta función no tiene rollback
+        #    (ver generar_mundo): si el mapa no cubre el grid, lo normal es
+        #    que GRID_* y el generador discrepen, y fallar a mitad dejaría
+        #    el Mundo con la atmósfera creada y medio suelo. Comprobar
+        #    primero cuesta O(casillas) y evita ese estado. Hacen falta las
+        #    dos comprobaciones: la longitud detecta un mapa de otro tamaño
+        #    y la búsqueda detecta qué casilla falta.
+        if len(suelos) != casillas:
+            raise ValueError(
+                f"El mapa de suelos tiene {len(suelos)} casillas y el grid "
+                f"{ancho}x{alto} necesita {casillas}."
+            )
+        sin_cubrir = next(
+            ((x, y) for x in range(ancho) for y in range(alto) if (x, y) not in suelos),
+            None,
+        )
+        if sin_cubrir is not None:
+            raise ValueError(
+                f"El mapa de suelos no cubre la casilla {sin_cubrir} del grid."
+            )
+
         # math.ceil: si el mapa no fuera múltiplo de ATMOSFERA_ESCALA, la
         # última fila/columna de casillas seguiría teniendo celda de atmósfera.
-        columnas_atm = math.ceil(config.GRID_WIDTH / config.ATMOSFERA_ESCALA)
-        filas_atm = math.ceil(config.GRID_HEIGHT / config.ATMOSFERA_ESCALA)
-        casillas = config.GRID_WIDTH * config.GRID_HEIGHT
+        columnas_atm = math.ceil(ancho / config.ATMOSFERA_ESCALA)
+        filas_atm = math.ceil(alto / config.ATMOSFERA_ESCALA)
         self._generacion_total = columnas_atm * filas_atm + casillas
         self._generacion_hechas = 0
 
@@ -649,17 +691,12 @@ class LogicaMundo:
                 self.mundo.crear_atmosfera((ax, ay), Vector2(0, 0))
                 await self._avanzar_generacion()
 
-        # 2) Suelo. El mapa de suelos se genera por capas (ver Generacion);
-        #    clave faltante = bug, se revienta explícito (sin relleno silencioso).
-        mapa_suelos = generar_mapa_suelos(seed=config.SEMILLA_MUNDO)
-        for x in range(config.GRID_WIDTH):
-            for y in range(config.GRID_HEIGHT):
+        # 2) Suelo. Se recorre en orden fijo (x exterior, y interior), así
+        #    los ids de elemento son reproducibles para una misma seed.
+        for x in range(ancho):
+            for y in range(alto):
                 pos = (x, y)
-                tipo = mapa_suelos.get(pos)
-                if tipo is None:
-                    raise RuntimeError(
-                        f"generar_mapa_suelos no cubre la casilla {pos}."
-                    )
+                tipo = suelos[pos]
                 ok, error, _ = self._construir_elemento_sin_lock(
                     pos, tipo, {"casilla": pos}
                 )

@@ -62,7 +62,7 @@ def _hash_entero(x: int, y: int, seed: int) -> float:
 
 
 def _suavizado(t: float) -> float:
-    """Smoothstep: elimina el aspecto de rejilla del value noise."""
+    """smoothstep: elimina el aspecto de rejilla del value noise."""
     return t * t * (3.0 - 2.0 * t)
 
 
@@ -134,6 +134,13 @@ class MapaMundo:
     #     - fondo: cota más baja de la cuenca (la última gota al secarse).
     #     - elev: elevación de ESTA casilla (batimetría del lago).
     hidro: list[list[Optional[dict]]] = field(init=False)
+    # Red hidrográfica (genealogía de ríos y lagos): la rellena la capa
+    # "rios" (y "mares_interiores" para sus lagos) y la devuelve
+    # generar_mapa_suelos como cuarto valor.
+    red: dict = field(init=False)
+    # La capa "rios" deja aquí su instancia para que capas posteriores
+    # tracen desagües con la misma maquinaria (None si no se ejecutó).
+    trazador_rios: object = field(init=False)
     # Umbrales calculados por la capa de orografía (por cuantiles) y leídos
     # por las capas siguientes. Congelados tras calcularse: todas las capas
     # ven el MISMO mar y la MISMA montaña.
@@ -152,6 +159,8 @@ class MapaMundo:
         self.humedad = [[0.0] * self.ancho for _ in range(self.alto)]
         self.suelos = [[None] * self.ancho for _ in range(self.alto)]
         self.hidro = [[None] * self.ancho for _ in range(self.alto)]
+        self.red = {"rios": {}, "lagos": {}}
+        self.trazador_rios = None
 
     def en_limite(self, x: int, y: int) -> bool:
         return x == 0 or y == 0 or x == self.ancho - 1 or y == self.alto - 1
@@ -257,9 +266,9 @@ class ParametrosGeneracion:
 CAPAS: dict[str, type] = {}
 ORDEN_CAPAS: list[str] = [
     "orografia",
+    "mares_interiores",
     "rios",
     "biomas",
-    "mares_interiores",
     "barro",
     "limite",
 ]
@@ -363,27 +372,33 @@ class CapaOrografia(Capa):
 
 @registrar_capa("rios")
 class CapaRios(Capa):
-    """Red fluvial completa: manantial -> río -> lago -> desagüe -> río...
+    """Red fluvial con GENEALOGÍA: manantial -> río -> lago -> desagüe...
 
     Ríos que nacen SOLO en la frontera de las zonas de Suelo_Piedra y
-    bajan SIN LÍMITE DE LONGITUD. Un río solo termina al llegar al mar
-    (o al borde del mundo, que es océano) o al unirse a agua ya trazada
-    (río o lago de otra cadena).
+    bajan SIN LÍMITE de longitud. Reglas de vida y muerte de un río:
+    - muere en el OCÉANO sin crear nada más (fin de la red);
+    - muere en un LAGO (le llega por fuera): el lago no crea nada nuevo
+      por él;
+    - en un CALLEJÓN SIN SALIDA crea un lago; si el lago desborda, el
+      DESAGÜE es un río nuevo (el lago guarda la referencia);
+    - cuando DOS RÍOS CONVERGEN, ambos mueren y nace un río nuevo que
+      continúa por el cauce aguas abajo: el tramo receptor se PARTE en
+      ese punto, y ambos ríos guardan referencia al nuevo.
 
-    Si un río se queda en un callejón sin salida, forma un LAGO: llena su
-    cuenca por inundación creciente hasta encontrar el punto de
-    desborde, y de ahí NACE UN RÍO NUEVO (el desagüe del lago) que sigue
-    bajando. Un río puede encadenar varios lagos antes de morir; el
-    tope max_lagos_por_rio evita bucles patológicos.
+    La red completa queda en mapa.red["rios"] y mapa.red["lagos"]:
+      ríos:  {"nace_de": ("manantial", (x, y)) | ("lago", id_lago) |
+                       ("confluencia", (x, y)),
+              "muere_en": ("mar", None) | ("lago", id_lago) |
+                       ("confluencia", id_rio) | ("seca", None),
+              "camino": [(x, y), ...]}
+      lagos: {"nace_de_rio": id_rio | None, "desagua_en_rio": id | None,
+              "capacidad_maxima": float, "fondo": float, "area": int}
+    (Los lagos de mares_interiores también se registran, con nace_de_rio
+    None porque no nacen de ningún río.)
 
-    Hidrología registrada por casilla (mapa.hidro y, en el retorno de
-    generar_mapa_suelos, el dict de hidrología):
-    - río:  {"tipo": "rio", "id": int, "dir": (dx, dy)}
-      `dir` es la dirección de FLUJO: hacia dónde va el agua desde esa
-      casilla (delta hacia la casilla siguiente, aguas abajo).
-    - lago: {"tipo": "lago", "id": int, "capacidad_maxima": float, "area": int}
-      `capacidad_maxima` es la elevación a la que el lago desborda (su
-      "nivel de agua"); `area`, el número de casillas que ocupa.
+    En la hidrología por casilla, cada celda de río sigue llevando su
+    {"tipo", "id", "dir"}: el id es del río al que pertenece AHORA
+    (tras posibles particiones por confluencia).
     """
 
     def aplicar(
@@ -408,10 +423,24 @@ class CapaRios(Capa):
             return
         fuentes = rng.sample(candidatas, min(p.num_rios, len(candidatas)))
 
-        ids_rio = iter(range(1, mapa.ancho * mapa.alto * 2))
-        ids_lago = iter(range(1, mapa.ancho * mapa.alto * 2))
+        # Espacios de ids: sobran de sobra (4 celdas por casilla).
+        self._ids_rio = iter(range(1, 4 * mapa.ancho * mapa.alto + 1))
+        self._ids_lago = iter(range(1, 4 * mapa.ancho * mapa.alto + 1))
+        # Índice celda -> (id_rio, posición en el camino): permite partir
+        # el cauce receptor en una confluencia.
+        self._indice: dict[tuple[int, int], tuple[int, int]] = {}
+
         for fx, fy in fuentes:
-            self._trazar(mapa, p, rng, fx, fy, ids_rio, ids_lago)
+            self._trazar(mapa, p, rng, fx, fy)
+        # Deja el trazador accesible: capas posteriores (mares_interiores)
+        # pueden trazar desagües de sus lagos con la MISMA maquinaria
+        # (ids, índice de cauces, confluencias, lagos encadenados).
+        mapa.trazador_rios = self
+
+    def _nuevo_rio(self, mapa: MapaMundo, nace_de) -> int:
+        id_rio = next(self._ids_rio)
+        mapa.red["rios"][id_rio] = {"nace_de": nace_de, "muere_en": None, "camino": []}
+        return id_rio
 
     def _trazar(
         self,
@@ -420,34 +449,38 @@ class CapaRios(Capa):
         rng: random.Random,
         fx: int,
         fy: int,
-        ids_rio,
-        ids_lago,
-    ) -> None:
-        """Traza la cadena completa de un manantial: segmentos de río
-        (posiblemente varios, separados por lagos) hasta morir en mar o
-        confluencia."""
-        id_rio = next(ids_rio)
+        nace_de: Optional[tuple] = None,
+    ) -> int:
+        """Traza la cadena completa de un punto de nacimiento: segmentos
+        de río (posiblemente varios, separados por lagos o nacidos de
+        confluencias ajenas) hasta morir en mar, lago o confluencia.
+        Devuelve el id del PRIMER río de la cadena.
+
+        nace_de: origen del primer río; None = manantial en (fx, fy).
+        Otras capas (mares_interiores) lo usan con ("lago", id) para
+        trazar los desagües de sus lagos."""
+        id_rio = self._nuevo_rio(mapa, nace_de or ("manantial", (fx, fy)))
         x, y = fx, fy
         visitadas: set[tuple[int, int]] = {(x, y)}
-        camino: list[tuple[int, int]] = []
+        camino: list[tuple[int, int]] = []  # cauce de TODA la cadena (para ensanchar)
         lagos = 0
 
         while True:
-            # Muere en el mar, en el borde (océano)...
+            # ── Fin de la cadena: mar, borde, lago ajeno o confluencia ──
             if mapa.es_agua(x, y) or mapa.en_limite(x, y):
+                mapa.red["rios"][id_rio]["muere_en"] = ("mar", None)
                 break
-            # ...o al unirse a agua YA trazada por otra cadena (río o
-            # lago). La celda del desagüe de MI lago no cuenta: es de
-            # esta cadena y hay que continuar por ella.
             if (x, y) not in visitadas and mapa.suelos[y][x] == SUELO_AGUA:
-                break  # confluencia
+                info = mapa.hidro[y][x]
+                if info is not None and info.get("tipo") == HIDRO_RIO:
+                    self._confluencia(mapa, id_rio, info["id"], (x, y))
+                elif info is not None and info.get("tipo") == HIDRO_LAGO:
+                    mapa.red["rios"][id_rio]["muere_en"] = ("lago", info["id"])
+                else:  # agua sin etiqueta (no debería existir aquí): mar
+                    mapa.red["rios"][id_rio]["muere_en"] = ("mar", None)
+                break
 
-            # Siguiente paso: vecino de MENOR elevación no visitado.
-            # La piedra es PARED (el río no atraviesa Suelo_Piedra; la
-            # celda fuente es la única excepción). Con sinuosidad_rio > 0
-            # NO se coge siempre el más bajo: entre todos los vecinos que
-            # bajan se sortea con sesgo hacia la pendiente (coste =
-            # elevación + ruido), lo que produce meandros.
+            # ── Siguiente paso: descenso con meandro (igual que siempre) ──
             mejor = None
             elev_actual = mapa.elevacion[y][x]
             mejor_coste = float("inf")
@@ -470,13 +503,23 @@ class CapaRios(Capa):
                 # Callejón sin salida: lago, y si desborda, nuevo río.
                 lagos += 1
                 if lagos > p.max_lagos_por_rio:
+                    mapa.red["rios"][id_rio]["muere_en"] = ("seca", None)
                     break  # seguridad: cadena patológica
-                id_lago = next(ids_lago)
-                desborde = self._hacer_lago(mapa, p, x, y, id_lago, visitadas)
+                id_lago = next(self._ids_lago)
+                desborde, celdas_lago = self._hacer_lago(
+                    mapa, p, x, y, id_lago, id_rio, visitadas
+                )
+                # CORRECCIÓN CLAVE: las celdas del lago pasan a visitadas,
+                # si no, el desagüe desciende "bajando" hacia su propio
+                # lago y muere en él al primer paso.
+                for cx, cy, _ in celdas_lago:
+                    visitadas.add((cx, cy))
                 if desborde is None:
-                    break  # lago terminal (conectó con agua o llenó su cuenca sin salida viable)
-                # Nuevo río: el desagüe del lago.
-                id_rio = next(ids_rio)
+                    mapa.red["rios"][id_rio]["muere_en"] = ("lago", id_lago)
+                    break  # lago terminal
+                # El desagüe del lago es un río nuevo.
+                id_rio = self._nuevo_rio(mapa, ("lago", id_lago))
+                mapa.red["lagos"][id_lago]["desagua_en_rio"] = id_rio
                 x, y = desborde
                 visitadas.add((x, y))
                 continue
@@ -490,28 +533,67 @@ class CapaRios(Capa):
                 "id": id_rio,
                 "dir": (nx - x, ny - y),
             }
+            registro = mapa.red["rios"][id_rio]
+            registro["camino"].append((x, y))
+            self._indice[(x, y)] = (id_rio, len(registro["camino"]) - 1)
             camino.append((x, y))
             x, y = mejor
             visitadas.add((x, y))
 
         self._ensanchar(mapa, p, rng, camino)
 
-    @staticmethod
+    def _confluencia(
+        self,
+        mapa: MapaMundo,
+        id_llega: int,
+        id_recibe: int,
+        celda: tuple[int, int],
+    ) -> None:
+        """El río id_llega alcanza el cauce de id_recibe en `celda`:
+        ambos mueren y nace un río NUEVO que continúa por el cauce
+        receptor aguas abajo. El tramo receptor se PARTE: id_recibe
+        conserva solo lo que hay ANTES de la confluencia; el nuevo río
+        hereda el resto del camino y el destino que tuviera (mar, lago o
+        otra confluencia). Así la genealogía se encadena: A -> N -> Y.
+        """
+        id_nuevo = self._nuevo_rio(mapa, ("confluencia", celda))
+        registro = mapa.red["rios"][id_recibe]
+        # Destino del cauce receptor ANTES de partirlo: el tramo que
+        # hereda el nuevo río ya sabía adónde iba (mar, lago u otra
+        # confluencia). El receptor muere aquí, en la confluencia.
+        destino_viejo = registro["muere_en"]
+        registro["muere_en"] = ("confluencia", id_nuevo)
+        mapa.red["rios"][id_llega]["muere_en"] = ("confluencia", id_nuevo)
+
+        # Partir el cauce receptor en el punto de confluencia: el nuevo
+        # río se queda el tramo aguas abajo y re-etiqueta sus celdas.
+        if celda in self._indice:
+            id_owner, k = self._indice[celda]
+            if id_owner == id_recibe:
+                camino_recibe = registro["camino"]
+                heredado = camino_recibe[k:]
+                registro["camino"] = camino_recibe[:k]
+                nuevo = mapa.red["rios"][id_nuevo]
+                nuevo["camino"] = heredado
+                for i, (cx, cy) in enumerate(heredado):
+                    mapa.hidro[cy][cx]["id"] = id_nuevo
+                    self._indice[(cx, cy)] = (id_nuevo, i)
+
+        # El nuevo río hereda el destino que tenía el tramo receptor.
+        mapa.red["rios"][id_nuevo]["muere_en"] = destino_viejo
+
     def _ensanchar(
+        self,
         mapa: MapaMundo,
         p: ParametrosGeneracion,
         rng: random.Random,
         camino: list[tuple[int, int]],
     ) -> None:
-        """Engorda el cauce por anillos.
-
-        La probabilidad de ganarse cada anillo extra crece linealmente
-        con la longitud REAL trazada (no con el presupuesto): 0 para un
-        río de longitud 0 y 1.0 al llegar a longitud_ref_rio_ancho. Cada
-        anillo se sortea INDEPENDIENTE con esa misma probabilidad, así un
-        río largo no solo es más probable que sea ancho, sino que suele
-        serlo más que uno medio.
-        """
+        """Engorda el cauce por anillos (como siempre). Las celdas del
+        anillo heredan tipo/id/dir del cauce vecino más próximo, y se
+        registran en el índice apuntando a esa celda del cauce: así una
+        confluencia posterior sobre un anillo parte el cauce por su
+        dueño."""
         if not camino or p.ancho_max_rio <= 1:
             return
         prob = min(1.0, len(camino) / max(1.0, p.longitud_ref_rio_ancho))
@@ -519,10 +601,8 @@ class CapaRios(Capa):
         cauce = set(camino)
         for _ in range(p.ancho_max_rio - 1):
             if rng.random() >= prob:
-                break  # este anillo no se lo gana: ni él ni los siguientes
+                break
 
-            # Anillo: vecinos del cauce que sean tierra firme, no borde y
-            # NO piedra (el ensanchamiento tampoco atraviesa macizos).
             anillo = set()
             for x, y in cauce:
                 for nx, ny in mapa.vecinos(x, y):
@@ -536,75 +616,76 @@ class CapaRios(Capa):
             if not anillo:
                 break
             for nx, ny in anillo:
-                mapa.suelos[ny][nx] = SUELO_AGUA
-                # Sin dirección propia: hereda la del cauce vecino.
                 cx, cy = min(cauce, key=lambda c: (c[0] - nx) ** 2 + (c[1] - ny) ** 2)
+                mapa.suelos[ny][nx] = SUELO_AGUA
                 mapa.hidro[ny][nx] = dict(mapa.hidro[cy][cx])
+                if (cx, cy) in self._indice:
+                    self._indice[(nx, ny)] = self._indice[(cx, cy)]
             cauce |= anillo
 
-    @staticmethod
     def _hacer_lago(
+        self,
         mapa: MapaMundo,
         p: ParametrosGeneracion,
         x: int,
         y: int,
         id_lago: int,
+        id_rio: int,
         visitadas: set[tuple[int, int]],
     ):
-        """Llena la cuenca del callejón por inundación creciente
-        (priority flood) hasta su punto de DESBORDE.
+        """Llena la cuenca del callejón por inundación creciente (priority
+        flood) y localiza el punto de DESBORDE real. Registra el lago en
+        la red con la referencia al río que lo creó.
 
-        Devuelve la casilla de desborde (donde nacerá el río nuevo) o
-        None si el lago es terminal: conectó con agua ajena (mar, río o
-        lago de otra cadena) o la cuenca no tiene salida trazable.
+        El desborde NO es "la primera celda por encima del nivel": es la
+        primera celda del lago con un vecino EXTERIOR (tierra no vista
+        por la inundación, no piedra, más BAJA que ella): el único sitio
+        por donde el agua escapa de verdad (el umbral/sill de la cuenca).
+        Solo se acepta si el lago ya alcanza tamano_min_lago; antes de
+        eso el agua sigue subiendo.
 
-        - El agua siempre se extiende a la casilla más BAJA de la
-          frontera: la forma del lago sigue la orografía real.
-        - El desborde es la primera casilla que queda POR ENCIMA del
-          nivel alcanzado (capacidad_maxima del metadato).
-        - tamano_min_lago: si al desbordar el lago aún no llega a ese
-          tamaño, el agua SUBE y se traga las casillas de la orilla
-          (siempre las más bajas primero) hasta alcanzarlo. El desborde
-          recordado sigue siendo el de la fuga más baja.
-        - Las casillas de agua de la MISMA cadena (visitadas) se absorben
-          como parte del lago.
-        """
-        frontera: list[tuple[float, int, int]] = []  # (elev, x, y)
+        Devuelve (desborde, celdas): la casilla donde nacerá el río
+        desagüe (o None si el lago es terminal) y las celdas anegadas,
+        para que _trazar las marque como visitadas y el desagüe no
+        re entre en su propio lago."""
+        frontera: list[tuple[float, int, int]] = []
         en_cola: set[tuple[int, int]] = set()
         for vx, vy in list(mapa.vecinos(x, y)) + [(x, y)]:
             en_cola.add((vx, vy))
             heapq.heappush(frontera, (mapa.elevacion[vy][vx], vx, vy))
 
         nivel = -1.0
-        primer_desborde = None
         celdas_lago: list[tuple[int, int, float]] = []
+        desborde = None
 
         while frontera:
             e, cx, cy = heapq.heappop(frontera)
-            propia = (cx, cy) in visitadas  # agua de esta cadena: se absorbe
+            propia = (cx, cy) in visitadas
             ajena = not propia and (
                 mapa.es_agua(cx, cy) or mapa.suelos[cy][cx] == SUELO_AGUA
             )
 
             if ajena:
-                # El lago conectó con agua exterior: la cadena muere aquí
-                # (el agua ya "llegó" a su destino por inundación).
-                if not celdas_lago:
-                    return None
+                # El lago conectó con agua exterior: la cadena muere aquí.
                 desborde = None
                 break
 
             if not propia and mapa.en_limite(cx, cy):
                 continue  # el anillo del borde no se encharca ni desborda
 
-            if not propia and e > nivel >= 0.0:
-                # Casilla de TIERRA por encima del nivel: punto de
-                # fuga. Si el lago ya alcanza el tamaño mínimo, aquí
-                # desborda; si no, el agua sube: se traga esta casilla
-                # (y las siguientes de la orilla) hasta llegar al mínimo.
-                if primer_desborde is None:
-                    primer_desborde = (cx, cy)
-                if len(celdas_lago) >= p.tamano_min_lago:
+            if not propia:
+                # ¿Escape real? Vecino exterior: tierra no vista por la
+                # inundación, más baja que esta celda, no pared de piedra.
+                escape = any(
+                    (nx, ny) not in en_cola
+                    and (nx, ny) not in visitadas
+                    and not mapa.es_agua(nx, ny)
+                    and mapa.suelos[ny][nx] != SUELO_AGUA
+                    and mapa.elevacion[ny][nx] < e
+                    and mapa.elevacion[ny][nx] < mapa.umbral_piedra
+                    for nx, ny in mapa.vecinos(cx, cy)
+                )
+                if escape and len(celdas_lago) >= p.tamano_min_lago:
                     nivel = e
                     desborde = (cx, cy)
                     break
@@ -617,11 +698,7 @@ class CapaRios(Capa):
                 if (nx, ny) not in en_cola:
                     en_cola.add((nx, ny))
                     heapq.heappush(frontera, (mapa.elevacion[ny][nx], nx, ny))
-        else:
-            desborde = None  # frontera agotada sin desborde: cuenca cerrada total
 
-        # fondo = cota más baja del lago: donde quedaría la última gota
-        # si se secara. capacidad_maxima = cota de desborde: la orilla.
         fondo = min(e for _, _, e in celdas_lago) if celdas_lago else nivel
         for lx, ly, le in celdas_lago:
             mapa.hidro[ly][lx] = {
@@ -632,7 +709,14 @@ class CapaRios(Capa):
                 "elev": le,
                 "area": len(celdas_lago),
             }
-        return desborde
+        mapa.red["lagos"][id_lago] = {
+            "nace_de_rio": id_rio,
+            "desagua_en_rio": None,  # lo fija _trazar si desborda
+            "capacidad_maxima": nivel,
+            "fondo": fondo,
+            "area": len(celdas_lago),
+        }
+        return desborde, celdas_lago
 
 
 # ── Capa 3: biomas ────────────────────────────────────────────────────────────
@@ -759,47 +843,100 @@ class CapaBiomas(Capa):
 
 
 # ── Capa 4: mares interiores -> agua interior ─────────────────────────────────
-
-
 @registrar_capa("mares_interiores")
 class CapaMaresInteriores(Capa):
-    """Reclasifica los mares interiores como Suelo_Agua.
+    """RELLENA DE TIERRA los mares interiores, ANTES de trazar ríos.
 
-    El mar PRINCIPAL es todo el agua conectada (8-dir) con el borde del
-    mapa. Cualquier masa de Suelo_Oceano que no llega al borde es un mar
-    interior cerrado (tipo mar Caspio): se convierte en Suelo_Agua, el
-    mismo suelo de ríos y lagos, porque no es océano.
+    El mar PRINCIPAL es todo el Suelo_Oceano conectado con el borde del
+    mapa. Cualquier masa de océano que no llega al borde es un mar
+    interior cerrado (tipo mar Caspio): se convierte en TIERRA — el
+    agua no lo vuelve a tocar — para que los ríos que se atasquen en su
+    cuenca formen sus propios lagos desde cero, sin lagos previos
+    heredados del relleno del océano.
 
-    Los ríos y lagos ya trazados son Suelo_Agua: si un río muere dentro
-    de un continente, su componente no está conectada al mar principal,
-    pero la conversión es no-op (ya es agua). El metadato hidro de ríos y
-    lagos NO se toca: siguen siendo lo que son.
+    La conversión es suave: la cota se sube a nivel_mar + margen,
+    conservando la FORMA relativa de la cubeta (lo más profundo queda
+    algo más bajo), así el terreno es creíble y los ríos encuentran
+    desniveles naturales donde atascarse y crear lagos.
     """
+
+    # Cuánto se eleva el fondo del mar interior sobre el nivel del mar.
+    MARGEN_RELLENO = 0.005
+    VARIACION_RELLENO = 0.02
 
     def aplicar(
         self, mapa: MapaMundo, p: ParametrosGeneracion, rng: random.Random
     ) -> None:
+        # OJO: esta capa corre ANTES de biomas, así que los SUELOS aún no
+        # existen (son todos None). La detección es por ELEVACIÓN: agua =
+        # celda bajo el nivel del mar.
         mar_principal = self._mar_principal(mapa)
 
+        visitadas = set(mar_principal)
         for y in range(mapa.alto):
             for x in range(mapa.ancho):
-                if (x, y) in mar_principal:
+                if (x, y) in visitadas or not mapa.es_agua(x, y):
                     continue
-                if mapa.suelos[y][x] == SUELO_OCEANO:
-                    mapa.suelos[y][x] = SUELO_AGUA
+                # Masa de océano cerrada: tierra.
+                # CORTE DE SEGURIDAD: el flood se corta en `visitadas`
+                # (mar principal + masas ya rellenadas).
+                componente = self._componente(mapa, x, y, visitadas)
+                visitadas |= componente
+                celdas = list(componente)
+                if not celdas:
+                    continue
+
+                # Forma relativa de la cubeta: 0 = lo más profundo,
+                # 1 = lo más alto de la masa.
+                cotas = [mapa.elevacion[cy][cx] for cx, cy in celdas]
+                mn, mx = min(cotas), max(cotas)
+                for cx, cy in celdas:
+                    rel = (mapa.elevacion[cy][cx] - mn) / max(1e-9, mx - mn)
+                    # Elevar por ENCIMA del nivel del mar: desde ahora ya
+                    # no es agua (es_agua lee la elevación) y biomas le
+                    # asignará un suelo de llanura.
+                    mapa.elevacion[cy][cx] = (
+                        mapa.nivel_mar
+                        + self.MARGEN_RELLENO
+                        + self.VARIACION_RELLENO * rel
+                    )
+
+    @staticmethod
+    def _componente(
+        mapa: MapaMundo,
+        x: int,
+        y: int,
+        barrera: set[tuple[int, int]],
+    ) -> set[tuple[int, int]]:
+        """Flood fill (8-dir) del agua (por ELEVACIÓN) conectada a
+        (x, y), que NUNCA atraviesa `barrera` (mar principal y masas ya
+        tratadas)."""
+        pendientes = [(x, y)]
+        visitadas = {(x, y)}
+        cabeza = 0
+        while cabeza < len(pendientes):
+            cx, cy = pendientes[cabeza]
+            cabeza += 1
+            for nx, ny in mapa.vecinos(cx, cy):
+                if (nx, ny) in visitadas or (nx, ny) in barrera:
+                    continue
+                if mapa.es_agua(nx, ny):
+                    visitadas.add((nx, ny))
+                    pendientes.append((nx, ny))
+        return visitadas
 
     @staticmethod
     def _mar_principal(mapa: MapaMundo) -> set[tuple[int, int]]:
-        """Flood fill (8-dir) desde el agua del BORDE: devuelve todas las
-        casillas de agua conectadas al mar principal."""
+        """Flood fill (8-dir) desde el agua ELEVACIÓN-bajo-el-mar del
+        BORDE: todo el océano conectado con el exterior del mapa."""
         pendientes: list[tuple[int, int]] = []
         for x in range(mapa.ancho):
             for y in (0, mapa.alto - 1):
-                if mapa.suelos[y][x] in (SUELO_OCEANO, SUELO_AGUA):
+                if mapa.es_agua(x, y):
                     pendientes.append((x, y))
         for y in range(mapa.alto):
             for x in (0, mapa.ancho - 1):
-                if mapa.suelos[y][x] in (SUELO_OCEANO, SUELO_AGUA):
+                if mapa.es_agua(x, y):
                     pendientes.append((x, y))
 
         visitadas: set[tuple[int, int]] = set(pendientes)
@@ -808,10 +945,7 @@ class CapaMaresInteriores(Capa):
             x, y = pendientes[cabeza]
             cabeza += 1
             for nx, ny in mapa.vecinos(x, y):
-                if (nx, ny) not in visitadas and mapa.suelos[ny][nx] in (
-                    SUELO_OCEANO,
-                    SUELO_AGUA,
-                ):
+                if (nx, ny) not in visitadas and mapa.es_agua(nx, ny):
                     visitadas.add((nx, ny))
                     pendientes.append((nx, ny))
         return visitadas
@@ -871,7 +1005,6 @@ def generar_mapa_suelos(
     alto: Optional[int] = None,
     capas: Optional[list[str]] = None,
     parametros: Optional["ParametrosGeneracion | dict"] = None,
-    devolver_hidrologia: bool = True,  # OBSOLETO: la hidrología SIEMPRE se devuelve; se conserva por compatibilidad (se ignora)
     verbose: bool = False,
     **overrides,
 ):
@@ -1047,4 +1180,4 @@ def generar_mapa_suelos(
             f"Alturas: mín {min(alturas.values())} m, " f"máx {max(alturas.values())} m"
         )
 
-    return resultado, hidrologia, alturas
+    return resultado, hidrologia, alturas, mapa.red

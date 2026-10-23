@@ -65,13 +65,56 @@ def _chunk_png(tipo: bytes, datos: bytes) -> bytes:
     )
 
 
+def _rejilla_discontinua(
+    filas: list[bytearray],
+    celdas_x: int,
+    celdas_y: int,
+    escala: int,
+    lado: int,
+) -> None:
+    """Sobreimpone líneas discontinuas NEGRAS formando cuadrados de
+    `lado` celdas, alineados con la esquina INFERIOR IZQUIERDA: el borde
+    inferior de cada cuadrado coincide con el borde exterior del
+    Suelo_Limite inferior, y el izquierdo con el Suelo_Limite
+    izquierdo. Patrón de guion: 3 celdas pintadas, 3 sin pintar."""
+    if lado <= 0 or escala <= 0:
+        return
+    grosor = max(1, escala // 2)
+    alto_px = celdas_y * escala
+    ancho_px = celdas_x * escala
+
+    def negro(px: int, py: int) -> None:
+        for oy in range(grosor):
+            for ox in range(grosor):
+                X, Y = px + ox, py + oy
+                if 0 <= X < ancho_px and 0 <= Y < alto_px:
+                    base = 1 + X * 3
+                    filas[Y][base: base + 3] = b"\x00\x00\x00"
+
+    # Verticales: fronteras de celda en x = k*lado, desde el borde izq.
+    for vx in range(0, celdas_x + 1, lado):
+        px = vx * escala
+        for cy in range(celdas_y):
+            dist_abajo = celdas_y - 1 - cy
+            if dist_abajo % 6 < 3:
+                negro(px, cy * escala)
+
+    # Horizontales: fronteras en y = celdas_y - k*lado, desde el borde inf.
+    for hy in range(celdas_y, -1, -lado):
+        py = hy * escala
+        for cx in range(celdas_x):
+            if cx % 6 < 3:  # distancia al borde izquierdo
+                negro(cx * escala, py)
+
+
 def guardar_png(
     mapa: dict[tuple[int, int], str],
     ancho: int,
     alto: int,
     escala: int,
     salida: Path,
-    hidrologia: dict[tuple[int, int], str] | None = None,
+    hidrologia: dict[tuple[int, int], dict] | None = None,
+    lado_cuadricula: int = 0,
 ) -> dict[str, int]:
     """Escribe el PNG. Devuelve el recuento de casillas por suelo."""
     conteo: dict[str, int] = {}
@@ -95,15 +138,13 @@ def guardar_png(
                 rgb = PALETA_HIDRO.get(info.get("tipo", ""), rgb)
             fila_celdas += bytes(rgb) * escala
         for _ in range(escala):
-            filas.append(b"\x00" + bytes(fila_celdas))  # \x00 = filtro "None"
+            filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
 
-    imagen = b"".join(filas)
+    _rejilla_discontinua(filas, ancho, alto, escala, lado_cuadricula)
+    imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(
-            b"IHDR",
-            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
-        )
+        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -118,6 +159,7 @@ def guardar_png_alturas(
     alto: int,
     escala: int,
     salida: Path,
+    lado_cuadricula: int = 0,
 ) -> tuple[int, int]:
     """Pinta el mapa de alturas en ESCALA DE GRISES: negro = más bajo,
     blanco = más elevado. El rango se normaliza al mínimo y máximo reales
@@ -135,15 +177,13 @@ def guardar_png_alturas(
             gris = int(255 * (alturas[(x, y)] - mn) / rango)
             fila_celdas += bytes((gris, gris, gris)) * escala
         for _ in range(escala):
-            filas.append(b"\x00" + bytes(fila_celdas))
+            filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
 
-    imagen = b"".join(filas)
+    _rejilla_discontinua(filas, ancho, alto, escala, lado_cuadricula)
+    imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(
-            b"IHDR",
-            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
-        )
+        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -158,6 +198,7 @@ def guardar_png_rios(
     alto: int,
     escala: int,
     salida: Path,
+    lado_cuadricula: int = 0,
 ) -> int:
     """Mapa de dirección de flujo de los ríos.
 
@@ -168,9 +209,9 @@ def guardar_png_rios(
     Diagonales: mezcla PROPORCIONAL de las dos cardinales que
     componen el vector (p. ej. NE = 50% amarillo + 50% rojo).
 
-    Fondo: tierra gris oscuro; lagos azul claro; mar gris muy oscuro
-    (se distingue del fondo por ser un poco más claro). Devuelve el nº
-    de casillas de río pintadas.
+    Fondo: tierra, lagos y mar en grises (el mapa es EXCLUSIVO de ríos:
+    los lagos van en su propio PNG). Devuelve el nº de casillas de río
+    pintadas.
     """
     COLOR_N = (255, 255, 0)
     COLOR_S = (0, 255, 255)
@@ -178,7 +219,7 @@ def guardar_png_rios(
     COLOR_O = (0, 0, 255)
     FONDO_TIERRA = (45, 45, 45)
     FONDO_MAR = (20, 20, 20)
-    COLOR_LAGO = (110, 180, 220)
+    COLOR_LAGO = (45, 45, 45)  # lagos disfrazados de tierra: mapa de RÍOS
 
     filas: list[bytes] = []
     pintadas = 0
@@ -206,15 +247,13 @@ def guardar_png_rios(
                 rgb = FONDO_TIERRA  # la tierra firme
             fila_celdas += bytes(rgb) * escala
         for _ in range(escala):
-            filas.append(b"\x00" + bytes(fila_celdas))
+            filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
 
-    imagen = b"".join(filas)
+    _rejilla_discontinua(filas, ancho, alto, escala, lado_cuadricula)
+    imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(
-            b"IHDR",
-            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
-        )
+        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -229,6 +268,7 @@ def guardar_png_lagos(
     alto: int,
     escala: int,
     salida: Path,
+    lado_cuadricula: int = 0,
 ) -> int:
     """Mapa de batimetría de lagos, NORMALIZADO POR LAGO.
 
@@ -267,15 +307,13 @@ def guardar_png_lagos(
                 rgb = FONDO_TIERRA
             fila_celdas += bytes(rgb) * escala
         for _ in range(escala):
-            filas.append(b"\x00" + bytes(fila_celdas))
+            filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
 
-    imagen = b"".join(filas)
+    _rejilla_discontinua(filas, ancho, alto, escala, lado_cuadricula)
+    imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(
-            b"IHDR",
-            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
-        )
+        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -286,16 +324,12 @@ def guardar_png_lagos(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render del mapa de suelos.")
-    parser.add_argument(
-        "--seed", type=int, default=None, help="Semilla (default: Config.SEMILLA_MUNDO)"
-    )
+    parser.add_argument("--seed", type=int, default=None, help="Semilla (default: Config.SEMILLA_MUNDO)")
     parser.add_argument("--ancho", type=int, default=None)
     parser.add_argument("--alto", type=int, default=None)
     parser.add_argument("--escala", type=int, default=4, help="Píxeles por casilla")
     parser.add_argument("--salida", type=Path, default=Path("mundo_suelos.png"))
-    parser.add_argument(
-        "--capas", nargs="*", default=None, help="Pipeline (default: ORDEN_CAPAS)"
-    )
+    parser.add_argument("--capas", nargs="*", default=None, help="Pipeline (default: ORDEN_CAPAS)")
     # Pasar cualquier parámetro de ParametrosGeneracion: --num_rios 20 --nivel_mar 0.5
     args, extra = parser.parse_known_args()
 
@@ -327,9 +361,7 @@ def main() -> int:
     guardar_png_alturas(alturas, ancho, alto, args.escala, salida_alturas)
 
     total = sum(conteo.values())
-    print(
-        f"Escrito: {args.salida} ({ancho * args.escala}x{alto * args.escala} px, {total} casillas)"
-    )
+    print(f"Escrito: {args.salida} ({ancho * args.escala}x{alto * args.escala} px, {total} casillas)")
     print("Distribución de suelos:")
     for suelo in sorted(conteo, key=conteo.get, reverse=True):
         pct = 100.0 * conteo[suelo] / total

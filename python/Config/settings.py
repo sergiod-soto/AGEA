@@ -6,6 +6,8 @@
 import os
 from pathlib import Path
 
+from Services.Mundo.generacion_suelos import ParametrosGeneracion
+
 # ── Modo de ejecución ─────────────────────────────────────────────────────────
 DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
@@ -19,7 +21,6 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 #
 #
 # ── Mundo ─────────────────────────────────────────────────────────────────────
-SEMILLA_MUNDO: int = int(os.getenv("SEMILLA_MUNDO", "43"))
 #
 MAX_VISION_DISTANCE = int(
     os.getenv("MAX_VISION_DISTANCE", 10)
@@ -160,3 +161,81 @@ LOG_PULL_INTERVAL_SEGUNDOS: int = int(os.getenv("LOG_PULL_INTERVAL_SEGUNDOS", 5)
 # ── S3 ────────────────────────────────────────────────
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
+
+
+# ── Generacion inicial suelos ────────────────────────────────────────────────
+SEMILLA_MUNDO: int = 430
+
+PARAMETROS_MUNDO = ParametrosGeneracion(
+    seed=SEMILLA_MUNDO,
+    # Orografía
+    proporcion_agua=0.4,  # fracción del mapa bajo el nivel del mar
+    proporcion_montana=0.85,  # cuantil de tierra donde empieza montaña
+    proporcion_piedra=0.97,  # cumbres altas
+    banda_grava=0.08,  # piedemonte: montaña - banda
+    ganancia_relieve=2.0,  # contraste del ruido de elevación
+    octavas_orografia=5,
+    # Tamaño de "continente" con fragmentacion = 0 (en celdas).
+    escala_orografia=200.0,
+    # 0.0 = una única masa continental (Pangea); 1.0 = mar lleno de
+    # islitas. Ajusta la FRECUENCIA del ruido de elevación: a mayor
+    # fragmentación, features más pequeños y tierra más troceada.
+    fragmentacion=0.8,
+    # Costas: fracción del lado menor que cae hacia el océano de borde.
+    borde_oceano=0.15,
+    # Altura del mapa: la elevación normalizada (0..1) se convierte a
+    # METROS con 0 = nivel del mar. La cota más alta del mapa (elev=1)
+    # queda a altura_maxima_metros; el fondo marino se aplana a 0.
+    altura_maxima_metros=4500.0,
+    # Clima
+    penalizacion_altitud=1.2,  # cuánto enfría la altitud
+    octavas_clima=3,
+    escala_clima=150.0,
+    # Ríos. Nacen SOLO en la frontera de las zonas de Suelo_Piedra y
+    # bajan SIN LÍMITE de longitud: solo terminan en el mar o al unirse a
+    # otro río. En un callejón sin salida forman un lago que, si su
+    # cuenca desborda, da nacimiento a un río nuevo (el desagüe).
+    num_rios=20,
+    # Ancho de río. Los ríos NO tienen todos el mismo ancho: se engordan
+    # por ANILLOS a partir del cauce, y el número de anillos se sortea en
+    # función de la longitud REAL recorrida por el agua hasta ese tramo
+    # (acumulada aguas arriba, ver CapaRios): un río corto casi nunca se
+    # ensancha; uno largo es muy PROBABLE que lo sea, pero no seguro.
+    # - ancho_max_rio: anillos máximos extra (ancho máx = 1 + anillo).
+    # - longitud_ref_rio_ancho: longitud (celdas) a la que la probabilidad
+    #   de ensancharse cada anillo llega a 1.0; antes crece linealmente.
+    ancho_max_rio=20,
+    longitud_ref_rio_ancho=4000.0,
+    # Sinuosidad: cuánto se permite desviarse del descenso más directo.
+    # 0.0 = siempre al vecino más bajo (líneas rectas/quebradas). Mayor
+    # valor = el río elige entre TODOS los vecinos que bajan, con un
+    # sorteo sesgado por la pendiente: aparecen meandros. En unidades de
+    # elevación: 0.02-0.05 ya da curvas naturales.
+    sinuosidad_rio=0.03,
+    # Tope de seguridad: cuántos lagos puede encadenar un mismo
+    # manantial (río -> lago -> desagüe -> lago -> ...) antes de que la
+    # cadena se dé por muerta. Con cuencas normales no se llega, pero un
+    # terreno muy raro podría patinar.
+    max_lagos_por_rio=99999,
+    # Tamaño mínimo de lago en celdas. La cuenca real donde se atasca el
+    # río suele ser diminuta (2-4 celdas) porque el terreno fBm es liso;
+    # si el lago queda por debajo de este tamaño, el agua SIGUE subiendo
+    # (tragándose las casillas de la orilla más bajas primero) hasta
+    # alcanzarlo. El desborde sigue siendo el punto de fuga más bajo.
+    tamano_min_lago=16,
+    # Humedad: distancia máx. (celdas) al agua que sigue influyendo.
+    alcance_humedad=15,
+    bono_humedad_agua=0.35,
+    # Cuotas de suelo: fracción de la TIERRA EMERGIDA que ocupa cada
+    # bioma. Se cumplen por CUANTILES + RANKING físico, así que son
+    # exactas en cualquier seed y siguen siendo coherentes: el desierto
+    # cae en lo más cálido y seco, el césped en lo más húmedo, el hielo
+    # en los polos. Suelo_Tierra NO se configura: es el resto.
+    proporcion_hielo=0.12,  # tundra polar + banquisa del mar
+    proporcion_arena=0.10,  # desierto cálido y seco
+    proporcion_cesped=0.30,  # praderas húmedas
+    # Barro
+    umbral_humedad_barro=0.55,
+)
+
+LADO_CUADRICULA: int = 200
