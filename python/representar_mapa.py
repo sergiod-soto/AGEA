@@ -92,11 +92,13 @@ def main() -> int:
         verbose=True,
     )
 
-    verificar_mares_interiores(suelos, config.GRID_HEIGHT, config.SEMILLA_MUNDO)
+    verificar_mares_interiores(suelos, config.GRID_HEIGHT, config.GRID_WIDTH)
 
     ancho, alto = config.GRID_WIDTH, config.GRID_HEIGHT
     # Salidas en el directorio SalidaMapas/ (relativo a donde se ejecute).
-    salida = Path(f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_suelos_{config.SEMILLA_MUNDO}.png")
+    salida = Path(
+        f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_suelos_{config.SEMILLA_MUNDO}.png"
+    )
     escala = max(1, 1200 // max(ancho, alto))  # imagen ~1200 px de lado
     escala = 1
 
@@ -114,7 +116,9 @@ def main() -> int:
         print(f"  {suelo:<14} {conteo[suelo]:>8}  {pct:5.1f} %")
 
     # 2) Mapa de alturas (grises: negro = bajo, blanco = alto).
-    salida_alt = Path(f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_alturas_{config.SEMILLA_MUNDO}.png")
+    salida_alt = Path(
+        f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_alturas_{config.SEMILLA_MUNDO}.png"
+    )
     print(f"Renderizando alturas ({escala} px/casilla)...")
     mn, mx = guardar_png_alturas(
         alturas, ancho, alto, escala, salida_alt, LADO_CUADRICULA
@@ -122,7 +126,9 @@ def main() -> int:
     print(f"Escrito: {salida_alt} (negro = {mn} m, blanco = {mx} m)")
 
     # 3) Mapa de ríos: color = dirección de flujo (cardinales + mezclas).
-    salida_rios = Path(f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_rios_{config.SEMILLA_MUNDO}.png")
+    salida_rios = Path(
+        f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_rios_{config.SEMILLA_MUNDO}.png"
+    )
     print(f"Renderizando ríos ({escala} px/casilla)...")
     pintadas = guardar_png_rios(
         hidrologia, ancho, alto, escala, salida_rios, LADO_CUADRICULA
@@ -131,7 +137,9 @@ def main() -> int:
 
     # 4) Batimetría de lagos: negro = fondo (última gota al secarse),
     #    blanco = orilla de desborde. Escala independiente por lago.
-    salida_lagos = Path(f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_lagos_{config.SEMILLA_MUNDO}.png")
+    salida_lagos = Path(
+        f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_lagos_{config.SEMILLA_MUNDO}.png"
+    )
     print(f"Renderizando lagos ({escala} px/casilla)...")
     lagos_px = guardar_png_lagos(
         hidrologia, ancho, alto, escala, salida_lagos, LADO_CUADRICULA

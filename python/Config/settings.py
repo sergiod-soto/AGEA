@@ -164,7 +164,7 @@ S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
 
 # ── Generacion inicial suelos ────────────────────────────────────────────────
-SEMILLA_MUNDO: int = 430
+SEMILLA_MUNDO: int = 4101
 
 PARAMETROS_MUNDO = ParametrosGeneracion(
     seed=SEMILLA_MUNDO,
