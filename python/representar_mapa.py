@@ -99,7 +99,8 @@ def main() -> int:
     import Config.settings as config
 
     print(
-        f"Generando mundo {config.GRID_WIDTH}x{config.GRID_HEIGHT} "
+        # f"Generando mundo {config.GRID_WIDTH}x{config.GRID_HEIGHT} "
+        f"Generando mundo {3000}x{3000}"
         f"(seed {config.SEMILLA_MUNDO})..."
     )
     suelos, hidrologia, alturas = generar_mapa_suelos(
@@ -107,9 +108,10 @@ def main() -> int:
         verbose=True,
     )
 
-    ancho, alto = config.GRID_WIDTH, config.GRID_HEIGHT
+    # ancho, alto = config.GRID_WIDTH, config.GRID_HEIGHT
+    ancho, alto = 3000, 3000
     salida = Path("SalidaMapas/mundo_suelos.png")
-    escala = max(1, 1200 // max(ancho, alto))  # imagen ~1200 px de lado
+    escala = max(1, config.GRID_WIDTH // max(ancho, alto))  # imagen ~1200 px de lado
     escala = 1
 
     # 1) Mapa de suelos con hidrología.
