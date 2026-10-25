@@ -6,7 +6,7 @@
 
 <!-- ![AGEA running](docs/screenshot.png) -->
 
-**Status:** under active development · **Author:** [Sergio Domínguez Soto](https://github.com/sergiod-soto)
+**Status:** under active development · **Author:** [Sergio Domínguez Soto](https://github.com/sergiod-soto) [[Linkedin](https://www.linkedin.com/in/sergio-dominguez-soto)]
 
 ---
 
