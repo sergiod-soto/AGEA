@@ -19,7 +19,7 @@ The project was designed from the start to **scale**: the whole system can run o
 
 ## Features
 
-- **Sector-based world.** A 300×200 cell grid (configurable) split into 100×100 sectors computed in parallel.
+- **Sector-based world.** A 25,000,000 cell grid (configurable) split into 100×100 sectors computed in parallel.
 - **Biomes and soils.** Forest, desert, sea, grassland, jungle, taiga and tundra; stone, sand, mud, grass, gravel, ice and water soils. Terrain generated with noise (OpenSimplex).
 - **Per-cell atmospheric system.** Temperature, pressure, wind and humidity (absolute and relative). Solar radiation is computed with the astronomical zenith-angle formula, so seasons emerge on their own (more extreme near the poles, reversed in the southern hemisphere). Air saturation uses Magnus-Tetens and the ideal gas law.
 - **Entities built from composable behaviors.** Over 100 reusable modules (health, energy, material, terrain, time, interaction, perception, social, stats…) that combine to define any element in the world.
