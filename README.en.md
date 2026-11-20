@@ -159,8 +159,6 @@ AGEA/
 - **Unity 6000.4** (only if you want to use the viewer)
 - An AWS account (only for remote mode)
 
-Python dependencies (inferred from the code; there is no `requirements.txt` yet):
-
 ```bash
 pip install grpcio grpcio-tools protobuf neat-python numpy scipy opensimplex \
             boto3 pyyaml psutil bitarray vectors requests pillow matplotlib \
