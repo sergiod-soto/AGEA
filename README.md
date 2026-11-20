@@ -158,8 +158,6 @@ AGEA/
 - **Unity 6000.4** (solo si quieres usar el visor)
 - Cuenta de AWS (solo para el modo remoto)
 
-Dependencias de Python (deducidas del código; no hay aún un `requirements.txt`):
-
 ```bash
 pip install grpcio grpcio-tools protobuf neat-python numpy scipy opensimplex \
             boto3 pyyaml psutil bitarray vectors requests pillow matplotlib \
