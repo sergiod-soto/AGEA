@@ -23,7 +23,8 @@ class Suelo(Elemento_Abstracto):
         tipo,
         tasa_conversion_radiacion_calor,
         inercia_termica,
-        **kwargs,
+        admite_ocupantes: bool = True,
+        **kwargs,        
     ):
         # Se valida antes de construir: con valores inválidos el error
         # saltaría en el primer tick de atmósfera, lejos de su origen.
@@ -36,6 +37,10 @@ class Suelo(Elemento_Abstracto):
         self.casilla = casilla
         self.tasa_conversion_radiacion_calor = tasa_conversion_radiacion_calor
         self.inercia_termica = inercia_termica
+        self.admite_ocupantes = admite_ocupantes
+
+        
+        
 
     @staticmethod
     def _validar(tasa, inercia) -> None:

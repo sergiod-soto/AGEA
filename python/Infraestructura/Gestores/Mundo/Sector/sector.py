@@ -454,17 +454,23 @@ class Sector:
 
     @staticmethod
     def _asignar_slot(celda: CeldaSector, slot: str, elemento: Any) -> bool:
-        """Coloca 'elemento' en el slot de 'celda'. False, sin cambiar nada,
-        si el slot es de ocupación única (suelo/bot) y ya está ocupado, o si
-        el Suelo de la celda no admite ocupantes (Suelo_Limite): así no se
-        sobrescribe en silencio ni se coloca nada sobre el límite del mundo."""
+        """Coloca 'elemento' en el slot de 'celda'. False, sin cambiar nada, si:
+          - el Suelo de la celda no admite ocupantes (Suelo_Limite: frontera
+            del mundo), y el elemento no es otro suelo; o
+          - el slot es de ocupación única (suelo/bot) y ya está ocupado: así
+            no se sobrescribe en silencio al ocupante anterior.
+        La regla de ocupantes vive SOLO aquí (decisión cerrada): Logica no la
+        aplica, y un alta directa desde Logica podría saltársela."""
         if slot != "suelo":
             suelo = celda.suelo
-            # admite_ocupantes es atributo de clase de Suelo (True por defecto,
-            # False en Suelo_Limite). Supuesto: suelo.py ya lo tiene; si no,
-            # esto lanza AttributeError, que es lo que queremos (falla a la vista).
+            # `admite_ocupantes` es atributo de clase de Suelo (True por
+            # defecto, False en Suelo_Limite). SUPUESTO: suelo ya lo
+            # tiene; si no, esto lanza AttributeError, a propósito (falla a
+            # la vista en vez de dejar pasar a todos).
+            # Sin suelo (None) se admite: pasa durante la carga del estado.
             if suelo is not None and not suelo.admite_ocupantes:
                 return False
+
         if slot == "suelo":
             if celda.suelo is not None:
                 return False

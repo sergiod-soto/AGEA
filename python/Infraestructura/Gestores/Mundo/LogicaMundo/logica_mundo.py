@@ -50,7 +50,14 @@ CELDAS_POR_CESION: int = 500
 # Claves sin las cuales un snapshot de Logica no se puede restaurar. Se
 # comprueban ANTES de tocar nada: así un snapshot incompleto (p. ej. de una
 # versión anterior) se rechaza limpio en vez de dejar el mundo a medio restaurar.
-_CLAVES_SNAPSHOT_EXIGIDAS = ("atmosfera", "reloj", "tick_actual", "estaciones")
+_CLAVES_SNAPSHOT_EXIGIDAS = (
+    "atmosfera",
+    "reloj",
+    "tick_actual",
+    "estaciones",
+    "hidrologia",
+    "alturas",
+)
 
 # Clase de suelo con la que se rellena el mundo de prueba. Es el nombre con
 # el que está registrada en Core/Entities/Elementos/registry.
@@ -607,22 +614,24 @@ class LogicaMundo:
     async def _generar_mundo_en_segundo_plano(self) -> None:
         try:
             # El generador de suelos es una función PURA (no toca Mundo ni
-            # estado compartido), así que puede correr en un hilo. Va FUERA
-            # del lock: es la parte lenta y no necesita exclusión. ancho/alto/seed
-            # se pasan explícitos para no depender de que el generador lea
-            # Config por su cuenta (si discreparan con GRID_*, no cubriría el mapa).
-            suelos, hidrologia, alturas = await asyncio.to_thread(
+            # estado compartido), así que corre en un hilo y FUERA del lock:
+            # es la parte lenta (~3 min en 600x600) y no necesita exclusión.
+            # ancho/alto/seed se pasan explícitos para no depender de que el
+            # generador lea Config por su cuenta.
+            suelos, hidrologia, alturas, montanas, red = await asyncio.to_thread(
                 generar_mapa_suelos,
                 seed=config.SEMILLA_MUNDO,
                 ancho=config.GRID_WIDTH,
                 alto=config.GRID_HEIGHT,
             )
-            # El lock se mantiene TODO el rato desde aquí: nadie puede leer ni
-            # modificar el mundo a medio generar.
+            # Desde aquí el lock se mantiene hasta el final: nadie puede leer
+            # ni modificar el mundo a medio volcar.
             async with self._lock:
                 await self._generar_mundo_bajo_lock(suelos)
-                # PENDIENTE de decisión (ver pregunta): aquí se guardarían
-                # hidrologia y alturas.
+                # Solo tras volcar el suelo con éxito: si falla a medias,
+                # no queda un Mundo con metadatos de un mapa que no existe.
+                self.mundo.hidrologia = hidrologia
+                self.mundo.alturas = alturas
         except asyncio.CancelledError:
             self._generacion_error = "Generación cancelada (apagado)."
             self._estado_generacion = EstadoGeneracion.ERROR
@@ -634,13 +643,6 @@ class LogicaMundo:
         else:
             self._estado_generacion = EstadoGeneracion.COMPLETADA
             logger.info("Mundo generado (%d celdas creadas).", self._generacion_hechas)
-
-    async def _avanzar_generacion(self) -> None:
-        """Cuenta una celda creada y, cada CELDAS_POR_CESION, cede el control
-        al bucle de eventos (sin soltar el lock)."""
-        self._generacion_hechas += 1
-        if self._generacion_hechas % CELDAS_POR_CESION == 0:
-            await asyncio.sleep(0)
 
     async def _generar_mundo_bajo_lock(
         self, suelos: dict[tuple[int, int], str]
@@ -1006,6 +1008,33 @@ class LogicaMundo:
         celda.bloqueo_total_viento = d["bloqueo_total_viento"]
         return celda
 
+    # ---- Hidrología / alturas <-> dict (snapshots) ----
+    # Las claves (x, y) no son válidas en JSON: se guardan como "x,y", igual
+    # que atmosfera y gold_cells. En hidrología, "dir" (dx, dy) es una tupla
+    # que json.dumps escribe como lista: al leer hay que devolverla a tupla.
+
+    @staticmethod
+    def _hidrologia_a_dict(hidrologia: dict) -> dict:
+        return {f"{x},{y}": datos for (x, y), datos in hidrologia.items()}
+
+    @staticmethod
+    def _hidrologia_desde_dict(d: dict) -> dict:
+        resultado: dict[tuple[int, int], dict] = {}
+        for clave, datos in d.items():
+            pos = tuple(map(int, clave.split(",")))
+            resultado[pos] = {
+                k: (tuple(v) if k == "dir" else v) for k, v in datos.items()
+            }
+        return resultado
+
+    @staticmethod
+    def _alturas_a_dict(alturas: dict) -> dict:
+        return {f"{x},{y}": h for (x, y), h in alturas.items()}
+
+    @staticmethod
+    def _alturas_desde_dict(d: dict) -> dict:
+        return {tuple(map(int, clave.split(","))): int(h) for clave, h in d.items()}
+
     # ---- Snapshots ----
 
     async def save_snapshot(self, snapshot_id: str) -> None:
@@ -1055,6 +1084,8 @@ class LogicaMundo:
                     f"{x},{y}": self._atmosfera_a_dict(celda)
                     for (x, y), celda in self.mundo.malla_atmosfera.items()
                 },
+                "hidrologia": self._hidrologia_a_dict(self.mundo.hidrologia),
+                "alturas": self._alturas_a_dict(self.mundo.alturas),
             }
 
         # Escritura atómica: se escribe en un temporal y se renombra. Si el
@@ -1101,10 +1132,12 @@ class LogicaMundo:
             for clave, d in data["atmosfera"].items():
                 pos = tuple(map(int, clave.split(",")))
                 malla_atmosfera[pos] = self._atmosfera_desde_dict(pos, d)
-        except (KeyError, ValueError, TypeError) as exc:
+            hidrologia = self._hidrologia_desde_dict(data["hidrologia"])
+            alturas = self._alturas_desde_dict(data["alturas"])
+        except (KeyError, ValueError, TypeError, AttributeError) as exc:
             msg = (
-                f"Snapshot '{snapshot_id}': atmósfera ilegible (¿formato "
-                f"antiguo?): {type(exc).__name__}: {exc}"
+                f"Snapshot '{snapshot_id}': atmósfera/hidrología/alturas "
+                f"ilegibles (¿formato antiguo?): {type(exc).__name__}: {exc}"
             )
             logger.error(msg)
             return False, msg
@@ -1114,6 +1147,8 @@ class LogicaMundo:
             self.mundo.estaciones.deserializar(data["estaciones"], self.mundo)
             self._tick_actual = int(data["tick_actual"])
             self.mundo.malla_atmosfera = malla_atmosfera
+            self.mundo.hidrologia = hidrologia
+            self.mundo.alturas = alturas
 
             # Parches pendientes de antes del restore: ya no tienen sentido.
             self.mundo.descartar_parches_atmosfera()

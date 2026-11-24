@@ -32,11 +32,11 @@ ATMOSFERA_ESCALA: int = int(
     os.getenv("ATMOSFERA_ESCALA", 10)
 )  # tamaño relativo del grid atmosferico respecto al grid del suelo
 #
-NUM_SECTORES_X = 6
-NUM_SECTORES_Y = 6
+NUM_SECTORES_X = 50
+NUM_SECTORES_Y = 50
 #
 # cantidad de celdas atmosfericas/sector (lado del cuadrado)
-NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR = 2
+NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR = 10
 
 #
 #
@@ -44,7 +44,7 @@ NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR = 2
 SECTOR_SIZE = int(
     os.getenv(
         "SECTOR_SIZE",
-        ATMOSFERA_ESCALA * ATMOSFERA_ESCALA * NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR,
+        ATMOSFERA_ESCALA * NUM_CELDAS_ATMOSFERA_POR_LADO_SECTOR,
     )
 )
 GRID_WIDTH = int(os.getenv("GRID_WIDTH", NUM_SECTORES_X * SECTOR_SIZE))
@@ -164,7 +164,7 @@ S3_PREFIX = os.getenv("S3_PREFIX", "snapshots/sectores")
 
 
 # ── Generacion inicial suelos ────────────────────────────────────────────────
-SEMILLA_MUNDO: int = 4101
+SEMILLA_MUNDO: int = 67
 
 PARAMETROS_MUNDO = ParametrosGeneracion(
     seed=SEMILLA_MUNDO,
@@ -176,13 +176,13 @@ PARAMETROS_MUNDO = ParametrosGeneracion(
     ganancia_relieve=2.0,  # contraste del ruido de elevación
     octavas_orografia=5,
     # Tamaño de "continente" con fragmentacion = 0 (en celdas).
-    escala_orografia=200.0,
+    escala_orografia=550.0,
     # 0.0 = una única masa continental (Pangea); 1.0 = mar lleno de
-    # islitas. Ajusta la FRECUENCIA del ruido de elevación: a mayor
+    # Ajusta la FRECUENCIA del ruido de elevación: a mayor
     # fragmentación, features más pequeños y tierra más troceada.
-    fragmentacion=0.8,
+    fragmentacion=0.25,
     # Costas: fracción del lado menor que cae hacia el océano de borde.
-    borde_oceano=0.15,
+    borde_oceano=0.0,
     # Altura del mapa: la elevación normalizada (0..1) se convierte a
     # METROS con 0 = nivel del mar. La cota más alta del mapa (elev=1)
     # queda a altura_maxima_metros; el fondo marino se aplana a 0.
@@ -195,7 +195,7 @@ PARAMETROS_MUNDO = ParametrosGeneracion(
     # bajan SIN LÍMITE de longitud: solo terminan en el mar o al unirse a
     # otro río. En un callejón sin salida forman un lago que, si su
     # cuenca desborda, da nacimiento a un río nuevo (el desagüe).
-    num_rios=20,
+    num_rios=5,
     # Ancho de río. Los ríos NO tienen todos el mismo ancho: se engordan
     # por ANILLOS a partir del cauce, y el número de anillos se sortea en
     # función de la longitud REAL recorrida por el agua hasta ese tramo
@@ -204,7 +204,7 @@ PARAMETROS_MUNDO = ParametrosGeneracion(
     # - ancho_max_rio: anillos máximos extra (ancho máx = 1 + anillo).
     # - longitud_ref_rio_ancho: longitud (celdas) a la que la probabilidad
     #   de ensancharse cada anillo llega a 1.0; antes crece linealmente.
-    ancho_max_rio=20,
+    ancho_max_rio=5,
     longitud_ref_rio_ancho=4000.0,
     # Sinuosidad: cuánto se permite desviarse del descenso más directo.
     # 0.0 = siempre al vecino más bajo (líneas rectas/quebradas). Mayor
@@ -237,5 +237,5 @@ PARAMETROS_MUNDO = ParametrosGeneracion(
     # Barro
     umbral_humedad_barro=0.55,
 )
+COTA_MONTANA = 2000  # metros: Suelo_Piedra por encima de esta cota es montaña
 
-LADO_CUADRICULA: int = 200

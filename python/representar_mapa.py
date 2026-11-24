@@ -22,12 +22,13 @@ from Services.Mundo.render_suelos import (
     guardar_png,
     guardar_png_alturas,
     guardar_png_lagos,
+    guardar_png_montanas,
     guardar_png_rios,
 )
 
 # Lado de los cuadrados de la rejilla discontinua (en CELDAS), alineada
 # con la esquina inferior izquierda. 0 = sin rejilla.
-LADO_CUADRICULA = settings.LADO_CUADRICULA
+LADO_CUADRICULA = settings.SECTOR_SIZE
 
 # Preset del mundo. Los campos que no se fijan usan los defaults; seed,
 # ancho y alto se toman de Config.settings si no se tocan aquí.
@@ -72,11 +73,7 @@ def verificar_mares_interiores(suelos, ancho, alto):
         if s == "Suelo_Oceano" and (x, y) not in mar_principal
     ]
     print(f"Celdas de mar principal: {len(mar_principal)}")
-    print(
-        f"AVISO: {len(interiores)} celdas de océano interior SIN tratar"
-        if interiores
-        else "OK: no hay mares interiores"
-    )
+
     return interiores
 
 
@@ -87,7 +84,7 @@ def main() -> int:
         f"Generando mundo {config.GRID_WIDTH}x{config.GRID_HEIGHT} "
         f"(seed {config.SEMILLA_MUNDO})..."
     )
-    suelos, hidrologia, alturas, red = generar_mapa_suelos(
+    suelos, hidrologia, alturas, montanas, red = generar_mapa_suelos(
         parametros=PARAMETROS_MUNDO,
         verbose=True,
     )
@@ -131,14 +128,35 @@ def main() -> int:
     )
     print(f"Renderizando ríos ({escala} px/casilla)...")
     pintadas = guardar_png_rios(
-        hidrologia, ancho, alto, escala, salida_rios, LADO_CUADRICULA
+        hidrologia,
+        ancho,
+        alto,
+        escala,
+        salida_rios,
+        LADO_CUADRICULA,
+        2,
+    )
+    pintadas = guardar_png_montanas(
+        suelos,
+        alturas,
+        ancho,
+        alto,
+        escala,
+        Path(
+            f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_montanas_{config.SEMILLA_MUNDO}.png"
+        ),
+        cota_metros=settings.COTA_MONTANA,
+        lado_cuadricula=LADO_CUADRICULA,
+    )
+    print(
+        f"mundo_montanas.png: {pintadas} casillas de montaña (cota {settings.COTA_MONTANA} m)"
     )
     print(f"Escrito: {salida_rios} ({pintadas} casillas de río)")
 
     # 4) Batimetría de lagos: negro = fondo (última gota al secarse),
     #    blanco = orilla de desborde. Escala independiente por lago.
     salida_lagos = Path(
-        f"SalidaMapas/{config.SEMILLA_MUNDO}/mundo_lagos_{config.SEMILLA_MUNDO}.png"
+        f"SalidaMapas/{settings.SEMILLA_MUNDO}/mundo_lagos_{settings.SEMILLA_MUNDO}.png"
     )
     print(f"Renderizando lagos ({escala} px/casilla)...")
     lagos_px = guardar_png_lagos(

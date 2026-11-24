@@ -89,7 +89,7 @@ def _rejilla_discontinua(
                 X, Y = px + ox, py + oy
                 if 0 <= X < ancho_px and 0 <= Y < alto_px:
                     base = 1 + X * 3
-                    filas[Y][base: base + 3] = b"\x00\x00\x00"
+                    filas[Y][base : base + 3] = b"\x00\x00\x00"
 
     # Verticales: fronteras de celda en x = k*lado, desde el borde izq.
     for vx in range(0, celdas_x + 1, lado):
@@ -144,7 +144,10 @@ def guardar_png(
     imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
+        + _chunk_png(
+            b"IHDR",
+            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
+        )
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -183,13 +186,65 @@ def guardar_png_alturas(
     imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
+        + _chunk_png(
+            b"IHDR",
+            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
+        )
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
     salida.parent.mkdir(parents=True, exist_ok=True)
     salida.write_bytes(png)
     return mn, mx
+
+
+def guardar_png_montanas(
+    suelos: dict[tuple[int, int], str],
+    alturas: dict[tuple[int, int], int],
+    ancho: int,
+    alto: int,
+    escala: int,
+    salida: Path,
+    cota_metros: int = 2000,
+    lado_cuadricula: int = 0,
+) -> int:
+    """Mapa de MONTAÑAS: fondo negro, montañas en BLANCO.
+
+    Es montaña toda casilla que es Suelo_Piedra Y cuya altitud es >=
+    cota_metros (en metros, 0 = nivel del mar). El resto (tierra, mar,
+    ríos, lagos, hielo...) es fondo negro. Devuelve el nº de casillas
+    de montaña pintadas."""
+    NEGRO = (0, 0, 0)
+    BLANCO = (255, 255, 255)
+
+    filas: list[bytes] = []
+    pintadas = 0
+    for y in range(alto):
+        fila_celdas = bytearray()
+        for x in range(ancho):
+            if suelos[(x, y)] == "Suelo_Piedra" and alturas[(x, y)] >= cota_metros:
+                rgb = BLANCO
+                pintadas += 1
+            else:
+                rgb = NEGRO
+            fila_celdas += bytes(rgb) * escala
+        for _ in range(escala):
+            filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
+
+    _rejilla_discontinua(filas, ancho, alto, escala, lado_cuadricula)
+    imagen = b"".join(bytes(f) for f in filas)
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + _chunk_png(
+            b"IHDR",
+            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
+        )
+        + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
+        + _chunk_png(b"IEND", b"")
+    )
+    salida.parent.mkdir(parents=True, exist_ok=True)
+    salida.write_bytes(png)
+    return pintadas
 
 
 def guardar_png_rios(
@@ -199,6 +254,7 @@ def guardar_png_rios(
     escala: int,
     salida: Path,
     lado_cuadricula: int = 0,
+    grosor_borde: int = 2,
 ) -> int:
     """Mapa de dirección de flujo de los ríos.
 
@@ -209,17 +265,46 @@ def guardar_png_rios(
     Diagonales: mezcla PROPORCIONAL de las dos cardinales que
     componen el vector (p. ej. NE = 50% amarillo + 50% rojo).
 
-    Fondo: tierra, lagos y mar en grises (el mapa es EXCLUSIVO de ríos:
-    los lagos van en su propio PNG). Devuelve el nº de casillas de río
-    pintadas.
+    Fondo: cada casilla SIN río se pinta con el color que tendría un
+    río hipotético fluyendo del CENTRO del mapa hacia esa casilla
+    (N arriba = amarillo, S abajo = cian, E derecha = rojo, O izquierda
+    = azul, diagonales = mezcla proporcional). Así se ve de un vistazo
+    si un río real fluye "hacia el mar" (mismo color que su fondo) o
+    va a contracorriente del campo radial. Los LAGOS también se tiñen
+    con su color radial. Devuelve el nº de casillas de río pintadas.
     """
     COLOR_N = (255, 255, 0)
     COLOR_S = (0, 255, 255)
     COLOR_E = (255, 0, 0)
     COLOR_O = (0, 0, 255)
-    FONDO_TIERRA = (45, 45, 45)
-    FONDO_MAR = (20, 20, 20)
-    COLOR_LAGO = (45, 45, 45)  # lagos disfrazados de tierra: mapa de RÍOS
+    FONDO = (45, 45, 45)  # interior neutro (tierra, mar, lagos)
+
+    # Centro del mapa: origen de los ríos "ideales" del borde.
+    cx = (ancho - 1) / 2.0
+    cy = (alto - 1) / 2.0
+
+    def color_radial(dx: float, dy: float):
+        """Color de un río hipotético con dirección (dx, dy): mezcla
+        PROPORCIONAL de las cardinales según el peso de cada eje
+        (p. ej. diagonal exacta = 50%/50%). En el centro exacto (vector
+        nulo) no hay dirección: negro."""
+        adx, ady = abs(dx), abs(dy)
+        if adx + ady == 0:
+            return (0, 0, 0)
+        horizontal = COLOR_E if dx > 0 else COLOR_O
+        vertical = COLOR_N if dy < 0 else COLOR_S
+        return tuple(
+            int((adx * horizontal[i] + ady * vertical[i]) // (adx + ady))
+            for i in range(3)
+        )
+
+    def en_borde(x: int, y: int) -> bool:
+        return (
+            x < grosor_borde
+            or y < grosor_borde
+            or x >= ancho - grosor_borde
+            or y >= alto - grosor_borde
+        )
 
     filas: list[bytes] = []
     pintadas = 0
@@ -231,7 +316,7 @@ def guardar_png_rios(
                 dx, dy = info.get("dir", (0, 0))
                 adx, ady = abs(dx), abs(dy)
                 if adx + ady == 0:
-                    rgb = FONDO_TIERRA  # sin dirección: no debería pasar
+                    rgb = (0, 0, 0)  # sin dirección: no debería pasar
                 else:
                     # Mezcla proporcional: el peso de cada eje es su módulo.
                     horizontal = COLOR_E if dx > 0 else COLOR_O
@@ -242,9 +327,11 @@ def guardar_png_rios(
                     )
                 pintadas += 1
             elif info is not None and info.get("tipo") == HIDRO_LAGO:
-                rgb = COLOR_LAGO
+                rgb = color_radial(x - cx, y - cy) if en_borde(x, y) else FONDO
             else:
-                rgb = FONDO_TIERRA  # la tierra firme
+                # BORDE: color del río hipotético centro -> esta casilla.
+                # Interior: fondo neutro.
+                rgb = color_radial(x - cx, y - cy) if en_borde(x, y) else FONDO
             fila_celdas += bytes(rgb) * escala
         for _ in range(escala):
             filas.append(bytearray(b"\x00" + bytes(fila_celdas)))
@@ -253,7 +340,10 @@ def guardar_png_rios(
     imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
+        + _chunk_png(
+            b"IHDR",
+            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
+        )
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -313,7 +403,10 @@ def guardar_png_lagos(
     imagen = b"".join(bytes(f) for f in filas)
     png = (
         b"\x89PNG\r\n\x1a\n"
-        + _chunk_png(b"IHDR", struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0))
+        + _chunk_png(
+            b"IHDR",
+            struct.pack(">IIBBBBB", ancho * escala, alto * escala, 8, 2, 0, 0, 0),
+        )
         + _chunk_png(b"IDAT", zlib.compress(imagen, 9))
         + _chunk_png(b"IEND", b"")
     )
@@ -324,12 +417,16 @@ def guardar_png_lagos(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render del mapa de suelos.")
-    parser.add_argument("--seed", type=int, default=None, help="Semilla (default: Config.SEMILLA_MUNDO)")
+    parser.add_argument(
+        "--seed", type=int, default=None, help="Semilla (default: Config.SEMILLA_MUNDO)"
+    )
     parser.add_argument("--ancho", type=int, default=None)
     parser.add_argument("--alto", type=int, default=None)
     parser.add_argument("--escala", type=int, default=4, help="Píxeles por casilla")
     parser.add_argument("--salida", type=Path, default=Path("mundo_suelos.png"))
-    parser.add_argument("--capas", nargs="*", default=None, help="Pipeline (default: ORDEN_CAPAS)")
+    parser.add_argument(
+        "--capas", nargs="*", default=None, help="Pipeline (default: ORDEN_CAPAS)"
+    )
     # Pasar cualquier parámetro de ParametrosGeneracion: --num_rios 20 --nivel_mar 0.5
     args, extra = parser.parse_known_args()
 
@@ -343,7 +440,7 @@ def main() -> int:
         except ValueError:
             overrides[tok[2:]] = float(next(it))
 
-    mapa, hidrologia, alturas = generar_mapa_suelos(
+    mapa, hidrologia, alturas, montanas, red = generar_mapa_suelos(
         seed=args.seed,
         ancho=args.ancho,
         alto=args.alto,
@@ -361,7 +458,9 @@ def main() -> int:
     guardar_png_alturas(alturas, ancho, alto, args.escala, salida_alturas)
 
     total = sum(conteo.values())
-    print(f"Escrito: {args.salida} ({ancho * args.escala}x{alto * args.escala} px, {total} casillas)")
+    print(
+        f"Escrito: {args.salida} ({ancho * args.escala}x{alto * args.escala} px, {total} casillas)"
+    )
     print("Distribución de suelos:")
     for suelo in sorted(conteo, key=conteo.get, reverse=True):
         pct = 100.0 * conteo[suelo] / total

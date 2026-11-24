@@ -29,6 +29,7 @@ from __future__ import annotations
 import heapq
 import math
 import random
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -62,7 +63,7 @@ def _hash_entero(x: int, y: int, seed: int) -> float:
 
 
 def _suavizado(t: float) -> float:
-    """smoothstep: elimina el aspecto de rejilla del value noise."""
+    """Smoothstep: elimina el aspecto de rejilla del value noise."""
     return t * t * (3.0 - 2.0 * t)
 
 
@@ -106,6 +107,42 @@ def _cuantil(ordenados: list[float], q: float) -> float:
     return ordenados[idx]
 
 
+# ── Progreso (impresión de avance dentro de las capas) ────────────────────────
+
+
+class Progreso:
+    """Cuenta los pasos de un bucle largo e imprime el avance cada 5 %.
+
+    Uso dentro de una capa:
+        prog = Progreso(mapa.verbose, "nombre_capa", total_pasos)
+        ... por cada paso ...
+        prog.tick()
+
+    Si no está activo (verbose=False), tick() es un no-op barato, así que
+    no cuesta nada dejar las llamadas puestas siempre."""
+
+    def __init__(self, activo: bool, capa: str, total: int, pct: float = 5.0):
+        self.activo = activo
+        self.capa = capa
+        self.total = max(1, total)
+        # Paso entre impresiones: 5 % del total (mínimo 1).
+        self.paso = max(1, int(self.total * pct / 100.0))
+        self.hechos = 0
+        self.prox = self.paso  # próxima marca a imprimir
+
+    def tick(self, n: int = 1) -> None:
+        if not self.activo:
+            return
+        self.hechos += n
+        if self.hechos >= self.prox:
+            print(
+                f"    [{self.capa}] {100.0 * self.hechos / self.total:5.1f} %",
+                flush=True,
+            )
+            while self.prox <= self.hechos:
+                self.prox += self.paso
+
+
 # ── Estado del mundo durante la generación ────────────────────────────────────
 
 
@@ -141,6 +178,8 @@ class MapaMundo:
     # La capa "rios" deja aquí su instancia para que capas posteriores
     # tracen desagües con la misma maquinaria (None si no se ejecutó).
     trazador_rios: object = field(init=False)
+    # ¿Imprimir el avance interno de las capas? Lo fija generar_mapa_suelos.
+    verbose: bool = False
     # Umbrales calculados por la capa de orografía (por cuantiles) y leídos
     # por las capas siguientes. Congelados tras calcularse: todas las capas
     # ven el MISMO mar y la MISMA montaña.
@@ -315,6 +354,7 @@ class CapaOrografia(Capa):
         lado_menor = min(mapa.ancho, mapa.alto)
         caida = p.borde_oceano * lado_menor
         todas: list[float] = []
+        prog = Progreso(mapa.verbose, "orografia", mapa.alto)
 
         for y in range(mapa.alto):
             # Latitud 0 en el centro (ecuador), 1 en los polos (filas 0 y alto-1).
@@ -344,6 +384,7 @@ class CapaOrografia(Capa):
 
                 hum = _fbm(x, y, p.seed + 13, p.octavas_clima, p.escala_clima)
                 mapa.humedad[y][x] = 0.5 + (hum - 0.5) * 0.8  # [0.1, 0.9]
+            prog.tick()
 
         # Umbrales por cuantil: mar sobre TODO el mapa; el resto sobre la
         # tierra emergida SIN el hielo polar (en los polos el clima gana a
@@ -397,7 +438,7 @@ class CapaRios(Capa):
     None porque no nacen de ningún río.)
 
     En la hidrología por casilla, cada celda de río sigue llevando su
-    {"tipo", "id", "dir"}: el id es del río al que pertenece AHORA
+    {"tipo", "id", "dir"}: el id es el del río al que pertenece AHORA
     (tras posibles particiones por confluencia).
     """
 
@@ -430,8 +471,10 @@ class CapaRios(Capa):
         # el cauce receptor en una confluencia.
         self._indice: dict[tuple[int, int], tuple[int, int]] = {}
 
+        prog = Progreso(mapa.verbose, "rios", len(fuentes))
         for fx, fy in fuentes:
             self._trazar(mapa, p, rng, fx, fy)
+            prog.tick()
         # Deja el trazador accesible: capas posteriores (mares_interiores)
         # pueden trazar desagües de sus lagos con la MISMA maquinaria
         # (ids, índice de cauces, confluencias, lagos encadenados).
@@ -589,36 +632,47 @@ class CapaRios(Capa):
         rng: random.Random,
         camino: list[tuple[int, int]],
     ) -> None:
-        """Engorda el cauce por anillos (como siempre). Las celdas del
-        anillo heredan tipo/id/dir del cauce vecino más próximo, y se
-        registran en el índice apuntando a esa celda del cauce: así una
-        confluencia posterior sobre un anillo parte el cauce por su
-        dueño."""
+        """Engorda el cauce por anillos. Las celdas del anillo heredan
+        tipo/id/dir de su celda del CAUCE más próxima, y se registran en
+        el índice apuntando a esa celda del cauce: así una confluencia
+        posterior sobre un anillo parte el cauce por su dueño.
+
+        Coste LINEAL: la celda del cauce más próxima se propaga por BFS
+        (cada celda nueva hereda el padre de la vecina que la descubrió),
+        NO con un min() sobre todo el cauce por cada celda (que era
+        cuadrático y colapsaba en mundos grandes)."""
         if not camino or p.ancho_max_rio <= 1:
             return
         prob = min(1.0, len(camino) / max(1.0, p.longitud_ref_rio_ancho))
 
         cauce = set(camino)
+        # padre: celda -> celda del CAUCE original más próxima (en saltos
+        # de vecindario). El cauce es su propio padre.
+        padre: dict[tuple[int, int], tuple[int, int]] = {c: c for c in camino}
+
         for _ in range(p.ancho_max_rio - 1):
             if rng.random() >= prob:
                 break
 
             anillo = set()
             for x, y in cauce:
+                px, py = padre[(x, y)]
                 for nx, ny in mapa.vecinos(x, y):
-                    if (nx, ny) in cauce or mapa.es_agua(nx, ny):
+                    if (nx, ny) in padre or mapa.es_agua(nx, ny):
                         continue
                     if mapa.en_limite(nx, ny):
                         continue
                     if mapa.elevacion[ny][nx] >= mapa.umbral_piedra:
                         continue
                     anillo.add((nx, ny))
+                    padre[(nx, ny)] = (px, py)
             if not anillo:
                 break
             for nx, ny in anillo:
-                cx, cy = min(cauce, key=lambda c: (c[0] - nx) ** 2 + (c[1] - ny) ** 2)
+                cx, cy = padre[(nx, ny)]
                 mapa.suelos[ny][nx] = SUELO_AGUA
-                mapa.hidro[ny][nx] = dict(mapa.hidro[cy][cx])
+                info = mapa.hidro[cy][cx]
+                mapa.hidro[ny][nx] = dict(info) if info is not None else None
                 if (cx, cy) in self._indice:
                     self._indice[(nx, ny)] = self._indice[(cx, cy)]
             cauce |= anillo
@@ -744,10 +798,12 @@ class CapaBiomas(Capa):
         self._refinar_humedad(mapa, p)
         self._calcular_cuotas_llanura(mapa, p)
 
+        prog = Progreso(mapa.verbose, "biomas", mapa.alto)
         for y in range(mapa.alto):
             for x in range(mapa.ancho):
                 if mapa.suelos[y][x] is None:
                     mapa.suelos[y][x] = self._bioma(mapa, p, x, y)
+            prog.tick()
 
     def _calcular_cuotas_llanura(
         self, mapa: MapaMundo, p: ParametrosGeneracion
@@ -814,12 +870,11 @@ class CapaBiomas(Capa):
         hum = mapa.humedad[y][x]
         helado = temp < mapa.umbral_temp_hielo
 
-        # Agua: océano profundo vs. agua costera/somera. En los polos el
-        # mar se congela: banquisa de hielo.
-        if elev < mapa.nivel_mar - 0.08:
-            return SUELO_HIELO if helado else SUELO_OCEANO
+        # Agua: todo lo bajo el nivel del mar es OCÉANO (sin banda de
+        # "agua costera" entre océano y tierra: el mar toca la costa
+        # directamente). En los polos se congela: banquisa de hielo.
         if elev < mapa.nivel_mar:
-            return SUELO_HIELO if helado else SUELO_AGUA
+            return SUELO_HIELO if helado else SUELO_OCEANO
 
         # Hielo continental: tundra polar.
         if helado:
@@ -872,6 +927,7 @@ class CapaMaresInteriores(Capa):
         # celda bajo el nivel del mar.
         mar_principal = self._mar_principal(mapa)
 
+        prog = Progreso(mapa.verbose, "mares_interiores", mapa.alto)
         visitadas = set(mar_principal)
         for y in range(mapa.alto):
             for x in range(mapa.ancho):
@@ -900,6 +956,7 @@ class CapaMaresInteriores(Capa):
                         + self.MARGEN_RELLENO
                         + self.VARIACION_RELLENO * rel
                     )
+            prog.tick()
 
     @staticmethod
     def _componente(
@@ -964,6 +1021,7 @@ class CapaBarro(Capa):
         self, mapa: MapaMundo, p: ParametrosGeneracion, rng: random.Random
     ) -> None:
         agua_o_mar = (SUELO_AGUA, SUELO_OCEANO)
+        prog = Progreso(mapa.verbose, "barro", mapa.alto)
         for y in range(mapa.alto):
             for x in range(mapa.ancho):
                 if mapa.suelos[y][x] not in (SUELO_TIERRA, SUELO_CESPED):
@@ -975,6 +1033,7 @@ class CapaBarro(Capa):
                     for nx, ny in mapa.vecinos(x, y)
                 ):
                     mapa.suelos[y][x] = SUELO_BARRO
+            prog.tick()
 
 
 # ── Capa 6: límite del mundo ──────────────────────────────────────────────────
@@ -1098,6 +1157,7 @@ def generar_mapa_suelos(
             )
 
     mapa = MapaMundo(ancho=p.ancho, alto=p.alto)
+    mapa.verbose = verbose
     rng = random.Random(p.seed)
 
     def _informe(capa: str, t_capa: float) -> None:
@@ -1144,6 +1204,7 @@ def generar_mapa_suelos(
     resultado: dict[tuple[int, int], str] = {}
     hidrologia: dict[tuple[int, int], dict] = {}
     alturas: dict[tuple[int, int], int] = {}
+    montanas: dict[tuple[int, int], bool] = {}
     for y in range(p.alto):
         for x in range(p.ancho):
             suelo = mapa.suelos[y][x]
@@ -1155,6 +1216,9 @@ def generar_mapa_suelos(
             resultado[(x, y)] = suelo
             if mapa.hidro[y][x] is not None:
                 hidrologia[(x, y)] = mapa.hidro[y][x]
+            # Mapa de montañas: True donde la cota supera el umbral
+            # orográfico de montaña (el mismo que divide grava/piedra).
+            montanas[(x, y)] = mapa.elevacion[y][x] >= mapa.umbral_montana
             # Mapa de alturas en METROS: 0 = nivel del mar, paso 1 = 1 m.
             # TODO el mar se aplana a 0 m (altura uniforme): la batimetría
             # no se genera, solo la topografía emergida. La normalización
@@ -1180,4 +1244,4 @@ def generar_mapa_suelos(
             f"Alturas: mín {min(alturas.values())} m, " f"máx {max(alturas.values())} m"
         )
 
-    return resultado, hidrologia, alturas, mapa.red
+    return resultado, hidrologia, alturas, montanas, mapa.red

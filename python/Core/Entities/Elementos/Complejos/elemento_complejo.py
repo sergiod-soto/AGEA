@@ -1,7 +1,7 @@
 from Core.Entities.Elementos.elemento import Elemento
 
 
-class Elemento_Compuesto(Elemento):
+class Elemento_Complejo(Elemento):
 
     def __init__(
         self,

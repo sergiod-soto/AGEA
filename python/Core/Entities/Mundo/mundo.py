@@ -60,6 +60,17 @@ class Mundo:
         # Antes Logica_Mundo._gold_atmosfera.
         self.malla_atmosfera: dict[tuple[int, int], Celda_Atmosfera] = {}
 
+        # Metadatos de la generación del terreno. Los rellena Logica_Mundo
+        # al terminar de generar el mundo (o al restaurar un snapshot); hasta
+        # entonces están vacíos. Se asignan enteros, no se mutan.
+        #   hidrologia: {(x, y): dict} solo casillas de río/lago (el mar no se
+        #               etiqueta). Formato: ver generacion_suelos.MapaMundo.hidro.
+        #   alturas:    {(x, y): int} en METROS, 0 = nivel del mar (el mar es 0).
+        # Uso previsto: alturas -> viento por montañas; hidrologia -> reparto
+        # de lluvia. Ambos son de solo lectura tras la generación.
+        self.hidrologia: dict[tuple[int, int], dict] = {}
+        self.alturas: dict[tuple[int, int], int] = {}
+
         # Celdas de atmósfera cuyo terreno (viento_objetivo) cambió desde el
         # último tick, en espacio de atmósfera. Las toma el Gestor en la fase 0
         # (tomar_parches_atmosfera) para enviarlas al Sector. Estado TRANSITORIO:
