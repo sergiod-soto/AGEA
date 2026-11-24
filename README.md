@@ -7,7 +7,7 @@
 <!-- TODO: añade aquí una captura o un GIF de Unity mostrando el mundo. Es lo que más impacto causa. -->
 <!-- ![AGEA en funcionamiento](docs/captura.png) -->
 
-**Estado:** en desarrollo activo · **Autor:** [Sergio Domínguez Soto](https://github.com/sergiod-soto)
+**Estado:** en desarrollo activo · **Autor:** [Sergio Domínguez Soto](https://github.com/sergiod-soto) [[Linkedin](https://www.linkedin.com/in/sergio-dominguez-soto)]
 
 ---
 
@@ -20,7 +20,7 @@ El proyecto está pensado desde el principio para **escalar**: todo el sistema p
 
 ## Características
 
-- **Mundo simulado por sectores.** Malla de 300×200 celdas (configurable) dividida en sectores de 100×100 que se calculan en paralelo.
+- **Mundo simulado por sectores.** Malla de 25,000,000 celdas (configurable) dividida en sectores de 100×100 que se calculan en paralelo.
 - **Biomas y suelos.** Bosque, desierto, mar, pradera, selva, taiga y tundra; suelos de piedra, arena, barro, césped, grava, hielo y agua. Generación del terreno con ruido (OpenSimplex).
 - **Sistema atmosférico por celda.** Temperatura, presión, viento y humedad (absoluta y relativa). La radiación solar se calcula con la fórmula astronómica del ángulo cenital, de modo que las estaciones aparecen solas (más extremas cerca de los polos, invertidas en el hemisferio sur). La saturación del aire usa Magnus-Tetens y la ley de los gases ideales.
 - **Entidades por composición de comportamientos.** Más de 100 módulos reutilizables (salud, energía, material, terreno, temporalidad, interacción, percepción, social, estadísticas…) que se combinan para definir cualquier elemento del mundo.
@@ -157,8 +157,6 @@ AGEA/
 - **Python 3.11 o superior** (recomendado)
 - **Unity 6000.4** (solo si quieres usar el visor)
 - Cuenta de AWS (solo para el modo remoto)
-
-Dependencias de Python (deducidas del código; no hay aún un `requirements.txt`):
 
 ```bash
 pip install grpcio grpcio-tools protobuf neat-python numpy scipy opensimplex \
