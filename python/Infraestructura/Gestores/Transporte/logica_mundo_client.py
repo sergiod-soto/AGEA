@@ -330,6 +330,52 @@ class LogicaMundoClient:
                 raise RuntimeError("Tiempo agotado esperando la generación del mundo.")
             await asyncio.sleep(intervalo)
 
+    async def obtener_datos_hidrograficos(
+        self, timeout: float | None = None
+    ) -> tuple[dict, dict[tuple[int, int], int], dict[tuple[int, int], dict]]:
+        """
+        Obtiene de LogicaMundo la red fluvial en DAG, el mapa de alturas y
+        el mapa de hidrología.
+        """
+        await self._ensure_channel()
+        resp = await self._stub.ObtenerDatosHidrograficos(
+            pb.ObtenerDatosHidrograficosRequest(), timeout=self._t(timeout)
+        )
+        if not resp.ok:
+            raise RuntimeError(f"ObtenerDatosHidrograficos: {resp.error}")
+
+        if resp.red_json:
+            from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import (
+                LogicaMundo,
+            )
+
+            red = LogicaMundo._red_desde_dict(
+                json.loads(resp.red_json.decode("utf-8"))
+            )
+        else:
+            red = {"rios": {}, "lagos": {}}
+        raw_alt = (
+            json.loads(resp.alturas_json.decode("utf-8"))
+            if resp.alturas_json
+            else {}
+        )
+        alturas = {
+            (int(k.split(",")[0]), int(k.split(",")[1])): v
+            for k, v in raw_alt.items()
+        }
+        raw_hidro = (
+            json.loads(resp.hidrologia_json.decode("utf-8"))
+            if resp.hidrologia_json
+            else {}
+        )
+        hidrologia = {}
+        for k, v in raw_hidro.items():
+            pos = (int(k.split(",")[0]), int(k.split(",")[1]))
+            if isinstance(v, dict) and "dir" in v and isinstance(v["dir"], list):
+                v["dir"] = tuple(v["dir"])
+            hidrologia[pos] = v
+        return red, alturas, hidrologia
+
     # ------------------------------------------------------------------
     # Soporte al ciclo de tick de Gestor_Mundo
     # ------------------------------------------------------------------

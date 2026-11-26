@@ -92,6 +92,7 @@ LOG_LEVEL_REMOTE_SERVER = os.getenv("LOG_LEVEL_REMOTE_SERVER", "INFO")
 
 
 # ── Bots ────────────────────────────────────────────────────────
+HABILITAR_BOTS: bool = os.getenv("HABILITAR_BOTS", "true").lower() == "true"
 GESTOR_BOTS_HOST = os.getenv("GESTOR_BOTS_HOST", "[::]")
 GESTOR_BOTS_PORT: int = int(os.getenv("GESTOR_BOTS_PORT", 50051))
 GESTOR_BOTS_WORKERS: int = int(os.getenv("GESTOR_BOTS_WORKERS", 10))

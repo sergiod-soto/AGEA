@@ -36,6 +36,7 @@ from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
 from Infraestructura.Gestores.Mundo.LogicaMundo.Funciones import (
     estado_generacion_mundo,
     generar_mundo,
+    obtener_datos_hidrograficos,
 )
 
 FUNCIONES = [
@@ -73,4 +74,5 @@ FUNCIONES = [
     # ----- generacion del mundo --------
     estado_generacion_mundo,
     generar_mundo,
+    obtener_datos_hidrograficos,
 ]

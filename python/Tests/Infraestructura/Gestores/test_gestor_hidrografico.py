@@ -360,3 +360,110 @@ async def test_gestor_mundo_fase_0_1_2_con_hidrografia(red_prueba, fake_stub_fac
 
     # Fase 2 consolida deltas
     await gestor_mundo._fase_2()
+
+
+@pytest.mark.unit
+async def test_obtener_datos_hidrograficos_rpc(red_prueba):
+    import grpc
+    from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo import LogicaMundo
+    from Infraestructura.Gestores.Mundo.LogicaMundo.logica_mundo_servicer import (
+        LogicaMundoServicer,
+    )
+    from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
+        logica_mundo_service_pb2_grpc as pb_grpc,
+    )
+    from Infraestructura.Gestores.Transporte.logica_mundo_client import (
+        LogicaMundoClient,
+    )
+
+    red, hidrologia, alturas, _ = red_prueba
+    logica = LogicaMundo()
+    logica.mundo.red = red
+    logica.mundo.hidrologia = hidrologia
+    logica.mundo.alturas = alturas
+
+    servicer = LogicaMundoServicer(logica)
+    server = grpc.aio.server()
+    pb_grpc.add_LogicaMundoServiceServicer_to_server(servicer, server)
+    port = server.add_insecure_port("localhost:0")
+    await server.start()
+
+    try:
+        client = LogicaMundoClient(f"localhost:{port}")
+        r, a, h = await client.obtener_datos_hidrograficos()
+        assert 1 in r["rios"]
+        assert a == alturas
+        assert h == hidrologia
+        await client.close()
+    finally:
+        await server.stop(grace=None)
+
+
+@pytest.mark.unit
+async def test_gestor_mundo_auto_inicializa_hidrografia(red_prueba):
+    from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import (
+        GestorMundo,
+    )
+
+    red, hidrologia, alturas, _ = red_prueba
+
+    class FakeLogicaClient:
+        async def obtener_datos_hidrograficos(self):
+            return red, alturas, hidrologia
+
+    gestor = GestorMundo(logica_client=FakeLogicaClient())
+    assert gestor.gestor_hidrografico is None
+
+    await gestor._inicializar_gestor_hidrografico()
+    assert gestor.gestor_hidrografico is not None
+    assert gestor.gestor_hidrografico.inicializado is True
+    assert len(gestor.gestor_hidrografico.red_fluvial.rios) == 4
+
+
+@pytest.mark.unit
+async def test_gestor_mundo_funciona_sin_bots(monkeypatch, tmp_path, red_prueba):
+    import Config.settings as config
+    from Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo import (
+        GestorMundo,
+    )
+
+    monkeypatch.setattr(config, "HABILITAR_BOTS", False)
+    monkeypatch.setattr(
+        "Infraestructura.Gestores.Mundo.GestorMundo.gestor_mundo.SNAPSHOT_DIR",
+        tmp_path,
+    )
+    red, hidrologia, alturas, _ = red_prueba
+
+    class FakeLogicaClient:
+        async def obtener_datos_hidrograficos(self):
+            return red, alturas, hidrologia
+
+        async def load_state(self, snapshot_id):
+            pass
+
+        async def _distribute_gold_to_sectors(self):
+            pass
+
+    gestor = GestorMundo(logica_client=FakeLogicaClient())
+
+    async def fake_async(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(gestor, "_asegurar_mundo_generado", fake_async)
+    monkeypatch.setattr(gestor, "_connect_sector", fake_async)
+    monkeypatch.setattr(gestor, "_distribute_gold_to_sectors", fake_async)
+    monkeypatch.setattr(gestor, "_activar_todos", fake_async)
+    await gestor.start(fresh=True)
+
+    assert gestor._bots_stub is None
+    assert gestor._bots_channel is None
+
+    # Reset budgets no falla
+    await gestor._reset_budgets()
+
+    # Freeze y resume no fallan
+    await gestor.freeze()
+    await gestor.resume()
+
+    await gestor.close()
+

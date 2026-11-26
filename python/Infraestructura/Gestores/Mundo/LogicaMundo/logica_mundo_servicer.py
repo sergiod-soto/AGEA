@@ -195,3 +195,8 @@ class LogicaMundoServicer(pb_grpc.LogicaMundoServiceServicer):
         return await self._dispatch["TomarParchesAtmosfera"].handle(
             self._logica, request, context
         )
+
+    async def ObtenerDatosHidrograficos(self, request, context):
+        return await self._dispatch["ObtenerDatosHidrograficos"].handle(
+            self._logica, request, context
+        )

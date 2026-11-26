@@ -13,7 +13,6 @@
 
 ## ¿Qué es AGEA?
 
-
 AGEA es un entorno de simulación donde **la inteligencia de los agentes se evoluciona en lugar de programarse**. El mundo se calcula por turnos (*ticks*), está dividido en sectores que pueden ejecutarse como procesos independientes, y cada agente decide sus acciones con una red neuronal generada mediante HyperNEAT.
 
 El proyecto está pensado desde el principio para **escalar**: todo el sistema puede ejecutarse en una sola máquina (modo local) o repartirse en instancias de AWS (modo remoto).
@@ -21,14 +20,16 @@ El proyecto está pensado desde el principio para **escalar**: todo el sistema p
 ## Características
 
 - **Mundo simulado por sectores.** Malla de 25,000,000 celdas (configurable) dividida en sectores de 100×100 que se calculan en paralelo.
-- **Biomas y suelos.** Bosque, desierto, mar, pradera, selva, taiga y tundra; suelos de piedra, arena, barro, césped, grava, hielo y agua. Generación del terreno con ruido (OpenSimplex).
+- **Biomas y suelos.** Bosque, desierto, mar, pradera, selva, taiga y tundra; suelos de piedra, arena, barro, césped, grava, hielo, océano y agua.
+- **Generador de mundo modular encadenado.** Generación orográfica y ecológica dividida en etapas independientes encadenadas (`orografia`, `mares_interiores`, `rios`, `biomas`, `barro`, `limite`), permitiendo regenerar o inspeccionar etapas individuales o el pipeline completo.
+- **Sistema hidrográfico dinámico (DAG de ríos y lagos).** Red fluvial y cuencas modeladas como un Grafo Acíclico Dirigido procesado topológicamente de mayor a menor cota. Los lagos retienen agua por debajo de su cota crítica y desbordan generando ríos emisarios al superarla. Proyección discreta sobre el terreno con histéresis anti-parpadeo e inhibición de evaporación individual en celdas acuosas gestionadas por hidrología.
 - **Sistema atmosférico por celda.** Temperatura, presión, viento y humedad (absoluta y relativa). La radiación solar se calcula con la fórmula astronómica del ángulo cenital, de modo que las estaciones aparecen solas (más extremas cerca de los polos, invertidas en el hemisferio sur). La saturación del aire usa Magnus-Tetens y la ley de los gases ideales.
 - **Entidades por composición de comportamientos.** Más de 100 módulos reutilizables (salud, energía, material, terreno, temporalidad, interacción, percepción, social, estadísticas…) que se combinan para definir cualquier elemento del mundo.
-- **IA evolutiva.** Implementación propia de HyperNEAT sobre `neat-python` y `numpy`: una red pequeña (CPPN) genera los pesos de la red grande que actúa como cerebro del agente.
-- **Arquitectura distribuida.** Componentes independientes que se comunican por **gRPC + Protocol Buffers** (10 definiciones `.proto`), con heartbeats, apagado ordenado y logging centralizado.
+- **IA evolutiva.** Implementación propia de HyperNEAT sobre `neat-python` y `numpy`: una red pequeña (CPPN) genera los pesos de la red grande que actúa como cerebro del agente. Monitorización continua con alerta de extinción si la población viva llega a cero.
+- **Arquitectura distribuida y simulación desacoplada.** Componentes independientes que se comunican por **gRPC + Protocol Buffers** (10 definiciones `.proto`), con heartbeats, apagado ordenado y logging centralizado. Posibilidad de desactivar el sistema de bots (`HABILITAR_BOTS=false`) para simular y visualizar exclusivamente la evolución geofísica y climática.
 - **Control de ejecución.** Pausa, avance tick a tick, congelación de bots, guardado y carga de *snapshots*, y una consola interactiva.
 - **Despliegue en AWS.** Arranque de la infraestructura en EC2 y almacenamiento en S3 mediante `boto3`.
-- **Visualización en Unity.** Un cliente suscrito a un stream gRPC recibe la región del mundo que se quiere observar.
+- **Visualización en Unity.** Un cliente suscrito a un stream gRPC (`VistaFoco`) recibe la región del mundo que se quiere observar en tiempo real.
 
 ## Arquitectura
 
@@ -48,7 +49,7 @@ flowchart TD
         Config["Config/settings.py\n(Variables de entorno & Config global)"]
 
         subgraph InfraLayer ["Capa de Infraestructura y Red (gRPC Servers)"]
-            Comm["Comunicaciones Remoto\n(Puente gRPC Bidireccional)"]
+            Comm["Comunicaciones Remoto\n(Puente gRPC Bidireccional / VistaFoco)"]
             Consola["Consola Interactiva\n(Control de ejecución y comandos)"]
             LogSys["Logging Centralizado\n(Gestión de trazas y niveles)"]
             
@@ -61,12 +62,14 @@ flowchart TD
 
         subgraph CoreEngine ["Capa de Motor y Modelos (Core)"]
             GM["Gestor de Mundo\n(Reloj, Ticks, Snapshots, Coordinación)"]
+            GH["Gestor Hidrográfico\n(DAG de Ríos y Lagos, Dinámica Fluvial)"]
             Registry["Registries & Caches\n(Gestor de catálogos y recursos)"]
             
             subgraph EntitiesSub ["Modelo de Entidades & Físicas (Entities / Fisica)"]
                 Entities["Entities /\nComportamientos (>100 módulos reutilizables)"]
                 Biomes["Biomas & Suelos\n(Bosque, desierto, mar, tundra...)"]
-                Terrain["Generador de Terreno\n(Ruido OpenSimplex)"]
+                Terrain["Generador Modular de Terreno\n(Etapas: orografía, mares, ríos, biomas)"]
+                Hydro["Red Hidrográfica\n(Ríos, lagos, desbordes, histéresis)"]
                 Atmo["Sistema Atmosférico por Celda\n(Temp., presión, viento, humedad, Magnus-Tetens)"]
                 Astronomy["Radiación Solar\n(Ángulo cenital y cálculo astronómico)"]
             end
@@ -74,7 +77,7 @@ flowchart TD
             LM["Lógica de Mundo (Logica/)\n(Asignación de IDs, gestión de cambios y deltas)"]
             
             subgraph AISub ["Subsistema de IA (HyperNEAT / NEAT)"]
-                GB["Gestor de Bots\n(Creación, eliminación y presupuestos)"]
+                GB["Gestor de Bots\n(Creación, eliminación, presupuestos y alerta de extinción)"]
                 HV["Hypervisor\nAlojamiento y ejecución de bots"]
                 HNEAT["HyperNEAT / NumPy\n(CPPN generador de pesos neuronales)"]
             end
@@ -92,6 +95,8 @@ flowchart TD
     
     Comm <-->|gRPC Streaming| Unity
     GM --> GRPCServices
+    GM --> GH
+    GH --> Hydro
     GRPCServices --> ServerWorld
     GRPCServices --> ServerSector
     GRPCServices --> ServerBot
@@ -118,16 +123,17 @@ flowchart TD
     Pytest -. Valida robustez .- CoreEngine
 ```
 
-> El diagrama es una vista simplificada. La topología exacta (cuántos sectores, cuántos hypervisors, puertos) se define en `Infraestructura/Gestores/Bootstrap/topologia.py`.
+> El diagrama es una vista simplificada. La topología exacta (cuántos sectores, cuántos hypervisors, puertos y presencia del gestor de bots) se define dinámicamente en `Infraestructura/Gestores/Bootstrap/topologia.py`.
 
 | Componente | Responsabilidad |
 |---|---|
-| **Gestor de Mundo** | Orquesta el reloj de la simulación (pausa, avance de tick, guardado) y crea los sectores. |
+| **Gestor de Mundo** | Orquesta el reloj de la simulación (pausa, avance de tick, guardado), crea los sectores y coordina el ciclo hidrográfico. |
+| **Gestor Hidrográfico** | Simula la hidrología a escala de cuenca como un DAG (ríos, lagos con desborde crítico, acumulación y drenaje). |
 | **Sectores** | Cada uno simula su porción del terreno y la atmósfera, y devuelve los cambios (*deltas*) de cada tick. |
-| **Lógica de Mundo** | Crea, modifica y elimina elementos, asigna IDs y resuelve las acciones de los agentes. |
-| **Gestor de Bots** | Crea y elimina bots, reparte presupuestos de cómputo y gestiona snapshots. |
+| **Lógica de Mundo** | Mantiene el estado *gold*, crea, modifica y elimina elementos, asigna IDs y almacena la red hidrográfica. |
+| **Gestor de Bots** | Crea y elimina bots, reparte presupuestos de cómputo, gestiona snapshots y emite alertas de extinción. |
 | **Hypervisor** | Aloja y ejecuta los bots (con un límite configurable por instancia). |
-| **Comunicaciones Remoto** | Puente único entre el entorno local y AWS; sirve el stream de visualización a Unity. |
+| **Comunicaciones Remoto** | Puente único entre el entorno local y AWS; sirve el stream de visualización a Unity (`VistaFoco`). |
 
 ## Estructura del repositorio
 
@@ -135,7 +141,7 @@ flowchart TD
 AGEA/
 ├── python/                  # Backend de la simulación
 │   ├── Main.py              # Punto de entrada (modos local / remoto / producción)
-│   ├── Config/              # Configuración centralizada (variables de entorno)
+│   ├── Config/              # Configuración centralizada (settings.py, variables de entorno)
 │   ├── Core/
 │   │   ├── Entities/        # Mundo, biomas, suelos, atmósfera y comportamientos
 │   │   ├── Fisica/          # Funciones termodinámicas
@@ -143,8 +149,10 @@ AGEA/
 │   │   └── Logica/          # Lógica de bots y entidades
 │   ├── Infraestructura/
 │   │   ├── Gestores/        # Componentes, bootstrap, transporte gRPC, consola y logs
+│   │   │   ├── Mundo/       # Gestor_Mundo, Logica_Mundo, Sector e Hidrologia
+│   │   │   └── Bots/        # Gestor_Bots e Hypervisor
 │   │   └── AWS/             # Orquestación en EC2 / S3
-│   ├── Services/            # Servicio de cachés
+│   ├── Services/            # Generador modular de mundo y servicios de soporte
 │   ├── Utils/               # Utilidades (geometría, ficheros, sonido…)
 │   ├── DEV/                 # Escenarios de prueba y bot de ejemplo
 │   ├── Tests/               # Suite de pruebas (pytest)
@@ -185,23 +193,26 @@ Copia o crea un fichero `.env.local` con, al menos, la raíz de imports:
 PYTHONPATH=.
 ```
 
-Los parámetros del mundo (`GRID_WIDTH`, `GRID_HEIGHT`, `SECTOR_SIZE`, `LOG_LEVEL`, `FRESH`…) se leen de `Config/settings.py` y pueden sobreescribirse con variables de entorno.
+Los parámetros del mundo (`GRID_WIDTH`, `GRID_HEIGHT`, `SECTOR_SIZE`, `HABILITAR_BOTS`, `LOG_LEVEL`, `FRESH`…) se leen de `Config/settings.py` y pueden sobreescribirse con variables de entorno.
 
 ### 3. Arrancar en modo local
 
 Levanta todo el sistema como subprocesos en tu máquina:
 
 ```bash
-# Linux / macOS
+# Linux / macOS - Partida completa con bots
 FRESH=true python Main.py --modo local
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) - Partida completa con bots
 $env:FRESH="true"; python Main.py --modo local
+
+# Windows (PowerShell) - Simulación geofísica pura (solo terreno, clima e hidrología, sin bots)
+$env:HABILITAR_BOTS="false"; $env:FRESH="true"; python Main.py --modo local
 ```
 
-`FRESH=true` ignora los snapshots guardados y empieza una partida nueva. Para cargar un escenario de pruebas concreto:
+`FRESH=true` ignora los snapshots guardados y empieza una partida nueva (generando automáticamente el mundo y la hidrografía si no existen). Para cargar un escenario de pruebas concreto:
 
 ```bash
 python Main.py --modo local --escenario <nombre>
@@ -227,7 +238,6 @@ pytest -m unit            # pruebas puras, sin red
 pytest -m integration     # componentes reales colaborando (gRPC en proceso)
 pytest -m e2e             # stack completo como subprocesos
 ```
-
 
 ## Tecnologías
 

@@ -135,6 +135,26 @@ async def test_kill_bot_desconocido_no_lanza(gestor: Gestor_Bots):
     await gestor.kill_bot("no_existe")  # no debe lanzar, solo loguear warning
 
 
+@pytest.mark.unit
+async def test_kill_bot_avisa_si_se_queda_sin_bots(gestor: Gestor_Bots, caplog):
+    await gestor.register_hypervisor("hv_a", "localhost", 1, 2, capacity=5)
+    await gestor.set_hypervisor_client("hv_a", FakeHypervisorClient(ok=True))
+
+    assert not gestor.poblacion_extinta
+    assert gestor.total_bots_vivos == 0
+
+    await gestor.spawn_bot({"bot_id": "bot_1", "budget": 5})
+    assert not gestor.poblacion_extinta
+    assert gestor.total_bots_vivos == 1
+
+    with caplog.at_level("WARNING"):
+        await gestor.kill_bot("bot_1")
+
+    assert gestor.poblacion_extinta
+    assert gestor.total_bots_vivos == 0
+    assert "Gestor_Bots se ha quedado sin bots vivos" in caplog.text
+
+
 # ── hypervisores_caidos() — detección por staleness ────────────────
 
 

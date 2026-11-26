@@ -13,6 +13,8 @@ from Infraestructura.Gestores.Comunicacion.Remoto.comunicaciones_remoto import (
     ComunicacionesRemoto,
 )
 
+import Config.settings as config
+
 logger = logging.getLogger(__name__)
 
 _TIMEOUT_PING_SEGUNDOS = 3.0
@@ -29,10 +31,19 @@ class ComunicacionesRemotoServicer(pb_grpc.ComunicacionRemotaServiceServicer):
     async def Heartbeat(self, request, context):
         clientes = self._logica._clientes  # ClientesRemotos ya conectado
 
+        subordinados = [
+            nombre
+            for nombre in _SUBORDINADOS
+            if not (
+                nombre == "gestor_bots"
+                and not getattr(config, "HABILITAR_BOTS", True)
+            )
+        ]
+
         resultados = await asyncio.gather(
             *[
                 self._ping(nombre, getattr(clientes, nombre).heartbeat)
-                for nombre in _SUBORDINADOS
+                for nombre in subordinados
             ],
             return_exceptions=True,
         )
@@ -42,7 +53,7 @@ class ComunicacionesRemotoServicer(pb_grpc.ComunicacionRemotaServiceServicer):
         # subordinado) cuenta como "caído".
         caidos = [
             nombre
-            for nombre, resultado in zip(_SUBORDINADOS, resultados)
+            for nombre, resultado in zip(subordinados, resultados)
             if isinstance(resultado, Exception)
         ]
 

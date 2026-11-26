@@ -65,6 +65,8 @@ class FocoBroadcaster:
         min_pos: tuple[int, int],
         max_pos: tuple[int, int],
         incluir: list[str],
+        *args,
+        **kwargs,
     ) -> None:
         """
         Llamado desde ComunicacionesRemoto.actualizar_foco() cuando el

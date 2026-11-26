@@ -44,11 +44,21 @@ class Gestor_Bots:
         self._hypervisor_clients: dict[str, object] = {}
         self._bots: dict[int, BotStats] = {}
         self._bot_counter: int = 0
+        self._ha_tenido_bots: bool = False
         self.logica_client = logica_client
 
         logger.info(
             "Gestor_Bots inicializado (bots_por_hypervisor=%d).", bots_por_hypervisor
         )
+
+    @property
+    def poblacion_extinta(self) -> bool:
+        """True si el gestor llegó a tener bots y ahora su población activa es 0."""
+        return self._ha_tenido_bots and len(self._bots) == 0
+
+    @property
+    def total_bots_vivos(self) -> int:
+        return len(self._bots)
 
     # ------------------------------------------------------------------
     # Capacidad
@@ -226,6 +236,7 @@ class Gestor_Bots:
                 error=result.error,
             )
 
+        self._ha_tenido_bots = True
         return BotInfo(
             bot_id=bot_id,
             hypervisor_id=hv_id,
@@ -254,6 +265,10 @@ class Gestor_Bots:
             hv = self._hypervisors.get(hv_id)
             if hv and hv.current_load > 0:
                 hv.current_load -= 1
+            if self._ha_tenido_bots and len(self._bots) == 0:
+                logger.warning(
+                    "ALERTA: Gestor_Bots se ha quedado sin bots vivos (población = 0)."
+                )
 
     async def eliminar_avatar_bot(self, bot_id: int) -> tuple[bool, str]:
         if self.logica_client is None:

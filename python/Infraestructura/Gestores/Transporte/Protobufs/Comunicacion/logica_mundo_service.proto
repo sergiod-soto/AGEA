@@ -45,6 +45,7 @@ service LogicaMundoService {
 
   rpc AvanzarTick(AvanzarTickRequest) returns (common.Ack);
   rpc EmitirEventos (EmitirEventosRequest) returns (common.Ack);
+  rpc ObtenerDatosHidrograficos (ObtenerDatosHidrograficosRequest) returns (ObtenerDatosHidrograficosResponse);
 }
 
 message LogicaMundoHeartbeatResponse {
@@ -330,4 +331,14 @@ message AvanzarTickRequest {
 
 message EmitirEventosRequest {
   repeated common.EventoMundo eventos = 1;
+}
+
+message ObtenerDatosHidrograficosRequest {}
+
+message ObtenerDatosHidrograficosResponse {
+  bool   ok              = 1;
+  string error           = 2;
+  bytes  red_json        = 3;
+  bytes  alturas_json    = 4;
+  bytes  hidrologia_json = 5;
 }

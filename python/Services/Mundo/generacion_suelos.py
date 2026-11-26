@@ -1055,7 +1055,257 @@ class CapaLimite(Capa):
             mapa.suelos[y][mapa.ancho - 1] = SUELO_LIMITE
 
 
-# ── Punto de entrada ──────────────────────────────────────────────────────────
+# ── Generador modular por etapas y punto de entrada ─────────────────────────
+
+
+class GeneradorMundo:
+    """
+    Generador modular de mundo por etapas independientes.
+
+    Permite:
+    1. Ejecutar cada etapa de forma independiente partiendo del resultado
+       acumulado de la etapa anterior (orografia -> mares_interiores -> rios -> biomas -> barro -> limite).
+    2. Inspeccionar o modificar el estado intermedio en MapaMundo entre etapas.
+    3. Construir el resultado final con `construir_resultado()`.
+    """
+
+    def __init__(
+        self,
+        seed: Optional[int] = None,
+        ancho: Optional[int] = None,
+        alto: Optional[int] = None,
+        capas: Optional[list[str]] = None,
+        parametros: Optional["ParametrosGeneracion | dict"] = None,
+        verbose: bool = False,
+        **overrides,
+    ):
+        self.parametros = self._resolver_parametros(
+            seed=seed,
+            ancho=ancho,
+            alto=alto,
+            parametros=parametros,
+            overrides=overrides,
+        )
+        self.orden_capas = list(capas) if capas is not None else list(ORDEN_CAPAS)
+        for nombre in self.orden_capas:
+            if nombre not in CAPAS:
+                raise ValueError(
+                    f"Capa de generación desconocida: '{nombre}' "
+                    f"(registradas: {', '.join(sorted(CAPAS))})"
+                )
+
+        self.verbose = verbose
+        self.mapa = MapaMundo(ancho=self.parametros.ancho, alto=self.parametros.alto)
+        self.mapa.verbose = verbose
+        self.rng = random.Random(self.parametros.seed)
+        self.etapas_ejecutadas: list[str] = []
+        self._tiempos_etapas: dict[str, float] = {}
+
+    @staticmethod
+    def _resolver_parametros(
+        seed: Optional[int],
+        ancho: Optional[int],
+        alto: Optional[int],
+        parametros: Optional["ParametrosGeneracion | dict"],
+        overrides: dict,
+    ) -> ParametrosGeneracion:
+        try:
+            import Config.settings as config
+
+            ancho_def = config.GRID_WIDTH
+            alto_def = config.GRID_HEIGHT
+            seed_def = getattr(config, "SEMILLA_MUNDO", 42)
+        except Exception:
+            ancho_def, alto_def, seed_def = 600, 600, 42
+
+        if isinstance(parametros, ParametrosGeneracion):
+            p = ParametrosGeneracion(**parametros.__dict__)
+        elif parametros:
+            p = ParametrosGeneracion(**{**parametros})
+        else:
+            p = ParametrosGeneracion()
+
+        if ancho is not None:
+            p.ancho = ancho
+        if alto is not None:
+            p.alto = alto
+        if seed is not None:
+            p.seed = seed
+
+        if p.ancho == ParametrosGeneracion.ancho:
+            p.ancho = ancho_def
+        if p.alto == ParametrosGeneracion.alto:
+            p.alto = alto_def
+        if p.seed == ParametrosGeneracion.seed:
+            p.seed = seed_def
+
+        for clave, valor in overrides.items():
+            if clave not in p.__dataclass_fields__:
+                raise ValueError(
+                    f"Parámetro de generación desconocido: '{clave}' "
+                    f"(campos válidos: {', '.join(sorted(p.__dataclass_fields__))})"
+                )
+            setattr(p, clave, valor)
+
+        if p.ancho < 3 or p.alto < 3:
+            raise ValueError(
+                f"Mundo demasiado pequeño: {p.ancho}x{p.alto} (mínimo 3x3)."
+            )
+
+        if not 0.0 <= p.fragmentacion <= 1.0:
+            raise ValueError(
+                f"fragmentacion debe estar en [0, 1]; recibida {p.fragmentacion!r}"
+            )
+
+        cuotas = (
+            "proporcion_agua",
+            "proporcion_hielo",
+            "proporcion_arena",
+            "proporcion_cesped",
+            "proporcion_montana",
+            "proporcion_piedra",
+        )
+        for cuota in cuotas:
+            valor = getattr(p, cuota)
+            if not 0.0 <= valor <= 1.0:
+                raise ValueError(f"{cuota} debe estar en [0, 1]; recibido {valor!r}")
+        if p.proporcion_arena + p.proporcion_cesped > 1.0:
+            raise ValueError(
+                f"proporcion_arena ({p.proporcion_arena}) + proporcion_cesped "
+                f"({p.proporcion_cesped}) > 1.0: no queda llanura para Suelo_Tierra."
+            )
+        return p
+
+    def _informe(self, capa: str, t_capa: float) -> None:
+        """Línea de progreso de una capa: qué tocó y cuánto tardó."""
+        asig = sum(
+            1
+            for y in range(self.mapa.alto)
+            for x in range(self.mapa.ancho)
+            if self.mapa.suelos[y][x] is not None
+        )
+        hidro = sum(
+            1
+            for y in range(self.mapa.alto)
+            for x in range(self.mapa.ancho)
+            if self.mapa.hidro[y][x] is not None
+        )
+        pct = 100.0 * asig / (self.mapa.ancho * self.mapa.alto)
+        extra = f" | hidrología: {hidro} celdas" if hidro else ""
+        print(
+            f"  [capa {capa:<16}] {asig:>8}/{self.mapa.ancho * self.mapa.alto} suelos "
+            f"({pct:5.1f} %){extra} — {t_capa:.2f} s"
+        )
+
+    def ejecutar_etapa(self, nombre_etapa: str) -> MapaMundo:
+        """
+        Ejecuta una capa individual sobre el MapaMundo acumulado.
+        """
+        if nombre_etapa not in CAPAS:
+            raise ValueError(
+                f"Capa de generación desconocida: '{nombre_etapa}' "
+                f"(registradas: {', '.join(sorted(CAPAS))})"
+            )
+        if self.verbose:
+            print(f"  [capa {nombre_etapa:<16}] ...", flush=True)
+
+        t_inicio = time.perf_counter()
+        CAPAS[nombre_etapa]().aplicar(self.mapa, self.parametros, self.rng)
+        t_capa = time.perf_counter() - t_inicio
+        self._tiempos_etapas[nombre_etapa] = t_capa
+        self.etapas_ejecutadas.append(nombre_etapa)
+
+        if self.verbose:
+            self._informe(nombre_etapa, t_capa)
+        return self.mapa
+
+    # Métodos semánticos directos para cada etapa
+    def etapa_orografia(self) -> MapaMundo:
+        return self.ejecutar_etapa("orografia")
+
+    def etapa_mares_interiores(self) -> MapaMundo:
+        return self.ejecutar_etapa("mares_interiores")
+
+    def etapa_rios(self) -> MapaMundo:
+        return self.ejecutar_etapa("rios")
+
+    def etapa_biomas(self) -> MapaMundo:
+        return self.ejecutar_etapa("biomas")
+
+    def etapa_barro(self) -> MapaMundo:
+        return self.ejecutar_etapa("barro")
+
+    def etapa_limite(self) -> MapaMundo:
+        return self.ejecutar_etapa("limite")
+
+    def ejecutar_todas_las_etapas(self) -> "GeneradorMundo":
+        """Ejecuta en secuencia todas las capas configuradas en orden_capas."""
+        if self.verbose:
+            total = self.parametros.ancho * self.parametros.alto
+            print(
+                f"Generando mundo {self.parametros.ancho}x{self.parametros.alto} ({total:,} casillas), "
+                f"seed={self.parametros.seed}, capas: {', '.join(self.orden_capas)}"
+            )
+
+        for nombre in self.orden_capas:
+            self.ejecutar_etapa(nombre)
+        return self
+
+    def construir_resultado(
+        self,
+    ) -> tuple[
+        dict[tuple[int, int], str],
+        dict[tuple[int, int], dict],
+        dict[tuple[int, int], int],
+        dict[tuple[int, int], bool],
+        dict,
+    ]:
+        """
+        Extrae y devuelve (suelos, hidrologia, alturas, montanas, red)
+        a partir del estado final de self.mapa.
+        """
+        p = self.parametros
+        mapa = self.mapa
+        resultado: dict[tuple[int, int], str] = {}
+        hidrologia: dict[tuple[int, int], dict] = {}
+        alturas: dict[tuple[int, int], int] = {}
+        montanas: dict[tuple[int, int], bool] = {}
+
+        for y in range(p.alto):
+            for x in range(p.ancho):
+                suelo = mapa.suelos[y][x]
+                if suelo is None:
+                    raise RuntimeError(
+                        f"El pipeline dejó la casilla ({x}, {y}) sin suelo; "
+                        f"revisa el orden de capas ejecutadas: {self.etapas_ejecutadas}"
+                    )
+                resultado[(x, y)] = suelo
+                if mapa.hidro[y][x] is not None:
+                    hidrologia[(x, y)] = mapa.hidro[y][x]
+                montanas[(x, y)] = mapa.elevacion[y][x] >= mapa.umbral_montana
+                if mapa.elevacion[y][x] < mapa.nivel_mar:
+                    alturas[(x, y)] = 0
+                else:
+                    factor = p.altura_maxima_metros / max(1e-9, 1.0 - mapa.nivel_mar)
+                    alturas[(x, y)] = int(
+                        round((mapa.elevacion[y][x] - mapa.nivel_mar) * factor)
+                    )
+
+        if self.verbose:
+            t_total = sum(self._tiempos_etapas.values())
+            print(f"Generación completada en {t_total:.2f} s")
+            conteo: dict[str, int] = {}
+            for suelo in resultado.values():
+                conteo[suelo] = conteo.get(suelo, 0) + 1
+            for suelo in sorted(conteo, key=conteo.get, reverse=True):
+                pct = 100.0 * conteo[suelo] / len(resultado)
+                print(f"  {suelo:<14} {conteo[suelo]:>8}  {pct:5.1f} %")
+            print(
+                f"Alturas: mín {min(alturas.values())} m, "
+                f"máx {max(alturas.values())} m"
+            )
+
+        return resultado, hidrologia, alturas, montanas, mapa.red
 
 
 def generar_mapa_suelos(
@@ -1067,181 +1317,18 @@ def generar_mapa_suelos(
     verbose: bool = False,
     **overrides,
 ):
-    """Ejecuta el pipeline de capas y devuelve {(x, y): nombre_clase} para
-    TODAS las casillas del mundo (clave faltante = bug: LogicaMundo debe
-    reventar explícito, no rellenar en silencio).
-
-    Prioridad de configuración (de menor a mayor):
-      1. Defaults de ParametrosGeneracion.
-      2. Config.settings (seed/ancho/alto).
-      3. `parametros`: un ParametrosGeneracion COMPLETO (todos sus campos
-         sobrescriben lo anterior) o un dict {campo: valor} (solo los
-         campos presentes sobrescriben). Es el modo cómodo para guardar
-         presets: PARAMETROS_MUNDO = ParametrosGeneracion(fragmentacion=0.7,
-         ...) en Config y pasarlo entero.
-      4. `**overrides` y seed/ancho/alto explícitos: lo más específico.
-
-    - capas: orden del pipeline; None = ORDEN_CAPAS por defecto.
     """
-    try:
-        import Config.settings as config
-
-        ancho_def = config.GRID_WIDTH
-        alto_def = config.GRID_HEIGHT
-        seed_def = getattr(config, "SEMILLA_MUNDO", 42)
-    except Exception:  # standalone (p.ej. renderizador sin repo importable)
-        ancho_def, alto_def, seed_def = 600, 600, 42
-
-    if isinstance(parametros, ParametrosGeneracion):
-        p = ParametrosGeneracion(**parametros.__dict__)
-    elif parametros:  # dict no vacío
-        p = ParametrosGeneracion(**{**parametros})
-    else:
-        p = ParametrosGeneracion()
-
-    # Fuentes 4: explícitos pisan lo que haya venido en `parametros`.
-    if ancho is not None:
-        p.ancho = ancho
-    if alto is not None:
-        p.alto = alto
-    if seed is not None:
-        p.seed = seed
-    # Default solo si nadie lo fijó (ni preset ni Config).
-    if p.ancho == ParametrosGeneracion.ancho:
-        p.ancho = ancho_def
-    if p.alto == ParametrosGeneracion.alto:
-        p.alto = alto_def
-    if p.seed == ParametrosGeneracion.seed:
-        p.seed = seed_def
-
-    for clave, valor in overrides.items():
-        if clave not in p.__dataclass_fields__:
-            raise ValueError(
-                f"Parámetro de generación desconocido: '{clave}' "
-                f"(campos válidos: {', '.join(sorted(p.__dataclass_fields__))})"
-            )
-        setattr(p, clave, valor)
-
-    if p.ancho < 3 or p.alto < 3:
-        raise ValueError(f"Mundo demasiado pequeño: {p.ancho}x{p.alto} (mínimo 3x3).")
-
-    if not 0.0 <= p.fragmentacion <= 1.0:
-        raise ValueError(
-            f"fragmentacion debe estar en [0, 1]; recibida {p.fragmentacion!r}"
-        )
-
-    cuotas = (
-        "proporcion_agua",
-        "proporcion_hielo",
-        "proporcion_arena",
-        "proporcion_cesped",
-        "proporcion_montana",
-        "proporcion_piedra",
+    Función de compatibilidad retroactiva: instancia GeneradorMundo, ejecuta
+    todas las capas y retorna (suelos, hidrologia, alturas, montanas, red).
+    """
+    generador = GeneradorMundo(
+        seed=seed,
+        ancho=ancho,
+        alto=alto,
+        capas=capas,
+        parametros=parametros,
+        verbose=verbose,
+        **overrides,
     )
-    for cuota in cuotas:
-        valor = getattr(p, cuota)
-        if not 0.0 <= valor <= 1.0:
-            raise ValueError(f"{cuota} debe estar en [0, 1]; recibido {valor!r}")
-    if p.proporcion_arena + p.proporcion_cesped > 1.0:
-        raise ValueError(
-            f"proporcion_arena ({p.proporcion_arena}) + proporcion_cesped "
-            f"({p.proporcion_cesped}) > 1.0: no queda llanura para Suelo_Tierra."
-        )
-
-    orden = list(capas) if capas is not None else list(ORDEN_CAPAS)
-    for nombre in orden:
-        if nombre not in CAPAS:
-            raise ValueError(
-                f"Capa de generación desconocida: '{nombre}' "
-                f"(registradas: {', '.join(sorted(CAPAS))})"
-            )
-
-    mapa = MapaMundo(ancho=p.ancho, alto=p.alto)
-    mapa.verbose = verbose
-    rng = random.Random(p.seed)
-
-    def _informe(capa: str, t_capa: float) -> None:
-        """Línea de progreso de una capa: qué tocó y cuánto tardó."""
-        asig = sum(
-            1
-            for y in range(mapa.alto)
-            for x in range(mapa.ancho)
-            if mapa.suelos[y][x] is not None
-        )
-        hidro = sum(
-            1
-            for y in range(mapa.alto)
-            for x in range(mapa.ancho)
-            if mapa.hidro[y][x] is not None
-        )
-        pct = 100.0 * asig / (mapa.ancho * mapa.alto)
-        extra = f" | hidrología: {hidro} celdas" if hidro else ""
-        print(
-            f"  [capa {capa:<16}] {asig:>8}/{mapa.ancho * mapa.alto} suelos "
-            f"({pct:5.1f} %){extra} — {t_capa:.2f} s"
-        )
-
-    if verbose:
-        total = p.ancho * p.alto
-        print(
-            f"Generando mundo {p.ancho}x{p.alto} ({total:,} casillas), "
-            f"seed={p.seed}, capas: {', '.join(orden)}"
-        )
-
-    import time
-
-    t_total = time.perf_counter()
-    for nombre in orden:
-        if verbose:
-            print(f"  [capa {nombre:<16}] ...", flush=True)
-        t_capa = time.perf_counter()
-        CAPAS[nombre]().aplicar(mapa, p, rng)
-        t_capa = time.perf_counter() - t_capa
-        if verbose:
-            _informe(nombre, t_capa)
-    t_total = time.perf_counter() - t_total
-
-    resultado: dict[tuple[int, int], str] = {}
-    hidrologia: dict[tuple[int, int], dict] = {}
-    alturas: dict[tuple[int, int], int] = {}
-    montanas: dict[tuple[int, int], bool] = {}
-    for y in range(p.alto):
-        for x in range(p.ancho):
-            suelo = mapa.suelos[y][x]
-            if suelo is None:
-                raise RuntimeError(
-                    f"El pipeline dejó la casilla ({x}, {y}) sin suelo; "
-                    f"revisa el orden de capas: {orden}"
-                )
-            resultado[(x, y)] = suelo
-            if mapa.hidro[y][x] is not None:
-                hidrologia[(x, y)] = mapa.hidro[y][x]
-            # Mapa de montañas: True donde la cota supera el umbral
-            # orográfico de montaña (el mismo que divide grava/piedra).
-            montanas[(x, y)] = mapa.elevacion[y][x] >= mapa.umbral_montana
-            # Mapa de alturas en METROS: 0 = nivel del mar, paso 1 = 1 m.
-            # TODO el mar se aplana a 0 m (altura uniforme): la batimetría
-            # no se genera, solo la topografía emergida. La normalización
-            # es lineal: elev=1 (cota máxima del mapa) ->
-            # altura_maxima_metros.
-            if mapa.elevacion[y][x] < mapa.nivel_mar:
-                alturas[(x, y)] = 0
-            else:
-                factor = p.altura_maxima_metros / max(1e-9, 1.0 - mapa.nivel_mar)
-                alturas[(x, y)] = int(
-                    round((mapa.elevacion[y][x] - mapa.nivel_mar) * factor)
-                )
-
-    if verbose:
-        print(f"Generación completada en {t_total:.2f} s")
-        conteo: dict[str, int] = {}
-        for suelo in resultado.values():
-            conteo[suelo] = conteo.get(suelo, 0) + 1
-        for suelo in sorted(conteo, key=conteo.get, reverse=True):
-            pct = 100.0 * conteo[suelo] / len(resultado)
-            print(f"  {suelo:<14} {conteo[suelo]:>8}  {pct:5.1f} %")
-        print(
-            f"Alturas: mín {min(alturas.values())} m, " f"máx {max(alturas.values())} m"
-        )
-
-    return resultado, hidrologia, alturas, montanas, mapa.red
+    generador.ejecutar_todas_las_etapas()
+    return generador.construir_resultado()

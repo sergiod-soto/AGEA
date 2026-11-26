@@ -64,11 +64,13 @@ from Core.Entities.Elementos.Abstractos.Sistema_Atmosferico.sistema_atmosferico 
 from Core.Entities.Elementos.Abstractos.Tiempo.reloj import Reloj
 from Core.Entities.Elementos.Simples.elemento_simple import Elemento_Simple
 from Core.Entities.Mundo.Suelo.suelo import Suelo
+from Core.Entities.Mundo.Suelo.suelo_agua import Suelo_Agua
 from Core.Entities.Mundo.Suelo.suelo_arena import Suelo_Arena
 from Core.Entities.Mundo.Suelo.suelo_barro import Suelo_Barro
 from Core.Entities.Mundo.Suelo.suelo_cesped import Suelo_Cesped
 from Core.Entities.Mundo.Suelo.suelo_grava import Suelo_Grava
 from Core.Entities.Mundo.Suelo.suelo_hielo import Suelo_Hielo
+from Core.Entities.Mundo.Suelo.suelo_limite import Suelo_Limite
 from Core.Entities.Mundo.Suelo.suelo_oceano import Suelo_Oceano
 from Core.Entities.Mundo.Suelo.suelo_piedra import Suelo_Piedra
 from Core.Entities.Mundo.Suelo.suelo_tierra import Suelo_Tierra
@@ -199,11 +201,13 @@ ELEMENTOS: dict[str, type] = {
     "Sonido": Sonido,
     "SonidoBase": SonidoBase,
     "Suelo": Suelo,
+    "Suelo_Agua": Suelo_Agua,
     "Suelo_Arena": Suelo_Arena,
     "Suelo_Barro": Suelo_Barro,
     "Suelo_Cesped": Suelo_Cesped,
     "Suelo_Grava": Suelo_Grava,
     "Suelo_Hielo": Suelo_Hielo,
+    "Suelo_Limite": Suelo_Limite,
     "Suelo_Oceano": Suelo_Oceano,
     "Suelo_Piedra": Suelo_Piedra,
     "Suelo_Tierra": Suelo_Tierra,

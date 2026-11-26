@@ -73,7 +73,8 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
     """
     grid_w = config.GRID_WIDTH
     grid_h = config.GRID_HEIGHT
-    if config.HYPERVISOR_COUNT < 1:
+    habilitar_bots = getattr(config, "HABILITAR_BOTS", True)
+    if habilitar_bots and config.HYPERVISOR_COUNT < 1:
         raise ValueError(
             f"HYPERVISOR_COUNT debe ser >= 1, recibido: {config.HYPERVISOR_COUNT}"
         )
@@ -96,29 +97,6 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
         default_port=config.GESTOR_MUNDO_PORT,
     )
 
-    gestor_bots = ComponenteSpec(
-        nombre="gestor_bots",
-        tipo="gestor_bots",
-        host_env_var="GESTOR_BOTS_HOST",
-        port_env_var="GESTOR_BOTS_PORT",
-        default_port=config.GESTOR_BOTS_PORT,
-    )
-
-    hypervisores = [
-        ComponenteSpec(
-            nombre=f"hv_{i:03d}",
-            tipo="hypervisor",
-            host_env_var="HYPERVISOR_HOST",
-            port_env_var="HYPERVISOR_PORT",
-            default_port=config.HYPERVISOR_PORT + i,
-            extra_env={
-                "HYPERVISOR_ID": f"hv_{i:03d}",
-                "HYPERVISOR_PROXY_PORT": str(config.HYPERVISOR_PROXY_BASE_PORT + i),
-            },
-        )
-        for i in range(config.HYPERVISOR_COUNT)
-    ]
-
     comunicaciones_remoto = ComponenteSpec(
         nombre="comunicaciones_remoto",
         tipo="comunicaciones_remoto",
@@ -127,13 +105,44 @@ def construir_topologia() -> list[list[ComponenteSpec]]:
         default_port=config.COMUNICACIONES_REMOTO_PORT,
     )
 
-    return [
-        sectores,
-        [logica_mundo],
-        [gestor_mundo, gestor_bots],
-        hypervisores,
-        [comunicaciones_remoto],
-    ]
+    if habilitar_bots:
+        gestor_bots = ComponenteSpec(
+            nombre="gestor_bots",
+            tipo="gestor_bots",
+            host_env_var="GESTOR_BOTS_HOST",
+            port_env_var="GESTOR_BOTS_PORT",
+            default_port=config.GESTOR_BOTS_PORT,
+        )
+
+        hypervisores = [
+            ComponenteSpec(
+                nombre=f"hv_{i:03d}",
+                tipo="hypervisor",
+                host_env_var="HYPERVISOR_HOST",
+                port_env_var="HYPERVISOR_PORT",
+                default_port=config.HYPERVISOR_PORT + i,
+                extra_env={
+                    "HYPERVISOR_ID": f"hv_{i:03d}",
+                    "HYPERVISOR_PROXY_PORT": str(config.HYPERVISOR_PROXY_BASE_PORT + i),
+                },
+            )
+            for i in range(config.HYPERVISOR_COUNT)
+        ]
+
+        return [
+            sectores,
+            [logica_mundo],
+            [gestor_mundo, gestor_bots],
+            hypervisores,
+            [comunicaciones_remoto],
+        ]
+    else:
+        return [
+            sectores,
+            [logica_mundo],
+            [gestor_mundo],
+            [comunicaciones_remoto],
+        ]
 
 
 def resolver_env_extra(
@@ -166,12 +175,13 @@ def resolver_env_extra(
         env["LOGICA_MUNDO_ADDRESS"] = direcciones["logica_mundo"]
 
     elif spec.tipo == "hypervisor":
-        env["GESTOR_BOTS_ADDRESS"] = direcciones["gestor_bots"]
+        env["GESTOR_BOTS_ADDRESS"] = direcciones.get("gestor_bots", "")
 
     elif spec.tipo == "comunicaciones_remoto":
-        env["LOGICA_MUNDO_ADDRESS"] = direcciones["logica_mundo"]
-        env["GESTOR_MUNDO_ADDRESS"] = direcciones["gestor_mundo"]
-        env["GESTOR_BOTS_ADDRESS"] = direcciones["gestor_bots"]
+        env["LOGICA_MUNDO_ADDRESS"] = direcciones.get("logica_mundo", "")
+        env["GESTOR_MUNDO_ADDRESS"] = direcciones.get("gestor_mundo", "")
+        if "gestor_bots" in direcciones:
+            env["GESTOR_BOTS_ADDRESS"] = direcciones["gestor_bots"]
 
     return env
 

@@ -153,8 +153,15 @@ class GestorMundo:
     async def start(self, fresh: bool = False) -> None:
         SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
-        self._bots_channel = grpc.aio.insecure_channel(GESTOR_BOTS_ADDRESS)
-        self._bots_stub = bots_grpc.GestorBotsServiceStub(self._bots_channel)
+        import Config.settings as config
+
+        habilitar_bots = getattr(config, "HABILITAR_BOTS", True)
+        if habilitar_bots and GESTOR_BOTS_ADDRESS:
+            self._bots_channel = grpc.aio.insecure_channel(GESTOR_BOTS_ADDRESS)
+            self._bots_stub = bots_grpc.GestorBotsServiceStub(self._bots_channel)
+        else:
+            self._bots_channel = None
+            self._bots_stub = None
 
         if fresh:
             await self._init_fresh()
@@ -168,10 +175,65 @@ class GestorMundo:
             self._snapshot_id,
         )
 
+    async def _asegurar_mundo_generado(self) -> None:
+        """Comprueba el estado de generación en LogicaMundo; si no está iniciada, la dispara y espera."""
+        try:
+            from Infraestructura.Gestores.Transporte.Proto_Generated.Comunicacion import (
+                logica_mundo_service_pb2 as pb_logica,
+            )
+
+            await self._logica_client._ensure_channel()
+            resp = await self._logica_client._stub.EstadoGeneracionMundo(
+                pb_logica.EstadoGeneracionMundoRequest(),
+                timeout=self._logica_client._t(None),
+            )
+            estado = pb_logica.EstadoGeneracion.Name(resp.estado)
+            if estado == "NO_INICIADA":
+                logger.info(
+                    "El mundo no está generado en LogicaMundo. Disparando generación..."
+                )
+                await self._logica_client.generar_mundo()
+                await self._logica_client.esperar_generacion_mundo()
+            elif estado == "EN_CURSO":
+                logger.info("Generación del mundo en curso en LogicaMundo. Esperando...")
+                await self._logica_client.esperar_generacion_mundo()
+            elif estado == "ERROR":
+                raise ErrorCargaSector(
+                    f"Generación del mundo en LogicaMundo en estado ERROR: {resp.error_generacion}"
+                )
+        except Exception as exc:
+            logger.warning(
+                "No se pudo verificar o generar el mundo automáticamente: %s", exc
+            )
+
+    async def _inicializar_gestor_hidrografico(self) -> None:
+        """Obtiene red fluvial, alturas e hidrología de LogicaMundo e inicializa GestorHidrografico."""
+        if self.gestor_hidrografico is not None:
+            return
+        try:
+            red, alturas, hidrologia = (
+                await self._logica_client.obtener_datos_hidrograficos()
+            )
+            gestor_hidro = GestorHidrografico()
+            gestor_hidro.inicializar(red=red, alturas=alturas, hidrologia=hidrologia)
+            self.vincular_gestor_hidrografico(gestor_hidro)
+            logger.info(
+                "GestorHidrografico vinculado con éxito (%d ríos, %d lagos).",
+                len(red.get("rios", {})),
+                len(red.get("lagos", {})),
+            )
+        except Exception as exc:
+            logger.warning(
+                "No se pudo inicializar GestorHidrografico desde LogicaMundo: %s", exc
+            )
+
     async def _init_fresh(self) -> None:
         """Arranque limpio: conecta todos los sectores, les carga el estado
         gold que tenga Logica (la generación del mundo debe haber terminado
         antes) y los activa."""
+        await self._asegurar_mundo_generado()
+        await self._inicializar_gestor_hidrografico()
+
         logger.info("Inicio limpio. Creando %d×%d sectores.", self.COLS, self.ROWS)
         for col in range(self.COLS):
             for row in range(self.ROWS):
@@ -212,6 +274,10 @@ class GestorMundo:
 
         if self.gestor_hidrografico is not None and "gestor_hidrografico" in data:
             self.gestor_hidrografico.deserializar(data["gestor_hidrografico"])
+        elif "gestor_hidrografico" in data:
+            gestor_hidro = GestorHidrografico()
+            gestor_hidro.deserializar(data["gestor_hidrografico"])
+            self.vincular_gestor_hidrografico(gestor_hidro)
 
         await self._distribute_gold_to_sectors()
         # El "mode" guardado en el snapshot se IGNORA a propósito:
@@ -865,10 +931,11 @@ class GestorMundo:
                 self._escalar_fatal(exc)
                 raise
 
-        try:
-            await self._bots_stub.FreezeAll(bots_pb.FreezeAllRequest())
-        except grpc.aio.AioRpcError as e:
-            logger.error("Error al congelar Gestor_Bots: %s", e)
+        if self._bots_stub is not None:
+            try:
+                await self._bots_stub.FreezeAll(bots_pb.FreezeAllRequest())
+            except grpc.aio.AioRpcError as e:
+                logger.error("Error al congelar Gestor_Bots: %s", e)
 
         self._modos_previos_freeze = {
             (info.col, info.row): info.mode
@@ -904,10 +971,11 @@ class GestorMundo:
             await self._set_sector_mode(self._sectores[clave], modo)
         self._modos_previos_freeze = {}
 
-        try:
-            await self._bots_stub.ResumeAll(bots_pb.ResumeAllRequest())
-        except grpc.aio.AioRpcError as e:
-            logger.error("Error al reanudar Gestor_Bots: %s", e)
+        if self._bots_stub is not None:
+            try:
+                await self._bots_stub.ResumeAll(bots_pb.ResumeAllRequest())
+            except grpc.aio.AioRpcError as e:
+                logger.error("Error al reanudar Gestor_Bots: %s", e)
 
         self._state = SystemState.RUNNING
         self._pause_event.set()
@@ -1015,12 +1083,13 @@ class GestorMundo:
             self._snapshot_id = snapshot_id
             self._escribir_snapshot_mundo(snapshot_id)
 
-            try:
-                await self._bots_stub.SaveSnapshot(
-                    bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
-                )
-            except grpc.aio.AioRpcError as e:
-                logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
+            if self._bots_stub is not None:
+                try:
+                    await self._bots_stub.SaveSnapshot(
+                        bots_pb.SaveSnapshotRequest(snapshot_id=snapshot_id)
+                    )
+                except grpc.aio.AioRpcError as e:
+                    logger.error("Error al pedir snapshot a Gestor_Bots: %s", e)
 
             tareas_sectores = []
             for info in self._sectores.values():
@@ -1132,6 +1201,8 @@ class GestorMundo:
             )
 
     async def _reset_budgets(self) -> None:
+        if self._bots_stub is None:
+            return
         try:
             await self._bots_stub.ResetBudgets(bots_pb.ResetBudgetsRequest())
         except grpc.aio.AioRpcError as e:

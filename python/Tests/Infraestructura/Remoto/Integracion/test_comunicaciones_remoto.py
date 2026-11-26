@@ -190,6 +190,9 @@ class FakeLogicaMundoFoco:
         return FakeGlobalesResponse(tick_actual=self.tick_actual)
 
     async def consultar_representacion(self, min_pos, max_pos, incluir, modo):
+        return await self.consultar_representar(min_pos, max_pos, incluir, modo)
+
+    async def consultar_representar(self, min_pos, max_pos, incluir=None, *args, **kwargs):
         self.llamadas_consultar_representacion += 1
         return b"representacion"
 
