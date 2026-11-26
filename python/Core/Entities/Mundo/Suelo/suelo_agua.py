@@ -14,7 +14,7 @@ INERCIA_TERMICA_AGUA = 2.1e7
 
 
 class Suelo_Agua(Suelo, Acuoso, comportamientos):
-    def __init__(self, id_elemento, casilla):
+    def __init__(self, id_elemento, casilla, gestionado_por_hidrografia: bool = True):
         super().__init__(
             tipo=Suelo_Agua,
             casilla=casilla,
@@ -23,5 +23,6 @@ class Suelo_Agua(Suelo, Acuoso, comportamientos):
             inercia_termica=INERCIA_TERMICA_AGUA,
             dict_transformable={},
         )
+        self.gestionado_por_hidrografia = bool(gestionado_por_hidrografia)
 
     def tick_elemento(self, ctx): ...

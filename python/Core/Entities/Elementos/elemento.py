@@ -33,6 +33,10 @@ class Elemento(ABC, Comportamiento):
         # un tick normal (solo por transformación discreta, igual que Suelo)
         RESISTENCIA_VIENTO_CACHEABLE = "resistencia_viento_cacheable"
 
+        # Marca elementos de agua (río, lago, embalse) gestionados de forma agregada
+        # por el sistema hidrográfico, inhibiendo evaporación y dispersión individual.
+        GESTIONADO_POR_HIDROGRAFIA = "gestionado_por_hidrografia"
+
     # Flags que esta categoría "contiene". Vacío en la base.
     FLAGS_DISPONIBLES: frozenset[str] = frozenset()
 

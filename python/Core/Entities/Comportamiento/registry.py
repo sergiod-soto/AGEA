@@ -92,6 +92,9 @@ from Core.Entities.Comportamiento.Terreno.terroso import Terroso
 from Core.Entities.Comportamiento.Terreno.gravoso import Gravoso
 from Core.Entities.Comportamiento.Terreno.rocoso import Rocoso
 from Core.Entities.Comportamiento.Terreno.terreno import Terreno
+from Core.Entities.Comportamiento.Terreno.gestionado_hidrografia import (
+    GestionadoHidrografia,
+)
 from Core.Entities.Comportamiento.comportamiento import Comportamiento
 
 import logging
@@ -140,6 +143,7 @@ COMPORTAMIENTOS: dict[str, type] = {
     "Flotable": Flotable,
     "Focus": Focus,
     # G
+    "GestionadoHidrografia": GestionadoHidrografia,
     "Golpeable": Golpeable,
     "Gaseoso": Gaseoso,
     "Grasa": Grasa,

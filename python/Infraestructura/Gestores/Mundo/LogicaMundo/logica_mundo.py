@@ -34,7 +34,7 @@ from Infraestructura.Gestores.Transporte.gestor_bots_client_async import (
 )
 from Infraestructura.Gestores.tipos_comunes import ActionResult
 import Config.settings as config
-from Mundo.generacion_suelos import generar_mapa_suelos
+from Services.Mundo.generacion_suelos import generar_mapa_suelos
 
 logger = logging.getLogger(__name__)
 
@@ -632,6 +632,7 @@ class LogicaMundo:
                 # no queda un Mundo con metadatos de un mapa que no existe.
                 self.mundo.hidrologia = hidrologia
                 self.mundo.alturas = alturas
+                self.mundo.red = red
         except asyncio.CancelledError:
             self._generacion_error = "Generación cancelada (apagado)."
             self._estado_generacion = EstadoGeneracion.ERROR
@@ -643,6 +644,13 @@ class LogicaMundo:
         else:
             self._estado_generacion = EstadoGeneracion.COMPLETADA
             logger.info("Mundo generado (%d celdas creadas).", self._generacion_hechas)
+
+    async def _avanzar_generacion(self) -> None:
+        """Cuenta una celda creada y, cada CELDAS_POR_CESION, cede el control
+        al bucle de eventos (sin soltar el lock)."""
+        self._generacion_hechas += 1
+        if self._generacion_hechas % CELDAS_POR_CESION == 0:
+            await asyncio.sleep(0)
 
     async def _generar_mundo_bajo_lock(
         self, suelos: dict[tuple[int, int], str]
@@ -1035,6 +1043,90 @@ class LogicaMundo:
     def _alturas_desde_dict(d: dict) -> dict:
         return {tuple(map(int, clave.split(","))): int(h) for clave, h in d.items()}
 
+    @staticmethod
+    def _red_a_dict(red: dict) -> dict:
+        """Serializa mapa.red a dict apto para JSON (claves int -> str, tuplas -> listas)."""
+        if not red:
+            return {"rios": {}, "lagos": {}}
+        rios_json = {}
+        for id_rio, datos in red.get("rios", {}).items():
+            nace_de = datos.get("nace_de")
+            if isinstance(nace_de, (list, tuple)) and len(nace_de) == 2:
+                tipo_o, ref_o = nace_de[0], nace_de[1]
+                if isinstance(ref_o, (list, tuple)):
+                    ref_o = list(ref_o)
+                nace_de_s = [tipo_o, ref_o]
+            else:
+                nace_de_s = nace_de
+
+            muere_en = datos.get("muere_en")
+            if isinstance(muere_en, (list, tuple)) and len(muere_en) == 2:
+                muere_en_s = [muere_en[0], muere_en[1]]
+            else:
+                muere_en_s = muere_en
+
+            camino_s = [list(c) for c in datos.get("camino", [])]
+            rios_json[str(id_rio)] = {
+                "nace_de": nace_de_s,
+                "muere_en": muere_en_s,
+                "camino": camino_s,
+            }
+
+        lagos_json = {}
+        for id_lago, datos in red.get("lagos", {}).items():
+            lagos_json[str(id_lago)] = {
+                "nace_de_rio": datos.get("nace_de_rio"),
+                "desagua_en_rio": datos.get("desagua_en_rio"),
+                "capacidad_maxima": float(datos.get("capacidad_maxima", 0.0)),
+                "fondo": float(datos.get("fondo", 0.0)),
+                "area": int(datos.get("area", 0)),
+            }
+
+        return {"rios": rios_json, "lagos": lagos_json}
+
+    @staticmethod
+    def _red_desde_dict(d: dict) -> dict:
+        """Restaura dict serializado de red al formato nativo (claves str -> int, tuplas)."""
+        if not d:
+            return {"rios": {}, "lagos": {}}
+        rios = {}
+        for k_str, datos in d.get("rios", {}).items():
+            id_rio = int(k_str)
+            nace_de_raw = datos.get("nace_de")
+            if isinstance(nace_de_raw, (list, tuple)) and len(nace_de_raw) == 2:
+                tipo_o, ref_o = nace_de_raw[0], nace_de_raw[1]
+                if isinstance(ref_o, list):
+                    ref_o = tuple(ref_o)
+                nace_de = (tipo_o, ref_o)
+            else:
+                nace_de = ("manantial", None)
+
+            muere_en_raw = datos.get("muere_en")
+            if isinstance(muere_en_raw, (list, tuple)) and len(muere_en_raw) == 2:
+                muere_en = (muere_en_raw[0], muere_en_raw[1])
+            else:
+                muere_en = ("mar", None)
+
+            camino = [tuple(c) for c in datos.get("camino", [])]
+            rios[id_rio] = {
+                "nace_de": nace_de,
+                "muere_en": muere_en,
+                "camino": camino,
+            }
+
+        lagos = {}
+        for k_str, datos in d.get("lagos", {}).items():
+            id_lago = int(k_str)
+            lagos[id_lago] = {
+                "nace_de_rio": datos.get("nace_de_rio"),
+                "desagua_en_rio": datos.get("desagua_en_rio"),
+                "capacidad_maxima": float(datos.get("capacidad_maxima", 0.0)),
+                "fondo": float(datos.get("fondo", 0.0)),
+                "area": int(datos.get("area", 0)),
+            }
+
+        return {"rios": rios, "lagos": lagos}
+
     # ---- Snapshots ----
 
     async def save_snapshot(self, snapshot_id: str) -> None:
@@ -1086,6 +1178,7 @@ class LogicaMundo:
                 },
                 "hidrologia": self._hidrologia_a_dict(self.mundo.hidrologia),
                 "alturas": self._alturas_a_dict(self.mundo.alturas),
+                "red": self._red_a_dict(self.mundo.red),
             }
 
         # Escritura atómica: se escribe en un temporal y se renombra. Si el
@@ -1134,6 +1227,7 @@ class LogicaMundo:
                 malla_atmosfera[pos] = self._atmosfera_desde_dict(pos, d)
             hidrologia = self._hidrologia_desde_dict(data["hidrologia"])
             alturas = self._alturas_desde_dict(data["alturas"])
+            red = self._red_desde_dict(data.get("red", {}))
         except (KeyError, ValueError, TypeError, AttributeError) as exc:
             msg = (
                 f"Snapshot '{snapshot_id}': atmósfera/hidrología/alturas "
@@ -1149,6 +1243,7 @@ class LogicaMundo:
             self.mundo.malla_atmosfera = malla_atmosfera
             self.mundo.hidrologia = hidrologia
             self.mundo.alturas = alturas
+            self.mundo.red = red
 
             # Parches pendientes de antes del restore: ya no tienen sentido.
             self.mundo.descartar_parches_atmosfera()
@@ -1220,3 +1315,15 @@ class LogicaMundo:
                 "¿alguna clase de su cadena no llama a super().representar()?"
             )
         return campos
+
+    def obtener_red_hidrografica(self) -> dict:
+        """Devuelve el grafo DAG de la red hidrográfica (ríos y lagos)."""
+        return self.mundo.red
+
+    def obtener_hidrologia(self) -> dict:
+        """Devuelve la información hidrológica por casilla."""
+        return self.mundo.hidrologia
+
+    def obtener_alturas(self) -> dict:
+        """Devuelve el mapa de alturas en metros."""
+        return self.mundo.alturas

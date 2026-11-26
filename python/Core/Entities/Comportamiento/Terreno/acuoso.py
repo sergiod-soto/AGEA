@@ -40,6 +40,14 @@ class Acuoso(Terreno):
         él, un tick podría pasar de la saturación y Humedad_Relativa lo
         ocultaría recortando a 100 %.
         """
+        # Si la celda está gestionada de forma agregada por la red fluvial,
+        # su evaporación y balance hídrico se procesa en el GestorHidrografico
+        # para evitar doble evaporación o conflictos con el sector.
+        if getattr(self, "gestionado_por_hidrografia", False):
+            return
+        if hasattr(self, "tiene_flag") and self.tiene_flag("gestionado_por_hidrografia"):
+            return
+
         celda = ctx.get_atmosfera(*self.casilla)
         if celda is None:
             # Fatal: un agua sin celda de atmósfera indica un mundo mal

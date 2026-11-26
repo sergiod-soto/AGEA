@@ -49,6 +49,12 @@ from Infraestructura.Gestores.Transporte.Proto_Generated.Sectores import (
     sector_service_pb2 as sector_pb,
 )
 from Infraestructura.Gestores.Transporte.Proto_Generated import common_pb2 as common_pb
+from Core.Entities.Elementos.registry import ELEMENTOS
+from Infraestructura.Gestores.Mundo.Hidrologia import (
+    GestorHidrografico,
+    DatosAtmosferaHidro,
+    ResultadoTickHidro,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,13 +98,19 @@ class SectorInfo:
 
 class GestorMundo:
 
-    def __init__(self, logica_client):
+    def __init__(
+        self,
+        logica_client,
+        gestor_hidrografico: Optional[GestorHidrografico] = None,
+    ):
         self.COLS = math.ceil(GRID_WIDTH / SECTOR_SIZE)
         self.ROWS = math.ceil(GRID_HEIGHT / SECTOR_SIZE)
 
         self._sectores: dict[tuple[int, int], SectorInfo] = {}
 
         self._logica_client = logica_client
+        self.gestor_hidrografico: Optional[GestorHidrografico] = gestor_hidrografico
+        self._ultimo_delta_hidro: Optional[ResultadoTickHidro] = None
 
         self._tick_id: int = 0
         self._snapshot_id: str = ""
@@ -133,6 +145,10 @@ class GestorMundo:
             or delta.dead_bot_ids
             or delta.eventos
         )
+
+    def vincular_gestor_hidrografico(self, gestor: GestorHidrografico) -> None:
+        """Asocia o actualiza el subsistema hidrográfico desacoplado."""
+        self.gestor_hidrografico = gestor
 
     async def start(self, fresh: bool = False) -> None:
         SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -193,6 +209,9 @@ class GestorMundo:
             raise ErrorCargaSector(
                 f"Logica no pudo restaurar '{self._snapshot_id}': {exc!r}"
             ) from exc
+
+        if self.gestor_hidrografico is not None and "gestor_hidrografico" in data:
+            self.gestor_hidrografico.deserializar(data["gestor_hidrografico"])
 
         await self._distribute_gold_to_sectors()
         # El "mode" guardado en el snapshot se IGNORA a propósito:
@@ -301,6 +320,33 @@ class GestorMundo:
         ) = await self._logica_client.obtener_progreso_ciclos()
 
         parches = await self._logica_client.tomar_parches_atmosfera()
+
+        if self.gestor_hidrografico is not None:
+            datos_atmosfera_hidro = {}
+            for cell in parches:
+                pos_clima = (cell.pos.x, cell.pos.y)
+                viento = getattr(cell, "viento", None)
+                v_int = getattr(viento, "intensidad", 0.0) if viento else 0.0
+                temp = getattr(cell, "temperatura", None)
+                t_aire = getattr(temp, "valor", 293.15) if temp else 293.15
+                t_suelo = getattr(temp, "valor_suelo", 293.15) if temp else 293.15
+                hum = getattr(cell, "humedad_absoluta", None)
+                h_val = getattr(hum, "valor", 0.005) if hum else 0.005
+                precip = getattr(cell, "precipitacion", 0.0)
+
+                datos_atmosfera_hidro[pos_clima] = DatosAtmosferaHidro(
+                    pos_clima=pos_clima,
+                    precipitacion_kg_m2=float(precip),
+                    temperatura_aire=float(t_aire),
+                    temperatura_suelo=float(t_suelo),
+                    humedad_absoluta=float(h_val),
+                    viento_intensidad=float(v_int),
+                )
+            self.gestor_hidrografico.preparar_tick(
+                tick_id=self._tick_id,
+                datos_atmosfera=datos_atmosfera_hidro,
+            )
+
         parches_por_sector: dict[tuple[int, int], list] = {}
         for cell in parches:
             clave = (
@@ -408,15 +454,33 @@ class GestorMundo:
         self._exigir_ok(resp, "SetSounds", sector)
 
     async def _fase_1(self) -> None:
-        """Ordena a todos los sectores ACTIVOS que computen en paralelo.
+        """Ordena a todos los sectores ACTIVOS que computen en paralelo,
+        junto con el GestorHidrografico (Fase 1 concurrente).
         CUALQUIER fallo (excepción gRPC, ok=False, timeout) es fatal: el
         Sector pudo aplicar cambios a su copia que Logica nunca recibirá."""
         activos = [s for s in self._sectores.values() if s.mode == SectorMode.ACTIVO]
-        resultados = await asyncio.gather(
-            *(self._start_tick_sector(s) for s in activos), return_exceptions=True
-        )
+        tareas = [self._start_tick_sector(s) for s in activos]
+
+        hidro_idx = -1
+        if self.gestor_hidrografico is not None:
+            hidro_idx = len(tareas)
+            tareas.append(self.gestor_hidrografico.avanzar_tick(self._tick_id))
+
+        resultados = await asyncio.gather(*tareas, return_exceptions=True)
+
         fallos = []
-        for sector, r in zip(activos, resultados):
+        if hidro_idx != -1:
+            res_hidro = resultados[hidro_idx]
+            sectores_resultados = resultados[:hidro_idx]
+            if isinstance(res_hidro, Exception):
+                fallos.append(f"GestorHidrografico: excepción {res_hidro!r}")
+            else:
+                self._ultimo_delta_hidro = res_hidro
+        else:
+            self._ultimo_delta_hidro = None
+            sectores_resultados = resultados
+
+        for sector, r in zip(activos, sectores_resultados):
             clave = f"({sector.col},{sector.row})"
             if isinstance(r, Exception):
                 fallos.append(f"{clave}: excepción {r!r}")
@@ -573,6 +637,34 @@ class GestorMundo:
             # que la celda final de cada posición es la que ya refleja el
             # movimiento.
             celdas_cambiadas.extend(await self._resolver_movimientos(movimientos))
+
+            # Incorporar mutaciones discretas del sistema hidrográfico
+            if (
+                self._ultimo_delta_hidro is not None
+                and self._ultimo_delta_hidro.changed_cells
+            ):
+                for cambio in self._ultimo_delta_hidro.changed_cells:
+                    if isinstance(cambio, common_pb.Cell):
+                        celdas_cambiadas.append(cambio)
+                    elif isinstance(cambio, dict) and "pos" in cambio and "suelo" in cambio:
+                        pos = cambio["pos"]
+                        suelo_nombre = cambio["suelo"]
+                        clase_suelo = ELEMENTOS.get(suelo_nombre)
+                        if clase_suelo is not None:
+                            elem_suelo = clase_suelo(id_elemento=0, casilla=pos)
+                            slot_bytes = json.dumps(elem_suelo.serializar()).encode()
+                            celdas_cambiadas.append(
+                                common_pb.Cell(
+                                    pos=common_pb.Position(x=pos[0], y=pos[1]),
+                                    suelo=slot_bytes,
+                                )
+                            )
+
+            if (
+                self._ultimo_delta_hidro is not None
+                and self._ultimo_delta_hidro.eventos
+            ):
+                eventos.extend(self._ultimo_delta_hidro.eventos)
 
             if celdas_cambiadas:
                 try:
@@ -858,6 +950,9 @@ class GestorMundo:
                 for info in self._sectores.values()
             ],
         }
+        if self.gestor_hidrografico is not None:
+            data["gestor_hidrografico"] = self.gestor_hidrografico.serializar()
+
         tmp = path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(data, ensure_ascii=False))
         tmp.replace(path)

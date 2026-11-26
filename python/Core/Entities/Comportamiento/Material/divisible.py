@@ -28,7 +28,9 @@ class Divisible(Material):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"divisible": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "cantidad_minima_divisible": self.cantidad_minima_divisible
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -40,6 +42,10 @@ class Divisible(Material):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data.get("comportamientos", {}).get(__class__.__name__, {})
+        self.cantidad_minima_divisible = seccion.get(
+            "cantidad_minima_divisible", 1.0
+        )
 
     @abstractmethod
     def dividir(self, cantidad: float) -> Elemento | None: ...

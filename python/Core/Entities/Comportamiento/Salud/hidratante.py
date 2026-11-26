@@ -25,7 +25,9 @@ class Hidratante(Salud):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"hidratante": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "valor_hidratacion": self.valor_hidratacion
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -37,6 +39,8 @@ class Hidratante(Salud):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data.get("comportamientos", {}).get(__class__.__name__, {})
+        self.valor_hidratacion = seccion.get("valor_hidratacion", 1.0)
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

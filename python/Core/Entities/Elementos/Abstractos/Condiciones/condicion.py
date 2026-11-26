@@ -1,7 +1,5 @@
 # Core/Entities/Elementos/Abstractos/Condiciones/condicion.py
 
-from abc import abstractmethod
-
 from Core.Entities.Elementos.Abstractos.elemento_abstracto import Elemento_Abstracto
 
 
@@ -22,11 +20,20 @@ class Condicion(Elemento_Abstracto):
     # Atributos planos a serializar. Cada subtipo lo sobrescribe.
     CAMPOS: tuple[str, ...] = ()
 
-    def __init__(self, id_elemento=None, **kwargs):
-        super().__init__(tipo=type(self), id_elemento=id_elemento, **kwargs)
+    def __init__(self, id_elemento=None, evaluar=None, **kwargs):
+        super().__init__(tipo=type(self), id_elemento=id_elemento)
+        if evaluar is not None:
+            self._evaluar_fn = evaluar
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-    @abstractmethod
-    def evaluar(self, propietario, ctx) -> bool: ...
+    def evaluar(self, propietario=None, ctx=None) -> bool:
+        if hasattr(self, "_evaluar_fn"):
+            try:
+                return bool(self._evaluar_fn(propietario))
+            except TypeError:
+                return bool(self._evaluar_fn(propietario, ctx))
+        return False
 
     def serializar_id_elemento(self):
         # Una condición no es un elemento del mundo: no tiene id propio. Su

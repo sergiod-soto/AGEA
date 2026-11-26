@@ -24,7 +24,11 @@ class Liquido(Material):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"liquido": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "disuelto": [e.serializar() for e in self.disuelto]
+            if self.disuelto
+            else []
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -36,6 +40,14 @@ class Liquido(Material):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data.get("comportamientos", {}).get(__class__.__name__, {})
+        elementos_data = seccion.get("disuelto", [])
+        if elementos_data:
+            from Core.Entities.Elementos.registry import reconstruir_elemento
+
+            self.disuelto = [reconstruir_elemento(d, mundo) for d in elementos_data]
+        else:
+            self.disuelto = []
 
     @classmethod
     def campos_para_creacion(cls) -> list[str]:

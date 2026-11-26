@@ -49,10 +49,21 @@ class Agua(Elemento_Simple, comportamientos):
         rotacion=0,
         fuerza_sector_activo=False,
         fuerza_vecinos_activos=False,
+        gestionado_por_hidrografia: bool = False,
         **kwargs
     ):
         if peso < 0:
             peso = 0
+        self.gestionado_por_hidrografia = bool(gestionado_por_hidrografia)
+
+        temperatura_propia = kwargs.pop("temperatura_propia", 20.0)
+        tasa_transferencia_temperatura = kwargs.pop(
+            "tasa_transferencia_temperatura", 0.6
+        )
+        radio_termico = kwargs.pop("radio_termico", 0)
+
+        self.fuerza_sector_activo = fuerza_sector_activo
+        self.fuerza_vecinos_activos = fuerza_vecinos_activos
         super().__init__(
             tipo=Agua,
             id_elemento=id_elemento,
@@ -63,8 +74,12 @@ class Agua(Elemento_Simple, comportamientos):
             volumen=peso,
             # Peso:
             peso=peso,
+            # Termico:
+            temperatura_propia=temperatura_propia,
+            tasa_transferencia_temperatura=tasa_transferencia_temperatura,
+            radio_termico=radio_termico,
             # Ingrediente:
-            recetas_con=recetas_con_agua(),
+            recetas_de=[],
             # Divisible:
             cantidad_minima_divisible=1,
             # Liquido
@@ -76,7 +91,16 @@ class Agua(Elemento_Simple, comportamientos):
             # Combinable:
             cantidad_max_combinable=1000.0,
             rotacion=rotacion,
-            fuerza_sector_activo=fuerza_sector_activo,
-            fuerza_vecinos_activos=fuerza_vecinos_activos,
             **kwargs
+        )
+
+    def serializar(self) -> dict:
+        datos = super().serializar()
+        datos["gestionado_por_hidrografia"] = self.gestionado_por_hidrografia
+        return datos
+
+    def deserializar(self, data: dict, mundo=None) -> None:
+        super().deserializar(data, mundo)
+        self.gestionado_por_hidrografia = bool(
+            data.get("gestionado_por_hidrografia", False)
         )

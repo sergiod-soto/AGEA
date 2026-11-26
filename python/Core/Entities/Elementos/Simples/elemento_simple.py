@@ -19,6 +19,7 @@ class Elemento_Simple(Elemento):
     FLAGS_DISPONIBLES = frozenset(
         {
             Elemento.Flags.RESISTENCIA_VIENTO_CACHEABLE,
+            Elemento.Flags.GESTIONADO_POR_HIDROGRAFIA,
         }
     )
 

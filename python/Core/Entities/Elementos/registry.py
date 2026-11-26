@@ -108,6 +108,10 @@ from Core.Entities.Elementos.Simples.Etereo.etereo import Etereo
 from Core.Entities.Elementos.Simples.Etereo.mensaje import Mensaje
 from Core.Entities.Elementos.Simples.Recipiente.recipiente import Recipiente
 
+from Core.Entities.Elementos.Complejos.Rio.Rio import Rio
+from Core.Entities.Elementos.Complejos.Lago.Lago import Lago
+from Core.Entities.Elementos.Complejos.Oceano.Oceano import Oceano
+
 from Core.Entities.Elementos.elemento_test import Elemento_Test
 from Core.Entities.Elementos.elemento import Elemento
 
@@ -164,6 +168,7 @@ ELEMENTOS: dict[str, type] = {
     # J
     # K
     # L
+    "Lago": Lago,
     # M
     "Marcador": Marcador,
     "Marcador_Espacial": Marcador_Espacial,
@@ -173,6 +178,7 @@ ELEMENTOS: dict[str, type] = {
     "Mezclar": Mezclar,
     # N
     # O
+    "Oceano": Oceano,
     "Otono": Estaciones.Otono,
     # P
     "Piedra": Piedra,
@@ -187,6 +193,7 @@ ELEMENTOS: dict[str, type] = {
     "Receta": Receta,
     "Recipiente": Recipiente,
     "Reloj": Reloj,
+    "Rio": Rio,
     # S
     "Sistema_Atmosferico": Sistema_Atmosferico,
     "Sonido": Sonido,

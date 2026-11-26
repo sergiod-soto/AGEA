@@ -28,7 +28,9 @@ class Combinable(Material):
 
     def serializar(self) -> dict:
         datos = super().serializar()
-        datos["comportamientos"][__class__.__name__] = {"combinable": {}}
+        datos["comportamientos"][__class__.__name__] = {
+            "cantidad_max_combinable": self.cantidad_max_combinable
+        }
         return datos
 
     def representar(self, incluir: list[str] | None = None) -> dict:
@@ -40,6 +42,10 @@ class Combinable(Material):
 
     def deserializar(self, data: dict, mundo=None) -> None:
         super().deserializar(data, mundo)
+        seccion = data.get("comportamientos", {}).get(__class__.__name__, {})
+        self.cantidad_max_combinable = seccion.get(
+            "cantidad_max_combinable", float("inf")
+        )
 
     @abstractmethod
     def combinar(self, elemento: Elemento) -> Elemento:
